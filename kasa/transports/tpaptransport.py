@@ -663,12 +663,6 @@ class NocAuthContext(BaseAuthContext):
 class Spake2pAuthContext(BaseAuthContext):
     """SPAKE2+ authentication and session key schedule."""
 
-    P256_M_COMP = bytes.fromhex(
-        "02886e2f97ace46e55ba9dd7242579f2993b64e16ef3dcab95afd497333d8fa12f"
-    )
-    P256_N_COMP = bytes.fromhex(
-        "03d8bbd6c639c62937b04d997f38c3770719c629d7014d49a24b4f98baa1292b49"
-    )
     PAKE_CONTEXT_TAG = b"PAKE V1"
 
     def __init__(self, authenticator: Authenticator) -> None:
@@ -679,29 +673,13 @@ class Spake2pAuthContext(BaseAuthContext):
         self.passcode: str = (creds.password if creds else "") or ""
         self.discover_mac = self._authenticator._device_mac or ""
         self.discover_suites = self._authenticator._tpap_pake or []
-
-        self._curve = NIST256p
-        self._generator: PointJacobi = self._curve.generator
-        self._G = self._generator
-        self._order = self._generator.order()
-        Mx, My = self._sec1_to_xy(self.P256_M_COMP)
-        Nx, Ny = self._sec1_to_xy(self.P256_N_COMP)
-        self._M = ellipticcurve.Point(self._curve.curve, Mx, My, self._order)
-        self._N = ellipticcurve.Point(self._curve.curve, Nx, Ny, self._order)
-
-        self._w: int | None = None
-        self._h_scalar: int | None = None
-        self._L_enc: bytes | None = None
-        self._R_enc: bytes | None = None
         self._expected_dev_confirm: str | None = None
         self._shared_key: bytes | None = None
         self._chosen_cipher: _CipherId = "aes_128_ccm"
         self._hkdf_hash: str = "SHA256"
         self._suite_type: int = 2
-        self._dac_nonce_hex: str | None = None
-
+        self._dac_nonce_base64: str | None = None
         self.user_random = self._base64(os.urandom(32))
-        self.extra_params: dict[str, Any] = {}
 
     @staticmethod
     def _sec1_to_xy(sec1: bytes) -> tuple[int, int]:
@@ -906,23 +884,35 @@ class Spake2pAuthContext(BaseAuthContext):
             .upper()
         )
 
+    def _get_passcode_type(self) -> str:
+        if self.discover_suites and 0 in self.discover_suites:
+            return "default_userpw"
+        elif self.discover_suites and 2 in self.discover_suites:
+            return "userpw"
+        elif self.discover_suites and 3 in self.discover_suites:
+            return "shared_token"
+        else:
+            return "userpw"
+
     async def start(self) -> TlaSession | None:
         """Run SPAKE2+ register/share and return session."""
+        admin_md5 = self._md5_hex("admin")
+        passcode_type = self._get_passcode_type()
         params = {
             "sub_method": "pake_register",
-            "username": self.username,
+            "username": admin_md5,
             "user_random": self.user_random,
-            "cipher_suites": self.discover_suites or [1, 2],
+            "cipher_suites": self.discover_suites or [2],
             "encryption": ["aes_128_ccm", "chacha20_poly1305", "aes_256_ccm"],
-            "passcode_type": "password",
+            "passcode_type": passcode_type,
             "stok": None,
         }
         resp = await self._login(params, step_name="pake_register")
         share_params = self.process_register_result(resp)
 
         if self._use_dac_certification():
-            self._dac_nonce_hex = secrets.token_hex(32)
-            share_params["dac_nonce"] = self._dac_nonce_hex
+            self._dac_nonce_base64 = self._base64(os.urandom(16))
+            share_params["dac_nonce"] = self._dac_nonce_base64
 
         share_res = await self._login(share_params, step_name="pake_share")
         return self.process_share_result(share_res)
@@ -951,28 +941,39 @@ class Spake2pAuthContext(BaseAuthContext):
                 self.discover_mac.replace(":", "").replace("-", ""),
             )
 
+        P256_M_COMP = bytes.fromhex(
+            "02886e2f97ace46e55ba9dd7242579f2993b64e16ef3dcab95afd497333d8fa12f"
+        )
+        P256_N_COMP = bytes.fromhex(
+            "03d8bbd6c639c62937b04d997f38c3770719c629d7014d49a24b4f98baa1292b49"
+        )
+
+        nist256p = NIST256p
+        curve = nist256p.curve
+        generator: PointJacobi = nist256p.generator
+        G = generator
+        order: int = generator.order()
+        Mx, My = self._sec1_to_xy(P256_M_COMP)
+        Nx, Ny = self._sec1_to_xy(P256_N_COMP)
+        M = ellipticcurve.Point(curve, Mx, My, order)
+        N = ellipticcurve.Point(curve, Nx, Ny, order)
         cred = cred_str.encode()
         a, b = self._derive_ab(cred, self._unbase64(dev_salt), iterations, 32)
-        order = self._order
         w = a % order
         h_scalar = b % order
-        G, M, N = self._G, self._M, self._N
         x = secrets.randbelow(order - 1) + 1
-        Lp = x * G + w * M
-
+        Lp: ellipticcurve.Point = x * G + w * M
         Rx, Ry = self._sec1_to_xy(self._unbase64(dev_share))
-        R = ellipticcurve.Point(self._curve.curve, Rx, Ry, order)
+        R = ellipticcurve.Point(curve, Rx, Ry, order)
         Rprime = R + (-(w * N))
-        Zp = x * Rprime
-        Vp = (h_scalar % order) * Rprime
-
+        Zp: ellipticcurve.Point = x * Rprime
+        Vp: ellipticcurve.Point = (h_scalar % order) * Rprime
         L_enc = self._xy_to_uncompressed(Lp.x(), Lp.y())
         R_enc = self._xy_to_uncompressed(R.x(), R.y())
         Z_enc = self._xy_to_uncompressed(Zp.x(), Zp.y())
         V_enc = self._xy_to_uncompressed(Vp.x(), Vp.y())
-        M_enc = self._xy_to_uncompressed(self._M.x(), self._M.y())
-        N_enc = self._xy_to_uncompressed(self._N.x(), self._N.y())
-
+        M_enc = self._xy_to_uncompressed(M.x(), M.y())
+        N_enc = self._xy_to_uncompressed(N.x(), N.y())
         context_hash = self._hash(
             self._hkdf_hash,
             self.PAKE_CONTEXT_TAG
@@ -992,44 +993,37 @@ class Spake2pAuthContext(BaseAuthContext):
             + self._len8le(self._encode_w(w))
         )
         T = self._hash(self._hkdf_hash, transcript)
-
         digest_len = 64 if self._hkdf_hash == "SHA512" else 32
         conf = self._hkdf_expand("ConfirmationKeys", T, digest_len, self._hkdf_hash)
         KcA, KcB = conf[: digest_len // 2], conf[digest_len // 2 :]
         self._shared_key = self._hkdf_expand(
             "SharedKey", T, digest_len, self._hkdf_hash
         )
-
         if self._suite_mac_is_cmac(self._suite_type):
-            user_confirm = self._cmac_aes(KcA, R_enc).hex()
-            expected_dev_confirm = self._cmac_aes(KcB, L_enc).hex()
+            user_confirm = self._cmac_aes(KcA, R_enc)
+            expected_dev_confirm = self._cmac_aes(KcB, L_enc)
         else:
-            user_confirm = self._hmac(self._hkdf_hash, KcA, R_enc).hex()
-            expected_dev_confirm = self._hmac(self._hkdf_hash, KcB, L_enc).hex()
-
-        self._w = w
-        self._h_scalar = h_scalar
-        self._L_enc = L_enc
-        self._R_enc = R_enc
-        self._expected_dev_confirm = expected_dev_confirm
-
+            user_confirm = self._hmac(self._hkdf_hash, KcA, R_enc)
+            expected_dev_confirm = self._hmac(self._hkdf_hash, KcB, L_enc)
+        self._expected_dev_confirm = self._base64(expected_dev_confirm)
         return {
             "sub_method": "pake_share",
-            "user_share": L_enc.hex(),
-            "user_confirm": user_confirm,
+            "user_share": self._base64(L_enc),
+            "user_confirm": self._base64(user_confirm),
         }
 
     def _verify_dac(self, share: dict[str, Any]) -> None:
         """Verify DAC proof: ECDSA-SHA256 over (sharedKey || nonce) with DAC CA."""
         try:
-            dac_ca = share.get("dac_ca")
+            dac_ca = str(share.get("dac_ca"))
             dac_proof = share.get("dac_proof")
-            if not (dac_ca and dac_proof and self._shared_key and self._dac_nonce_hex):
+            if not (
+                dac_ca and dac_proof and self._shared_key and self._dac_nonce_base64
+            ):
                 return
-            ca_pem = base64.b64decode(dac_ca).decode()
-            ca_cert = x509.load_pem_x509_certificate(ca_pem.encode())
-            msg = self._shared_key + bytes.fromhex(self._dac_nonce_hex)
-            sig = bytes.fromhex(dac_proof)
+            ca_cert = x509.load_pem_x509_certificate(dac_ca.encode())
+            msg = self._shared_key + self._unbase64(self._dac_nonce_base64)
+            sig = self._unbase64(dac_proof)
             ca_pub = cast(ec.EllipticCurvePublicKey, ca_cert.public_key())
             ca_pub.verify(sig, msg, ec.ECDSA(hashes.SHA256()))
         except InvalidSignature as exc:
@@ -1211,9 +1205,6 @@ class TpapTransport(BaseTransport):
         ]
     )
     COMMON_HEADERS = {"Content-Type": "application/json"}
-
-    P256_M_COMP = Spake2pAuthContext.P256_M_COMP
-    P256_N_COMP = Spake2pAuthContext.P256_N_COMP
 
     def __init__(self, *, config: DeviceConfig) -> None:
         """Initialize HTTP client and state."""

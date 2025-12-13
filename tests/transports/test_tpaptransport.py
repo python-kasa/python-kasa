@@ -25,6 +25,16 @@ from kasa.exceptions import (
 )
 
 
+def _p256_pub_uncompressed() -> bytes:
+    from cryptography.hazmat.primitives import serialization as _ser
+    from cryptography.hazmat.primitives.asymmetric import ec
+
+    priv = ec.derive_private_key(int.from_bytes(b"\x01" * 32, "big"), ec.SECP256R1())
+    return priv.public_key().public_bytes(
+        _ser.Encoding.X962, _ser.PublicFormat.UncompressedPoint
+    )
+
+
 def _make_self_signed_cert_and_key() -> tuple[str, str]:
     from datetime import datetime, timedelta
 
@@ -191,7 +201,7 @@ async def test_nocclient_apply_get_and_split_success(monkeypatch, tmp_path):
 
     client = tp.NOCClient()
     data = client.apply("user@example.com", os.getenv("KASA_TEST_PW", "pwd123"))  # noqa: S106
-    assert data.nocPrivateKey
+    assert data.nocPrivateKey is not None
     assert data.nocCertificate
     assert data.nocIntermediateCertificate
     assert data.nocRootCertificate
@@ -1111,14 +1121,6 @@ async def test_spake2p_helpers_and_process(monkeypatch):
     assert ctx_suite._suite_mac_is_cmac(2) is False  # type: ignore[attr-defined]
 
     ctx = tp.Spake2pAuthContext.__new__(tp.Spake2pAuthContext)  # type: ignore[misc]
-    ctx._curve = tp.NIST256p  # type: ignore[attr-defined]
-    ctx._generator = ctx._curve.generator  # type: ignore[attr-defined]
-    ctx._G = ctx._generator  # type: ignore[attr-defined]
-    ctx._order = ctx._generator.order()  # type: ignore[attr-defined]
-    Mx, My = K._sec1_to_xy(K.P256_M_COMP)
-    Nx, Ny = K._sec1_to_xy(K.P256_N_COMP)
-    ctx._M = tp.ellipticcurve.Point(ctx._curve.curve, Mx, My, ctx._order)  # type: ignore[attr-defined]
-    ctx._N = tp.ellipticcurve.Point(ctx._curve.curve, Nx, Ny, ctx._order)  # type: ignore[attr-defined]
     ctx._hkdf_hash = "SHA512"
     ctx.user_random = base64.b64encode(b"\x00" * 16).decode()  # type: ignore[attr-defined]
     ctx.discover_suites = [1, 2]  # type: ignore[attr-defined]
@@ -1130,7 +1132,7 @@ async def test_spake2p_helpers_and_process(monkeypatch):
     reg = {
         "dev_random": base64.b64encode(b"\x00" * 16).decode(),
         "dev_salt": base64.b64encode(b"\x11" * 16).decode(),
-        "dev_share": base64.b64encode(tp.Spake2pAuthContext.P256_N_COMP).decode(),
+        "dev_share": base64.b64encode(_p256_pub_uncompressed()).decode(),
         "cipher_suites": 2,
         "iterations": 100,
         "encryption": "aes_128_ccm",
@@ -1150,12 +1152,6 @@ async def test_spake2p_helpers_and_process(monkeypatch):
     assert tla.startSequence == 7
 
     ctx2 = tp.Spake2pAuthContext.__new__(tp.Spake2pAuthContext)  # type: ignore[misc]
-    ctx2._curve = ctx._curve  # type: ignore[attr-defined]
-    ctx2._generator = ctx._generator  # type: ignore[attr-defined]
-    ctx2._G = ctx._G  # type: ignore[attr-defined]
-    ctx2._order = ctx._order  # type: ignore[attr-defined]
-    ctx2._M = ctx._M  # type: ignore[attr-defined]
-    ctx2._N = ctx._N  # type: ignore[attr-defined]
     ctx2.user_random = base64.b64encode(b"\x00" * 16).decode()  # type: ignore[attr-defined]
     ctx2.discover_suites = [0]  # type: ignore[attr-defined]
     ctx2.discover_mac = ""  # type: ignore[attr-defined]
@@ -1181,7 +1177,7 @@ async def test_spake2p_helpers_and_process(monkeypatch):
     from cryptography.hazmat.primitives.asymmetric import ec as _ec
     from cryptography.x509.oid import NameOID as _NameOID
 
-    ctx3._dac_nonce_hex = "00" * 32  # type: ignore[attr-defined]
+    ctx3._dac_nonce_base64 = base64.b64encode(bytes.fromhex("00" * 32)).decode()  # type: ignore[attr-defined]
     key = _ec.generate_private_key(_ec.SECP256R1())
     subject = issuer = _x509.Name([_x509.NameAttribute(_NameOID.COMMON_NAME, "DAC CA")])
     cert = (
@@ -1195,15 +1191,15 @@ async def test_spake2p_helpers_and_process(monkeypatch):
         .sign(key, _hashes.SHA256())
     )
     cert_pem = cert.public_bytes(encoding=_ser.Encoding.PEM)
-    msg = ctx3._shared_key + bytes.fromhex(ctx3._dac_nonce_hex)  # type: ignore[attr-defined]
+    msg = ctx3._shared_key + base64.b64decode(ctx3._dac_nonce_base64)  # type: ignore[attr-defined]
     sig = key.sign(msg, _ec.ECDSA(_hashes.SHA256()))
     share_with_dac = {
         "dev_confirm": (ctx3._expected_dev_confirm or "").lower(),  # type: ignore[attr-defined]
         "sessionId": "STOK2",
         "start_seq": 9,
         "sessionExpired": 1,
-        "dac_ca": base64.b64encode(cert_pem).decode(),
-        "dac_proof": sig.hex(),
+        "dac_ca": cert_pem.decode(),
+        "dac_proof": base64.b64encode(sig).decode(),
     }
     tla2 = tp.Spake2pAuthContext.process_share_result(ctx3, share_with_dac)  # type: ignore[misc]
     assert isinstance(tla2, tp.TlaSession)
@@ -1275,9 +1271,7 @@ async def test_spake2p_start_covers_both_tls_modes(monkeypatch):
             return {
                 "dev_random": base64.b64encode(b"\x00" * 16).decode(),
                 "dev_salt": base64.b64encode(b"\x11" * 16).decode(),
-                "dev_share": base64.b64encode(
-                    tp.Spake2pAuthContext.P256_N_COMP
-                ).decode(),
+                "dev_share": base64.b64encode(_p256_pub_uncompressed()).decode(),
                 "cipher_suites": 2,
                 "iterations": 100,
                 "encryption": "aes_128_ccm",
@@ -1308,9 +1302,7 @@ async def test_spake2p_start_covers_both_tls_modes(monkeypatch):
             return {
                 "dev_random": base64.b64encode(b"\x00" * 16).decode(),
                 "dev_salt": base64.b64encode(b"\x11" * 16).decode(),
-                "dev_share": base64.b64encode(
-                    tp.Spake2pAuthContext.P256_N_COMP
-                ).decode(),
+                "dev_share": base64.b64encode(_p256_pub_uncompressed()).decode(),
                 "cipher_suites": 2,
                 "iterations": 100,
                 "encryption": "aes_128_ccm",
@@ -1354,7 +1346,7 @@ def test_build_credentials_shadow_unknown_pid_and_unknown_type():
 def test_spake2p_verify_dac_errors():
     ctx = tp.Spake2pAuthContext.__new__(tp.Spake2pAuthContext)  # type: ignore[misc]
     ctx._shared_key = b"S" * 32  # type: ignore[attr-defined]
-    ctx._dac_nonce_hex = "00" * 32  # type: ignore[attr-defined]
+    ctx._dac_nonce_base64 = base64.b64encode(bytes.fromhex("00" * 32)).decode()  # type: ignore[attr-defined]
 
     from datetime import datetime, timedelta
 
@@ -1382,13 +1374,13 @@ def test_spake2p_verify_dac_errors():
         tp.Spake2pAuthContext._verify_dac(  # type: ignore[misc]
             ctx,
             {
-                "dac_ca": base64.b64encode(cert_pem).decode(),
-                "dac_proof": wrong_sig.hex(),
+                "dac_ca": cert_pem.decode(),
+                "dac_proof": base64.b64encode(wrong_sig).decode(),
             },
         )
     with pytest.raises(KasaException, match="DAC verification failed"):
         tp.Spake2pAuthContext._verify_dac(  # type: ignore[misc]
-            ctx, {"dac_ca": base64.b64encode(cert_pem).decode(), "dac_proof": "not-hex"}
+            ctx, {"dac_ca": cert_pem.decode(), "dac_proof": "not-hex"}
         )
 
 
@@ -1399,14 +1391,6 @@ def test_spake2p_verify_dac_early_return():
 
 def test_spake2p_process_register_uses_mac_pass_when_suite0_with_mac():
     ctx = tp.Spake2pAuthContext.__new__(tp.Spake2pAuthContext)  # type: ignore[misc]
-    ctx._curve = tp.NIST256p  # type: ignore[attr-defined]
-    ctx._generator = ctx._curve.generator  # type: ignore[attr-defined]
-    ctx._G = ctx._generator  # type: ignore[attr-defined]
-    ctx._order = ctx._generator.order()  # type: ignore[attr-defined]
-    Mx, My = tp.Spake2pAuthContext._sec1_to_xy(tp.Spake2pAuthContext.P256_M_COMP)
-    Nx, Ny = tp.Spake2pAuthContext._sec1_to_xy(tp.Spake2pAuthContext.P256_N_COMP)
-    ctx._M = tp.ellipticcurve.Point(ctx._curve.curve, Mx, My, ctx._order)  # type: ignore[attr-defined]
-    ctx._N = tp.ellipticcurve.Point(ctx._curve.curve, Nx, Ny, ctx._order)  # type: ignore[attr-defined]
     ctx.user_random = base64.b64encode(b"\x00" * 16).decode()  # type: ignore[attr-defined]
     ctx.discover_suites = [0]  # type: ignore[attr-defined]
     ctx.discover_mac = "AA:BB:CC:DD:EE:FF"  # type: ignore[attr-defined]
@@ -1418,7 +1402,7 @@ def test_spake2p_process_register_uses_mac_pass_when_suite0_with_mac():
     reg = {
         "dev_random": base64.b64encode(b"\x00" * 16).decode(),
         "dev_salt": base64.b64encode(b"\x11" * 16).decode(),
-        "dev_share": base64.b64encode(tp.Spake2pAuthContext.P256_N_COMP).decode(),
+        "dev_share": base64.b64encode(_p256_pub_uncompressed()).decode(),
         "cipher_suites": 2,
         "iterations": 100,
         "encryption": "aes_128_ccm",
@@ -1431,14 +1415,6 @@ def test_spake2p_process_register_uses_mac_pass_when_suite0_with_mac():
 @pytest.mark.asyncio
 async def test_spake2p_cmac_branch_in_register():
     ctx = tp.Spake2pAuthContext.__new__(tp.Spake2pAuthContext)  # type: ignore[misc]
-    ctx._curve = tp.NIST256p  # type: ignore[attr-defined]
-    ctx._generator = ctx._curve.generator  # type: ignore[attr-defined]
-    ctx._G = ctx._generator  # type: ignore[attr-defined]
-    ctx._order = ctx._generator.order()  # type: ignore[attr-defined]
-    Mx, My = tp.Spake2pAuthContext._sec1_to_xy(tp.Spake2pAuthContext.P256_M_COMP)
-    Nx, Ny = tp.Spake2pAuthContext._sec1_to_xy(tp.Spake2pAuthContext.P256_N_COMP)
-    ctx._M = tp.ellipticcurve.Point(ctx._curve.curve, Mx, My, ctx._order)  # type: ignore[attr-defined]
-    ctx._N = tp.ellipticcurve.Point(ctx._curve.curve, Nx, Ny, ctx._order)  # type: ignore[attr-defined]
     ctx.user_random = base64.b64encode(b"\x00" * 16).decode()  # type: ignore[attr-defined]
     ctx.discover_suites = [8]  # type: ignore[attr-defined]
     ctx.discover_mac = ""  # type: ignore[attr-defined]
@@ -1449,8 +1425,8 @@ async def test_spake2p_cmac_branch_in_register():
     reg = {
         "dev_random": base64.b64encode(b"\x00" * 16).decode(),
         "dev_salt": base64.b64encode(b"\x11" * 16).decode(),
-        "dev_share": base64.b64encode(tp.Spake2pAuthContext.P256_N_COMP).decode(),
-        "cipher_suites": 8,  # triggers CMAC
+        "dev_share": base64.b64encode(_p256_pub_uncompressed()).decode(),
+        "cipher_suites": 8,
         "iterations": 100,
         "encryption": "aes_128_ccm",
         "extra_crypt": {},
