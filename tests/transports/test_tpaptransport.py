@@ -1709,27 +1709,28 @@ async def test_transport_ssl_context_variants_and_cleanup(monkeypatch):
     monkeypatch.setattr(
         tp.NOCClient, "apply", lambda self, u, p: tp.TpapNOCData("K", "C", "I", "R")
     )
-    tr = tp.TpapTransport(config=DeviceConfig("host3"))
-
-    assert tr.default_port == 4433
-    tr._config.connection_type.http_port = 12345  # type: ignore[attr-defined]
-    assert tr.default_port == 12345
-    tr._config.credentials_hash = "abc"  # type: ignore[attr-defined]
-    assert tr.credentials_hash == "abc"
-
-    tr._authenticator._tpap_tls = 0
-    assert tr._create_ssl_context() is False
-
-    tr._authenticator._tpap_tls = 1
-    ctx1 = tr._create_ssl_context()
+    cfg_http = DeviceConfig("host3")
+    tr_http = tp.TpapTransport(config=cfg_http)
+    assert tr_http.default_port == tp.TpapTransport.DEFAULT_PORT
+    cfg_https = DeviceConfig("host3")
+    cfg_https.connection_type.https = True
+    tr_https = tp.TpapTransport(config=cfg_https)
+    assert tr_https.default_port == tp.TpapTransport.DEFAULT_HTTPS_PORT
+    tr = tr_https
+    tr_http._config.connection_type.http_port = 12345  # type: ignore[attr-defined]
+    assert tr_http.default_port == 12345
+    tr_http._config.credentials_hash = "abc"  # type: ignore[attr-defined]
+    assert tr_http.credentials_hash == "abc"
+    tr_https._authenticator._tpap_tls = 0
+    assert tr_https._create_ssl_context() is False
+    tr_https._authenticator._tpap_tls = 1
+    ctx1 = tr_https._create_ssl_context()
     assert isinstance(ctx1, ssl.SSLContext)
     assert ctx1.verify_mode == ssl.CERT_NONE
-
-    tr._authenticator._tpap_tls = None  # type: ignore[assignment]
-    ctx_none = tr._create_ssl_context()
+    tr_https._authenticator._tpap_tls = None  # type: ignore[assignment]
+    ctx_none = tr_https._create_ssl_context()
     assert isinstance(ctx_none, ssl.SSLContext)
     assert ctx_none.verify_mode == ssl.CERT_NONE
-
     cert_pem, key_pem = _make_self_signed_cert_and_key()
     root_pem, _ = _make_self_signed_cert_and_key()
     tr._authenticator._tpap_tls = 2
@@ -1737,7 +1738,6 @@ async def test_transport_ssl_context_variants_and_cleanup(monkeypatch):
     ctx2 = tr._create_ssl_context()
     assert isinstance(ctx2, ssl.SSLContext)
     assert ctx2.verify_mode == ssl.CERT_REQUIRED
-
     tr2 = tp.TpapTransport(config=DeviceConfig("host4"))
     tr2._authenticator._tpap_tls = 2
     tr2._authenticator._noc_data = None
@@ -1749,7 +1749,6 @@ async def test_transport_ssl_context_variants_and_cleanup(monkeypatch):
     ctx3 = tr2._create_ssl_context()
     assert isinstance(ctx3, ssl.SSLContext)
     assert ctx3.verify_mode == ssl.CERT_REQUIRED
-
     tr._authenticator._tpap_tls = 2
     tr._authenticator._noc_data = tp.TpapNOCData(key_pem, cert_pem, "", root_pem)
     unlinked: list[str] = []
@@ -1774,7 +1773,6 @@ async def test_transport_ssl_context_variants_and_cleanup(monkeypatch):
     ctx_err = tr._create_ssl_context()
     assert isinstance(ctx_err, ssl.SSLContext)
     assert unlinked
-
     tr3 = tp.TpapTransport(config=DeviceConfig("host5"))
     tr3._authenticator._tpap_tls = 2
     tr3._authenticator._noc_data = tp.TpapNOCData(key_pem, cert_pem, "", root_pem)
@@ -1791,7 +1789,6 @@ async def test_transport_ssl_context_variants_and_cleanup(monkeypatch):
     assert isinstance(ctx_fail, ssl.SSLContext)
     assert ctx_fail.verify_mode == ssl.CERT_REQUIRED
     assert unlinked2 == []
-
     monkeypatch.setattr(
         tp.ssl.SSLContext, "load_verify_locations", real_verify, raising=True
     )

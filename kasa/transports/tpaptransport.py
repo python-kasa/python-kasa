@@ -1196,7 +1196,8 @@ class Authenticator:
 class TpapTransport(BaseTransport):
     """Transport implementing the TPAP encrypted DS channel."""
 
-    DEFAULT_PORT: int = 4433
+    DEFAULT_PORT: int = 80
+    DEFAULT_HTTPS_PORT: int = 4433
     CIPHERS = ":".join(
         [
             "ECDHE-ECDSA-AES256-GCM-SHA384",
@@ -1226,16 +1227,20 @@ class TpapTransport(BaseTransport):
         ) or ""
         self._ssl_context: ssl.SSLContext | bool = False
         self._state = TransportState.NOT_ESTABLISHED
-        self._app_url = URL(f"https://{self._host}:{self._port}")
+        protocol = "https" if config.connection_type.https else "http"
+        self._app_url = URL(f"{protocol}://{self._host}:{self._port}")
         self._authenticator = Authenticator(self)
         self._send_lock: asyncio.Lock = asyncio.Lock()
         self._loop = asyncio.get_running_loop()
 
     @property
     def default_port(self) -> int:
-        """Return default HTTPS port for this transport."""
-        if port := self._config.connection_type.http_port:
+        """Default port for the transport."""
+        config = self._config
+        if port := config.connection_type.http_port:
             return port
+        if config.connection_type.https:
+            return self.DEFAULT_HTTPS_PORT
         return self.DEFAULT_PORT
 
     @property
