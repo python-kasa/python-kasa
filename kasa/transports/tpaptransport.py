@@ -861,24 +861,39 @@ class Spake2pAuthContext(BaseAuthContext):
             try:
                 name = "admin" if sha_name == 0 else "user"
                 salt_dec = base64.b64decode(sha_salt_b64).decode()
+                _LOGGER.debug("SPAKE2+: Computed SHA256 hash with salt for %s", name)
                 return hashlib.sha256((name + salt_dec + passcode).encode()).hexdigest()
-            except Exception:
+            except Exception as exc:
+                _LOGGER.warning("SPAKE2+: Failed to compute password_sha_with_salt: %s, falling back to passcode", exc)
                 return passcode
+        _LOGGER.debug("SPAKE2+: Unknown extra_crypt type, using plain credentials")
         return (username + "/" + passcode) if username else passcode
 
     def _suite_hash_name(self, suite_type: int) -> str:
-        return "SHA512" if suite_type in (2, 4, 5, 7, 9) else "SHA256"
+        hash_name = "SHA512" if suite_type in (2, 4, 5, 7, 9) else "SHA256"
+        _LOGGER.debug("SPAKE2+: Suite type %s -> hash algorithm %s", suite_type, hash_name)
+        return hash_name
 
     def _suite_mac_is_cmac(self, suite_type: int) -> bool:
-        return suite_type in (8, 9)
+        is_cmac = suite_type in (8, 9)
+        _LOGGER.debug("SPAKE2+: Suite type %s -> MAC type %s", suite_type, "CMAC" if is_cmac else "HMAC")
+        return is_cmac
 
     def _use_dac_certification(self) -> bool:
-        return (self._authenticator._tpap_tls == 0) and bool(
+        use_dac = (self._authenticator._tpap_tls == 0) and bool(
             self._authenticator._tpap_dac
         )
+        _LOGGER.debug(
+            "SPAKE2+: DAC certification check - tls=%s, dac=%s, use_dac=%s",
+            self._authenticator._tpap_tls,
+            self._authenticator._tpap_dac,
+            use_dac,
+        )
+        return use_dac
 
     @staticmethod
     def _mac_pass_from_device_mac(mac_colon: str) -> str:
+        _LOGGER.debug("SPAKE2+: Deriving default passcode from device MAC")
         mac_hex = mac_colon.replace(":", "").replace("-", "")
         mac_bytes = bytes.fromhex(mac_hex)
         seed = b"GqY5o136oa4i6VprTlMW2DpVXxmfW8"
@@ -896,14 +911,17 @@ class Spake2pAuthContext(BaseAuthContext):
         )
 
     def _get_passcode_type(self) -> str:
+        _LOGGER.debug("SPAKE2+: Determining passcode type from discover_suites=%s", self.discover_suites)
         if self.discover_suites and 0 in self.discover_suites:
-            return "default_userpw"
+            passcode_type = "default_userpw"
         elif self.discover_suites and 2 in self.discover_suites:
-            return "userpw"
+            passcode_type = "userpw"
         elif self.discover_suites and 3 in self.discover_suites:
-            return "shared_token"
+            passcode_type = "shared_token"
         else:
-            return "userpw"
+            passcode_type = "userpw"
+        _LOGGER.debug("SPAKE2+: Selected passcode_type=%s", passcode_type)
+        return passcode_type
 
     async def start(self) -> TlaSession | None:
         """Run SPAKE2+ register/share and return session."""
@@ -980,6 +998,7 @@ class Spake2pAuthContext(BaseAuthContext):
             "03d8bbd6c639c62937b04d997f38c3770719c629d7014d49a24b4f98baa1292b49"
         )
 
+        _LOGGER.debug("SPAKE2+: Initializing NIST P-256 curve parameters")
         nist256p = NIST256p
         curve = nist256p.curve
         generator: PointJacobi = nist256p.generator
@@ -990,17 +1009,21 @@ class Spake2pAuthContext(BaseAuthContext):
         M = ellipticcurve.Point(curve, Mx, My, order)
         N = ellipticcurve.Point(curve, Nx, Ny, order)
         cred = cred_str.encode()
-        _LOGGER.debug("SPAKE2+: Computing SPAKE2+ key derivation")
+        _LOGGER.debug("SPAKE2+: Computing SPAKE2+ key derivation with iterations=%s", iterations)
         a, b = self._derive_ab(cred, self._unbase64(dev_salt), iterations, 32)
         w = a % order
         h_scalar = b % order
         x = secrets.randbelow(order - 1) + 1
+        _LOGGER.debug("SPAKE2+: Derived w and h_scalar from credentials, generated random x")
         Lp: ellipticcurve.Point = x * G + w * M
+        _LOGGER.debug("SPAKE2+: Computed user public point L = x*G + w*M")
         Rx, Ry = self._sec1_to_xy(self._unbase64(dev_share))
         R = ellipticcurve.Point(curve, Rx, Ry, order)
+        _LOGGER.debug("SPAKE2+: Parsed device public point R from dev_share")
         Rprime = R + (-(w * N))
         Zp: ellipticcurve.Point = x * Rprime
         Vp: ellipticcurve.Point = (h_scalar % order) * Rprime
+        _LOGGER.debug("SPAKE2+: Computed shared points Z and V for key agreement")
         L_enc = self._xy_to_uncompressed(Lp.x(), Lp.y())
         R_enc = self._xy_to_uncompressed(R.x(), R.y())
         Z_enc = self._xy_to_uncompressed(Zp.x(), Zp.y())
@@ -1014,6 +1037,7 @@ class Spake2pAuthContext(BaseAuthContext):
             + self._unbase64(self.user_random)
             + self._unbase64(dev_random),
         )
+        _LOGGER.debug("SPAKE2+: Computed context hash using %s", self._hkdf_hash)
         transcript = (
             self._len8le(context_hash)
             + self._len8le(b"")
@@ -1026,14 +1050,16 @@ class Spake2pAuthContext(BaseAuthContext):
             + self._len8le(V_enc)
             + self._len8le(self._encode_w(w))
         )
+        _LOGGER.debug("SPAKE2+: Built transcript with length %s bytes", len(transcript))
         T = self._hash(self._hkdf_hash, transcript)
         digest_len = 64 if self._hkdf_hash == "SHA512" else 32
+        _LOGGER.debug("SPAKE2+: Hashed transcript T, digest_len=%s", digest_len)
         conf = self._hkdf_expand("ConfirmationKeys", T, digest_len, self._hkdf_hash)
         KcA, KcB = conf[: digest_len // 2], conf[digest_len // 2 :]
         self._shared_key = self._hkdf_expand(
             "SharedKey", T, digest_len, self._hkdf_hash
         )
-        _LOGGER.debug("SPAKE2+: Derived shared key, computing confirmations")
+        _LOGGER.debug("SPAKE2+: Derived shared key (%s bytes) and confirmation keys", len(self._shared_key))
         if self._suite_mac_is_cmac(self._suite_type):
             _LOGGER.debug("SPAKE2+: Using CMAC for confirmation")
             user_confirm = self._cmac_aes(KcA, R_enc)
