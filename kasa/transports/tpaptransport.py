@@ -680,6 +680,12 @@ class Spake2pAuthContext(BaseAuthContext):
         self._suite_type: int = 2
         self._dac_nonce_base64: str | None = None
         self.user_random = self._base64(os.urandom(32))
+        _LOGGER.debug(
+            "SPAKE2+: Initialized context - username=%s, mac=%s, suites=%s",
+            self.username,
+            self.discover_mac,
+            self.discover_suites,
+        )
 
     @staticmethod
     def _sec1_to_xy(sec1: bytes) -> tuple[int, int]:
@@ -822,12 +828,15 @@ class Spake2pAuthContext(BaseAuthContext):
         cls, extra_crypt: dict | None, username: str, passcode: str, mac_no_colon: str
     ) -> str:
         if not extra_crypt:
+            _LOGGER.debug("SPAKE2+: No extra_crypt, using plain credentials")
             return (username + "/" + passcode) if username else passcode
         t = (extra_crypt or {}).get("type", "").lower()
         p = (extra_crypt or {}).get("params", {}) or {}
+        _LOGGER.debug("SPAKE2+: Building credentials with extra_crypt type=%s", t)
         if t == "password_shadow":
             pid = int(p.get("passwd_id", 0))
             prefix = p.get("passwd_prefix", "") or ""
+            _LOGGER.debug("SPAKE2+: Using password_shadow with passwd_id=%s", pid)
             if pid == 1:
                 md = cls._md5_crypt(passcode, prefix)
                 return md if md is not None else passcode
@@ -843,10 +852,12 @@ class Spake2pAuthContext(BaseAuthContext):
         if t == "password_authkey":
             tmp = p.get("authkey_tmpkey", "") or ""
             dic = p.get("authkey_dictionary", "") or ""
+            _LOGGER.debug("SPAKE2+: Using password_authkey")
             return cls._authkey_mask(passcode, tmp, dic) if tmp and dic else passcode
         if t == "password_sha_with_salt":
             sha_name = int(p.get("sha_name", -1))
             sha_salt_b64 = p.get("sha_salt", "") or ""
+            _LOGGER.debug("SPAKE2+: Using password_sha_with_salt with sha_name=%s", sha_name)
             try:
                 name = "admin" if sha_name == 0 else "user"
                 salt_dec = base64.b64decode(sha_salt_b64).decode()
@@ -896,8 +907,14 @@ class Spake2pAuthContext(BaseAuthContext):
 
     async def start(self) -> TlaSession | None:
         """Run SPAKE2+ register/share and return session."""
+        _LOGGER.debug("SPAKE2+: Starting authentication flow")
         admin_md5 = self._md5_hex("admin")
         passcode_type = self._get_passcode_type()
+        _LOGGER.debug(
+            "SPAKE2+: Using passcode_type=%s, cipher_suites=%s",
+            passcode_type,
+            self.discover_suites or [2],
+        )
         params = {
             "sub_method": "pake_register",
             "username": admin_md5,
@@ -907,18 +924,24 @@ class Spake2pAuthContext(BaseAuthContext):
             "passcode_type": passcode_type,
             "stok": None,
         }
+        _LOGGER.debug("SPAKE2+: Sending pake_register request")
         resp = await self._login(params, step_name="pake_register")
+        _LOGGER.debug("SPAKE2+: Received pake_register response")
         share_params = self.process_register_result(resp)
 
         if self._use_dac_certification():
+            _LOGGER.debug("SPAKE2+: Using DAC certification")
             self._dac_nonce_base64 = self._base64(os.urandom(16))
             share_params["dac_nonce"] = self._dac_nonce_base64
 
+        _LOGGER.debug("SPAKE2+: Sending pake_share request")
         share_res = await self._login(share_params, step_name="pake_share")
+        _LOGGER.debug("SPAKE2+: Received pake_share response")
         return self.process_share_result(share_res)
 
     def process_register_result(self, reg: dict[str, Any]) -> dict[str, Any]:
         """Build PAKE share params; derive confirms and shared key."""
+        _LOGGER.debug("SPAKE2+: Processing register result")
         dev_random = reg.get("dev_random") or ""
         dev_salt = reg.get("dev_salt") or ""
         dev_share = reg.get("dev_share") or ""
@@ -927,13 +950,22 @@ class Spake2pAuthContext(BaseAuthContext):
         chosen_cipher = cast(_CipherId, reg.get("encryption") or "aes_128_ccm")
         extra_crypt = reg.get("extra_crypt") or {}
 
+        _LOGGER.debug(
+            "SPAKE2+: Register params - suite_type=%s, iterations=%s, cipher=%s",
+            suite_type,
+            iterations,
+            chosen_cipher,
+        )
+
         self._suite_type = suite_type
         self._chosen_cipher = chosen_cipher
         self._hkdf_hash = self._suite_hash_name(suite_type)
 
         if (self.discover_suites and 0 in self.discover_suites) and self.discover_mac:
+            _LOGGER.debug("SPAKE2+: Using MAC-derived passcode")
             cred_str = self._mac_pass_from_device_mac(self.discover_mac)
         else:
+            _LOGGER.debug("SPAKE2+: Building credentials from username/passcode")
             cred_str = self._build_credentials(
                 extra_crypt,
                 self.username,
@@ -958,6 +990,7 @@ class Spake2pAuthContext(BaseAuthContext):
         M = ellipticcurve.Point(curve, Mx, My, order)
         N = ellipticcurve.Point(curve, Nx, Ny, order)
         cred = cred_str.encode()
+        _LOGGER.debug("SPAKE2+: Computing SPAKE2+ key derivation")
         a, b = self._derive_ab(cred, self._unbase64(dev_salt), iterations, 32)
         w = a % order
         h_scalar = b % order
@@ -974,6 +1007,7 @@ class Spake2pAuthContext(BaseAuthContext):
         V_enc = self._xy_to_uncompressed(Vp.x(), Vp.y())
         M_enc = self._xy_to_uncompressed(M.x(), M.y())
         N_enc = self._xy_to_uncompressed(N.x(), N.y())
+        _LOGGER.debug("SPAKE2+: Computing transcript and confirmation keys")
         context_hash = self._hash(
             self._hkdf_hash,
             self.PAKE_CONTEXT_TAG
@@ -999,13 +1033,17 @@ class Spake2pAuthContext(BaseAuthContext):
         self._shared_key = self._hkdf_expand(
             "SharedKey", T, digest_len, self._hkdf_hash
         )
+        _LOGGER.debug("SPAKE2+: Derived shared key, computing confirmations")
         if self._suite_mac_is_cmac(self._suite_type):
+            _LOGGER.debug("SPAKE2+: Using CMAC for confirmation")
             user_confirm = self._cmac_aes(KcA, R_enc)
             expected_dev_confirm = self._cmac_aes(KcB, L_enc)
         else:
+            _LOGGER.debug("SPAKE2+: Using HMAC for confirmation")
             user_confirm = self._hmac(self._hkdf_hash, KcA, R_enc)
             expected_dev_confirm = self._hmac(self._hkdf_hash, KcB, L_enc)
         self._expected_dev_confirm = self._base64(expected_dev_confirm)
+        _LOGGER.debug("SPAKE2+: Register processing complete, returning share params")
         return {
             "sub_method": "pake_share",
             "user_share": self._base64(L_enc),
@@ -1014,27 +1052,39 @@ class Spake2pAuthContext(BaseAuthContext):
 
     def _verify_dac(self, share: dict[str, Any]) -> None:
         """Verify DAC proof: ECDSA-SHA256 over (sharedKey || nonce) with DAC CA."""
+        _LOGGER.debug("SPAKE2+: Verifying DAC proof")
         try:
             dac_ca = str(share.get("dac_ca"))
             dac_proof = share.get("dac_proof")
             if not (
                 dac_ca and dac_proof and self._shared_key and self._dac_nonce_base64
             ):
+                _LOGGER.debug("SPAKE2+: DAC proof verification skipped (missing fields)")
                 return
             ca_cert = x509.load_pem_x509_certificate(dac_ca.encode())
             msg = self._shared_key + self._unbase64(self._dac_nonce_base64)
             sig = self._unbase64(dac_proof)
             ca_pub = cast(ec.EllipticCurvePublicKey, ca_cert.public_key())
             ca_pub.verify(sig, msg, ec.ECDSA(hashes.SHA256()))
+            _LOGGER.debug("SPAKE2+: DAC proof verification successful")
         except InvalidSignature as exc:
+            _LOGGER.error("SPAKE2+: Invalid DAC proof signature")
             raise KasaException("Invalid DAC proof signature") from exc
         except Exception as exc:
+            _LOGGER.error("SPAKE2+: DAC verification failed: %s", exc)
             raise KasaException(f"DAC verification failed: {exc}") from exc
 
     def process_share_result(self, share: dict[str, Any]) -> TlaSession:
         """Validate dev confirm and construct the session."""
+        _LOGGER.debug("SPAKE2+: Processing share result")
         dev_confirm = (share.get("dev_confirm") or "").lower()
+        _LOGGER.debug("SPAKE2+: Validating device confirmation")
         if dev_confirm != (self._expected_dev_confirm or "").lower():
+            _LOGGER.error(
+                "SPAKE2+: Confirmation mismatch - expected=%s, received=%s",
+                self._expected_dev_confirm,
+                dev_confirm,
+            )
             raise KasaException("SPAKE2+ confirmation mismatch")
 
         if self._use_dac_certification():
@@ -1042,11 +1092,19 @@ class Spake2pAuthContext(BaseAuthContext):
 
         session_id = share.get("sessionId") or share.get("stok") or ""
         start_seq = int(share.get("start_seq") or 1)
+        _LOGGER.debug(
+            "SPAKE2+: Session info - id=%s, start_seq=%s, cipher=%s",
+            session_id,
+            start_seq,
+            self._chosen_cipher,
+        )
         if not session_id:
+            _LOGGER.error("SPAKE2+: Missing session ID from device")
             raise KasaException("Missing session fields from device")
         cipher = _SessionCipher.from_shared_key(
             self._chosen_cipher, self._shared_key or b"", hkdf_hash=self._hkdf_hash
         )
+        _LOGGER.debug("SPAKE2+: Session established successfully")
         return TlaSession(
             sessionId=session_id,
             sessionExpired=int(
