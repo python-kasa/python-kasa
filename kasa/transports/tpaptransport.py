@@ -463,12 +463,14 @@ class BaseAuthContext:
     async def _login(self, params: dict[str, Any], *, step_name: str) -> dict[str, Any]:
         """POST login step as JSON and return result payload."""
         body = {"method": "login", "params": params}
+        _LOGGER.debug("TPAP: _login sending %s step params: %s", step_name, params)
         status, data = await self._transport._http_client.post(
             self._transport._app_url.with_path("/"),
             json=body,
             headers=self._transport.COMMON_HEADERS,
             ssl=await self._transport._get_ssl_context(),
         )
+        _LOGGER.debug("TPAP: _login received status=%s data=%s", status, data)
         if status != 200 or not isinstance(data, dict):
             raise KasaException(
                 f"{self._transport._host} {step_name} bad status/body: "
@@ -956,9 +958,9 @@ class Spake2pAuthContext(BaseAuthContext):
             "passcode_type": passcode_type,
             "stok": None,
         }
-        _LOGGER.debug("SPAKE2+: Sending pake_register request")
+        _LOGGER.debug("SPAKE2+: Sending pake_register request params: %s", params)
         resp = await self._login(params, step_name="pake_register")
-        _LOGGER.debug("SPAKE2+: Received pake_register response")
+        _LOGGER.debug("SPAKE2+: Received pake_register response: %s", resp)
         share_params = self.process_register_result(resp)
 
         if self._use_dac_certification():
@@ -966,9 +968,9 @@ class Spake2pAuthContext(BaseAuthContext):
             self._dac_nonce_base64 = self._base64(os.urandom(16))
             share_params["dac_nonce"] = self._dac_nonce_base64
 
-        _LOGGER.debug("SPAKE2+: Sending pake_share request")
+        _LOGGER.debug("SPAKE2+: Sending pake_share request params: %s", share_params)
         share_res = await self._login(share_params, step_name="pake_share")
-        _LOGGER.debug("SPAKE2+: Received pake_share response")
+        _LOGGER.debug("SPAKE2+: Received pake_share response: %s", share_res)
         return self.process_share_result(share_res)
 
     def process_register_result(self, reg: dict[str, Any]) -> dict[str, Any]:
@@ -1003,6 +1005,7 @@ class Spake2pAuthContext(BaseAuthContext):
                 self.passcode,
                 self.discover_mac.replace(":", "").replace("-", ""),
             )
+        _LOGGER.debug("SPAKE2+: cred_str (possibly masked) length=%s", len(cred_str))
 
         P256_M_COMP = bytes.fromhex(
             "02886e2f97ace46e55ba9dd7242579f2993b64e16ef3dcab95afd497333d8fa12f"
@@ -1030,23 +1033,50 @@ class Spake2pAuthContext(BaseAuthContext):
         h_scalar = b % order
         x = secrets.randbelow(order - 1) + 1
         _LOGGER.debug(
-            "SPAKE2+: Derived w and h_scalar from credentials, generated random x"
+            "SPAKE2+: Derived a=%s b=%s (hex), w=%s h_scalar=%s x=%s",
+            hex(a)[:18],
+            hex(b)[:18],
+            w,
+            h_scalar,
+            x,
         )
         Lp: ellipticcurve.Point = x * G + w * M
         _LOGGER.debug("SPAKE2+: Computed user public point L = x*G + w*M")
         Rx, Ry = self._sec1_to_xy(self._unbase64(dev_share))
         R = ellipticcurve.Point(curve, Rx, Ry, order)
-        _LOGGER.debug("SPAKE2+: Parsed device public point R from dev_share")
+        _LOGGER.debug(
+            "SPAKE2+: Parsed device public point R from dev_share: Rx=%s Ry=%s", Rx, Ry
+        )
         Rprime = R + (-(w * N))
         Zp: ellipticcurve.Point = x * Rprime
         Vp: ellipticcurve.Point = (h_scalar % order) * Rprime
-        _LOGGER.debug("SPAKE2+: Computed shared points Z and V for key agreement")
+        _LOGGER.debug(
+            "SPAKE2+: Computed shared points: Rprime=(%s,%s), Z=(%s,%s), V=(%s,%s)",
+            getattr(Rprime, "x", lambda: Rprime.x())()
+            if hasattr(Rprime, "x")
+            else Rprime.x(),
+            getattr(Rprime, "y", lambda: Rprime.y())()
+            if hasattr(Rprime, "y")
+            else Rprime.y(),
+            Zp.x(),
+            Zp.y(),
+            Vp.x(),
+            Vp.y(),
+        )
         L_enc = self._xy_to_uncompressed(Lp.x(), Lp.y())
         R_enc = self._xy_to_uncompressed(R.x(), R.y())
         Z_enc = self._xy_to_uncompressed(Zp.x(), Zp.y())
         V_enc = self._xy_to_uncompressed(Vp.x(), Vp.y())
         M_enc = self._xy_to_uncompressed(M.x(), M.y())
         N_enc = self._xy_to_uncompressed(N.x(), N.y())
+        _LOGGER.debug(
+            "SPAKE2+: L_enc/R_enc/Z_enc/V_enc sizes: %s/%s/%s/%s",
+            len(L_enc),
+            len(R_enc),
+            len(Z_enc),
+            len(V_enc),
+        )
+        _LOGGER.debug("SPAKE2+: M_enc/N_enc sizes: %s/%s", len(M_enc), len(N_enc))
         _LOGGER.debug("SPAKE2+: Computing transcript and confirmation keys")
         context_hash = self._hash(
             self._hkdf_hash,
@@ -1076,9 +1106,10 @@ class Spake2pAuthContext(BaseAuthContext):
         self._shared_key = self._hkdf_expand(
             "SharedKey", T, digest_len, self._hkdf_hash
         )
+        _LOGGER.debug("SPAKE2+: Derived shared key (%s bytes)", len(self._shared_key))
         _LOGGER.debug(
-            "SPAKE2+: Derived shared key (%s bytes) and confirmation keys",
-            len(self._shared_key),
+            "SPAKE2+: shared_key (hex prefix)=%s",
+            (self._shared_key.hex()[:64] if self._shared_key else None),
         )
         if self._suite_mac_is_cmac(suite_type):
             _LOGGER.debug("SPAKE2+: Using CMAC for confirmation")
