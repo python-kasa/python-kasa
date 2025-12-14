@@ -709,10 +709,13 @@ class Spake2pAuthContext(BaseAuthContext):
 
     @staticmethod
     def _encode_w(w: int) -> bytes:
-        wb = w.to_bytes((w.bit_length() + 7) // 8 or 1, "big", signed=False)
-        if len(wb) > 1 and len(wb) % 2 == 0 and wb[0] == 0x00:
-            wb = wb[1:]
-        return wb
+        minimal_len = 1 if w == 0 else (w.bit_length() + 7) // 8
+        unsigned = w.to_bytes(minimal_len, "big", signed=False)
+        if minimal_len % 2 == 0:
+            return unsigned
+        if unsigned[0] & 0x80:
+            return b"\x00" + unsigned
+        return unsigned
 
     @staticmethod
     def _hash(alg: str, data: bytes) -> bytes:

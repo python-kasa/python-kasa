@@ -1340,13 +1340,13 @@ async def test_spake2p_start_covers_both_tls_modes(monkeypatch):
     assert "dac_nonce" in (calls2["share_params"] or {})
 
 
-def test_spake2p_encode_w_trims_leading_zero():
+def test_spake2p_encode_w():
     class FakeInt(int):
         def to_bytes(self, length, byteorder, signed=False):  # noqa: ARG002
             return b"\x00\x10"
 
     out = tp.Spake2pAuthContext._encode_w(FakeInt(5))
-    assert out == b"\x10"
+    assert out == b"\x00\x10"
 
 
 def test_build_credentials_shadow_unknown_pid_and_unknown_type():
