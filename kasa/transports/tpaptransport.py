@@ -672,19 +672,18 @@ class Spake2pAuthContext(BaseAuthContext):
         self.username: str = (creds.username if creds else "") or ""
         self.passcode: str = (creds.password if creds else "") or ""
         self.discover_mac = self._authenticator._device_mac or ""
-        self.discover_suites = self._authenticator._tpap_pake or []
+        self.discover_pake = self._authenticator._tpap_pake or []
         self._expected_dev_confirm: str | None = None
         self._shared_key: bytes | None = None
         self._chosen_cipher: _CipherId = "aes_128_ccm"
         self._hkdf_hash: str = "SHA256"
-        self._suite_type: int = 2
         self._dac_nonce_base64: str | None = None
         self.user_random = self._base64(os.urandom(32))
         _LOGGER.debug(
             "SPAKE2+: Initialized context - username=%s, mac=%s, suites=%s",
             self.username,
             self.discover_mac,
-            self.discover_suites,
+            self.discover_pake,
         )
 
     @staticmethod
@@ -924,14 +923,14 @@ class Spake2pAuthContext(BaseAuthContext):
 
     def _get_passcode_type(self) -> str:
         _LOGGER.debug(
-            "SPAKE2+: Determining passcode type from discover_suites=%s",
-            self.discover_suites,
+            "SPAKE2+: Determining passcode type from discover_pake=%s",
+            self.discover_pake,
         )
-        if self.discover_suites and 0 in self.discover_suites:
+        if self.discover_pake and 0 in self.discover_pake:
             passcode_type = "default_userpw"
-        elif self.discover_suites and 2 in self.discover_suites:
+        elif self.discover_pake and 2 in self.discover_pake:
             passcode_type = "userpw"
-        elif self.discover_suites and 3 in self.discover_suites:
+        elif self.discover_pake and 3 in self.discover_pake:
             passcode_type = "shared_token"
         else:
             passcode_type = "userpw"
@@ -946,13 +945,13 @@ class Spake2pAuthContext(BaseAuthContext):
         _LOGGER.debug(
             "SPAKE2+: Using passcode_type=%s, cipher_suites=%s",
             passcode_type,
-            self.discover_suites or [2],
+            [1],
         )
         params = {
             "sub_method": "pake_register",
             "username": admin_md5,
             "user_random": self.user_random,
-            "cipher_suites": self.discover_suites or [2],
+            "cipher_suites": [1],
             "encryption": ["aes_128_ccm", "chacha20_poly1305", "aes_256_ccm"],
             "passcode_type": passcode_type,
             "stok": None,
@@ -990,11 +989,10 @@ class Spake2pAuthContext(BaseAuthContext):
             chosen_cipher,
         )
 
-        self._suite_type = suite_type
         self._chosen_cipher = chosen_cipher
         self._hkdf_hash = self._suite_hash_name(suite_type)
 
-        if (self.discover_suites and 0 in self.discover_suites) and self.discover_mac:
+        if (self.discover_pake and 0 in self.discover_pake) and self.discover_mac:
             _LOGGER.debug("SPAKE2+: Using MAC-derived passcode")
             cred_str = self._mac_pass_from_device_mac(self.discover_mac)
         else:
@@ -1082,7 +1080,7 @@ class Spake2pAuthContext(BaseAuthContext):
             "SPAKE2+: Derived shared key (%s bytes) and confirmation keys",
             len(self._shared_key),
         )
-        if self._suite_mac_is_cmac(self._suite_type):
+        if self._suite_mac_is_cmac(suite_type):
             _LOGGER.debug("SPAKE2+: Using CMAC for confirmation")
             user_confirm = self._cmac_aes(KcA, R_enc)
             expected_dev_confirm = self._cmac_aes(KcB, L_enc)

@@ -1123,7 +1123,7 @@ async def test_spake2p_helpers_and_process(monkeypatch):
     ctx = tp.Spake2pAuthContext.__new__(tp.Spake2pAuthContext)  # type: ignore[misc]
     ctx._hkdf_hash = "SHA512"
     ctx.user_random = base64.b64encode(b"\x00" * 16).decode()  # type: ignore[attr-defined]
-    ctx.discover_suites = [1, 2]  # type: ignore[attr-defined]
+    ctx.discover_pake = [1, 2]  # type: ignore[attr-defined]
     ctx.discover_mac = "AA:BB:CC:DD:EE:FF"  # type: ignore[attr-defined]
     ctx.username = "u"  # type: ignore[attr-defined]
     ctx.passcode = "p"  # type: ignore[attr-defined]
@@ -1153,7 +1153,7 @@ async def test_spake2p_helpers_and_process(monkeypatch):
 
     ctx2 = tp.Spake2pAuthContext.__new__(tp.Spake2pAuthContext)  # type: ignore[misc]
     ctx2.user_random = base64.b64encode(b"\x00" * 16).decode()  # type: ignore[attr-defined]
-    ctx2.discover_suites = [0]  # type: ignore[attr-defined]
+    ctx2.discover_pake = [0]  # type: ignore[attr-defined]
     ctx2.discover_mac = ""  # type: ignore[attr-defined]
     ctx2._hkdf_hash = "SHA256"
     ctx2.username = "u"  # type: ignore[attr-defined]
@@ -1392,7 +1392,7 @@ def test_spake2p_verify_dac_early_return():
 def test_spake2p_process_register_uses_mac_pass_when_suite0_with_mac():
     ctx = tp.Spake2pAuthContext.__new__(tp.Spake2pAuthContext)  # type: ignore[misc]
     ctx.user_random = base64.b64encode(b"\x00" * 16).decode()  # type: ignore[attr-defined]
-    ctx.discover_suites = [0]  # type: ignore[attr-defined]
+    ctx.discover_pake = [0]  # type: ignore[attr-defined]
     ctx.discover_mac = "AA:BB:CC:DD:EE:FF"  # type: ignore[attr-defined]
     ctx._hkdf_hash = "SHA256"
     ctx.username = "u"  # type: ignore[attr-defined]
@@ -1416,7 +1416,7 @@ def test_spake2p_process_register_uses_mac_pass_when_suite0_with_mac():
 async def test_spake2p_cmac_branch_in_register():
     ctx = tp.Spake2pAuthContext.__new__(tp.Spake2pAuthContext)  # type: ignore[misc]
     ctx.user_random = base64.b64encode(b"\x00" * 16).decode()  # type: ignore[attr-defined]
-    ctx.discover_suites = [8]  # type: ignore[attr-defined]
+    ctx.discover_pake = [8]  # type: ignore[attr-defined]
     ctx.discover_mac = ""  # type: ignore[attr-defined]
     ctx._hkdf_hash = "SHA256"
     ctx.username = "u"  # type: ignore[attr-defined]
