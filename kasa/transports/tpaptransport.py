@@ -857,26 +857,38 @@ class Spake2pAuthContext(BaseAuthContext):
         if t == "password_sha_with_salt":
             sha_name = int(p.get("sha_name", -1))
             sha_salt_b64 = p.get("sha_salt", "") or ""
-            _LOGGER.debug("SPAKE2+: Using password_sha_with_salt with sha_name=%s", sha_name)
+            _LOGGER.debug(
+                "SPAKE2+: Using password_sha_with_salt with sha_name=%s", sha_name
+            )
             try:
                 name = "admin" if sha_name == 0 else "user"
                 salt_dec = base64.b64decode(sha_salt_b64).decode()
                 _LOGGER.debug("SPAKE2+: Computed SHA256 hash with salt for %s", name)
                 return hashlib.sha256((name + salt_dec + passcode).encode()).hexdigest()
             except Exception as exc:
-                _LOGGER.warning("SPAKE2+: Failed to compute password_sha_with_salt: %s, falling back to passcode", exc)
+                _LOGGER.warning(
+                    "SPAKE2+: Failed to compute password_sha_with_salt: %s, "
+                    "falling back to passcode",
+                    exc,
+                )
                 return passcode
         _LOGGER.debug("SPAKE2+: Unknown extra_crypt type, using plain credentials")
         return (username + "/" + passcode) if username else passcode
 
     def _suite_hash_name(self, suite_type: int) -> str:
         hash_name = "SHA512" if suite_type in (2, 4, 5, 7, 9) else "SHA256"
-        _LOGGER.debug("SPAKE2+: Suite type %s -> hash algorithm %s", suite_type, hash_name)
+        _LOGGER.debug(
+            "SPAKE2+: Suite type %s -> hash algorithm %s", suite_type, hash_name
+        )
         return hash_name
 
     def _suite_mac_is_cmac(self, suite_type: int) -> bool:
         is_cmac = suite_type in (8, 9)
-        _LOGGER.debug("SPAKE2+: Suite type %s -> MAC type %s", suite_type, "CMAC" if is_cmac else "HMAC")
+        _LOGGER.debug(
+            "SPAKE2+: Suite type %s -> MAC type %s",
+            suite_type,
+            "CMAC" if is_cmac else "HMAC",
+        )
         return is_cmac
 
     def _use_dac_certification(self) -> bool:
@@ -911,7 +923,10 @@ class Spake2pAuthContext(BaseAuthContext):
         )
 
     def _get_passcode_type(self) -> str:
-        _LOGGER.debug("SPAKE2+: Determining passcode type from discover_suites=%s", self.discover_suites)
+        _LOGGER.debug(
+            "SPAKE2+: Determining passcode type from discover_suites=%s",
+            self.discover_suites,
+        )
         if self.discover_suites and 0 in self.discover_suites:
             passcode_type = "default_userpw"
         elif self.discover_suites and 2 in self.discover_suites:
@@ -1009,12 +1024,16 @@ class Spake2pAuthContext(BaseAuthContext):
         M = ellipticcurve.Point(curve, Mx, My, order)
         N = ellipticcurve.Point(curve, Nx, Ny, order)
         cred = cred_str.encode()
-        _LOGGER.debug("SPAKE2+: Computing SPAKE2+ key derivation with iterations=%s", iterations)
+        _LOGGER.debug(
+            "SPAKE2+: Computing SPAKE2+ key derivation with iterations=%s", iterations
+        )
         a, b = self._derive_ab(cred, self._unbase64(dev_salt), iterations, 32)
         w = a % order
         h_scalar = b % order
         x = secrets.randbelow(order - 1) + 1
-        _LOGGER.debug("SPAKE2+: Derived w and h_scalar from credentials, generated random x")
+        _LOGGER.debug(
+            "SPAKE2+: Derived w and h_scalar from credentials, generated random x"
+        )
         Lp: ellipticcurve.Point = x * G + w * M
         _LOGGER.debug("SPAKE2+: Computed user public point L = x*G + w*M")
         Rx, Ry = self._sec1_to_xy(self._unbase64(dev_share))
@@ -1059,7 +1078,10 @@ class Spake2pAuthContext(BaseAuthContext):
         self._shared_key = self._hkdf_expand(
             "SharedKey", T, digest_len, self._hkdf_hash
         )
-        _LOGGER.debug("SPAKE2+: Derived shared key (%s bytes) and confirmation keys", len(self._shared_key))
+        _LOGGER.debug(
+            "SPAKE2+: Derived shared key (%s bytes) and confirmation keys",
+            len(self._shared_key),
+        )
         if self._suite_mac_is_cmac(self._suite_type):
             _LOGGER.debug("SPAKE2+: Using CMAC for confirmation")
             user_confirm = self._cmac_aes(KcA, R_enc)
@@ -1085,7 +1107,9 @@ class Spake2pAuthContext(BaseAuthContext):
             if not (
                 dac_ca and dac_proof and self._shared_key and self._dac_nonce_base64
             ):
-                _LOGGER.debug("SPAKE2+: DAC proof verification skipped (missing fields)")
+                _LOGGER.debug(
+                    "SPAKE2+: DAC proof verification skipped (missing fields)"
+                )
                 return
             ca_cert = x509.load_pem_x509_certificate(dac_ca.encode())
             msg = self._shared_key + self._unbase64(self._dac_nonce_base64)
