@@ -1215,6 +1215,22 @@ async def test_spake2p_helpers_and_process(monkeypatch):
         )  # type: ignore[misc]
 
 
+def test_spake2p_get_passcode_type_branches():
+    K = tp.Spake2pAuthContext
+    ctx0 = K.__new__(K)
+    ctx0.discover_pake = [0]
+    assert ctx0._get_passcode_type() == "default_userpw"
+    ctx2 = K.__new__(K)
+    ctx2.discover_pake = [2]
+    assert ctx2._get_passcode_type() == "userpw"
+    ctx3 = K.__new__(K)
+    ctx3.discover_pake = [3]
+    assert ctx3._get_passcode_type() == "shared_token"
+    ctxx = K.__new__(K)
+    ctxx.discover_pake = []
+    assert ctxx._get_passcode_type() == "userpw"
+
+
 def test_build_credentials_sha_with_salt_invalid_b64_returns_passcode():
     out = tp.Spake2pAuthContext._build_credentials(  # type: ignore[misc]
         {
