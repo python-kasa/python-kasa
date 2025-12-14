@@ -867,7 +867,8 @@ class Spake2pAuthContext(BaseAuthContext):
                 return hashlib.sha256((name + salt_dec + passcode).encode()).hexdigest()
             except Exception as exc:
                 _LOGGER.warning(
-                    "SPAKE2+: Failed to compute password_sha_with_salt: %s, falling back to passcode",
+                    "SPAKE2+: Failed to compute password_sha_with_salt: %s, "
+                    "falling back to passcode",
                     exc,
                 )
                 return passcode
