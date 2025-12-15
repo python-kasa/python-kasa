@@ -754,7 +754,25 @@ class Spake2pAuthContext(BaseAuthContext):
     ) -> tuple[int, int]:
         iD = hash_len + 8
         out = cls._pbkdf2_sha256(cred, salt, iterations, 2 * iD)
-        return int.from_bytes(out[:iD], "big"), int.from_bytes(out[iD:], "big")
+        try:
+            _LOGGER.debug(
+                "SPAKE2+: PBKDF2 settings: iterations=%s, hash_len=%s",
+                iterations,
+                hash_len,
+            )
+            _LOGGER.debug(
+                "SPAKE2+: PBKDF2 ids: iD=%s out_len=%s",
+                iD,
+                len(out),
+            )
+            _LOGGER.debug("SPAKE2+: PBKDF2 output (hex prefix)=%s", out.hex()[:160])
+        except Exception as exc:
+            _LOGGER.debug("SPAKE2+: PBKDF2 debug logging failed: %s", exc)
+        a = int.from_bytes(out[:iD], "big")
+        b = int.from_bytes(out[iD:], "big")
+        _LOGGER.debug("SPAKE2+: Derived raw a (hex)=%s", hex(a))
+        _LOGGER.debug("SPAKE2+: Derived raw b (hex)=%s", hex(b))
+        return a, b
 
     @staticmethod
     def _sha1_hex(s: str) -> str:
@@ -843,21 +861,41 @@ class Spake2pAuthContext(BaseAuthContext):
             _LOGGER.debug("SPAKE2+: Using password_shadow with passwd_id=%s", pid)
             if pid == 1:
                 md = cls._md5_crypt(passcode, prefix)
+                _LOGGER.debug(
+                    "SPAKE2+: password_shadow pid=1 -> produced md5_crypt? %s",
+                    bool(md),
+                )
                 return md if md is not None else passcode
             if pid == 2:
-                return cls._sha1_hex(passcode)
+                val = cls._sha1_hex(passcode)
+                _LOGGER.debug(
+                    "SPAKE2+: password_shadow pid=2 -> sha1(passcode)=%s", val
+                )
+                return val
             if pid == 3:
-                return cls._sha1_username_mac_shadow(username, mac_no_colon, passcode)
+                val = cls._sha1_username_mac_shadow(username, mac_no_colon, passcode)
+                _LOGGER.debug(
+                    "SPAKE2+: password_shadow pid=3 -> sha1_username_mac_shadow=%s",
+                    val,
+                )
+                return val
             if pid == 5:
                 rounds = p.get("passwd_rounds")
                 s5 = cls._sha256_crypt(passcode, prefix, rounds_from_params=rounds)
+                _LOGGER.debug(
+                    "SPAKE2+: password_shadow pid=5 -> sha256_crypt produced=%s",
+                    bool(s5),
+                )
                 return s5 if s5 is not None else passcode
+            _LOGGER.debug("SPAKE2+: password_shadow pid unknown -> using raw passcode")
             return passcode
         if t == "password_authkey":
             tmp = p.get("authkey_tmpkey", "") or ""
             dic = p.get("authkey_dictionary", "") or ""
             _LOGGER.debug("SPAKE2+: Using password_authkey")
-            return cls._authkey_mask(passcode, tmp, dic) if tmp and dic else passcode
+            res = cls._authkey_mask(passcode, tmp, dic) if tmp and dic else passcode
+            _LOGGER.debug("SPAKE2+: password_authkey result length=%s", len(res))
+            return res
         if t == "password_sha_with_salt":
             sha_name = int(p.get("sha_name", -1))
             sha_salt_b64 = p.get("sha_salt", "") or ""
@@ -914,7 +952,7 @@ class Spake2pAuthContext(BaseAuthContext):
         mac_bytes = bytes.fromhex(mac_hex)
         seed = b"GqY5o136oa4i6VprTlMW2DpVXxmfW8"
         ikm = seed + mac_bytes[3:6] + mac_bytes[0:3]
-        return (
+        derived = (
             HKDF(
                 algorithm=hashes.SHA256(),
                 length=32,
@@ -925,6 +963,8 @@ class Spake2pAuthContext(BaseAuthContext):
             .hex()
             .upper()
         )
+        _LOGGER.debug("SPAKE2+: MAC-derived passcode (HEX prefix)=%s", derived[:32])
+        return derived
 
     def _get_passcode_type(self) -> str:
         _LOGGER.debug(
@@ -1009,6 +1049,7 @@ class Spake2pAuthContext(BaseAuthContext):
                 self.discover_mac.replace(":", "").replace("-", ""),
             )
         _LOGGER.debug("SPAKE2+: cred_str (possibly masked) length=%s", len(cred_str))
+        _LOGGER.debug("SPAKE2+: cred_str (hex prefix)=%s", cred_str.encode().hex()[:64])
 
         P256_M_COMP = bytes.fromhex(
             "02886e2f97ace46e55ba9dd7242579f2993b64e16ef3dcab95afd497333d8fa12f"
@@ -1027,6 +1068,13 @@ class Spake2pAuthContext(BaseAuthContext):
         Nx, Ny = self._sec1_to_xy(P256_N_COMP)
         M = ellipticcurve.Point(curve, Mx, My, order)
         N = ellipticcurve.Point(curve, Nx, Ny, order)
+        _LOGGER.debug(
+            "SPAKE2+: P256 M point (uncompressed base64)=%s", self._base64(P256_M_COMP)
+        )
+        _LOGGER.debug(
+            "SPAKE2+: P256 N point (uncompressed base64)=%s", self._base64(P256_N_COMP)
+        )
+
         cred = cred_str.encode()
         _LOGGER.debug(
             "SPAKE2+: Computing SPAKE2+ key derivation with iterations=%s", iterations
@@ -1036,40 +1084,60 @@ class Spake2pAuthContext(BaseAuthContext):
         h_scalar = b % order
         x = secrets.randbelow(order - 1) + 1
         _LOGGER.debug(
-            "SPAKE2+: Derived a=%s b=%s (hex), w=%s h_scalar=%s x=%s",
-            hex(a)[:18],
-            hex(b)[:18],
-            w,
-            h_scalar,
-            x,
+            "SPAKE2+: Derived a (hex prefix)=%s b (hex prefix)=%s",
+            hex(a)[:64],
+            hex(b)[:64],
         )
+        _LOGGER.debug(
+            "SPAKE2+: reduced scalars: w=%s hex=%s, h_scalar=%s hex=%s, x=%s hex=%s",
+            w,
+            hex(w),
+            h_scalar,
+            hex(h_scalar),
+            x,
+            hex(x),
+        )
+
         Lp: ellipticcurve.Point = x * G + w * M
         _LOGGER.debug("SPAKE2+: Computed user public point L = x*G + w*M")
-        Rx, Ry = self._sec1_to_xy(self._unbase64(dev_share))
-        R = ellipticcurve.Point(curve, Rx, Ry, order)
+        L_enc = self._xy_to_uncompressed(Lp.x(), Lp.y())
+        _LOGGER.debug("SPAKE2+: L_enc (base64)=%s", self._base64(L_enc))
+        _LOGGER.debug("SPAKE2+: L_enc (hex prefix)=%s", L_enc.hex()[:160])
+
+        dev_share_bytes = self._unbase64(dev_share) if dev_share else b""
         _LOGGER.debug(
-            "SPAKE2+: Parsed device public point R from dev_share: Rx=%s Ry=%s", Rx, Ry
+            "SPAKE2+: dev_share base64 len=%s raw_len=%s",
+            len(dev_share),
+            len(dev_share_bytes),
         )
+        try:
+            Rx, Ry = self._sec1_to_xy(dev_share_bytes)
+            _LOGGER.debug("SPAKE2+: Parsed dev_share coords Rx=%s Ry=%s", Rx, Ry)
+        except Exception as exc:
+            _LOGGER.debug("SPAKE2+: Failed to parse dev_share bytes: %s", exc)
+            raise
+        R = ellipticcurve.Point(curve, Rx, Ry, order)
+        R_enc = self._xy_to_uncompressed(R.x(), R.y())
+        _LOGGER.debug("SPAKE2+: R_enc (base64)=%s", self._base64(R_enc))
+        _LOGGER.debug("SPAKE2+: R_enc (hex prefix)=%s", R_enc.hex()[:160])
+
         Rprime = R + (-(w * N))
         Zp: ellipticcurve.Point = x * Rprime
         Vp: ellipticcurve.Point = (h_scalar % order) * Rprime
         _LOGGER.debug(
-            "SPAKE2+: Computed shared points: Rprime=(%s,%s), Z=(%s,%s), V=(%s,%s)",
+            "SPAKE2+: Computed shared points: Rprime.x=%s Rprime.y=%s",
             getattr(Rprime, "x", lambda: Rprime.x())()
             if hasattr(Rprime, "x")
             else Rprime.x(),
             getattr(Rprime, "y", lambda: Rprime.y())()
             if hasattr(Rprime, "y")
             else Rprime.y(),
-            Zp.x(),
-            Zp.y(),
-            Vp.x(),
-            Vp.y(),
         )
-        L_enc = self._xy_to_uncompressed(Lp.x(), Lp.y())
-        R_enc = self._xy_to_uncompressed(R.x(), R.y())
         Z_enc = self._xy_to_uncompressed(Zp.x(), Zp.y())
         V_enc = self._xy_to_uncompressed(Vp.x(), Vp.y())
+        _LOGGER.debug("SPAKE2+: Z_enc (hex prefix)=%s", Z_enc.hex()[:160])
+        _LOGGER.debug("SPAKE2+: V_enc (hex prefix)=%s", V_enc.hex()[:160])
+
         M_enc = self._xy_to_uncompressed(M.x(), M.y())
         N_enc = self._xy_to_uncompressed(N.x(), N.y())
         _LOGGER.debug(
@@ -1080,6 +1148,7 @@ class Spake2pAuthContext(BaseAuthContext):
             len(V_enc),
         )
         _LOGGER.debug("SPAKE2+: M_enc/N_enc sizes: %s/%s", len(M_enc), len(N_enc))
+
         _LOGGER.debug("SPAKE2+: Computing transcript and confirmation keys")
         context_hash = self._hash(
             self._hkdf_hash,
@@ -1087,7 +1156,11 @@ class Spake2pAuthContext(BaseAuthContext):
             + self._unbase64(self.user_random)
             + self._unbase64(dev_random),
         )
-        _LOGGER.debug("SPAKE2+: Computed context hash using %s", self._hkdf_hash)
+        _LOGGER.debug("SPAKE2+: context_hash (hex)=%s", context_hash.hex())
+
+        w_enc = self._encode_w(w)
+        _LOGGER.debug("SPAKE2+: encode_w length=%s hex=%s", len(w_enc), w_enc.hex())
+
         transcript = (
             self._len8le(context_hash)
             + self._len8le(b"")
@@ -1098,22 +1171,29 @@ class Spake2pAuthContext(BaseAuthContext):
             + self._len8le(R_enc)
             + self._len8le(Z_enc)
             + self._len8le(V_enc)
-            + self._len8le(self._encode_w(w))
+            + self._len8le(w_enc)
         )
         _LOGGER.debug("SPAKE2+: Built transcript with length %s bytes", len(transcript))
+        _LOGGER.debug("SPAKE2+: transcript (hex prefix)=%s", transcript.hex()[:512])
+
+        # PRK in the APK is the digest of the transcript (kVar.b(transcript) in java)
         T = self._hash(self._hkdf_hash, transcript)
+        _LOGGER.debug("SPAKE2+: T (hash of transcript) hex=%s", T.hex())
+
         digest_len = 64 if self._hkdf_hash == "SHA512" else 32
         _LOGGER.debug("SPAKE2+: Hashed transcript T, digest_len=%s", digest_len)
+
+        # Derive ConfirmationKeys and SharedKey from T (PRK)
         conf = self._hkdf_expand("ConfirmationKeys", T, digest_len, self._hkdf_hash)
         KcA, KcB = conf[: digest_len // 2], conf[digest_len // 2 :]
         self._shared_key = self._hkdf_expand(
             "SharedKey", T, digest_len, self._hkdf_hash
         )
-        _LOGGER.debug("SPAKE2+: Derived shared key (%s bytes)", len(self._shared_key))
-        _LOGGER.debug(
-            "SPAKE2+: shared_key (hex prefix)=%s",
-            (self._shared_key.hex()[:64] if self._shared_key else None),
-        )
+        _LOGGER.debug("SPAKE2+: PRK (T) hex prefix=%s", T.hex()[:64])
+        _LOGGER.debug("SPAKE2+: KcA (hex)=%s", KcA.hex())
+        _LOGGER.debug("SPAKE2+: KcB (hex)=%s", KcB.hex())
+        _LOGGER.debug("SPAKE2+: shared_key (hex)=%s", self._shared_key.hex())
+
         if self._suite_mac_is_cmac(suite_type):
             _LOGGER.debug("SPAKE2+: Using CMAC for confirmation")
             user_confirm = self._cmac_aes(KcA, R_enc)
@@ -1122,6 +1202,18 @@ class Spake2pAuthContext(BaseAuthContext):
             _LOGGER.debug("SPAKE2+: Using HMAC for confirmation")
             user_confirm = self._hmac(self._hkdf_hash, KcA, R_enc)
             expected_dev_confirm = self._hmac(self._hkdf_hash, KcB, L_enc)
+
+        _LOGGER.debug("SPAKE2+: R_enc (hex prefix)=%s", R_enc.hex()[:160])
+        _LOGGER.debug("SPAKE2+: L_enc (hex prefix)=%s", L_enc.hex()[:160])
+        _LOGGER.debug("SPAKE2+: user_confirm (hex)=%s", user_confirm.hex())
+        _LOGGER.debug("SPAKE2+: user_confirm (b64)=%s", self._base64(user_confirm))
+        _LOGGER.debug(
+            "SPAKE2+: expected_dev_confirm (hex)=%s", expected_dev_confirm.hex()
+        )
+        _LOGGER.debug(
+            "SPAKE2+: expected_dev_confirm (b64)=%s", self._base64(expected_dev_confirm)
+        )
+
         self._expected_dev_confirm = self._base64(expected_dev_confirm)
         _LOGGER.debug("SPAKE2+: Register processing complete, returning share params")
         return {
@@ -1159,13 +1251,32 @@ class Spake2pAuthContext(BaseAuthContext):
     def process_share_result(self, share: dict[str, Any]) -> TlaSession:
         """Validate dev confirm and construct the session."""
         _LOGGER.debug("SPAKE2+: Processing share result")
-        dev_confirm = (share.get("dev_confirm") or "").lower()
-        _LOGGER.debug("SPAKE2+: Validating device confirmation")
+        dev_confirm_raw = (share.get("dev_confirm") or "") or ""
+        dev_confirm = dev_confirm_raw.lower()
+        _LOGGER.debug(
+            "SPAKE2+: Validating device confirmation: device provided (b64)=%s",
+            dev_confirm_raw,
+        )
+        _LOGGER.debug(
+            "SPAKE2+: expected_dev_confirm (b64)=%s", self._expected_dev_confirm
+        )
+        # also log expected Dev confirm binary hex for parity
+        try:
+            if self._expected_dev_confirm:
+                _LOGGER.debug(
+                    "SPAKE2+: expected_dev_confirm (hex)=%s",
+                    self._unbase64(self._expected_dev_confirm).hex(),
+                )
+        except Exception as exc:
+            _LOGGER.debug(
+                "SPAKE2+: expected_dev_confirm hex conversion failed: %s", exc
+            )
+
         if dev_confirm != (self._expected_dev_confirm or "").lower():
             _LOGGER.error(
                 "SPAKE2+: Confirmation mismatch - expected=%s, received=%s",
                 self._expected_dev_confirm,
-                dev_confirm,
+                dev_confirm_raw,
             )
             raise KasaException("SPAKE2+ confirmation mismatch")
 
