@@ -33,7 +33,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers import algorithms
 from cryptography.hazmat.primitives.ciphers.aead import AESCCM, ChaCha20Poly1305
 from cryptography.hazmat.primitives.cmac import CMAC
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF, HKDFExpand
 from ecdsa import NIST256p, ellipticcurve
 from ecdsa.ellipticcurve import PointJacobi
 from passlib.hash import md5_crypt, sha256_crypt
@@ -726,11 +726,12 @@ class Spake2pAuthContext(BaseAuthContext):
         )
 
     @staticmethod
-    def _hkdf_expand(label: str, ikm: bytes, out_len: int, alg: str) -> bytes:
+    def _hkdf_expand(label: str, prk: bytes, out_len: int, alg: str) -> bytes:
         algorithm = hashes.SHA512() if alg.upper() == "SHA512" else hashes.SHA256()
-        return HKDF(
-            algorithm=algorithm, length=out_len, salt=None, info=label.encode()
-        ).derive(ikm)
+        hkdf_expand = HKDFExpand(
+            algorithm=algorithm, length=out_len, info=label.encode()
+        )
+        return hkdf_expand.derive(prk)
 
     @staticmethod
     def _hmac(alg: str, key: bytes, data: bytes) -> bytes:
@@ -1176,14 +1177,12 @@ class Spake2pAuthContext(BaseAuthContext):
         _LOGGER.debug("SPAKE2+: Built transcript with length %s bytes", len(transcript))
         _LOGGER.debug("SPAKE2+: transcript (hex prefix)=%s", transcript.hex()[:512])
 
-        # PRK in the APK is the digest of the transcript (kVar.b(transcript) in java)
         T = self._hash(self._hkdf_hash, transcript)
         _LOGGER.debug("SPAKE2+: T (hash of transcript) hex=%s", T.hex())
 
         digest_len = 64 if self._hkdf_hash == "SHA512" else 32
         _LOGGER.debug("SPAKE2+: Hashed transcript T, digest_len=%s", digest_len)
 
-        # Derive ConfirmationKeys and SharedKey from T (PRK)
         conf = self._hkdf_expand("ConfirmationKeys", T, digest_len, self._hkdf_hash)
         KcA, KcB = conf[: digest_len // 2], conf[digest_len // 2 :]
         self._shared_key = self._hkdf_expand(
@@ -1260,7 +1259,6 @@ class Spake2pAuthContext(BaseAuthContext):
         _LOGGER.debug(
             "SPAKE2+: expected_dev_confirm (b64)=%s", self._expected_dev_confirm
         )
-        # also log expected Dev confirm binary hex for parity
         try:
             if self._expected_dev_confirm:
                 _LOGGER.debug(
