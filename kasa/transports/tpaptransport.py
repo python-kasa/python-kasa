@@ -1076,12 +1076,12 @@ class Spake2pAuthContext(BaseAuthContext):
         N = ellipticcurve.Point(curve, Nx, Ny, order)
         cred = cred_str.encode()
         _LOGGER.debug(
-            "SPAKE2+: Computing SPAKE2+ key derivation with cred_str=%s",
-            "dev_salt=%s",
-            "iterations=%s",
-            "hash_length=%s",
+            "SPAKE2+: key derivation cred=%s salt=%s",
             cred_str,
             dev_salt,
+        )
+        _LOGGER.debug(
+            "SPAKE2+: key derivation params iters=%s hlen=%s",
             iterations,
             32,
         )
