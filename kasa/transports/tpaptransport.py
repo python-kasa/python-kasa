@@ -1183,6 +1183,66 @@ class Spake2pAuthContext(BaseAuthContext):
         digest_len = 64 if self._hkdf_hash == "SHA512" else 32
         _LOGGER.debug("SPAKE2+: Hashed transcript T, digest_len=%s", digest_len)
 
+        def expand_with_info(
+            label_bytes: bytes, prk: bytes, out_len: int, alg: str
+        ) -> bytes:
+            algorithm = hashes.SHA512() if alg.upper() == "SHA512" else hashes.SHA256()
+            return HKDFExpand(
+                algorithm=algorithm, length=out_len, info=label_bytes
+            ).derive(prk)
+
+        label = b"ConfirmationKeys"
+        conf_base = expand_with_info(label, T, digest_len, self._hkdf_hash)
+        KcA_base, KcB_base = conf_base[: digest_len // 2], conf_base[digest_len // 2 :]
+        shared_base = expand_with_info(b"SharedKey", T, digest_len, self._hkdf_hash)
+        _LOGGER.debug(
+            "SPAKE2+: DIAG: baseline KcA=%s KcB=%s", KcA_base.hex(), KcB_base.hex()
+        )
+        _LOGGER.debug("SPAKE2+: DIAG: baseline shared_key=%s", shared_base.hex())
+        candidates = []
+        candidates.append(("baseline", KcA_base, KcB_base, b"ConfirmationKeys"))
+        candidates.append(("swap_halves", KcB_base, KcA_base, b"ConfirmationKeys"))
+        candidates.append(("swap_roles", KcB_base, KcA_base, b"ConfirmationKeys"))
+        for info_variant in (
+            b"ConfirmationKeys\x00",
+            b"\x00ConfirmationKeys",
+            b"\x01ConfirmationKeys",
+        ):
+            conf = expand_with_info(info_variant, T, digest_len, self._hkdf_hash)
+            K1, K2 = conf[: digest_len // 2], conf[digest_len // 2 :]
+            candidates.append(("info:" + info_variant.hex(), K1, K2, info_variant))
+        _LOGGER.debug(
+            "SPAKE2+: DIAG: baseline SharedKey(using info 'SharedKey')=%s",
+            shared_base.hex(),
+        )
+        for name, kA, kB, info in candidates:
+            if self._suite_mac_is_cmac(suite_type):
+                uconf = self._cmac_aes(kA, R_enc)
+                vconf = self._cmac_aes(kB, L_enc)
+            else:
+                uconf = self._hmac(self._hkdf_hash, kA, R_enc)
+            vconf = self._hmac(self._hkdf_hash, kB, L_enc)
+            _LOGGER.debug(
+                "SPAKE2+: DIAG candidate=%s info=%s KcA=%s KcB=%s",
+                name,
+                info if isinstance(info, bytes) else str(info),
+                kA.hex(),
+                kB.hex(),
+            )
+            _LOGGER.debug(
+                "SPAKE2+: DIAG confirms: user_confirm(hex)=%s user_confirm(b64)=%s",
+                uconf.hex(),
+                self._base64(uconf),
+            )
+            _LOGGER.debug(
+                "SPAKE2+: DIAG confirms: dev_confirm(hex)=%s dev_confirm(b64)=%s",
+                vconf.hex(),
+                self._base64(vconf),
+            )
+        _LOGGER.debug(
+            "SPAKE2+: DIAG: PRK (T)=%s transcript_len=%d", T.hex(), len(transcript)
+        )
+
         conf = self._hkdf_expand("ConfirmationKeys", T, digest_len, self._hkdf_hash)
         KcA, KcB = conf[: digest_len // 2], conf[digest_len // 2 :]
         self._shared_key = self._hkdf_expand(
