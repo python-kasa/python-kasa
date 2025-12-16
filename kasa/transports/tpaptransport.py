@@ -1163,9 +1163,12 @@ class Spake2pAuthContext(BaseAuthContext):
         digest_len = 64 if self._hkdf_hash == "SHA512" else 32
         _LOGGER.debug("SPAKE2+: digest_len=%s", digest_len)
 
-        conf = self._hkdf_expand("ConfirmationKeys", T, digest_len, self._hkdf_hash)
+        mac_len = 16 if self._suite_mac_is_cmac(suite_type) else 32
+        _LOGGER.debug("SPAKE2+: mac_len=%s", mac_len)
+
+        conf = self._hkdf_expand("ConfirmationKeys", T, mac_len * 2, self._hkdf_hash)
         _LOGGER.debug("SPAKE2+: ConfirmationKeys=%r", conf)
-        KcA, KcB = conf[: digest_len // 2], conf[digest_len // 2 :]
+        KcA, KcB = conf[:mac_len], conf[mac_len : mac_len * 2]
         self._shared_key = self._hkdf_expand(
             "SharedKey", T, digest_len, self._hkdf_hash
         )
