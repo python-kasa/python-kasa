@@ -307,8 +307,10 @@ class NOCClient:
         timestamp = str(int(datetime.now(UTC).timestamp()))
         nonce = str(uuid.uuid4())
         message = (content_md5 + "\n" + timestamp + "\n" + nonce + "\n" + path).encode()
-        signature = hmac.new(  # noqa: S324
-            self.SECRET_KEY.encode(), message, hashlib.sha1
+        signature = hmac.new(
+            self.SECRET_KEY.encode(),
+            message,
+            hashlib.sha1,  # noqa: S324
         ).hexdigest()
         x_auth = (
             f"Timestamp={timestamp}, Nonce={nonce}, "
@@ -844,7 +846,7 @@ class Spake2pAuthContext(BaseAuthContext):
             name = "admin" if sha_name == 0 else "user"
             try:
                 salt_dec = base64.b64decode(sha_salt_b64).decode()
-                return hashlib.sha256((name + salt_dec + passcode).encode()).hexdigest()
+                return hashlib.sha256((name + salt_dec + passcode).encode()).hexdigest()  # noqa: S324
             except Exception:
                 _LOGGER.debug(
                     "SPAKE2+: Invalid base64 salt provided, falling back to passcode"

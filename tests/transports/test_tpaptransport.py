@@ -1349,6 +1349,16 @@ def test_spake2p_encode_w():
     assert out == b"\x00\x10"
 
 
+def test_spake2p_encode_w_branches():
+    K = tp.Spake2pAuthContext
+    assert K._encode_w(0) == b"\x00"
+    assert K._encode_w(0x0102) == b"\x01\x02"
+    w_high = int.from_bytes(b"\x80\x01\x02", "big")
+    assert K._encode_w(w_high) == b"\x00\x80\x01\x02"
+    w_low = int.from_bytes(b"\x7f\x01\x02", "big")
+    assert K._encode_w(w_low) == b"\x7f\x01\x02"
+
+
 def test_build_credentials_shadow_unknown_pid_and_unknown_type():
     K = tp.Spake2pAuthContext
     out1 = K._build_credentials(
