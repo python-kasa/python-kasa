@@ -206,7 +206,7 @@ async def test_nocclient_apply_get_and_split_success(monkeypatch, tmp_path):
     assert data.nocIntermediateCertificate
     assert data.nocRootCertificate
 
-    again = client.get()
+    again = client._get()
     assert again.nocCertificate == data.nocCertificate
 
     again2 = client.apply("user@example.com", "pwd")
@@ -220,7 +220,7 @@ async def test_nocclient_apply_get_and_split_success(monkeypatch, tmp_path):
 def test_nocclient_get_raises_when_empty_cache():
     client = tp.NOCClient()
     with pytest.raises(KasaException, match="No NOC materials"):
-        client.get()
+        client._get()
 
 
 def test_nocclient_apply_exception_logs_and_raises(monkeypatch):
@@ -261,14 +261,14 @@ async def test_baseauth_login_and_tslp_success_and_errors(monkeypatch):
             self.COMMON_HEADERS = {"Content-Type": "application/json"}
             self._host = "h"
 
-        async def _get_ssl_context(self):
+        async def get_ssl_context(self):
             return False
 
     class DummyAuth:
         def __init__(self, ok=True):
             self._transport = DummyTransport(ok=ok)
 
-        def _handle_response_error_code(self, resp, msg):
+        def handle_response_error_code(self, resp, msg):
             return None
 
     ctx = tp.BaseAuthContext(DummyAuth())
@@ -295,14 +295,14 @@ async def test_baseauth_login_200_but_not_dict():
             self.COMMON_HEADERS = {"Content-Type": "application/json"}
             self._host = "h"
 
-        async def _get_ssl_context(self):
+        async def get_ssl_context(self):
             return False
 
     class DummyAuth:
         def __init__(self):
             self._transport = DummyTransport()
 
-        def _handle_response_error_code(self, resp, msg):
+        def handle_response_error_code(self, resp, msg):
             return None
 
     ctx = tp.BaseAuthContext(DummyAuth())
@@ -323,14 +323,14 @@ async def test_baseauth_login_missing_result_returns_empty():
             self.COMMON_HEADERS = {"Content-Type": "application/json"}
             self._host = "h"
 
-        async def _get_ssl_context(self):
+        async def get_ssl_context(self):
             return False
 
     class DummyAuth:
         def __init__(self):
             self._transport = DummyTransport()
 
-        def _handle_response_error_code(self, resp, msg):
+        def handle_response_error_code(self, resp, msg):
             return None
 
     ctx = tp.BaseAuthContext(DummyAuth())
@@ -355,7 +355,7 @@ def test_nocauth_init_raises_when_no_noc():
             self._host = "h"
             self._username = "user"
 
-        async def _get_ssl_context(self):
+        async def get_ssl_context(self):
             return False
 
     bad_auth = type(
@@ -429,7 +429,7 @@ async def test_nocauth_flow_success_and_errors(monkeypatch):
             self._host = "h"
             self._username = "user"
 
-        async def _get_ssl_context(self):
+        async def get_ssl_context(self):
             return False
 
     class DummyAuth:
@@ -442,7 +442,7 @@ async def test_nocauth_flow_success_and_errors(monkeypatch):
                 nocRootCertificate=root_pem,
             )
 
-        def _handle_response_error_code(self, resp, msg):
+        def handle_response_error_code(self, resp, msg):
             return None
 
         def _ensure_noc(self):
@@ -582,7 +582,7 @@ async def test_nocauth_derive_shared_success_and_missing_pubkeys():
                     self._host = "h"
                     self._username = "user"
 
-                async def _get_ssl_context(self):
+                async def get_ssl_context(self):
                     return False
 
             self._transport = DT()
@@ -596,7 +596,7 @@ async def test_nocauth_derive_shared_success_and_missing_pubkeys():
         def _ensure_noc(self):
             return None
 
-        def _handle_response_error_code(self, resp, msg):
+        def handle_response_error_code(self, resp, msg):
             return None
 
     from cryptography.hazmat.primitives import serialization as _ser
@@ -671,7 +671,7 @@ async def test_nocauth_unknown_encryption_and_alt_session_fields(monkeypatch):
             self._host = "h"
             self._username = "user"
 
-        async def _get_ssl_context(self):
+        async def get_ssl_context(self):
             return False
 
     class DummyAuth:
@@ -684,7 +684,7 @@ async def test_nocauth_unknown_encryption_and_alt_session_fields(monkeypatch):
                 nocRootCertificate=root_pem,
             )
 
-        def _handle_response_error_code(self, resp, msg):
+        def handle_response_error_code(self, resp, msg):
             return None
 
         def _ensure_noc(self):
@@ -765,7 +765,7 @@ async def test_nocauth_no_tag_in_dev_proof(monkeypatch):
             self._host = "h"
             self._username = "user"
 
-        async def _get_ssl_context(self):
+        async def get_ssl_context(self):
             return False
 
     class DummyAuth:
@@ -778,7 +778,7 @@ async def test_nocauth_no_tag_in_dev_proof(monkeypatch):
                 nocRootCertificate=root_pem,
             )
 
-        def _handle_response_error_code(self, resp, msg):
+        def handle_response_error_code(self, resp, msg):
             return None
 
         def _ensure_noc(self):
@@ -850,7 +850,7 @@ async def test_nocauth_alt_session_id_and_defaults(monkeypatch):
             self._host = "h"
             self._username = "user"
 
-        async def _get_ssl_context(self):
+        async def get_ssl_context(self):
             return False
 
     class DummyAuth:
@@ -863,7 +863,7 @@ async def test_nocauth_alt_session_id_and_defaults(monkeypatch):
                 nocRootCertificate=root_pem,
             )
 
-        def _handle_response_error_code(self, resp, msg):
+        def handle_response_error_code(self, resp, msg):
             return None
 
         def _ensure_noc(self):
@@ -910,7 +910,7 @@ def test_nocauth_sign_proof_with_non_ec_key(monkeypatch):
             self._host = "h"
             self._username = "user"
 
-        async def _get_ssl_context(self):
+        async def get_ssl_context(self):
             return False
 
     auth = type(
@@ -940,7 +940,7 @@ def test_nocauth_sign_user_proof_non_ec_key_raises():
     class DummyTransport:
         _username = "user"
 
-        async def _get_ssl_context(self):
+        async def get_ssl_context(self):
             return False
 
     class DummyAuth:
@@ -953,7 +953,7 @@ def test_nocauth_sign_user_proof_non_ec_key_raises():
                 nocRootCertificate=root_pem,
             )
 
-        def _handle_response_error_code(self, resp, msg):
+        def handle_response_error_code(self, resp, msg):
             return None
 
         def _ensure_noc(self):
@@ -970,7 +970,7 @@ def test_nocauth_verify_device_proof_invalid_signature():
     class DummyTransport:
         _username = "user"
 
-        async def _get_ssl_context(self):
+        async def get_ssl_context(self):
             return False
 
     class DummyAuth:
@@ -978,7 +978,7 @@ def test_nocauth_verify_device_proof_invalid_signature():
             self._transport = DummyTransport()
             self._noc_data = tp.TpapNOCData("K", cert_pem, "", cert_pem)
 
-        def _handle_response_error_code(self, resp, msg):
+        def handle_response_error_code(self, resp, msg):
             return None
 
         def _ensure_noc(self):
@@ -1010,7 +1010,7 @@ def test_nocauth_verify_device_proof_generic_error_nonhex():
             self._host = "h"
             self._username = "user"
 
-        async def _get_ssl_context(self):
+        async def get_ssl_context(self):
             return False
 
     auth = type(
@@ -1138,7 +1138,7 @@ async def test_spake2p_helpers_and_process(monkeypatch):
         "encryption": "aes_128_ccm",
         "extra_crypt": {},
     }
-    share_params = tp.Spake2pAuthContext.process_register_result(ctx, reg)  # type: ignore[misc]
+    share_params = tp.Spake2pAuthContext._process_register_result(ctx, reg)  # type: ignore[misc]
     assert share_params["sub_method"] == "pake_share"
     share = {
         "dev_confirm": (ctx._expected_dev_confirm or "").lower(),  # type: ignore[attr-defined]
@@ -1146,7 +1146,7 @@ async def test_spake2p_helpers_and_process(monkeypatch):
         "start_seq": 7,
         "sessionExpired": 0,
     }
-    tla = tp.Spake2pAuthContext.process_share_result(ctx, share)  # type: ignore[misc]
+    tla = tp.Spake2pAuthContext._process_share_result(ctx, share)  # type: ignore[misc]
     assert isinstance(tla, tp.TlaSession)
     assert tla.sessionId == "STOK"
     assert tla.startSequence == 7
@@ -1159,7 +1159,7 @@ async def test_spake2p_helpers_and_process(monkeypatch):
     ctx2.username = "u"  # type: ignore[attr-defined]
     ctx2.passcode = "p"  # type: ignore[attr-defined]
     ctx2._authenticator = type("A", (), {"_tpap_tls": 0, "_tpap_dac": True})()  # type: ignore[attr-defined]
-    share_params3 = tp.Spake2pAuthContext.process_register_result(ctx2, reg)  # type: ignore[misc]
+    share_params3 = tp.Spake2pAuthContext._process_register_result(ctx2, reg)  # type: ignore[misc]
     assert share_params3["sub_method"] == "pake_share"
     assert isinstance(share_params3["user_share"], str)
 
@@ -1201,16 +1201,16 @@ async def test_spake2p_helpers_and_process(monkeypatch):
         "dac_ca": cert_pem.decode(),
         "dac_proof": base64.b64encode(sig).decode(),
     }
-    tla2 = tp.Spake2pAuthContext.process_share_result(ctx3, share_with_dac)  # type: ignore[misc]
+    tla2 = tp.Spake2pAuthContext._process_share_result(ctx3, share_with_dac)  # type: ignore[misc]
     assert isinstance(tla2, tp.TlaSession)
     assert tla2.sessionId == "STOK2"
 
     with pytest.raises(KasaException, match="SPAKE\\+?2\\+ confirmation mismatch"):
-        tp.Spake2pAuthContext.process_share_result(
+        tp.Spake2pAuthContext._process_share_result(
             ctx, {"dev_confirm": "dead", "sessionId": "X", "start_seq": 1}
         )  # type: ignore[misc]
     with pytest.raises(KasaException, match="Missing session fields"):
-        tp.Spake2pAuthContext.process_share_result(
+        tp.Spake2pAuthContext._process_share_result(
             ctx, {"dev_confirm": (ctx._expected_dev_confirm or "").lower()}
         )  # type: ignore[misc]
 
@@ -1265,7 +1265,7 @@ async def test_spake2p_start_covers_both_tls_modes(monkeypatch):
                             )
                         },
                     )(),
-                    "_get_ssl_context": lambda *a, **k: False,
+                    "get_ssl_context": lambda *a, **k: False,
                     "_config": DeviceConfig("h"),
                 },
             )()
@@ -1274,7 +1274,7 @@ async def test_spake2p_start_covers_both_tls_modes(monkeypatch):
             self._tpap_pake = [1, 2]
             self._device_mac = "AA:BB:CC:DD:EE:FF"
 
-        def _handle_response_error_code(self, resp, msg):
+        def handle_response_error_code(self, resp, msg):
             return None
 
     ctx = tp.Spake2pAuthContext.__new__(tp.Spake2pAuthContext)  # type: ignore[misc]
@@ -1424,7 +1424,7 @@ def test_spake2p_process_register_uses_mac_pass_when_suite0_with_mac():
         "encryption": "aes_128_ccm",
         "extra_crypt": {},
     }
-    params = tp.Spake2pAuthContext.process_register_result(ctx, reg)  # type: ignore[misc]
+    params = tp.Spake2pAuthContext._process_register_result(ctx, reg)  # type: ignore[misc]
     assert params["sub_method"] == "pake_share"
 
 
@@ -1447,7 +1447,7 @@ async def test_spake2p_cmac_branch_in_register():
         "encryption": "aes_128_ccm",
         "extra_crypt": {},
     }
-    params = tp.Spake2pAuthContext.process_register_result(ctx, reg)  # type: ignore[misc]
+    params = tp.Spake2pAuthContext._process_register_result(ctx, reg)  # type: ignore[misc]
     assert params["sub_method"] == "pake_share"
     assert isinstance(params["user_confirm"], str)
 
@@ -1529,11 +1529,11 @@ async def test_authenticator_discover_establish_and_cached(monkeypatch):
         and c is not SmartErrorCode.SUCCESS
     )
     with pytest.raises(_RetryableError):
-        a._handle_response_error_code({"error_code": retry_code.value}, "m")
+        a.handle_response_error_code({"error_code": retry_code.value}, "m")
     with pytest.raises(AuthenticationError):
-        a._handle_response_error_code({"error_code": auth_code.value}, "m")
+        a.handle_response_error_code({"error_code": auth_code.value}, "m")
     with pytest.raises(DeviceError):
-        a._handle_response_error_code({"error_code": other_code.value}, "m")
+        a.handle_response_error_code({"error_code": other_code.value}, "m")
 
     tr2 = tp.TpapTransport(config=DeviceConfig("1.2.3.5"))
 
@@ -1650,7 +1650,7 @@ async def test_authenticator_set_session_from_tla_branches():
 @pytest.mark.asyncio
 async def test_authenticator_handle_response_error_code_nonint():
     tr = tp.TpapTransport(config=DeviceConfig("host9"))
-    tr._authenticator._handle_response_error_code({"error_code": "bad"}, "msg")
+    tr._authenticator.handle_response_error_code({"error_code": "bad"}, "msg")
 
 
 @pytest.mark.asyncio
@@ -2016,7 +2016,7 @@ async def test_nocauth_derive_shared_raises_when_no_ephemeral():
     class DummyTransport:
         _username = "user"
 
-        async def _get_ssl_context(self):
+        async def get_ssl_context(self):
             return False
 
     class DummyAuth:
@@ -2029,7 +2029,7 @@ async def test_nocauth_derive_shared_raises_when_no_ephemeral():
                 nocRootCertificate=root_pem,
             )
 
-        def _handle_response_error_code(self, resp, msg):
+        def handle_response_error_code(self, resp, msg):
             return None
 
         def _ensure_noc(self):
