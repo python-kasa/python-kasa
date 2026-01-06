@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import logging
 import secrets
 from contextlib import nullcontext as does_not_raise
@@ -391,6 +392,18 @@ async def test_port_override():
     transport = SslAesTransport(config=config)
 
     assert str(transport._app_url) == f"https://127.0.0.1:{port_override}"
+
+
+async def test_login_version_get_credentials():
+    """Test that login_version is passed to get_default_credentials."""
+    creds = get_default_credentials(DEFAULT_CREDENTIALS["TAPOCAMERA"], login_version=3)
+    assert creds.username == "admin"
+    password_b64 = base64.b64encode(creds.password.encode()).decode()
+    assert password_b64 == "VFBMMDc1NTI2NDYwNjAz"  # noqa: S105
+    creds = get_default_credentials(DEFAULT_CREDENTIALS["TAPOCAMERA"], login_version=2)
+    assert creds.username == "admin"
+    password_b64 = base64.b64encode(creds.password.encode()).decode()
+    assert password_b64 == "YWRtaW4="  # noqa: S105
 
 
 class MockSslAesDevice:
