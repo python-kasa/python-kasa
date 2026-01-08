@@ -753,13 +753,18 @@ class SmartDevice(Device):
             resp = await self.protocol.query(
                 {"scanApList": {"onboarding": {"scan": {}}}}
             )
+            networks = [
+                _net_for_scan_info(net)
+                for net in resp["scanApList"]["onboarding"]["scan"]["ap_list"]
+            ]
         else:
             resp = await self.protocol.query(
                 {"get_wireless_scan_info": {"start_index": 0}}
             )
-        networks = [
-            _net_for_scan_info(net) for net in resp["get_wireless_scan_info"]["ap_list"]
-        ]
+            networks = [
+                _net_for_scan_info(net)
+                for net in resp["get_wireless_scan_info"]["ap_list"]
+            ]
         return networks
 
     async def wifi_join(
