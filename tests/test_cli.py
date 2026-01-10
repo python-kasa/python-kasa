@@ -42,6 +42,7 @@ from kasa.cli.main import TYPES, _legacy_type_to_class, cli, cmd_command, raw_co
 from kasa.cli.time import time
 from kasa.cli.usage import energy
 from kasa.cli.wifi import wifi
+from kasa.device import WifiNetwork
 from kasa.discover import Discover, DiscoveryResult, redact_data
 from kasa.iot import IotDevice
 from kasa.json import dumps as json_dumps
@@ -362,6 +363,43 @@ async def test_wifi_scan(dev, runner):
 @device_smart
 async def test_wifi_join(dev, mocker, runner):
     update = mocker.patch.object(dev, "update")
+    await runner.invoke(wifi, ["scan"], obj=dev)
+    nets = getattr(dev, "networks", []) or []
+    if not nets:
+        dev.networks = [
+            WifiNetwork(
+                ssid="FOOBAR",
+                cipher_type="WPA2",
+                key_type="wpa2_psk",
+                channel=1,
+                signal_level=-40,
+                bssid="00:11:22:33:44:55",
+            )
+        ]
+    else:
+        sample = nets[0]
+        if any(hasattr(sample, a) for a in ("cipher_type", "key_type", "signal_level")):
+            dev.networks = [
+                WifiNetwork(
+                    ssid="FOOBAR",
+                    cipher_type="WPA2",
+                    key_type="wpa2_psk",
+                    channel=1,
+                    signal_level=-40,
+                    bssid="00:11:22:33:44:55",
+                )
+            ]
+        else:
+            dev.networks = [
+                WifiNetwork(
+                    ssid="FOOBAR",
+                    auth="wpa2_psk",
+                    encryption="AES",
+                    bssid="00:11:22:33:44:55",
+                    rssi=-40,
+                )
+            ]
+
     res = await runner.invoke(
         wifi,
         ["join", "FOOBAR", "--keytype", "wpa_psk", "--password", "foobar"],
