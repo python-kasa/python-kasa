@@ -814,8 +814,18 @@ class SmartDevice(Device):
                 self.public_key = public_key or None
             else:
                 self.public_key = None
+            _LOGGER.debug(
+                "wifi_scan scanApList: wpa3_supported=%s, public_key_present=%s",
+                self.wpa3_supported,
+                bool(self.public_key),
+            )
         nets = _handle_scan_response(resp, scan)
         self.networks = [_net_for_scan_info(net, scan) for net in nets]
+        _LOGGER.debug(
+            "wifi_scan completed: scan=%s, networks=%d",
+            scan,
+            len(self.networks),
+        )
         return self.networks
 
     async def wifi_join(
@@ -833,13 +843,32 @@ class SmartDevice(Device):
         If joining the network fails, the device will return to the previous state
         after some delay.
         """
+        _LOGGER.debug(
+            "wifi_join requested: ssid=%s, networks_cached=%d, has_public_key=%s",
+            ssid,
+            len(self.networks),
+            bool(self.public_key),
+        )
         if not self.credentials:
             raise AuthenticationError("Device requires authentication.")
 
         if not self.networks:
+            _LOGGER.debug("wifi_join: no cached networks, calling wifi_scan")
             await self.wifi_scan()
 
+        if not self.networks:
+            _LOGGER.debug("wifi_join: wifi_scan returned 0 networks")
+
         net = next((n for n in self.networks if n.ssid and n.ssid == ssid), None)
+        if net is None:
+            preview = [n.ssid for n in self.networks[:10] if n.ssid]
+            _LOGGER.debug(
+                "wifi_join: requested ssid not found in scan results "
+                "(have=%d, preview=%s)",
+                len(self.networks),
+                preview,
+            )
+
         scan_type_legacy: bool = not (
             net is not None
             and hasattr(net, "auth")
@@ -851,17 +880,43 @@ class SmartDevice(Device):
             and hasattr(net, "rssi")
             and net.rssi is not None
         )
+        _LOGGER.debug(
+            "wifi_join: net_found=%s, scan_type_legacy=%s",
+            net is not None,
+            scan_type_legacy,
+        )
         payload: dict[str, dict[str, Any]]
         if net is not None and not scan_type_legacy:
+            _LOGGER.debug(
+                "wifi_join: using connectAp (modern scan) "
+                "auth=%s encryption=%s bssid=%s rssi=%s",
+                getattr(net, "auth", None),
+                getattr(net, "encryption", None),
+                getattr(net, "bssid", None),
+                getattr(net, "rssi", None),
+            )
             public_key_b64 = self.public_key or self.STATIC_PUBLIC_KEY_B64
-            key_bytes = base64.b64decode(public_key_b64)
-            public_key = serialization.load_der_public_key(key_bytes)
+            _LOGGER.debug(
+                "wifi_join: public key source=%s, b64_len=%d",
+                "device" if self.public_key else "static",
+                len(public_key_b64),
+            )
+            try:
+                key_bytes = base64.b64decode(public_key_b64)
+                public_key = serialization.load_der_public_key(key_bytes)
+            except Exception as ex:
+                _LOGGER.debug("wifi_join: failed to decode/load public key: %r", ex)
+                raise
             if not isinstance(public_key, RSAPublicKey):
                 raise TypeError("Loaded public key is not an RSA public key")
             encrypted = public_key.encrypt(
                 password.encode(), asymmetric_padding.PKCS1v15()
             )
             encrypted_password = base64.b64encode(encrypted).decode()
+            _LOGGER.debug(
+                "wifi_join: password encrypted (ciphertext_len=%d)",
+                len(encrypted_password),
+            )
             payload = {
                 "onboarding": {
                     "connect": {
@@ -880,13 +935,19 @@ class SmartDevice(Device):
             try:
                 return await self.protocol.query({"connectAp": payload}, retry_count=0)
             except DeviceError:
+                _LOGGER.debug("wifi_join: connectAp failed with DeviceError")
                 raise  # Re-raise on device-reported errors
-            except KasaException:
+            except KasaException as ex:
                 _LOGGER.debug(
-                    "Received a kasa exception for wifi join, but this is expected"
+                    "wifi_join: connectAp raised %s (expected timeout); returning {}",
+                    type(ex).__name__,
                 )
                 return {}
         elif net is not None and scan_type_legacy:
+            _LOGGER.debug(
+                "wifi_join: using set_qs_info (legacy scan) key_type=%s",
+                keytype,
+            )
             payload = {
                 "account": {
                     "username": base64.b64encode(
@@ -912,13 +973,19 @@ class SmartDevice(Device):
                     {"set_qs_info": payload}, retry_count=0
                 )
             except DeviceError:
+                _LOGGER.debug("wifi_join: set_qs_info failed with DeviceError")
                 raise  # Re-raise on device-reported errors
-            except KasaException:
+            except KasaException as ex:
                 _LOGGER.debug(
-                    "Received a kasa exception for wifi join, but this is expected"
+                    "wifi_join: set_qs_info raised %s (expected timeout); returning {}",
+                    type(ex).__name__,
                 )
                 return {}
         else:
+            _LOGGER.debug(
+                "wifi_join: unable to determine wifi scan type (net_found=%s)",
+                net is not None,
+            )
             raise KasaException("Unable to determine wifi scan type")
 
     async def update_credentials(self, username: str, password: str) -> dict:
