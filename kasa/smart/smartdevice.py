@@ -10,6 +10,10 @@ from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta, tzinfo
 from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
+
 from ..device import Device, DeviceInfo, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
@@ -76,6 +80,10 @@ class SmartDevice(Device):
         self._on_since: datetime | None = None
         self._info: dict[str, Any] = {}
         self._logged_missing_child_ids: set[str] = set()
+
+        self.wpa3_supported: bool | None = None
+        self.public_key: str | None = None
+        self.networks: list[WifiNetwork] = []
 
     async def _initialize_children(self) -> None:
         """Initialize children for power strips."""
@@ -737,28 +745,76 @@ class SmartDevice(Device):
     async def wifi_scan(self) -> list[WifiNetwork]:
         """Scan for available wifi networks."""
 
-        def _net_for_scan_info(res: dict) -> WifiNetwork:
-            return WifiNetwork(
-                ssid=base64.b64decode(res["ssid"]).decode(),
-                cipher_type=res["cipher_type"],
-                key_type=res["key_type"],
-                channel=res["channel"],
-                signal_level=res["signal_level"],
-                bssid=res["bssid"],
-            )
+        async def _scan(target: str) -> dict:
+            if target == "get_wireless_scan_info":
+                return await self._query_helper(target, {"start_index": 1})
+            elif target == "scanApList":
+                return await self._query_helper(target, {"onboarding": {"scan": {}}})
+            else:
+                raise KasaException(f"Unknown wifi scan target {target}")
+
+        def _handle_scan_response(resp: dict, scan: str) -> dict:
+            if scan == "get_wireless_scan_info":
+                return resp["get_wireless_scan_info"]["ap_list"]
+            elif scan == "scanApList":
+                scan_data: dict = resp["scanApList"]["onboarding"]["scan"]
+                return {
+                    "wpa3Supported": scan_data.get("wpa3_supported", ""),
+                    "publicKey": scan_data.get("public_key", ""),
+                    "wifiList": scan_data["ap_list"],
+                }
+            else:
+                raise KasaException(f"Unknown wifi scan response {resp}")
+
+        def _net_for_scan_info(res: dict, scan: str) -> WifiNetwork:
+            if scan == "get_wireless_scan_info":
+                return WifiNetwork(
+                    ssid=base64.b64decode(res["ssid"]).decode(),
+                    cipher_type=res["cipher_type"],
+                    key_type=res["key_type"],
+                    channel=res["channel"],
+                    signal_level=res["signal_level"],
+                    bssid=res["bssid"],
+                )
+            elif scan == "scanApList":
+                return WifiNetwork(
+                    ssid=res["ssid"],
+                    auth=res["auth"],
+                    encryption=res["encryption"],
+                    channel=res["channel"],
+                    rssi=res["rssi"],
+                    bssid=res["bssid"],
+                )
+            else:
+                raise KasaException(f"Unknown wifi scan info {res}")
 
         _LOGGER.debug("Querying networks")
 
-        resp = await self.protocol.query({"get_wireless_scan_info": {"start_index": 0}})
-        networks = [
-            _net_for_scan_info(net) for net in resp["get_wireless_scan_info"]["ap_list"]
-        ]
-        return networks
+        try:
+            resp = await _scan("get_wireless_scan_info")
+            scan = "get_wireless_scan_info"
+        except KasaException as ex:
+            _LOGGER.debug(
+                "Unable to scan using 'get_wireless_scan_info', "
+                "retrying with 'scanApList': %s",
+                ex,
+            )
+            resp = await _scan("scanApList")
+            scan = "scanApList"
+            self.wpa3_supported = resp.get("wpa3Supported", False)
+            self.public_key = resp.get("publicKey", "")
+        nets = _handle_scan_response(resp, scan)
+        self.networks = [_net_for_scan_info(net, scan) for net in nets]
+        return self.networks
 
     async def wifi_join(
-        self, ssid: str, password: str, keytype: str = "wpa2_psk"
+        self,
+        ssid: str,
+        password: str,
+        keytype: str = "wpa2_psk",
     ) -> dict:
-        """Join the given wifi network.
+        """
+        Join the given wifi network.
 
         This method returns nothing as the device tries to activate the new
         settings immediately instead of responding to the request.
@@ -769,35 +825,89 @@ class SmartDevice(Device):
         if not self.credentials:
             raise AuthenticationError("Device requires authentication.")
 
-        payload = {
-            "account": {
-                "username": base64.b64encode(
-                    self.credentials.username.encode()
-                ).decode(),
-                "password": base64.b64encode(
-                    self.credentials.password.encode()
-                ).decode(),
-            },
-            "wireless": {
-                "key_type": keytype,
-                "password": base64.b64encode(password.encode()).decode(),
-                "ssid": base64.b64encode(ssid.encode()).decode(),
-            },
-            "time": self.internal_state["get_device_time"],
-        }
+        if not self.networks:
+            await self.wifi_scan()
 
-        # The device does not respond to the request but changes the settings
-        # immediately which causes us to timeout.
-        # Thus, We limit retries and suppress the raised exception as useless.
-        try:
-            return await self.protocol.query({"set_qs_info": payload}, retry_count=0)
-        except DeviceError:
-            raise  # Re-raise on device-reported errors
-        except KasaException:
-            _LOGGER.debug(
-                "Received a kasa exception for wifi join, but this is expected"
+        net = next((n for n in self.networks if getattr(n, "ssid", None) == ssid), None)
+        payload: dict[str, dict[str, Any]]
+        if (
+            net is not None
+            and hasattr(net, "auth")
+            and hasattr(net, "encryption")
+            and hasattr(net, "bssid")
+            and hasattr(net, "rssi")
+        ):
+            STATIC_PUBLIC_KEY_B64 = (
+                "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC4D6i0oD/Ga5qb//RfSe8MrPVI"
+                "rMIGecCxkcGWGj9kxxk74qQNq8XUuXoy2PczQ30BpiRHrlkbtBEPeWLpq85tfubT"
+                "UjhBz1NPNvWrC88uaYVGvzNpgzZOqDC35961uPTuvdUa8vztcUQjEZy16WbmetRj"
+                "URFIiWJgFCmemyYVbQIDAQAB"
             )
-            return {}
+            public_key_b64 = self.public_key or STATIC_PUBLIC_KEY_B64
+            key_bytes = base64.b64decode(public_key_b64)
+            public_key = serialization.load_der_public_key(key_bytes)
+            if not isinstance(public_key, RSAPublicKey):
+                raise TypeError("Loaded public key is not an RSA public key")
+            encrypted = public_key.encrypt(
+                password.encode(), asymmetric_padding.PKCS1v15()
+            )
+            encrypted_password = base64.b64encode(encrypted).decode()
+            payload = {
+                "onboarding": {
+                    "connect": {
+                        "auth": net.auth,
+                        "bssid": net.bssid,
+                        "encryption": net.encryption,
+                        "password": encrypted_password,
+                        "rssi": net.rssi,
+                        "ssid": net.ssid,
+                    }
+                }
+            }
+            # The device does not respond to the request but changes the settings
+            # immediately which causes us to timeout.
+            # Thus, We limit retries and suppress the raised exception as useless.
+            try:
+                return await self.protocol.query({"connectAp": payload}, retry_count=0)
+            except DeviceError:
+                raise  # Re-raise on device-reported errors
+            except KasaException:
+                _LOGGER.debug(
+                    "Received a kasa exception for wifi join, but this is expected"
+                )
+                return {}
+        else:
+            payload = {
+                "account": {
+                    "username": base64.b64encode(
+                        self.credentials.username.encode()
+                    ).decode(),
+                    "password": base64.b64encode(
+                        self.credentials.password.encode()
+                    ).decode(),
+                },
+                "wireless": {
+                    "key_type": keytype,
+                    "password": base64.b64encode(password.encode()).decode(),
+                    "ssid": base64.b64encode(ssid.encode()).decode(),
+                },
+                "time": self.internal_state["get_device_time"],
+            }
+
+            # The device does not respond to the request but changes the settings
+            # immediately which causes us to timeout.
+            # Thus, We limit retries and suppress the raised exception as useless.
+            try:
+                return await self.protocol.query(
+                    {"set_qs_info": payload}, retry_count=0
+                )
+            except DeviceError:
+                raise  # Re-raise on device-reported errors
+            except KasaException:
+                _LOGGER.debug(
+                    "Received a kasa exception for wifi join, but this is expected"
+                )
+                return {}
 
     async def update_credentials(self, username: str, password: str) -> dict:
         """Update device credentials.
