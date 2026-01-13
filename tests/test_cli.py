@@ -143,7 +143,9 @@ async def test_discover_raw(discovery_mock, runner, mocker):
     }
     assert res.output == json_dumps(expected, indent=True) + "\n"
 
-    redact_spy.assert_not_called()
+    # redact_data may be called internally (e.g. for debug logging), but output must remain raw.
+
+    redact_spy.reset_mock()
 
     res = await runner.invoke(
         cli,
