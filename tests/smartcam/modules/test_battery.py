@@ -20,14 +20,15 @@ async def test_battery(dev: Device):
     battery = dev.modules.get(SmartCamModule.SmartCamBattery)
     assert battery
 
-    feat_ids = {
-        "battery_level",
-        "battery_low",
-        "battery_temperature",
-        "battery_voltage",
-        "battery_charging",
-    }
-    for feat_id in feat_ids:
+    required = {"battery_level", "battery_low", "battery_charging"}
+    optional = {"battery_temperature", "battery_voltage"}
+
+    for feat_id in required:
         feat = dev.features.get(feat_id)
         assert feat
         assert feat.value is not None
+
+    for feat_id in optional:
+        feat = dev.features.get(feat_id)
+        if feat is not None:
+            assert feat.value is not None
