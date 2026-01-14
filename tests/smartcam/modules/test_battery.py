@@ -52,3 +52,39 @@ async def test_battery_temperature_edge_cases(dev: Device, raw, expected):
 
     dev.sys_info["battery_temperature"] = raw
     assert battery.battery_temperature == expected
+
+
+@battery_smartcam
+@pytest.mark.parametrize(
+    ("voltage_raw", "expected_v"),
+    [
+        (None, None),  # covers: battery_voltage -> return None
+        ("NO", None),  # covers: battery_voltage -> return None
+        ("12000", 12.0),  # sanity: parses string -> float(...) / 1000
+    ],
+)
+async def test_battery_voltage_edge_cases(dev: Device, voltage_raw, expected_v):
+    battery = dev.modules.get(SmartCamModule.SmartCamBattery)
+    assert battery
+
+    dev.sys_info["battery_voltage"] = voltage_raw
+    assert battery.battery_voltage == expected_v
+
+
+@battery_smartcam
+@pytest.mark.parametrize(
+    ("charging_raw", "expected"),
+    [
+        (True, True),  # covers: isinstance(v, bool) -> return v
+        (False, False),  # covers: isinstance(v, bool) -> return v
+        (None, False),  # covers: v is None -> return False
+        ("yes", True),  # sanity: string normalization path
+        ("NO", False),  # sanity: string normalization path
+    ],
+)
+async def test_battery_charging_edge_cases(dev: Device, charging_raw, expected):
+    battery = dev.modules.get(SmartCamModule.SmartCamBattery)
+    assert battery
+
+    dev.sys_info["battery_charging"] = charging_raw
+    assert battery.battery_charging is expected
