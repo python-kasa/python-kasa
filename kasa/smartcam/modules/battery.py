@@ -43,33 +43,34 @@ class Battery(SmartCamModule):
                 type=Feature.Type.Sensor,
             )
         )
-
-        self._add_feature(
-            Feature(
-                self._device,
-                "battery_temperature",
-                "Battery temperature",
-                container=self,
-                attribute_getter="battery_temperature",
-                icon="mdi:battery",
-                unit_getter=lambda: "celsius",
-                category=Feature.Category.Debug,
-                type=Feature.Type.Sensor,
+        if self._device.sys_info.get("battery_temperature") not in (None, "NO"):
+            self._add_feature(
+                Feature(
+                    self._device,
+                    "battery_temperature",
+                    "Battery temperature",
+                    container=self,
+                    attribute_getter="battery_temperature",
+                    icon="mdi:battery",
+                    unit_getter=lambda: "celsius",
+                    category=Feature.Category.Debug,
+                    type=Feature.Type.Sensor,
+                )
             )
-        )
-        self._add_feature(
-            Feature(
-                self._device,
-                "battery_voltage",
-                "Battery voltage",
-                container=self,
-                attribute_getter="battery_voltage",
-                icon="mdi:battery",
-                unit_getter=lambda: "V",
-                category=Feature.Category.Debug,
-                type=Feature.Type.Sensor,
+        if self._device.sys_info.get("battery_voltage") not in (None, "NO"):
+            self._add_feature(
+                Feature(
+                    self._device,
+                    "battery_voltage",
+                    "Battery voltage",
+                    container=self,
+                    attribute_getter="battery_voltage",
+                    icon="mdi:battery",
+                    unit_getter=lambda: "V",
+                    category=Feature.Category.Debug,
+                    type=Feature.Type.Sensor,
+                )
             )
-        )
         self._add_feature(
             Feature(
                 self._device,
@@ -98,16 +99,30 @@ class Battery(SmartCamModule):
         return self._device.sys_info["low_battery"]
 
     @property
-    def battery_temperature(self) -> bool:
-        """Return battery voltage in C."""
-        return self._device.sys_info["battery_temperature"]
+    def battery_temperature(self) -> float | None:
+        """Return battery temperature in °C (if available)."""
+        v = self._device.sys_info.get("battery_temperature")
+        if v in (None, "NO"):
+            return None
+        try:
+            return float(str(v))
+        except (TypeError, ValueError):
+            return None
 
     @property
-    def battery_voltage(self) -> bool:
-        """Return battery voltage in V."""
-        return self._device.sys_info["battery_voltage"] / 1_000
+    def battery_voltage(self) -> float | None:
+        """Return battery voltage (if available)."""
+        v = self._device.sys_info.get("battery_voltage")
+        if v in (None, "NO"):
+            return None
+        return float(str(v)) / 1_000
 
     @property
     def battery_charging(self) -> bool:
         """Return True if battery is charging."""
-        return self._device.sys_info["battery_voltage"] != "NO"
+        v = self._device.sys_info.get("battery_charging")
+        if isinstance(v, bool):
+            return v
+        if v is None:
+            return False
+        return str(v).strip().lower() in ("yes", "true", "1", "charging", "on")
