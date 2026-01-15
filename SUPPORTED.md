@@ -323,6 +323,11 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 - **D230**
   - Hardware: 1.20 (EU) / Firmware: 1.1.19
 
+### Locks
+
+- **DL110**
+  - Hardware: 2.0 (US) / Firmware: 1.2.5
+
 ### Vacuums
 
 - **RV20 Max Plus**

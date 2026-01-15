@@ -1,0 +1,296 @@
+{
+    "discovery_result": {
+        "error_code": 0,
+        "result": {
+            "device_id": "00000000000000000000000000000000",
+            "device_model": "DL110",
+            "device_name": "#MASKED_NAME#",
+            "device_type": "SMART.TAPOLOCK",
+            "encrypt_info": {
+                "data": "",
+                "key": "",
+                "sym_schm": "AES"
+            },
+            "encrypt_type": [
+                "3"
+            ],
+            "factory_default": false,
+            "firmware_version": "1.2.5 Build 240716 Rel.51615n",
+            "hardware_version": "2.0",
+            "ip": "127.0.0.123",
+            "isResetWiFi": false,
+            "is_support_iot_cloud": true,
+            "mac": "40-AE-30-00-00-00",
+            "mgt_encrypt_schm": {
+                "is_support_https": true
+            }
+        }
+    },
+    "getAlertConfig": {
+        "msg_alarm": {
+            "capability": {
+                "alarm_duration_support": "1",
+                "alarm_volume_support": "1",
+                "alert_event_type_support": "1",
+                "usr_def_audio_alarm_max_num": "5",
+                "usr_def_audio_alarm_support": "0",
+                "usr_def_audio_max_duration": "10",
+                "usr_def_audio_type": "0",
+                "usr_def_start_file_id": "0"
+            },
+            "chn1_msg_alarm_info": {
+                "alarm_duration": "5",
+                "alarm_mode": [
+                    "light",
+                    "sound"
+                ],
+                "alarm_type": "0",
+                "alarm_volume": "high",
+                "enabled": "on",
+                "light_alarm_enabled": "on",
+                "light_type": "1",
+                "sound_alarm_enabled": "on"
+            },
+            "usr_def_audio": []
+        }
+    },
+    "getAlertTypeList": {
+        "msg_alarm": {
+            "alert_type": {
+                "alert_type_list": [
+                    "Chime1",
+                    "Chime2",
+                    "Chime3"
+                ]
+            }
+        }
+    },
+    "getAppComponentList": {
+        "app_component": {
+            "app_component_list": [
+                {
+                    "name": "lock",
+                    "version": 1
+                },
+                {
+                    "name": "doorbell",
+                    "version": 1
+                },
+                {
+                    "name": "battery",
+                    "version": 1
+                },
+                {
+                    "name": "system",
+                    "version": 2
+                },
+                {
+                    "name": "led",
+                    "version": 1
+                },
+                {
+                    "name": "time",
+                    "version": 1
+                },
+                {
+                    "name": "firmware",
+                    "version": 1
+                },
+                {
+                    "name": "account",
+                    "version": 1
+                },
+                {
+                    "name": "siren",
+                    "version": 1
+                },
+                {
+                    "name": "msgPush",
+                    "version": 2
+                }
+            ]
+        }
+    },
+    "getComponentNegotiation": {
+        "component_nego": {
+            "components": [
+                {
+                    "name": "lock",
+                    "version": 1
+                },
+                {
+                    "name": "doorbell",
+                    "version": 1
+                },
+                {
+                    "name": "battery",
+                    "version": 1
+                },
+                {
+                    "name": "system",
+                    "version": 2
+                },
+                {
+                    "name": "led",
+                    "version": 1
+                },
+                {
+                    "name": "time",
+                    "version": 1
+                },
+                {
+                    "name": "firmware",
+                    "version": 1
+                },
+                {
+                    "name": "account",
+                    "version": 1
+                },
+                {
+                    "name": "siren",
+                    "version": 1
+                },
+                {
+                    "name": "msgPush",
+                    "version": 2
+                }
+            ]
+        }
+    },
+    "getConnectionType": {
+        "connection_type": {
+            "get_connection_type": [
+                {
+                    "connection_type": "Wi-Fi",
+                    "rssi": -45,
+                    "rssiValue": -45
+                }
+            ]
+        }
+    },
+    "getDeviceInfo": {
+        "device_info": {
+            "basic_info": {
+                "device_id": "00000000000000000000000000000000",
+                "device_model": "DL110",
+                "device_name": "#MASKED_NAME#",
+                "device_type": "SMART.TAPOLOCK",
+                "hw_version": "2.0",
+                "oem_id": "",
+                "region": "US",
+                "sw_version": "1.2.5 Build 240716 Rel.51615n"
+            },
+            "info": {
+                "battery_percent": 85,
+                "low_battery": false
+            }
+        }
+    },
+    "getDoorbellConfig": {
+        "doorbell": {
+            "enabled": true,
+            "sound_enabled": true,
+            "sound_volume": "high"
+        }
+    },
+    "getLed": {
+        "led": {
+            "enabled": true
+        }
+    },
+    "getLockConfig": {
+        "lock": {
+            "auto_lock_enabled": true,
+            "auto_lock_time": 300,
+            "doorbell_sound_volume": "high",
+            "lock_direction": "normal",
+            "lock_status": "locked",
+            "sound_enabled": true,
+            "sound_volume": "high",
+            "wrong_try_protection_attempts": 5,
+            "wrong_try_protection_duration": 300,
+            "wrong_try_protection_enabled": true
+        }
+    },
+    "getLockLogCount": {
+        "lock": {
+            "total_count": 150
+        }
+    },
+    "getLockLogs": {
+        "lock": {
+            "log_list": [
+                {
+                    "event_type": "unlock",
+                    "method": "app",
+                    "timestamp": 1705262400,
+                    "user": "user1"
+                },
+                {
+                    "event_type": "lock",
+                    "method": "app",
+                    "timestamp": 1705176000,
+                    "user": "user1"
+                },
+                {
+                    "event_type": "unlock",
+                    "method": "keypad",
+                    "timestamp": 1705089600,
+                    "user": "user2"
+                },
+                {
+                    "event_type": "lock",
+                    "method": "manual",
+                    "timestamp": 1705003200,
+                    "user": null
+                },
+                {
+                    "event_type": "unlock",
+                    "method": "nfc",
+                    "timestamp": 1704916800,
+                    "user": "nfc_card_1"
+                }
+            ]
+        }
+    },
+    "getLockStatus": {
+        "lock": {
+            "battery_percent": 85,
+            "last_unlock_method": "app",
+            "last_unlock_time": 1705176000,
+            "last_unlock_user": "user1",
+            "lock_status": "locked"
+        }
+    },
+    "getSirenConfig": {
+        "siren": {
+            "duration": "5",
+            "siren_type": "Chime1",
+            "volume": "8"
+        }
+    },
+    "getSirenStatus": {
+        "siren": {
+            "status": "off"
+        }
+    },
+    "getTime": {
+        "time": {
+            "timestamp": 1705262400,
+            "timezone": "America/Chicago"
+        }
+    },
+    "sys_info": {
+        "battery_percent": 85,
+        "device_id": "00000000000000000000000000000000",
+        "device_model": "DL110",
+        "device_name": "#MASKED_NAME#",
+        "device_type": "SMART.TAPOLOCK",
+        "hw_version": "2.0",
+        "lock_status": "locked",
+        "low_battery": false,
+        "oem_id": "",
+        "region": "US",
+        "sw_version": "1.2.5 Build 240716 Rel.51615n"
+    }
+}

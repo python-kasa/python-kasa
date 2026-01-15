@@ -170,6 +170,10 @@ class Module(ABC):
     # SMARTCAM only modules
     Camera: Final[ModuleName[smartcam.Camera]] = ModuleName("Camera")
     LensMask: Final[ModuleName[smartcam.LensMask]] = ModuleName("LensMask")
+    SmartCamLock: Final[ModuleName[smartcam.Lock]] = ModuleName("Lock")
+    SmartCamLockHistory: Final[ModuleName[smartcam.LockHistory]] = ModuleName(
+        "LockHistory"
+    )
 
     # Vacuum modules
     Clean: Final[ModuleName[smart.Clean]] = ModuleName("Clean")

@@ -360,6 +360,11 @@ doobell_smartcam = parametrize(
     device_type_filter=[DeviceType.Doorbell],
     protocol_filter={"SMARTCAM", "SMARTCAM.CHILD"},
 )
+doorlock_smartcam = parametrize(
+    "doorlock smartcam",
+    device_type_filter=[DeviceType.DoorLock],
+    protocol_filter={"SMARTCAM"},
+)
 chime_smart = parametrize(
     "chime smart",
     device_type_filter=[DeviceType.Chime],
@@ -385,6 +390,7 @@ def check_categories():
         + chime_smart.args[1]
         + camera_smartcam.args[1]
         + doobell_smartcam.args[1]
+        + doorlock_smartcam.args[1]
         + hub_smartcam.args[1]
         + vacuum.args[1]
     )

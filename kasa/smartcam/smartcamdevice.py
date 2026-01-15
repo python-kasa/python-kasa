@@ -35,6 +35,9 @@ class SmartCamDevice(SmartDevice):
         if "DOORBELL" in device_type:
             return DeviceType.Doorbell
 
+        if "DOORLOCK" in device_type or "TAPOLOCK" in device_type:
+            return DeviceType.DoorLock
+
         return DeviceType.Camera
 
     @staticmethod

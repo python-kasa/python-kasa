@@ -13,6 +13,8 @@ from .homekit import HomeKit
 from .led import Led
 from .lensmask import LensMask
 from .linecrossingdetection import LineCrossingDetection
+from .lock import Lock
+from .lockhistory import LockHistory
 from .matter import Matter
 from .meowdetection import MeowDetection
 from .motiondetection import MotionDetection
@@ -35,6 +37,8 @@ __all__ = [
     "GlassDetection",
     "Led",
     "LineCrossingDetection",
+    "Lock",
+    "LockHistory",
     "MeowDetection",
     "PanTilt",
     "PersonDetection",

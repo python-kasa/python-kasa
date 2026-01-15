@@ -160,6 +160,8 @@ def get_device_class_from_family(
         "SMART.KASASWITCH": SmartDevice,
         "SMART.IPCAMERA.HTTPS": SmartCamDevice,
         "SMART.TAPODOORBELL.HTTPS": SmartCamDevice,
+        "SMART.TAPOLOCK": SmartCamDevice,
+        "SMART.TAPOLOCK.HTTPS": SmartCamDevice,
         "SMART.TAPOROBOVAC.HTTPS": SmartDevice,
         "IOT.SMARTPLUGSWITCH": IotPlug,
         "IOT.SMARTBULB": IotBulb,
@@ -199,6 +201,7 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
     if ctype.device_family in {
         DeviceFamily.SmartIpCamera,
         DeviceFamily.SmartTapoDoorbell,
+        DeviceFamily.SmartTapoLock,
     }:
         if strict and ctype.encryption_type is not DeviceEncryptionType.Aes:
             return None
