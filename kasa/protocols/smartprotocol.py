@@ -92,7 +92,6 @@ REDACTORS: dict[str, Callable[[Any], Any] | None] = {
 # Queries that are known not to work properly when sent as a
 # multiRequest. They will not return the `method` key.
 FORCE_SINGLE_REQUEST = {
-    "connectAp",
     "getConnectStatus",
     "scanApList",
 }
