@@ -81,6 +81,7 @@ PLUGS_IOT = {
     "KP401",
 }
 PLUGS_SMART = {
+    "P105",
     "P100",
     "P110",
     "P110M",
@@ -110,6 +111,7 @@ SWITCHES_SMART = {
     "S500D",
     "S505",
     "S505D",
+    "TS15",
 }
 SWITCHES = {*SWITCHES_IOT, *SWITCHES_SMART}
 STRIPS_IOT = {"HS107", "HS300", "KP303", "KP200", "KP400", "EP40"}
