@@ -47,6 +47,13 @@ NON_HUB_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
 
 ComponentsRaw: TypeAlias = dict[str, list[dict[str, int | str]]]
 
+STATIC_PUBLIC_KEY_B64 = (
+    "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC4D6i0oD/Ga5qb//RfSe8MrPVI"
+    "rMIGecCxkcGWGj9kxxk74qQNq8XUuXoy2PczQ30BpiRHrlkbtBEPeWLpq85tfubT"
+    "UjhBz1NPNvWrC88uaYVGvzNpgzZOqDC35961uPTuvdUa8vztcUQjEZy16WbmetRj"
+    "URFIiWJgFCmemyYVbQIDAQAB"
+)
+
 
 # Device must go last as the other interfaces also inherit Device
 # and python needs a consistent method resolution order.
@@ -55,13 +62,6 @@ class SmartDevice(Device):
 
     # Modules that are called as part of the init procedure on first update
     FIRST_UPDATE_MODULES = {DeviceModule, ChildDevice, Cloud}
-
-    STATIC_PUBLIC_KEY_B64 = (
-        "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC4D6i0oD/Ga5qb//RfSe8MrPVI"
-        "rMIGecCxkcGWGj9kxxk74qQNq8XUuXoy2PczQ30BpiRHrlkbtBEPeWLpq85tfubT"
-        "UjhBz1NPNvWrC88uaYVGvzNpgzZOqDC35961uPTuvdUa8vztcUQjEZy16WbmetRj"
-        "URFIiWJgFCmemyYVbQIDAQAB"
-    )
 
     def __init__(
         self,
@@ -783,6 +783,7 @@ class SmartDevice(Device):
                     ssid=res["ssid"],
                     auth=res["auth"],
                     encryption=res["encryption"],
+                    channel=res["channel"],
                     rssi=res["rssi"],
                     bssid=res["bssid"],
                 )
@@ -804,16 +805,11 @@ class SmartDevice(Device):
             scan = "scanApList"
             resp = await _scan(scan)
             self.wpa3_supported = (
-                resp.get("wpa3_supported", False)
-                if isinstance(resp.get("wpa3_supported"), bool)
-                else str(resp.get("wpa3_supported", "")).lower() == "true"
+                resp.get("wpa3Supported", False)
+                if isinstance(resp.get("wpa3Supported"), bool)
+                else str(resp.get("wpa3Supported", "")).lower() == "true"
             )
-            public_key = resp.get("public_key")
-            if isinstance(public_key, str):
-                public_key = public_key.strip()
-                self.public_key = public_key or None
-            else:
-                self.public_key = None
+            self.public_key = str(resp.get("publicKey", ""))
         nets = _handle_scan_response(resp, scan)
         self.networks = [_net_for_scan_info(net, scan) for net in nets]
         return self.networks
@@ -853,7 +849,7 @@ class SmartDevice(Device):
         )
         payload: dict[str, dict[str, Any]]
         if net is not None and not scan_type_legacy:
-            public_key_b64 = self.public_key or self.STATIC_PUBLIC_KEY_B64
+            public_key_b64 = self.public_key or STATIC_PUBLIC_KEY_B64
             key_bytes = base64.b64decode(public_key_b64)
             public_key = serialization.load_der_public_key(key_bytes)
             if not isinstance(public_key, RSAPublicKey):
@@ -870,7 +866,7 @@ class SmartDevice(Device):
                         "encryption": net.encryption,
                         "password": encrypted_password,
                         "rssi": net.rssi,
-                        "ssid": ssid,
+                        "ssid": net.ssid,
                     }
                 }
             }
