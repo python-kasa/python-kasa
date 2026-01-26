@@ -1,0 +1,336 @@
+{
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 2
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "wireless",
+                "ver_code": 1
+            },
+            {
+                "id": "schedule",
+                "ver_code": 2
+            },
+            {
+                "id": "countdown",
+                "ver_code": 2
+            },
+            {
+                "id": "antitheft",
+                "ver_code": 1
+            },
+            {
+                "id": "account",
+                "ver_code": 1
+            },
+            {
+                "id": "synchronize",
+                "ver_code": 1
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "led",
+                "ver_code": 1
+            },
+            {
+                "id": "cloud_connect",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "device_local_time",
+                "ver_code": 1
+            },
+            {
+                "id": "default_states",
+                "ver_code": 1
+            },
+            {
+                "id": "auto_off",
+                "ver_code": 2
+            },
+            {
+                "id": "localSmart",
+                "ver_code": 1
+            },
+            {
+                "id": "matter",
+                "ver_code": 2
+            },
+            {
+                "id": "delay_action",
+                "ver_code": 1
+            }
+        ]
+    },
+    "discovery_result": {
+        "error_code": 0,
+        "result": {
+            "device_id": "00000000000000000000000000000000",
+            "device_model": "TS15(US)",
+            "device_type": "SMART.TAPOSWITCH",
+            "factory_default": false,
+            "ip": "127.0.0.123",
+            "is_support_iot_cloud": true,
+            "mac": "B0-19-21-00-00-00",
+            "mgt_encrypt_schm": {
+                "encrypt_type": "KLAP",
+                "http_port": 80,
+                "is_support_https": false,
+                "lv": 2
+            },
+            "obd_src": "tplink",
+            "owner": "00000000000000000000000000000000",
+            "protocol_version": 1
+        }
+    },
+    "get_antitheft_rules": {
+        "antitheft_rule_max_count": 1,
+        "enable": false,
+        "rule_list": []
+    },
+    "get_auto_off_config": {
+        "delay_min": 20,
+        "enable": true
+    },
+    "get_auto_update_info": {
+        "enable": true,
+        "random_range": 120,
+        "time": 180
+    },
+    "get_connect_cloud_state": {
+        "status": 0
+    },
+    "get_countdown_rules": {
+        "countdown_rule_max_count": 1,
+        "enable": false,
+        "rule_list": []
+    },
+    "get_device_info": {
+        "auto_off_remain_time": 0,
+        "auto_off_status": "off",
+        "avatar": "hang_lamp_1",
+        "default_states": {
+            "state": {
+                "on": false
+            },
+            "type": "custom"
+        },
+        "device_id": "0000000000000000000000000000000000000000",
+        "device_on": false,
+        "fw_id": "00000000000000000000000000000000",
+        "fw_ver": "1.2.2 Build 240604 Rel.122252",
+        "has_set_location_info": true,
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.0",
+        "ip": "127.0.0.123",
+        "lang": "en_US",
+        "latitude": 0,
+        "longitude": 0,
+        "mac": "B0-19-21-00-00-00",
+        "model": "TS15",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
+        "oem_id": "00000000000000000000000000000000",
+        "on_time": 0,
+        "overheat_status": "normal",
+        "region": "America/Chicago",
+        "rssi": -38,
+        "signal_level": 3,
+        "specs": "",
+        "ssid": "I01BU0tFRF9TU0lEIw==",
+        "time_diff": -360,
+        "type": "SMART.TAPOSWITCH"
+    },
+    "get_device_time": {
+        "region": "America/Chicago",
+        "time_diff": -360,
+        "timestamp": 1768406162
+    },
+    "get_device_usage": {
+        "time_usage": {
+            "past30": 4024,
+            "past7": 759,
+            "today": 37
+        }
+    },
+    "get_fw_download_state": {
+        "auto_upgrade": false,
+        "download_progress": 0,
+        "reboot_time": 5,
+        "status": 0,
+        "upgrade_time": 5
+    },
+    "get_latest_fw": {
+        "fw_size": 0,
+        "fw_ver": "1.2.2 Build 240604 Rel.122252",
+        "hw_id": "",
+        "need_to_upgrade": false,
+        "oem_id": "",
+        "release_date": "",
+        "release_note": "",
+        "type": 0
+    },
+    "get_led_info": {
+        "bri_config": {
+            "bri_type": "overall",
+            "overall_bri": 50
+        },
+        "led_rule": "never",
+        "led_status": false,
+        "night_mode": {
+            "end_time": 470,
+            "night_mode_type": "sunrise_sunset",
+            "start_time": 1017,
+            "sunrise_offset": 0,
+            "sunset_offset": 0
+        }
+    },
+    "get_matter_setup_info": {
+        "setup_code": "00000000000",
+        "setup_payload": "00:0000000000000000000"
+    },
+    "get_next_event": {},
+    "get_schedule_rules": {
+        "enable": false,
+        "rule_list": [],
+        "schedule_rule_max_count": 32,
+        "start_index": 0,
+        "sum": 0
+    },
+    "get_wireless_scan_info": {
+        "ap_list": [
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 3,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 3,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 3,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 3,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 3,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 3,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 2,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 2,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            }
+        ],
+        "start_index": 0,
+        "sum": 9,
+        "wep_supported": false
+    },
+    "qs_component_nego": {
+        "component_list": [
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "ble_whole_setup",
+                "ver_code": 1
+            },
+            {
+                "id": "matter",
+                "ver_code": 2
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            }
+        ],
+        "extra_info": {
+            "device_model": "TS15",
+            "device_type": "SMART.TAPOSWITCH",
+            "is_klap": true
+        }
+    }
+}

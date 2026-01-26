@@ -1,0 +1,469 @@
+{
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 2
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "wireless",
+                "ver_code": 1
+            },
+            {
+                "id": "schedule",
+                "ver_code": 2
+            },
+            {
+                "id": "countdown",
+                "ver_code": 2
+            },
+            {
+                "id": "antitheft",
+                "ver_code": 1
+            },
+            {
+                "id": "account",
+                "ver_code": 1
+            },
+            {
+                "id": "synchronize",
+                "ver_code": 1
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "cloud_connect",
+                "ver_code": 1
+            },
+            {
+                "id": "default_states",
+                "ver_code": 1
+            },
+            {
+                "id": "preset",
+                "ver_code": 3
+            },
+            {
+                "id": "brightness",
+                "ver_code": 1
+            },
+            {
+                "id": "color",
+                "ver_code": 1
+            },
+            {
+                "id": "color_temperature",
+                "ver_code": 1
+            },
+            {
+                "id": "auto_light",
+                "ver_code": 3
+            },
+            {
+                "id": "on_off_gradually",
+                "ver_code": 3
+            },
+            {
+                "id": "device_local_time",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "bulb_quick_control",
+                "ver_code": 1
+            },
+            {
+                "id": "localSmart",
+                "ver_code": 1
+            },
+            {
+                "id": "segment_effect",
+                "ver_code": 2
+            },
+            {
+                "id": "music_rhythm_bulb",
+                "ver_code": 4
+            },
+            {
+                "id": "bccp",
+                "ver_code": 1
+            }
+        ]
+    },
+    "discovery_result": {
+        "error_code": 0,
+        "result": {
+            "device_id": "00000000000000000000000000000000",
+            "device_model": "L430C(EU)",
+            "device_type": "SMART.TAPOBULB",
+            "factory_default": false,
+            "ip": "127.0.0.123",
+            "is_support_iot_cloud": true,
+            "mac": "8C-86-DD-00-00-00",
+            "mgt_encrypt_schm": {
+                "encrypt_type": "KLAP",
+                "http_port": 80,
+                "is_support_https": false,
+                "lv": 2
+            },
+            "obd_src": "tplink",
+            "owner": "00000000000000000000000000000000",
+            "protocol_version": 1
+        }
+    },
+    "get_antitheft_rules": {
+        "antitheft_rule_max_count": 1,
+        "enable": false,
+        "rule_list": []
+    },
+    "get_auto_update_info": {
+        "enable": true,
+        "random_range": 120,
+        "time": 180
+    },
+    "get_connect_cloud_state": {
+        "status": 0
+    },
+    "get_countdown_rules": {
+        "countdown_rule_max_count": 1,
+        "enable": false,
+        "rule_list": []
+    },
+    "get_device_info": {
+        "auto_biorhythm_light_enable": false,
+        "avatar": "bulb",
+        "brightness": 50,
+        "color_temp": 2700,
+        "color_temp_range": [
+            2500,
+            6500
+        ],
+        "default_states": {
+            "re_power_type": "always_on",
+            "state": {
+                "brightness": 50,
+                "color_temp": 2700,
+                "hue": 50,
+                "saturation": 50
+            },
+            "type": "last_states"
+        },
+        "device_id": "0000000000000000000000000000000000000000",
+        "device_on": true,
+        "dynamic_light_effect_enable": false,
+        "fw_id": "00000000000000000000000000000000",
+        "fw_ver": "1.0.4 Build 241018 Rel.092847",
+        "has_set_location_info": true,
+        "hue": 50,
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.0",
+        "ip": "127.0.0.123",
+        "lang": "en_US",
+        "latitude": 0,
+        "longitude": 0,
+        "mac": "8C-86-DD-00-00-00",
+        "model": "L430C",
+        "music_rhythm_enable": false,
+        "music_rhythm_mode": "single_lamp",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
+        "oem_id": "00000000000000000000000000000000",
+        "overheated": false,
+        "region": "Asia/Nicosia",
+        "rssi": -53,
+        "saturation": 50,
+        "segment_effect": {
+            "brightness": 0,
+            "custom": 0,
+            "display_colors": [],
+            "enable": 0,
+            "id": "",
+            "name": ""
+        },
+        "signal_level": 2,
+        "specs": "EU",
+        "ssid": "I01BU0tFRF9TU0lEIw==",
+        "time_diff": 120,
+        "type": "SMART.TAPOBULB"
+    },
+    "get_device_time": {
+        "region": "Asia/Nicosia",
+        "time_diff": 120,
+        "timestamp": 1768224264
+    },
+    "get_device_usage": {
+        "power_usage": {
+            "past30": 1719,
+            "past7": 494,
+            "today": 17
+        },
+        "saved_power": {
+            "past30": 10718141,
+            "past7": 0,
+            "today": 33862137
+        },
+        "time_usage": {
+            "past30": 1513958414,
+            "past7": 135451055,
+            "today": 1107603978
+        }
+    },
+    "get_fw_download_state": {
+        "auto_upgrade": false,
+        "download_progress": 0,
+        "reboot_time": 5,
+        "status": 0,
+        "upgrade_time": 5
+    },
+    "get_inherit_info": {
+        "inherit_status": false
+    },
+    "get_latest_fw": {
+        "fw_size": 0,
+        "fw_ver": "1.0.4 Build 241018 Rel.092847",
+        "hw_id": "",
+        "need_to_upgrade": false,
+        "oem_id": "",
+        "release_date": "",
+        "release_note": "",
+        "type": 0
+    },
+    "get_next_event": {
+        "desired_states": {
+            "auto": false,
+            "brightness": 100,
+            "color_temp": 2700,
+            "hue": 0,
+            "on": true,
+            "saturation": 0,
+            "transition_period": 1800000
+        },
+        "e_time": 0,
+        "id": "S4",
+        "s_time": 1768228140,
+        "type": 1
+    },
+    "get_on_off_gradually_info": {
+        "off_state": {
+            "duration": 10,
+            "enable": false,
+            "max_duration": 60
+        },
+        "on_state": {
+            "duration": 5,
+            "enable": false,
+            "max_duration": 60
+        }
+    },
+    "get_preset_rules": {
+        "start_index": 0,
+        "states": [
+            {
+                "brightness": 52,
+                "color_temp": 3000,
+                "hue": 20,
+                "saturation": 30
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 240,
+                "saturation": 100
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 0,
+                "saturation": 100
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 120,
+                "saturation": 100
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 277,
+                "saturation": 86
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 60,
+                "saturation": 100
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 300,
+                "saturation": 100
+            }
+        ],
+        "sum": 7
+    },
+    "get_schedule_rules": {
+        "enable": true,
+        "rule_list": [
+            {
+                "day": 13,
+                "desired_states": {
+                    "auto": false,
+                    "brightness": 100,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "on": true,
+                    "saturation": 0,
+                    "transition_period": 1800000
+                },
+                "e_action": "none",
+                "e_min": 0,
+                "e_type": "normal",
+                "enable": true,
+                "id": "S1",
+                "mode": "repeat",
+                "month": 1,
+                "s_min": 330,
+                "s_type": "normal",
+                "time_offset": 0,
+                "week_day": 127,
+                "year": 2026
+            },
+            {
+                "day": 12,
+                "desired_states": {
+                    "on": false,
+                    "transition_period": 1800000
+                },
+                "e_action": "none",
+                "e_min": 0,
+                "e_type": "normal",
+                "enable": true,
+                "id": "S2",
+                "mode": "repeat",
+                "month": 1,
+                "s_min": 1350,
+                "s_type": "normal",
+                "time_offset": 0,
+                "week_day": 127,
+                "year": 2026
+            },
+            {
+                "day": 13,
+                "desired_states": {
+                    "on": false,
+                    "transition_period": 0
+                },
+                "e_action": "none",
+                "e_min": 0,
+                "e_type": "normal",
+                "enable": true,
+                "id": "S3",
+                "mode": "repeat",
+                "month": 1,
+                "s_min": 420,
+                "s_type": "normal",
+                "time_offset": 0,
+                "week_day": 127,
+                "year": 2026
+            },
+            {
+                "day": 12,
+                "desired_states": {
+                    "auto": false,
+                    "brightness": 100,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "on": true,
+                    "saturation": 0,
+                    "transition_period": 1800000
+                },
+                "e_action": "none",
+                "e_min": 0,
+                "e_type": "normal",
+                "enable": true,
+                "id": "S4",
+                "mode": "repeat",
+                "month": 1,
+                "s_min": 989,
+                "s_type": "sunset",
+                "time_offset": -30,
+                "week_day": 127,
+                "year": 2026
+            }
+        ],
+        "schedule_rule_max_count": 32,
+        "start_index": 0,
+        "sum": 4
+    },
+    "get_segment_effect_rule": {
+        "brightness": 0,
+        "custom": 0,
+        "display_colors": [],
+        "enable": 0,
+        "id": "",
+        "name": ""
+    },
+    "get_wireless_scan_info": {
+        "ap_list": [],
+        "wep_supported": false
+    },
+    "qs_component_nego": {
+        "component_list": [
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            },
+            {
+                "id": "ble_whole_setup",
+                "ver_code": 1
+            },
+            {
+                "id": "bccp",
+                "ver_code": 1
+            }
+        ],
+        "extra_info": {
+            "device_model": "L430C",
+            "device_type": "SMART.TAPOBULB",
+            "is_klap": true
+        }
+    }
+}
