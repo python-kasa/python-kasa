@@ -896,7 +896,6 @@ class SmartDevice(Device):
                 getattr(net, "rssi", None),
             )
             public_key_b64 = self.public_key or self.STATIC_PUBLIC_KEY_B64
-            public_key_b64 = "".join(public_key_b64.split())
             _LOGGER.debug(
                 "wifi_join: public key source=%s, b64_len=%d",
                 "device" if self.public_key else "static",
@@ -921,14 +920,12 @@ class SmartDevice(Device):
             payload = {
                 "onboarding": {
                     "connect": {
-                        "auth": int(net.auth) if net.auth is not None else 4,
-                        "bssid": net.bssid or "",
-                        "encryption": int(net.encryption)
-                        if net.encryption is not None
-                        else 3,
+                        "auth": net.auth,
+                        "bssid": net.bssid,
+                        "encryption": net.encryption,
                         "password": encrypted_password,
-                        "rssi": int(net.rssi) if net.rssi is not None else 0,
-                        "ssid": str(ssid),
+                        "rssi": net.rssi,
+                        "ssid": ssid,
                     }
                 }
             }
