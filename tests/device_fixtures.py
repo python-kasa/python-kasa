@@ -81,6 +81,7 @@ PLUGS_IOT = {
     "KP401",
 }
 PLUGS_SMART = {
+    "P105",
     "P100",
     "P110",
     "P110M",
