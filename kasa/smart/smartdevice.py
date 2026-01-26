@@ -47,13 +47,6 @@ NON_HUB_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
 
 ComponentsRaw: TypeAlias = dict[str, list[dict[str, int | str]]]
 
-STATIC_PUBLIC_KEY_B64 = (
-    "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC4D6i0oD/Ga5qb//RfSe8MrPVI"
-    "rMIGecCxkcGWGj9kxxk74qQNq8XUuXoy2PczQ30BpiRHrlkbtBEPeWLpq85tfubT"
-    "UjhBz1NPNvWrC88uaYVGvzNpgzZOqDC35961uPTuvdUa8vztcUQjEZy16WbmetRj"
-    "URFIiWJgFCmemyYVbQIDAQAB"
-)
-
 
 # Device must go last as the other interfaces also inherit Device
 # and python needs a consistent method resolution order.
@@ -754,7 +747,7 @@ class SmartDevice(Device):
 
         async def _scan(target: str) -> dict:
             if target == "get_wireless_scan_info":
-                return await self._query_helper(target, {"start_index": 0})
+                return await self._query_helper(target, {"start_index": 1})
             elif target == "scanApList":
                 return await self._query_helper(target, {"onboarding": {"scan": {}}})
             else:
@@ -764,7 +757,12 @@ class SmartDevice(Device):
             if scan == "get_wireless_scan_info":
                 return resp["get_wireless_scan_info"]["ap_list"]
             elif scan == "scanApList":
-                return resp["scanApList"]["onboarding"]["scan"]["ap_list"]
+                scan_data: dict = resp["scanApList"]["onboarding"]["scan"]
+                return {
+                    "wpa3Supported": scan_data.get("wpa3_supported", ""),
+                    "publicKey": scan_data.get("public_key", ""),
+                    "wifiList": scan_data["ap_list"],
+                }
             else:
                 raise KasaException(f"Unknown wifi scan response {resp}")
 
@@ -792,24 +790,19 @@ class SmartDevice(Device):
 
         _LOGGER.debug("Querying networks")
 
-        scan: str = ""
         try:
+            resp = await _scan("get_wireless_scan_info")
             scan = "get_wireless_scan_info"
-            resp = await _scan(scan)
         except KasaException as ex:
             _LOGGER.debug(
                 "Unable to scan using 'get_wireless_scan_info', "
                 "retrying with 'scanApList': %s",
                 ex,
             )
+            resp = await _scan("scanApList")
             scan = "scanApList"
-            resp = await _scan(scan)
-            self.wpa3_supported = (
-                resp.get("wpa3Supported", False)
-                if isinstance(resp.get("wpa3Supported"), bool)
-                else str(resp.get("wpa3Supported", "")).lower() == "true"
-            )
-            self.public_key = str(resp.get("publicKey", ""))
+            self.wpa3_supported = resp.get("wpa3Supported", False)
+            self.public_key = resp.get("publicKey", "")
         nets = _handle_scan_response(resp, scan)
         self.networks = [_net_for_scan_info(net, scan) for net in nets]
         return self.networks
@@ -823,7 +816,7 @@ class SmartDevice(Device):
         """
         Join the given wifi network.
 
-        This method returns an empty dictionary as the device tries to activate the new
+        This method returns nothing as the device tries to activate the new
         settings immediately instead of responding to the request.
 
         If joining the network fails, the device will return to the previous state
@@ -835,20 +828,21 @@ class SmartDevice(Device):
         if not self.networks:
             await self.wifi_scan()
 
-        net = next((n for n in self.networks if n.ssid and n.ssid == ssid), None)
-        scan_type_legacy: bool = not (
+        net = next((n for n in self.networks if getattr(n, "ssid", None) == ssid), None)
+        payload: dict[str, dict[str, Any]]
+        if (
             net is not None
             and hasattr(net, "auth")
-            and net.auth is not None
             and hasattr(net, "encryption")
-            and net.encryption is not None
             and hasattr(net, "bssid")
-            and net.bssid is not None
             and hasattr(net, "rssi")
-            and net.rssi is not None
-        )
-        payload: dict[str, dict[str, Any]]
-        if net is not None and not scan_type_legacy:
+        ):
+            STATIC_PUBLIC_KEY_B64 = (
+                "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC4D6i0oD/Ga5qb//RfSe8MrPVI"
+                "rMIGecCxkcGWGj9kxxk74qQNq8XUuXoy2PczQ30BpiRHrlkbtBEPeWLpq85tfubT"
+                "UjhBz1NPNvWrC88uaYVGvzNpgzZOqDC35961uPTuvdUa8vztcUQjEZy16WbmetRj"
+                "URFIiWJgFCmemyYVbQIDAQAB"
+            )
             public_key_b64 = self.public_key or STATIC_PUBLIC_KEY_B64
             key_bytes = base64.b64decode(public_key_b64)
             public_key = serialization.load_der_public_key(key_bytes)
@@ -882,7 +876,7 @@ class SmartDevice(Device):
                     "Received a kasa exception for wifi join, but this is expected"
                 )
                 return {}
-        elif net is not None and scan_type_legacy:
+        else:
             payload = {
                 "account": {
                     "username": base64.b64encode(
@@ -914,8 +908,6 @@ class SmartDevice(Device):
                     "Received a kasa exception for wifi join, but this is expected"
                 )
                 return {}
-        else:
-            raise KasaException("Unable to determine wifi scan type")
 
     async def update_credentials(self, username: str, password: str) -> dict:
         """Update device credentials.
