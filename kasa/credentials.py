@@ -17,14 +17,14 @@ class Credentials:
 
 
 def get_default_credentials(
-    tuple: tuple[str, str, str | None], login_version: int | None = None
+    crdentials: tuple[str, str, str | None], login_version: int | None = None
 ) -> Credentials:
     """Return decoded default credentials."""
-    un = base64.b64decode(tuple[0].encode()).decode()
-    if login_version == 3 and tuple[2] is not None:
-        pw = base64.b64decode(tuple[2].encode()).decode()
+    un = base64.b64decode(crdentials[0].encode()).decode()
+    if login_version == 3 and crdentials[2] is not None:
+        pw = base64.b64decode(crdentials[2].encode()).decode()
     else:
-        pw = base64.b64decode(tuple[1].encode()).decode()
+        pw = base64.b64decode(crdentials[1].encode()).decode()
     return Credentials(un, pw)
 
 
