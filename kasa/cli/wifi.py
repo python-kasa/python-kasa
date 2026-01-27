@@ -15,8 +15,7 @@ from .common import (
 
 
 @click.group()
-@pass_dev
-def wifi(dev) -> None:
+def wifi() -> None:
     """Commands to control wifi settings."""
 
 
@@ -35,7 +34,11 @@ async def scan(dev):
 
 @wifi.command()
 @click.argument("ssid")
-@click.option("--keytype", prompt=True)
+@click.option(
+    "--keytype",
+    default="wpa2_psk",
+    help="KeyType (Not needed for SmartCamDevice).",
+)
 @click.option("--password", prompt=True, hide_input=True)
 @pass_dev
 async def join(dev: Device, ssid: str, password: str, keytype: str):
