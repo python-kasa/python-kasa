@@ -76,7 +76,6 @@ async def test_wifi_scan(dev: SmartCamDevice):
                             "ssid": "TestSSID",
                             "auth": "WPA2",
                             "encryption": "AES",
-                            "channel": 6,
                             "rssi": -40,
                             "bssid": "00:11:22:33:44:55",
                         }
@@ -92,7 +91,6 @@ async def test_wifi_scan(dev: SmartCamDevice):
         assert net.ssid == "TestSSID"
         assert net.auth == "WPA2"
         assert net.encryption == "AES"
-        assert net.channel == 6
         assert net.rssi == -40
         assert net.bssid == "00:11:22:33:44:55"
         assert dev._public_key == base64.b64encode(b"fakekey").decode()
@@ -108,7 +106,6 @@ async def test_wifi_join_success_and_errors(dev: SmartCamDevice):
                 "ssid": "TestSSID",
                 "auth": "WPA2",
                 "encryption": "AES",
-                "channel": 6,
                 "rssi": -40,
                 "bssid": "00:11:22:33:44:55",
             },
@@ -137,7 +134,6 @@ async def test_wifi_join_success_and_errors(dev: SmartCamDevice):
                     "ssid": "TestSSID",
                     "auth": "WPA2",
                     "encryption": "AES",
-                    "channel": 6,
                     "rssi": -40,
                     "bssid": "00:11:22:33:44:55",
                 },
@@ -178,7 +174,6 @@ async def test_wifi_join_typeerror_on_non_rsa_key(dev: SmartCamDevice):
                 "ssid": "TestSSID",
                 "auth": "WPA2",
                 "encryption": "AES",
-                "channel": 6,
                 "rssi": -40,
                 "bssid": "00:11:22:33:44:55",
             },

@@ -323,7 +323,6 @@ class SmartCamDevice(SmartDevice):
                 ssid=res["ssid"],
                 auth=res["auth"],
                 encryption=res["encryption"],
-                channel=res["channel"],
                 rssi=res["rssi"],
                 bssid=res["bssid"],
             )
