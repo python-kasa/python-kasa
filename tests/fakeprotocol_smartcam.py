@@ -256,6 +256,28 @@ class FakeSmartCamTransport(BaseTransport):
         method = request_dict["method"]
 
         info = self.info
+        if method == "connectAp":
+            return {"result": {}, "error_code": 0}
+        if method == "scanApList":
+            return {
+                "result": {
+                    "onboarding": {
+                        "scan": {
+                            "publicKey": "",
+                            "ap_list": [
+                                {
+                                    "ssid": "FOOBAR",
+                                    "auth": 3,
+                                    "encryption": 3,
+                                    "rssi": -40,
+                                    "bssid": "00:00:00:00:00:00",
+                                }
+                            ],
+                        }
+                    }
+                },
+                "error_code": 0,
+            }
         if method == "controlChild":
             return await self._handle_control_child(
                 request_dict["params"]["childControl"]

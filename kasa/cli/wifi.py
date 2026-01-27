@@ -7,6 +7,7 @@ import asyncclick as click
 from kasa import (
     Device,
 )
+from kasa.smartcam.smartcamdevice import SmartCamDevice
 
 from .common import (
     echo,
@@ -36,7 +37,7 @@ async def scan(dev):
 @click.argument("ssid")
 @click.option(
     "--keytype",
-    default="wpa2_psk",
+    default="",
     help="KeyType (Not needed for SmartCamDevice).",
 )
 @click.option("--password", prompt=True, hide_input=True)
@@ -44,6 +45,9 @@ async def scan(dev):
 async def join(dev: Device, ssid: str, password: str, keytype: str):
     """Join the given wifi network."""
     echo(f"Asking the device to connect to {ssid}..")
+    if not isinstance(dev, SmartCamDevice) and not keytype:
+        echo("KeyType is required for this device.")
+        return
     res = await dev.wifi_join(ssid, password, keytype=keytype)
     echo(
         f"Response: {res} - if the device is not able to join the network, "
