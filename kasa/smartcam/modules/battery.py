@@ -1,8 +1,9 @@
-"""Implementation of baby cry detection module."""
+"""Implementation of smartcam battery module."""
 
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from ...feature import Feature
 from ..smartcammodule import SmartCamModule
@@ -43,7 +44,9 @@ class Battery(SmartCamModule):
                 type=Feature.Type.Sensor,
             )
         )
-        if self._device.sys_info.get("battery_temperature") not in (None, "NO"):
+
+        # Optional on some battery cameras (e.g., C460).
+        if self._optional_float_sysinfo("battery_temperature") is not None:
             self._add_feature(
                 Feature(
                     self._device,
@@ -57,7 +60,8 @@ class Battery(SmartCamModule):
                     type=Feature.Type.Sensor,
                 )
             )
-        if self._device.sys_info.get("battery_voltage") not in (None, "NO"):
+
+        if self._optional_float_sysinfo("battery_voltage") is not None:
             self._add_feature(
                 Feature(
                     self._device,
@@ -71,6 +75,7 @@ class Battery(SmartCamModule):
                     type=Feature.Type.Sensor,
                 )
             )
+
         self._add_feature(
             Feature(
                 self._device,
@@ -83,6 +88,18 @@ class Battery(SmartCamModule):
                 category=Feature.Category.Debug,
             )
         )
+
+    def _optional_float_sysinfo(self, key: str) -> float | None:
+        """Return sys_info[key] as float, or None if not available or invalid."""
+        v_any: Any = self._device.sys_info.get(key)
+        if v_any in (None, "NO"):
+            return None
+
+        try:
+            # Accept ints/floats and numeric strings.
+            return float(v_any)
+        except (TypeError, ValueError):
+            return None
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
@@ -101,21 +118,13 @@ class Battery(SmartCamModule):
     @property
     def battery_temperature(self) -> float | None:
         """Return battery temperature in °C (if available)."""
-        v = self._device.sys_info.get("battery_temperature")
-        if v in (None, "NO"):
-            return None
-        try:
-            return float(str(v))
-        except (TypeError, ValueError):
-            return None
+        return self._optional_float_sysinfo("battery_temperature")
 
     @property
     def battery_voltage(self) -> float | None:
-        """Return battery voltage (if available)."""
-        v = self._device.sys_info.get("battery_voltage")
-        if v in (None, "NO"):
-            return None
-        return float(str(v)) / 1_000
+        """Return battery voltage in V (if available)."""
+        v = self._optional_float_sysinfo("battery_voltage")
+        return None if v is None else v / 1_000
 
     @property
     def battery_charging(self) -> bool:
