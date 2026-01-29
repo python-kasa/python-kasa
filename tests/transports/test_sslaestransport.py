@@ -13,7 +13,12 @@ import pytest
 from yarl import URL
 
 from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
-from kasa.deviceconfig import DeviceConfig
+from kasa.deviceconfig import (
+    DeviceConfig,
+    DeviceConnectionParameters,
+    DeviceEncryptionType,
+    DeviceFamily,
+)
 from kasa.exceptions import (
     AuthenticationError,
     DeviceError,
@@ -394,16 +399,43 @@ async def test_port_override():
     assert str(transport._app_url) == f"https://127.0.0.1:{port_override}"
 
 
-async def test_login_version_get_credentials():
-    """Test that login_version is passed to get_default_credentials."""
-    creds = get_default_credentials(DEFAULT_CREDENTIALS["TAPOCAMERA"], login_version=3)
-    assert creds.username == "admin"
-    password_b64 = base64.b64encode(creds.password.encode()).decode()
-    assert password_b64 == "VFBMMDc1NTI2NDYwNjAz"  # noqa: S105
-    creds = get_default_credentials(DEFAULT_CREDENTIALS["TAPOCAMERA"], login_version=2)
-    assert creds.username == "admin"
-    password_b64 = base64.b64encode(creds.password.encode()).decode()
-    assert password_b64 == "YWRtaW4="  # noqa: S105
+async def test_login_version_get_credentials(mocker):
+    """Test that login_version selects default credentials in transport."""
+    host = "127.0.0.1"
+    tapo_family = DeviceFamily.SmartIpCamera
+    aes_type = DeviceEncryptionType.Aes
+    mock_ssl_aes_device = MockSslAesDevice(host)
+    mocker.patch.object(
+        aiohttp.ClientSession, "post", side_effect=mock_ssl_aes_device.post
+    )
+
+    config_lv3 = DeviceConfig(
+        host,
+        credentials=Credentials("foo", "bar"),
+        connection_type=DeviceConnectionParameters(
+            tapo_family, aes_type, login_version=3
+        ),
+    )
+    transport_lv3 = SslAesTransport(config=config_lv3)
+    assert transport_lv3._default_credentials.username == "admin"
+    password_b64_lv3 = base64.b64encode(
+        transport_lv3._default_credentials.password.encode()
+    ).decode()
+    assert password_b64_lv3 == "VFBMMDc1NTI2NDYwNjAz"  # noqa: S105
+
+    config_lv2 = DeviceConfig(
+        host,
+        credentials=Credentials("foo", "bar"),
+        connection_type=DeviceConnectionParameters(
+            tapo_family, aes_type, login_version=2
+        ),
+    )
+    transport_lv2 = SslAesTransport(config=config_lv2)
+    assert transport_lv2._default_credentials.username == "admin"
+    password_b64_lv2 = base64.b64encode(
+        transport_lv2._default_credentials.password.encode()
+    ).decode()
+    assert password_b64_lv2 == "YWRtaW4="  # noqa: S105
 
 
 class MockSslAesDevice:
