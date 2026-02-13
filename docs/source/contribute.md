@@ -46,6 +46,29 @@ You can also execute the tests against a real device using `uv run pytest --ip=<
 Note that this will perform state changes on the device.
 ```
 
+## Capturing network traffic with MITMProxy
+
+[MITMProxy](https://www.mitmproxy.org/) is open-source software designed to capture network traffic between the source and destination. This guide will show you how to capture HTTPS traffic between your Tapo/Kasa app and the Tapo/Kasa device.
+
+Required:
+- Tapo/Kasa device (factory reset)
+- Smartphone (Currently only Android is tested)
+- A Tapo/Kasa account (can be a throwaway)
+- PC/Laptop with WiFi connectivity
+
+Steps:
+
+1. Install MITMProxy on your PC/Laptop using the [official guide](https://docs.mitmproxy.org/stable/overview/installation/).
+1. Start MITMProxy (or MITMWeb) with the following flags: `--ssl-insecure --save-stream-file <filename>`.
+1. Configure your smartphone to route traffic to MITMProxy using the [official guide](https://docs.mitmproxy.org/stable/overview/getting-started/).
+   1. Tapo/Kasa devices broadcast their own Wifi network. Your PC/Laptop may support multiple wifi connections, so ensure you're using the correct IP Address to proxy traffic to.
+   1. During the provisioning process, some commands will be sent on the Tapo/Kasa network, then the device will connect to your home network, then *more* commands will be sent to the device. It's recommended that before capturing traffic, proxy traffic on both the Tapo/Kasa network **and** your home network to the PC/Laptop running MITMProxy. Keep in mind, your PC/Laptop will have 2 different IP addresses.
+1. Open the Tapo/Kasa app and go through the provisioning process. You should see network traffic appearing on your MITMProxy interface.
+1. Once completed, simply close MITMProxy. Using the flag `--save-stream-file` ensures all captured traffic is written to a local file.
+
+MITMProxy may be re-opened with the captured file using `mitmproxy -r <filename>`. Python scripts may also be written to parse the captured flow file.
+
+
 ## Analyzing network captures
 
 The simplest way to add support for a new device or to improve existing ones is to capture traffic between the mobile app and the device.
