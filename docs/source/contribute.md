@@ -48,6 +48,8 @@ Note that this will perform state changes on the device.
 
 ## Capturing network traffic with MITMProxy
 
+**WARNING**: The captured network traffic will likely contain your email/password in plaintext!
+
 [MITMProxy](https://www.mitmproxy.org/) is open-source software designed to capture network traffic between the source and destination. This guide will show you how to capture HTTPS traffic between your Tapo/Kasa app and the Tapo/Kasa device.
 
 Required:
