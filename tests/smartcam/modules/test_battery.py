@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from kasa import Device
 from kasa.smartcam.smartcammodule import SmartCamModule
 

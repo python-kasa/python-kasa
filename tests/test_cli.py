@@ -426,7 +426,7 @@ async def test_update_credentials(dev, runner):
 async def test_time_get(dev, runner):
     """Test time get command."""
     time_mod = dev.modules.get(Module.Time)
-    if not time_mod or not hasattr(time_mod, 'time'):
+    if not time_mod or not hasattr(time_mod, "time"):
         pytest.skip("Device does not support time module")
     res = await runner.invoke(
         time,
@@ -439,7 +439,7 @@ async def test_time_get(dev, runner):
 async def test_time_sync(dev, mocker, runner):
     """Test time sync command."""
     time_mod = dev.modules.get(Module.Time)
-    if not time_mod or not hasattr(time_mod, 'time'):
+    if not time_mod or not hasattr(time_mod, "time"):
         pytest.skip("Device does not support time module")
     update = mocker.patch.object(dev, "update")
     set_time_mock = mocker.spy(dev.modules[Module.Time], "set_time")
@@ -459,7 +459,7 @@ async def test_time_sync(dev, mocker, runner):
 async def test_time_set(dev: Device, mocker, runner):
     """Test time set command."""
     time_mod = dev.modules.get(Module.Time)
-    if not time_mod or not hasattr(time_mod, 'time'):
+    if not time_mod or not hasattr(time_mod, "time"):
         pytest.skip("Device does not support time module")
     set_time_mock = mocker.spy(time_mod, "set_time")
     dt = datetime(2024, 10, 15, 8, 15)

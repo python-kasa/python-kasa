@@ -424,7 +424,7 @@ async def test_thermostat(dev: Device, mocker: MockerFixture):
 async def test_set_time(dev: Device):
     """Test setting the device time."""
     time_mod = dev.modules.get(Module.Time)
-    if not time_mod or not hasattr(time_mod, 'time'):
+    if not time_mod or not hasattr(time_mod, "time"):
         pytest.skip("Device does not support time module")
 
     time_mod = dev.modules[Module.Time]
