@@ -85,23 +85,11 @@
                     "version": 2
                 },
                 {
-                    "name": "led",
-                    "version": 1
-                },
-                {
-                    "name": "time",
-                    "version": 1
-                },
-                {
                     "name": "firmware",
                     "version": 1
                 },
                 {
                     "name": "account",
-                    "version": 1
-                },
-                {
-                    "name": "siren",
                     "version": 1
                 },
                 {
@@ -131,23 +119,11 @@
                     "version": 2
                 },
                 {
-                    "name": "led",
-                    "version": 1
-                },
-                {
-                    "name": "time",
-                    "version": 1
-                },
-                {
                     "name": "firmware",
                     "version": 1
                 },
                 {
                     "name": "account",
-                    "version": 1
-                },
-                {
-                    "name": "siren",
                     "version": 1
                 },
                 {

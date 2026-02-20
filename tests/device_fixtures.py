@@ -367,6 +367,14 @@ doorlock_smartcam = parametrize(
     device_type_filter=[DeviceType.DoorLock],
     protocol_filter={"SMARTCAM"},
 )
+
+# Smartcam devices excluding door locks
+no_doorlock_smartcam = parametrize(
+    "no doorlock smartcam",
+    protocol_filter={"SMARTCAM"},
+)
+no_doorlock_smartcam = parametrize_subtract(no_doorlock_smartcam, doorlock_smartcam)
+
 chime_smart = parametrize(
     "chime smart",
     device_type_filter=[DeviceType.Chime],

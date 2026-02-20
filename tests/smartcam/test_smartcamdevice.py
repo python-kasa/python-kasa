@@ -10,9 +10,13 @@ from freezegun.api import FrozenDateTimeFactory
 from kasa import Device, DeviceType, Module
 
 from ..conftest import device_smartcam, hub_smartcam
+from ..device_fixtures import doorlock_smartcam, parametrize_subtract
+
+# Exclude door locks from generic smartcam device tests
+_no_doorlock_smartcam = parametrize_subtract(device_smartcam, doorlock_smartcam)
 
 
-@device_smartcam
+@_no_doorlock_smartcam
 async def test_state(dev: Device):
     if dev.device_type is DeviceType.Hub:
         pytest.skip("Hubs cannot be switched on and off")
@@ -33,7 +37,7 @@ async def test_state(dev: Device):
     assert dev.is_on is True
 
 
-@device_smartcam
+@_no_doorlock_smartcam
 async def test_alias(dev):
     test_alias = "TEST1234"
     original = dev.alias
@@ -60,7 +64,7 @@ async def test_hub(dev):
         assert child.device_id
 
 
-@device_smartcam
+@_no_doorlock_smartcam
 async def test_device_time(dev: Device, freezer: FrozenDateTimeFactory):
     """Test a child device gets the time from it's parent module."""
     fallback_time = datetime.now(UTC).astimezone().replace(microsecond=0)
