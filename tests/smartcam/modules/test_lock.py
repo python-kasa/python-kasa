@@ -63,7 +63,6 @@ async def test_lock_features(dev: Device) -> None:
 
     feat_ids = {
         "lock",
-        "lock_battery_level",
         "auto_lock_enabled",
         "auto_lock_time",
     }
@@ -71,8 +70,12 @@ async def test_lock_features(dev: Device) -> None:
         feat = dev.features.get(feat_id)
         assert feat, f"Feature {feat_id} not found"
         # Battery level can be None in some cases, also allow auto_lock_time to be None
-        if feat_id not in ("lock_battery_level", "auto_lock_time"):
+        if feat_id not in ("auto_lock_time",):
             assert feat.value is not None
+
+    # battery_level is provided by the Battery module, not Lock module
+    battery_feat = dev.features.get("battery_level")
+    assert battery_feat, "Feature battery_level not found (provided by Battery module)"
 
 
 @lock_smartcam

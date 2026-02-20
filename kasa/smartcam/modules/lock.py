@@ -46,19 +46,6 @@ class Lock(SmartCamModule, LockInterface):
         self._add_feature(
             Feature(
                 device,
-                id="lock_battery_level",
-                name="Lock battery level",
-                container=self,
-                attribute_getter="battery_level",
-                icon="mdi:battery",
-                unit_getter=lambda: "%",
-                category=Feature.Category.Info,
-                type=Feature.Type.Sensor,
-            )
-        )
-        self._add_feature(
-            Feature(
-                device,
                 id="auto_lock_enabled",
                 name="Auto lock",
                 container=self,

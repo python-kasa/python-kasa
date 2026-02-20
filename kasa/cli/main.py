@@ -95,9 +95,6 @@ def _legacy_type_to_class(_type: str) -> Any:
         "hsv": "light",
         "temperature": "light",
         "effect": "light",
-        # lock commands runnnable at top level
-        "unlock": "lock",
-        "history": "lock",
         "vacuum": "vacuum",
         "hub": "hub",
     },
