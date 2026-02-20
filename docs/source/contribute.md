@@ -60,13 +60,13 @@ Required:
 
 Steps:
 
-1. Install MITMProxy on your PC/Laptop using the [official guide](https://docs.mitmproxy.org/stable/overview/installation/).
+1. Install MITMProxy on your PC/Laptop using the [official MITMProxy guide](https://docs.mitmproxy.org/stable/overview/installation/).
 1. Start MITMProxy (or MITMWeb) with the following flags: `--ssl-insecure --save-stream-file <filename>`.
 1. Configure your smartphone to route traffic to MITMProxy using the [official guide](https://docs.mitmproxy.org/stable/overview/getting-started/).
-   1. Tapo/Kasa devices broadcast their own Wifi network. Your PC/Laptop may support multiple wifi connections, so ensure you're using the correct IP Address to proxy traffic to.
-   1. During the provisioning process, some commands will be sent on the Tapo/Kasa network, then the device will connect to your home network, then *more* commands will be sent to the device. It's recommended that before capturing traffic, proxy traffic on both the Tapo/Kasa network **and** your home network to the PC/Laptop running MITMProxy. Keep in mind, your PC/Laptop will have 2 different IP addresses.
+   1. You will need to connect your PC/Laptop to the wifi network broadcasted by the Tapo/Kasa device. Make note of the new IP address assigned to your PC/Laptop.
+   1. During the provisioning process, some commands will be sent on the Tapo/Kasa network, then the device will connect to your home network, then *more* commands will be sent. Since Android proxies traffic based on Wifi connections, it's recommended that before beginning the provisioning process, proxy traffic on both the Tapo/Kasa network **and** your home network to the PC/Laptop running MITMProxy. Keep in mind, your PC/Laptop will have different IP addresses on the respective networks.
 1. Open the Tapo/Kasa app and go through the provisioning process. You should see network traffic appearing on your MITMProxy interface.
-1. Once completed, simply close MITMProxy. Using the flag `--save-stream-file` ensures all captured traffic is written to a local file.
+1. Once completed, close MITMProxy. Since we used the flag `--save-stream-file` to start MITMProxy, all captured traffic has been recorded to the local file.
 
 MITMProxy may be re-opened with the captured file using `mitmproxy -r <filename>`. Python scripts may also be written to parse the captured flow file.
 
