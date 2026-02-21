@@ -360,6 +360,8 @@ class FakeSmartCamTransport(BaseTransport):
         elif method in [
             "addScanChildDeviceList",
             "startScanChildDevice",
+            "motorMoveToPreset",
+            "addMotorPostion",  # Note: API has typo in method name
         ]:
             return {"result": {}, "error_code": 0}
 

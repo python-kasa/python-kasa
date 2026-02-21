@@ -1,0 +1,288 @@
+{
+    "smartlife.iot.common.cloud": {
+        "get_info": {
+            "binded": 1,
+            "cld_connection": 1,
+            "err_code": 0,
+            "fwDlPage": "",
+            "fwNotifyType": 0,
+            "illegalType": 0,
+            "server": "n-devs.tplinkcloud.com",
+            "stopConnect": 0,
+            "tcspInfo": "",
+            "tcspStatus": 1,
+            "username": "user@example.com"
+        },
+        "get_intl_fw_list": {
+            "err_code": 0,
+            "fw_list": []
+        }
+    },
+    "smartlife.iot.common.emeter": {
+        "get_realtime": {
+            "err_code": 0,
+            "power_mw": 0
+        }
+    },
+    "smartlife.iot.common.schedule": {
+        "get_next_action": {
+            "action": 2,
+            "err_code": 0,
+            "id": "CAD48466AAF086367653A7AAB3A69ED4",
+            "light": {
+                "brightness": 15,
+                "color_temp": 0,
+                "hue": 0,
+                "on_off": 1,
+                "saturation": 0
+            },
+            "schd_time": 69000,
+            "type": 1
+        },
+        "get_rules": {
+            "enable": 1,
+            "err_code": 0,
+            "rule_list": [
+                {
+                    "eact": -1,
+                    "emin": 0,
+                    "enable": 1,
+                    "eoffset": 0,
+                    "etime_opt": -1,
+                    "id": "CAD48466AAF086367653A7AAB3A69ED4",
+                    "name": "Schedule Rule",
+                    "repeat": 1,
+                    "s_light": {
+                        "brightness": 15,
+                        "color_temp": 0,
+                        "hue": 0,
+                        "mode": "customize_preset",
+                        "on_off": 1,
+                        "saturation": 0,
+                        "transition_period": 5000
+                    },
+                    "sact": 2,
+                    "smin": 1150,
+                    "soffset": -59,
+                    "stime_opt": 2,
+                    "wday": [
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "eact": -1,
+                    "emin": 0,
+                    "enable": 1,
+                    "eoffset": 0,
+                    "etime_opt": -1,
+                    "id": "FBF05A0A587AC23BCADE2F5EEC72DE56",
+                    "name": "Schedule Rule",
+                    "repeat": 1,
+                    "s_light": {
+                        "brightness": 0,
+                        "color_temp": 0,
+                        "hue": 0,
+                        "mode": "last_status",
+                        "on_off": 0,
+                        "saturation": 0,
+                        "transition_period": 0
+                    },
+                    "sact": 2,
+                    "smin": 0,
+                    "soffset": 0,
+                    "stime_opt": 0,
+                    "wday": [
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "eact": -1,
+                    "emin": 0,
+                    "enable": 1,
+                    "eoffset": 0,
+                    "etime_opt": -1,
+                    "id": "8E3EA003DF7BC480EA09C332CD2DA06A",
+                    "name": "Schedule Rule",
+                    "repeat": 1,
+                    "s_light": {
+                        "brightness": 0,
+                        "color_temp": 0,
+                        "hue": 0,
+                        "mode": "last_status",
+                        "on_off": 0,
+                        "saturation": 0,
+                        "transition_period": 30000
+                    },
+                    "sact": 2,
+                    "smin": 415,
+                    "soffset": 0,
+                    "stime_opt": 1,
+                    "wday": [
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "eact": -1,
+                    "emin": 0,
+                    "enable": 1,
+                    "eoffset": 0,
+                    "etime_opt": -1,
+                    "id": "9FBD711FDCC696E33B9CF3E523559C64",
+                    "name": "name",
+                    "repeat": 1,
+                    "s_light": {
+                        "brightness": 1,
+                        "color_temp": 0,
+                        "hue": 0,
+                        "mode": "customize_preset",
+                        "on_off": 1,
+                        "saturation": 0,
+                        "transition_period": 300000
+                    },
+                    "sact": 2,
+                    "smin": 1320,
+                    "soffset": 0,
+                    "stime_opt": 0,
+                    "wday": [
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1
+                    ]
+                }
+            ],
+            "version": 2
+        }
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "get_default_behavior": {
+            "err_code": 0,
+            "hard_on": {
+                "brightness": 100,
+                "color_temp": 2700,
+                "hue": 0,
+                "index": 0,
+                "mode": "customize_preset",
+                "saturation": 0
+            },
+            "soft_on": {
+                "brightness": 100,
+                "color_temp": 2700,
+                "hue": 0,
+                "index": 0,
+                "mode": "customize_preset",
+                "saturation": 0
+            }
+        },
+        "get_light_details": {
+            "color_rendering_index": 80,
+            "err_code": 0,
+            "incandescent_equivalent": 60,
+            "lamp_beam_angle": 270,
+            "max_lumens": 800,
+            "max_voltage": 120,
+            "min_voltage": 110,
+            "wattage": 10
+        },
+        "get_light_state": {
+            "dft_on_state": {
+                "brightness": 100,
+                "color_temp": 2700,
+                "hue": 0,
+                "mode": "normal",
+                "saturation": 0
+            },
+            "err_code": 0,
+            "on_off": 0
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "schedule",
+            "alias": "#MASKED_NAME#",
+            "ctrl_protocols": {
+                "name": "Linkie",
+                "version": "1.0"
+            },
+            "description": "Smart Wi-Fi LED Bulb with Dimmable Light",
+            "dev_state": "normal",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "disco_ver": "1.0",
+            "err_code": 0,
+            "heapsize": 291800,
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "is_color": 0,
+            "is_dimmable": 1,
+            "is_factory": false,
+            "is_variable_color_temp": 0,
+            "light_state": {
+                "dft_on_state": {
+                    "brightness": 100,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "mode": "normal",
+                    "saturation": 0
+                },
+                "on_off": 0
+            },
+            "mic_mac": "D84732000000",
+            "mic_type": "IOT.SMARTBULB",
+            "model": "KL110B(UN)",
+            "oemId": "00000000000000000000000000000000",
+            "preferred_state": [
+                {
+                    "brightness": 100,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "index": 0,
+                    "saturation": 0
+                },
+                {
+                    "brightness": 50,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "index": 1,
+                    "saturation": 0
+                },
+                {
+                    "brightness": 15,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "index": 2,
+                    "saturation": 0
+                },
+                {
+                    "brightness": 1,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "index": 3,
+                    "saturation": 0
+                }
+            ],
+            "rssi": -65,
+            "sw_ver": "1.8.11 Build 191113 Rel.105336"
+        }
+    }
+}
