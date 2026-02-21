@@ -49,6 +49,7 @@ from kasa.smart import SmartDevice
 from kasa.smartcam import SmartCamDevice
 
 from .conftest import (
+    device_iot,
     device_smart,
     device_smartcam,
     get_device_for_fixture_protocol,
@@ -379,6 +380,25 @@ async def test_wifi_join(dev, mocker, runner):
 
 @device_smart
 async def test_wifi_join_missing_keytype(dev, mocker, runner):
+    """Test that missing keytype raises KasaException and CLI echoes the message."""
+    update = mocker.patch.object(dev, "update")
+    res = await runner.invoke(
+        wifi,
+        ["join", "FOOBAR", "--password", "foobar"],
+        obj=dev,
+    )
+
+    # Make sure that update was not called for wifi
+    with pytest.raises(AssertionError):
+        update.assert_called()
+
+    assert res.exit_code == 0
+    assert "KeyType is required for this device." in res.output
+
+
+@device_iot
+async def test_wifi_join_missing_keytype_iot(dev, mocker, runner):
+    """Test that missing keytype on IoT device raises KasaException and CLI echoes the message."""
     update = mocker.patch.object(dev, "update")
     res = await runner.invoke(
         wifi,

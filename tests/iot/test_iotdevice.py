@@ -309,3 +309,10 @@ def test_merge_dict():
             "get_daystat": {"month": 8, "year": 2024},
         }
     }
+
+
+@device_iot
+async def test_wifi_join_missing_keytype(dev: IotDevice):
+    """Test that wifi_join raises KasaException when keytype is empty."""
+    with pytest.raises(KasaException, match="KeyType is required for this device."):
+        await dev.wifi_join("ssid", "password", keytype="")

@@ -769,6 +769,9 @@ class SmartDevice(Device):
         if not self.credentials:
             raise AuthenticationError("Device requires authentication.")
 
+        if not keytype:
+            raise KasaException("KeyType is required for this device.")
+
         payload = {
             "account": {
                 "username": base64.b64encode(

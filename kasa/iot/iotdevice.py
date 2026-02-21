@@ -688,6 +688,9 @@ class IotDevice(Device):
         async def _join(target: str, payload: dict) -> dict:
             return await self._query_helper(target, "set_stainfo", payload)
 
+        if not keytype:
+            raise KasaException("KeyType is required for this device.")
+
         payload = {"ssid": ssid, "password": password, "key_type": int(keytype)}
         try:
             return await _join("netif", payload)
