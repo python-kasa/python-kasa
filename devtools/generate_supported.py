@@ -38,6 +38,7 @@ DEVICE_TYPE_TO_PRODUCT_GROUP = {
     DeviceType.Camera: "Cameras",
     DeviceType.Doorbell: "Doorbells and chimes",
     DeviceType.Chime: "Doorbells and chimes",
+    DeviceType.DoorLock: "Locks",
     DeviceType.Vacuum: "Vacuums",
     DeviceType.Hub: "Hubs",
     DeviceType.Sensor: "Hub-Connected Devices",

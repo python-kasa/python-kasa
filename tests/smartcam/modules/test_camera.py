@@ -10,7 +10,7 @@ import pytest
 
 from kasa import Credentials, Device, DeviceType, Module, StreamResolution
 
-from ...conftest import device_smartcam, parametrize
+from ...conftest import no_doorlock_smartcam, parametrize
 
 not_child_camera_smartcam = parametrize(
     "not child camera smartcam",
@@ -19,10 +19,12 @@ not_child_camera_smartcam = parametrize(
 )
 
 
-@device_smartcam
+@no_doorlock_smartcam
 async def test_state(dev: Device):
     if dev.device_type is DeviceType.Hub:
         pytest.skip("Hubs cannot be switched on and off")
+    if dev.device_type is DeviceType.DoorLock:
+        pytest.skip("Door locks do not support generic on/off state")
 
     state = dev.is_on
     await dev.set_state(not state)

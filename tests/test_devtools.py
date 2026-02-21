@@ -93,6 +93,15 @@ def _normalize_child_device_ids(info: dict):
 @smartcam_fixtures
 async def test_smartcam_fixtures(fixture_info: FixtureInfo):
     """Test that smartcam fixtures are created the same."""
+    # Skip door locks as they have different module requirements
+    if (
+        fixture_info.data.get("discovery_result", {})
+        .get("result", {})
+        .get("device_type")
+        == "SMART.TAPOLOCK"
+    ):
+        pytest.skip("Door lock fixtures have different requirements")
+
     dev = await get_device_for_fixture(fixture_info, verbatim=True)
     assert isinstance(dev, SmartCamDevice)
 

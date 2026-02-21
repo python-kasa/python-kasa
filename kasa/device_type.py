@@ -24,6 +24,7 @@ class DeviceType(Enum):
     Vacuum = "vacuum"
     Chime = "chime"
     Doorbell = "doorbell"
+    DoorLock = "doorlock"
     Unknown = "unknown"
 
     @staticmethod

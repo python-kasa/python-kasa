@@ -37,6 +37,7 @@ TYPES = [
     "lightstrip",
     "smart",
     "camera",
+    "smartcam",
 ]
 
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
@@ -72,6 +73,7 @@ def _legacy_type_to_class(_type: str) -> Any:
         "device": None,
         "feature": None,
         "light": None,
+        "lock": None,
         "wifi": None,
         "time": None,
         "schedule": None,
@@ -259,7 +261,7 @@ async def cli(
         "level": logging.DEBUG if debug > 0 else logging.INFO
     }
     try:
-        from rich.logging import RichHandler
+        from rich.logging import RichHandler  # type: ignore[import]
 
         rich_config = {
             "show_time": False,
@@ -303,13 +305,13 @@ async def cli(
     device_updated = False
     device_discovered = False
 
-    if type is not None and type not in {"smart", "camera"}:
+    if type is not None and type not in {"smart", "camera", "smartcam"}:
         from kasa.deviceconfig import DeviceConfig
 
         config = DeviceConfig(host=host, port_override=port, timeout=timeout)
         dev = _legacy_type_to_class(type)(host, config=config)
-    elif type in {"smart", "camera"} or (device_family and encrypt_type):
-        if type == "camera":
+    elif type in {"smart", "camera", "smartcam"} or (device_family and encrypt_type):
+        if type == "camera" or type == "smartcam":
             encrypt_type = "AES"
             https = True
             login_version = 2
@@ -392,7 +394,7 @@ async def cli(
 async def shell(dev: Device) -> None:
     """Open interactive shell."""
     echo(f"Opening shell for {dev}")
-    from ptpython.repl import embed
+    from ptpython.repl import embed  # type: ignore[import]
 
     logging.getLogger("parso").setLevel(logging.WARNING)  # prompt parsing
     logging.getLogger("asyncio").setLevel(logging.WARNING)

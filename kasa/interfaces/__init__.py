@@ -8,6 +8,7 @@ from .led import Led
 from .light import Light, LightState
 from .lighteffect import LightEffect
 from .lightpreset import LightPreset
+from .lock import Lock, LockEvent, LockMethod
 from .thermostat import Thermostat, ThermostatState
 from .time import Time
 
@@ -20,6 +21,9 @@ __all__ = [
     "Light",
     "LightEffect",
     "LightState",
+    "Lock",
+    "LockEvent",
+    "LockMethod",
     "LightPreset",
     "Thermostat",
     "ThermostatState",

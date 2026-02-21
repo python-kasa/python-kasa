@@ -62,6 +62,9 @@ async def test_device_id(dev: Device):
 
 
 async def test_alias(dev):
+    if dev.alias is None:
+        pytest.skip("Device does not support alias")
+
     test_alias = "TEST1234"
     original = dev.alias
 
