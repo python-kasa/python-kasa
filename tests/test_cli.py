@@ -55,6 +55,7 @@ from .conftest import (
     get_device_for_fixture_protocol,
     handle_turn_on,
     new_discovery,
+    parametrize_combine,
     turn_on,
 )
 
@@ -361,12 +362,12 @@ async def test_wifi_scan(dev, runner):
     assert re.search(r"Found [\d]+ wifi networks!", res.output)
 
 
-@device_smart
+@parametrize_combine([device_smart, device_iot])
 async def test_wifi_join(dev, mocker, runner):
     update = mocker.patch.object(dev, "update")
     res = await runner.invoke(
         wifi,
-        ["join", "FOOBAR", "--keytype", "wpa_psk", "--password", "foobar"],
+        ["join", "FOOBAR", "--keytype", "3", "--password", "foobar"],
         obj=dev,
     )
 
@@ -378,27 +379,9 @@ async def test_wifi_join(dev, mocker, runner):
     assert "Asking the device to connect to FOOBAR" in res.output
 
 
-@device_smart
+@parametrize_combine([device_smart, device_iot])
 async def test_wifi_join_missing_keytype(dev, mocker, runner):
     """Test that missing keytype raises KasaException and CLI echoes the message."""
-    update = mocker.patch.object(dev, "update")
-    res = await runner.invoke(
-        wifi,
-        ["join", "FOOBAR", "--password", "foobar"],
-        obj=dev,
-    )
-
-    # Make sure that update was not called for wifi
-    with pytest.raises(AssertionError):
-        update.assert_called()
-
-    assert res.exit_code == 0
-    assert "KeyType is required for this device." in res.output
-
-
-@device_iot
-async def test_wifi_join_missing_keytype_iot(dev, mocker, runner):
-    """Test that missing keytype on IoT device raises KasaException and CLI echoes the message."""
     update = mocker.patch.object(dev, "update")
     res = await runner.invoke(
         wifi,

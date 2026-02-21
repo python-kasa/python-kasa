@@ -1010,10 +1010,3 @@ async def test_unpair(dev: SmartDevice, mocker: MockerFixture):
     await unpair_feat.set_value(None)
 
     unpair_call.assert_called_with(child.device_id)
-
-
-@device_smart
-async def test_wifi_join_missing_keytype(dev: SmartDevice):
-    """Test that wifi_join raises KasaException when keytype is empty."""
-    with pytest.raises(KasaException, match="KeyType is required for this device."):
-        await dev.wifi_join("ssid", "password", keytype="")
