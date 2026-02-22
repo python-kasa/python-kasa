@@ -979,6 +979,9 @@ async def test_discover_auth_failed(discovery_mock, mocker, runner):
     host = "127.0.0.1"
     discovery_mock.ip = host
     device_class = Discover._get_device_class(discovery_mock.discovery_data)
+    # For new_klap IoT fixtures the precise subclass comes from sysinfo.
+    if discovery_mock.new_klap and discovery_mock.device_type.startswith("IOT."):
+        device_class = get_device_class_from_sys_info(discovery_mock.query_data)
     mocker.patch.object(
         device_class,
         "update",
