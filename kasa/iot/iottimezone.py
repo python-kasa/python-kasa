@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, tzinfo
+from datetime import UTC, datetime, timedelta, timezone, tzinfo
 from typing import cast
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from ..cachedzoneinfo import CachedZoneInfo
 
@@ -14,7 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 
 async def get_timezone(index: int) -> tzinfo:
     """Get the timezone from the index."""
-    if index > 109:
+    if index < 0 or index > 109:
         _LOGGER.error(
             "Unexpected index %s not configured as a timezone, defaulting to UTC", index
         )
@@ -25,7 +25,12 @@ async def get_timezone(index: int) -> tzinfo:
 
 
 async def get_timezone_index(tzone: tzinfo) -> int:
-    """Return the iot firmware index for a valid IANA timezone key."""
+    """Return the iot firmware index for a valid IANA timezone key.
+
+    If tzinfo is a ZoneInfo and its key is in TIMEZONE_INDEX, return that index.
+    Otherwise, compare annual offset behavior to find the best match.
+    Indices that cannot be loaded on this host are skipped.
+    """
     if isinstance(tzone, ZoneInfo):
         name = tzone.key
         rev = {val: key for key, val in TIMEZONE_INDEX.items()}
@@ -33,14 +38,23 @@ async def get_timezone_index(tzone: tzinfo) -> int:
             return rev[name]
 
     for i in range(110):
-        if _is_same_timezone(tzone, await get_timezone(i)):
+        try:
+            cand = await get_timezone(i)
+        except ZoneInfoNotFoundError:
+            continue
+        if _is_same_timezone(tzone, cand):
             return i
-    raise ValueError("Device does not support timezone %s", name)
+    raise ValueError(
+        f"Device does not support timezone {getattr(tzone, 'key', tzone)!r}"
+    )
 
 
 async def get_matching_timezones(tzone: tzinfo) -> list[str]:
-    """Return the iot firmware index for a valid IANA timezone key."""
-    matches = []
+    """Return available IANA keys from TIMEZONE_INDEX that match the given tzinfo.
+
+    Skips zones that cannot be resolved on the host.
+    """
+    matches: list[str] = []
     if isinstance(tzone, ZoneInfo):
         name = tzone.key
         vals = {val for val in TIMEZONE_INDEX.values()}
@@ -48,7 +62,10 @@ async def get_matching_timezones(tzone: tzinfo) -> list[str]:
             matches.append(name)
 
     for i in range(110):
-        fw_tz = await get_timezone(i)
+        try:
+            fw_tz = await get_timezone(i)
+        except ZoneInfoNotFoundError:
+            continue
         if _is_same_timezone(tzone, fw_tz):
             match_key = cast(ZoneInfo, fw_tz).key
             if match_key not in matches:
@@ -57,11 +74,7 @@ async def get_matching_timezones(tzone: tzinfo) -> list[str]:
 
 
 def _is_same_timezone(tzone1: tzinfo, tzone2: tzinfo) -> bool:
-    """Return true if the timezones have the same utcffset and dst offset.
-
-    Iot devices only support a limited static list of IANA timezones; this is used to
-    check if a static timezone matches the same utc offset and dst settings.
-    """
+    """Return true if the timezones have the same UTC offset each day of the year."""
     now = datetime.now()
     start_day = datetime(now.year, 1, 1, 12)
     for i in range(365):
@@ -69,6 +82,83 @@ def _is_same_timezone(tzone1: tzinfo, tzone2: tzinfo) -> bool:
         if tzone1.utcoffset(the_day) != tzone2.utcoffset(the_day):
             return False
     return True
+
+
+def _dst_expected_from_key(key: str) -> bool | None:
+    """Infer if a zone key implies DST behavior (heuristic, no manual map).
+
+    - Posix-style keys with two abbreviations like 'CST6CDT', 'MST7MDT' -> True
+    - Fixed abbreviation keys like 'EST', 'MST', 'HST' -> False
+    - 'Etc/*' zones are fixed-offset -> False
+    - Otherwise unknown -> None
+    """
+    k = key.upper()
+    if k.startswith("ETC/"):
+        return False
+    # Two abbreviations with a number in between (e.g., CST6CDT)
+    if any(ch.isdigit() for ch in k) and any(
+        x in k for x in ("CDT", "PDT", "MDT", "EDT")
+    ):
+        return True
+    if k in {"UTC", "UCT", "GMT", "EST", "MST", "HST", "PST"}:
+        return False
+    return None
+
+
+def _expected_dst_behavior_for_index(index: int) -> bool | None:
+    """Return whether the given index implies a DST-observing zone."""
+    key = TIMEZONE_INDEX[index]
+    return _dst_expected_from_key(key)
+
+
+async def _guess_timezone_by_offset(
+    offset: timedelta, when_utc: datetime, dst_expected: bool | None = None
+) -> tzinfo:
+    """Pick a ZoneInfo from TIMEZONE_INDEX that exists on this host and matches.
+
+    - offset: device's UTC offset at 'when_utc'
+    - when_utc: reference instant; naive is treated as UTC
+    - dst_expected: if True/False, prefer candidates that do/do not observe DST annually
+
+    Returns the lowest-index matching ZoneInfo for determinism.
+    If none match, returns a fixed-offset timezone as a last resort.
+    """
+    if when_utc.tzinfo is None:
+        when_utc = when_utc.replace(tzinfo=UTC)
+    else:
+        when_utc = when_utc.astimezone(UTC)
+
+    year = when_utc.year
+    # Reference mid-winter and mid-summer dates to detect DST-observing candidates
+    jan_ref = datetime(year, 1, 15, 12, tzinfo=UTC)
+    jul_ref = datetime(year, 7, 15, 12, tzinfo=UTC)
+
+    candidates: list[tuple[int, tzinfo, bool]] = []
+    for idx, name in TIMEZONE_INDEX.items():
+        try:
+            tz = await CachedZoneInfo.get_cached_zone_info(name)
+        except ZoneInfoNotFoundError:
+            continue
+
+        cand_offset_now = when_utc.astimezone(tz).utcoffset()
+        if cand_offset_now != offset:
+            continue
+
+        # Determine if this candidate observes DST (offset differs between Jan and Jul)
+        jan_off = jan_ref.astimezone(tz).utcoffset()
+        jul_off = jul_ref.astimezone(tz).utcoffset()
+        cand_observes_dst = jan_off != jul_off
+
+        if dst_expected is None or cand_observes_dst == dst_expected:
+            candidates.append((idx, tz, cand_observes_dst))
+
+    if candidates:
+        candidates.sort(key=lambda it: it[0])
+        chosen = candidates[0][1]
+        return chosen
+
+    # No ZoneInfo matched; return fixed offset as a last resort
+    return timezone(offset)
 
 
 TIMEZONE_INDEX = {
