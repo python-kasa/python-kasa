@@ -929,11 +929,6 @@ def test_get_discovery_json_legacy_success(monkeypatch):
     assert info == sample
 
 
-# ---------------------------------------------------------------------------
-# _is_new_klap_iot
-# ---------------------------------------------------------------------------
-
-
 def test_is_new_klap_iot_true():
     """IOT device with new_klap=1 should return True."""
     info = {
@@ -965,11 +960,6 @@ def test_is_new_klap_iot_false_no_flag():
         }
     }
     assert _DiscoverProtocol._is_new_klap_iot(info) is False
-
-
-# ---------------------------------------------------------------------------
-# _process_new_klap_device
-# ---------------------------------------------------------------------------
 
 
 async def test_process_new_klap_device_protocol_none(mocker):

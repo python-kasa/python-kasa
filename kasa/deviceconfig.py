@@ -62,7 +62,7 @@ class DeviceEncryptionType(Enum):
     Klap = "KLAP"
     Aes = "AES"
     Xor = "XOR"
-    Klapv2 = "KLAPV2"  # CLI alias for KLAP + new_klap=True; maps to KlapTransportV2
+    Klapv2 = "KLAPV2"
 
 
 class DeviceFamily(Enum):

@@ -193,7 +193,6 @@ async def test_discover_raw(discovery_mock, runner, mocker):
 async def test_list_update_failed(discovery_mock, mocker, runner, exception, expected):
     """Test that device update is called on main."""
     device_class = Discover._get_device_class(discovery_mock.discovery_data)
-    # For new_klap IoT fixtures the precise subclass comes from sysinfo.
     if discovery_mock.new_klap and discovery_mock.device_type.startswith("IOT."):
         device_class = get_device_class_from_sys_info(discovery_mock.query_data)
     mocker.patch.object(
@@ -1010,7 +1009,6 @@ async def test_host_auth_failed(discovery_mock, mocker, runner):
     host = "127.0.0.1"
     discovery_mock.ip = host
     device_class = Discover._get_device_class(discovery_mock.discovery_data)
-    # For new_klap IoT fixtures the precise subclass comes from sysinfo.
     if discovery_mock.new_klap and discovery_mock.device_type.startswith("IOT."):
         device_class = get_device_class_from_sys_info(discovery_mock.query_data)
     mocker.patch.object(

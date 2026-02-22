@@ -334,8 +334,7 @@ async def test_connect_protocol_none_raises():
 
 async def test__connect_iot_ipcamera_unsupported_family():
     """Cover else branch in _connect raising UnsupportedDeviceError."""
-    # IotIpCamera is disabled in the supported device types table; it should
-    # raise UnsupportedDeviceError even though a valid protocol was created.
+    # Use a valid DeviceFamily that is intentionally unsupported by get_device_class_from_family.
     params = DeviceConnectionParameters(
         device_family=DeviceFamily.IotIpCamera,
         encryption_type=DeviceEncryptionType.Aes,
@@ -344,6 +343,7 @@ async def test__connect_iot_ipcamera_unsupported_family():
     cfg = DeviceConfig(host="127.0.0.16", connection_type=params)
     protocol = get_protocol(cfg)
     assert protocol is not None
+    # Ensure first XOR path is not taken.
     assert not isinstance(protocol._transport, XorTransport)
     with pytest.raises(UnsupportedDeviceError):
         await connect(config=cfg)
