@@ -321,11 +321,16 @@ async def cli(
                 batch_size=batch_size,
             )
         elif device_family and encrypt_type:
+            new_klap = None
+            if encrypt_type == DeviceEncryptionType.Klapv2.value:
+                encrypt_type = DeviceEncryptionType.Klap.value
+                new_klap = True
             ctype = DeviceConnectionParameters(
                 DeviceFamily(device_family),
                 DeviceEncryptionType(encrypt_type),
                 login_version,
                 https,
+                new_klap=new_klap,
             )
             config = DeviceConfig(
                 host=host,

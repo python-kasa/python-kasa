@@ -43,12 +43,12 @@
     },
     "emeter": {
         "get_realtime": {
-            "current_ma": 0,
+            "current_ma": 119,
             "err_code": 0,
-            "power_mw": 0,
+            "power_mw": 9021,
             "slot_id": 0,
-            "total_wh": 785,
-            "voltage_mv": 122143
+            "total_wh": 4013,
+            "voltage_mv": 121937
         }
     },
     "schedule": {
@@ -74,7 +74,7 @@
                     "next_action": {
                         "type": -1
                     },
-                    "on_time": 735409,
+                    "on_time": 1760,
                     "state": 1
                 },
                 {
@@ -83,8 +83,8 @@
                     "next_action": {
                         "type": -1
                     },
-                    "on_time": 0,
-                    "state": 0
+                    "on_time": 1759,
+                    "state": 1
                 },
                 {
                     "alias": "#MASKED_NAME# 3",
@@ -92,7 +92,7 @@
                     "next_action": {
                         "type": -1
                     },
-                    "on_time": 735408,
+                    "on_time": 1758,
                     "state": 1
                 },
                 {
@@ -101,8 +101,8 @@
                     "next_action": {
                         "type": -1
                     },
-                    "on_time": 0,
-                    "state": 0
+                    "on_time": 1758,
+                    "state": 1
                 },
                 {
                     "alias": "#MASKED_NAME# 5",
@@ -110,8 +110,8 @@
                     "next_action": {
                         "type": -1
                     },
-                    "on_time": 735407,
-                    "state": 1
+                    "on_time": 0,
+                    "state": 0
                 },
                 {
                     "alias": "#MASKED_NAME# 6",
@@ -119,8 +119,8 @@
                     "next_action": {
                         "type": -1
                     },
-                    "on_time": 735407,
-                    "state": 1
+                    "on_time": 0,
+                    "state": 0
                 }
             ],
             "deviceId": "0000000000000000000000000000000000000000",
@@ -130,14 +130,14 @@
             "hw_ver": "2.0",
             "latitude_i": 0,
             "led_off": 0,
-            "lnk_on": 1,
+            "lnk_on": 0,
             "longitude_i": 0,
             "mac": "F0:A7:31:00:00:00",
             "mic_type": "IOT.SMARTPLUGSWITCH",
             "model": "HS300(US)",
             "obd_src": "tplink",
             "oemId": "00000000000000000000000000000000",
-            "rssi": -54,
+            "rssi": -45,
             "status": "new",
             "sw_ver": "1.1.2 Build 241220 Rel.171333",
             "updating": 0
