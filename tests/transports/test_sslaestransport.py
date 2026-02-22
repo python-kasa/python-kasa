@@ -399,8 +399,30 @@ async def test_port_override():
     assert str(transport._app_url) == f"https://127.0.0.1:{port_override}"
 
 
-async def test_login_version_get_credentials(mocker):
-    """Test that login_version selects default credentials in transport."""
+@pytest.mark.parametrize(
+    ("login_version", "expected_password_b64"),
+    [
+        pytest.param(
+            3,
+            "VFBMMDc1NTI2NDYwNjAz",  # noqa: S105
+            id="version-3-uses-lv3-credentials",
+        ),
+        pytest.param(
+            2,
+            "YWRtaW4=",  # noqa: S105
+            id="version-2-uses-tapocamera-credentials",
+        ),
+        pytest.param(
+            None,
+            "YWRtaW4=",  # noqa: S105
+            id="no-version-uses-tapocamera-credentials",
+        ),
+    ],
+)
+async def test_login_version_default_credentials(
+    mocker, login_version, expected_password_b64
+):
+    """Test that login_version=3 uses TAPOCAMERA_LV3 credentials while other versions use TAPOCAMERA."""
     host = "127.0.0.1"
     tapo_family = DeviceFamily.SmartIpCamera
     aes_type = DeviceEncryptionType.Aes
@@ -409,33 +431,19 @@ async def test_login_version_get_credentials(mocker):
         aiohttp.ClientSession, "post", side_effect=mock_ssl_aes_device.post
     )
 
-    config_lv3 = DeviceConfig(
+    config = DeviceConfig(
         host,
         credentials=Credentials("foo", "bar"),
         connection_type=DeviceConnectionParameters(
-            tapo_family, aes_type, login_version=3
+            tapo_family, aes_type, login_version=login_version
         ),
     )
-    transport_lv3 = SslAesTransport(config=config_lv3)
-    assert transport_lv3._default_credentials.username == "admin"
-    password_b64_lv3 = base64.b64encode(
-        transport_lv3._default_credentials.password.encode()
+    transport = SslAesTransport(config=config)
+    assert transport._default_credentials.username == "admin"
+    password_b64 = base64.b64encode(
+        transport._default_credentials.password.encode()
     ).decode()
-    assert password_b64_lv3 == "VFBMMDc1NTI2NDYwNjAz"  # noqa: S105
-
-    config_lv2 = DeviceConfig(
-        host,
-        credentials=Credentials("foo", "bar"),
-        connection_type=DeviceConnectionParameters(
-            tapo_family, aes_type, login_version=2
-        ),
-    )
-    transport_lv2 = SslAesTransport(config=config_lv2)
-    assert transport_lv2._default_credentials.username == "admin"
-    password_b64_lv2 = base64.b64encode(
-        transport_lv2._default_credentials.password.encode()
-    ).decode()
-    assert password_b64_lv2 == "YWRtaW4="  # noqa: S105
+    assert password_b64 == expected_password_b64
 
 
 class MockSslAesDevice:
