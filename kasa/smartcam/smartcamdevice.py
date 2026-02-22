@@ -2,12 +2,20 @@
 
 from __future__ import annotations
 
+import base64
 import logging
 from typing import Any, cast
 
-from ..device import DeviceInfo
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
+
+from ..device import DeviceInfo, WifiNetwork
 from ..device_type import DeviceType
+from ..deviceconfig import DeviceConfig
+from ..exceptions import AuthenticationError, DeviceError, KasaException
 from ..module import Module
+from ..protocols import SmartProtocol
 from ..protocols.smartcamprotocol import _ChildCameraProtocolWrapper
 from ..smart import SmartChildDevice, SmartDevice
 from ..smart.smartdevice import ComponentsRaw
@@ -22,6 +30,24 @@ class SmartCamDevice(SmartDevice):
 
     # Modules that are called as part of the init procedure on first update
     FIRST_UPDATE_MODULES = {DeviceModule, ChildDevice}
+
+    STATIC_PUBLIC_KEY_B64 = (
+        "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC4D6i0oD/Ga5qb//RfSe8MrPVI"
+        "rMIGecCxkcGWGj9kxxk74qQNq8XUuXoy2PczQ30BpiRHrlkbtBEPeWLpq85tfubT"
+        "UjhBz1NPNvWrC88uaYVGvzNpgzZOqDC35961uPTuvdUa8vztcUQjEZy16WbmetRj"
+        "URFIiWJgFCmemyYVbQIDAQAB"
+    )
+
+    def __init__(
+        self,
+        host: str,
+        *,
+        config: DeviceConfig | None = None,
+        protocol: SmartProtocol | None = None,
+    ) -> None:
+        super().__init__(host, config=config, protocol=protocol)
+        self._public_key: str | None = None
+        self._networks: list[WifiNetwork] = []
 
     @staticmethod
     def _get_device_type_from_sysinfo(sysinfo: dict[str, Any]) -> DeviceType:
@@ -288,3 +314,79 @@ class SmartCamDevice(SmartDevice):
     def rssi(self) -> int | None:
         """Return the device id."""
         return self.modules[SmartCamModule.SmartCamDeviceModule].rssi
+
+    async def wifi_scan(self) -> list[WifiNetwork]:
+        """Scan for available wifi networks."""
+
+        def _net_for_scan_info(res: dict) -> WifiNetwork:
+            return WifiNetwork(
+                ssid=res["ssid"],
+                auth=res["auth"],
+                encryption=res["encryption"],
+                rssi=res["rssi"],
+                bssid=res["bssid"],
+            )
+
+        _LOGGER.debug("Querying networks")
+
+        resp = await self._query_helper("scanApList", {"onboarding": {"scan": {}}})
+        scan_data: dict = resp["scanApList"]["onboarding"]["scan"]
+        self._public_key = scan_data.get("publicKey", "")
+        self._networks = [_net_for_scan_info(net) for net in scan_data["ap_list"]]
+        return self._networks
+
+    async def wifi_join(
+        self, ssid: str, password: str, keytype: str = "wpa2_psk"
+    ) -> dict:
+        """Join the given wifi network.
+
+        This method returns nothing as the device tries to activate the new
+        settings immediately instead of responding to the request.
+
+        If joining the network fails, the device will return to the previous state
+        after some delay.
+        """
+        if not self.credentials:
+            raise AuthenticationError("Device requires authentication.")
+
+        if not self._networks:
+            await self.wifi_scan()
+        net = next(
+            (n for n in self._networks if getattr(n, "ssid", None) == ssid), None
+        )
+        if net is None:
+            raise DeviceError(f"Network with SSID '{ssid}' not found.")
+
+        public_key_b64 = self._public_key or self.STATIC_PUBLIC_KEY_B64
+        key_bytes = base64.b64decode(public_key_b64)
+        public_key = serialization.load_der_public_key(key_bytes)
+        if not isinstance(public_key, RSAPublicKey):
+            raise TypeError("Loaded public key is not an RSA public key")
+        encrypted = public_key.encrypt(password.encode(), padding.PKCS1v15())
+        encrypted_password = base64.b64encode(encrypted).decode()
+
+        payload = {
+            "onboarding": {
+                "connect": {
+                    "auth": net.auth,
+                    "bssid": net.bssid,
+                    "encryption": net.encryption,
+                    "password": encrypted_password,
+                    "rssi": net.rssi,
+                    "ssid": net.ssid,
+                }
+            }
+        }
+
+        # The device does not respond to the request but changes the settings
+        # immediately which causes us to timeout.
+        # Thus, We limit retries and suppress the raised exception as useless.
+        try:
+            return await self.protocol.query({"connectAp": payload}, retry_count=0)
+        except DeviceError:
+            raise  # Re-raise on device-reported errors
+        except KasaException:
+            _LOGGER.debug(
+                "Received a kasa exception for wifi join, but this is expected"
+            )
+            return {}
