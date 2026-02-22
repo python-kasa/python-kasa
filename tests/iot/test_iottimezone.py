@@ -6,17 +6,18 @@ from pytest_mock import MockerFixture
 
 
 def test_expected_dst_behavior_for_index_cases():
-    """Exercise expected_dst_behavior_for_index for several representative indices."""
-    from kasa.iot.iottimezone import expected_dst_behavior_for_index
+    """Exercise _expected_dst_behavior_for_index for several representative indices."""
+    from kasa.iot.iottimezone import _expected_dst_behavior_for_index
 
     # Posix-style DST zones
-    assert expected_dst_behavior_for_index(10) is True  # MST7MDT
-    assert expected_dst_behavior_for_index(13) is True  # CST6CDT
+    assert _expected_dst_behavior_for_index(10) is True  # MST7MDT
+    assert _expected_dst_behavior_for_index(13) is True  # CST6CDT
     # Fixed-offset or fixed-abbreviation zones
-    assert expected_dst_behavior_for_index(34) is False  # Etc/GMT+2
-    assert expected_dst_behavior_for_index(18) is False  # EST
-    # Invalid/unknown index
-    assert expected_dst_behavior_for_index(999) is None
+    assert _expected_dst_behavior_for_index(34) is False  # Etc/GMT+2
+    assert _expected_dst_behavior_for_index(18) is False  # EST
+    # Invalid index should raise KeyError
+    with pytest.raises(KeyError):
+        _expected_dst_behavior_for_index(999)
 
 
 async def test_guess_timezone_by_offset_fixed_fallback_unit():
@@ -26,7 +27,7 @@ async def test_guess_timezone_by_offset_fixed_fallback_unit():
     year = datetime.now(UTC).year
     when = datetime(year, 1, 15, 12, tzinfo=UTC)
     offset = timedelta(minutes=2)  # unlikely to match any real zone
-    tz = await tzmod.guess_timezone_by_offset(offset, when_utc=when)
+    tz = await tzmod._guess_timezone_by_offset(offset, when_utc=when)
     assert tz.utcoffset(when) == offset
 
 
@@ -37,7 +38,7 @@ async def test_guess_timezone_by_offset_candidates_unit():
     # naive datetime hits the 'naive -> UTC' branch
     when = datetime(2025, 1, 15, 12)
     offset = timedelta(0)
-    tz = await tzmod.guess_timezone_by_offset(offset, when_utc=when)
+    tz = await tzmod._guess_timezone_by_offset(offset, when_utc=when)
 
     # Should choose a ZoneInfo candidate (not the fixed-offset fallback), with matching offset
     assert isinstance(tz, ZoneInfo)
@@ -51,7 +52,7 @@ async def test_guess_timezone_by_offset_dst_expected_true_filters(
     import kasa.iot.iottimezone as tzmod
 
     when = datetime(datetime.now(UTC).year, 1, 15, 12, tzinfo=UTC)
-    tz = await tzmod.guess_timezone_by_offset(
+    tz = await tzmod._guess_timezone_by_offset(
         timedelta(0), when_utc=when, dst_expected=True
     )
     assert tz.utcoffset(when) == timedelta(0)
@@ -66,7 +67,7 @@ async def test_guess_timezone_by_offset_dst_expected_false_prefers_non_dst():
     import kasa.iot.iottimezone as tzmod
 
     when = datetime(datetime.now(UTC).year, 1, 15, 12, tzinfo=UTC)
-    tz = await tzmod.guess_timezone_by_offset(
+    tz = await tzmod._guess_timezone_by_offset(
         timedelta(0), when_utc=when, dst_expected=False
     )
     assert tz.utcoffset(when) == timedelta(0)
@@ -96,7 +97,7 @@ async def test_guess_timezone_by_offset_handles_missing_zoneinfo_unit(
     mocker.patch.object(tzmod.CachedZoneInfo, "get_cached_zone_info", new=flaky_get)
 
     when = datetime(datetime.now(UTC).year, 1, 15, 12, tzinfo=UTC)
-    tz = await tzmod.guess_timezone_by_offset(timedelta(0), when_utc=when)
+    tz = await tzmod._guess_timezone_by_offset(timedelta(0), when_utc=when)
     assert tz.utcoffset(when) == timedelta(0)
 
 

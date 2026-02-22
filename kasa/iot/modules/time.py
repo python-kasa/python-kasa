@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from datetime import UTC, datetime, timedelta, tzinfo
 from zoneinfo import ZoneInfoNotFoundError
 
@@ -9,10 +10,10 @@ from ...exceptions import KasaException
 from ...interfaces import Time as TimeInterface
 from ..iotmodule import IotModule, merge
 from ..iottimezone import (
-    expected_dst_behavior_for_index,
+    _expected_dst_behavior_for_index,
+    _guess_timezone_by_offset,
     get_timezone,
     get_timezone_index,
-    guess_timezone_by_offset,
 )
 
 
@@ -61,9 +62,10 @@ class Time(IotModule, TimeInterface):
             dst_expected = None
             if res := self.data.get("get_timezone"):
                 idx = res.get("index")
-                dst_expected = expected_dst_behavior_for_index(idx)
+                with contextlib.suppress(KeyError):
+                    dst_expected = _expected_dst_behavior_for_index(idx)
 
-            self._timezone = await guess_timezone_by_offset(
+            self._timezone = await _guess_timezone_by_offset(
                 rounded, when_utc=now_utc, dst_expected=dst_expected
             )
         else:

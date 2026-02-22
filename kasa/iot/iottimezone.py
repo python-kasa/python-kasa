@@ -105,16 +105,13 @@ def _dst_expected_from_key(key: str) -> bool | None:
     return None
 
 
-def expected_dst_behavior_for_index(index: int) -> bool | None:
+def _expected_dst_behavior_for_index(index: int) -> bool | None:
     """Return whether the given index implies a DST-observing zone."""
-    try:
-        key = TIMEZONE_INDEX[index]
-    except KeyError:
-        return None
+    key = TIMEZONE_INDEX[index]
     return _dst_expected_from_key(key)
 
 
-async def guess_timezone_by_offset(
+async def _guess_timezone_by_offset(
     offset: timedelta, when_utc: datetime, dst_expected: bool | None = None
 ) -> tzinfo:
     """Pick a ZoneInfo from TIMEZONE_INDEX that exists on this host and matches.
