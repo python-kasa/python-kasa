@@ -2,14 +2,15 @@ import importlib
 import inspect
 import pkgutil
 import sys
-from datetime import datetime
+from datetime import UTC, datetime, timedelta, timezone
+from unittest.mock import AsyncMock
 from zoneinfo import ZoneInfo
 
 import pytest
 from pytest_mock import MockerFixture
 
 import kasa.interfaces
-from kasa import Device, LightState, Module, ThermostatState
+from kasa import Device, KasaException, LightState, Module, ThermostatState
 from kasa.module import _get_feature_attribute
 
 from .device_fixtures import (
@@ -456,3 +457,214 @@ async def test_set_time(dev: Device):
         await time_mod.set_time(original_time)
         await dev.update()
         assert time_mod.time == original_time
+
+
+async def test_time_post_update_no_time_uses_utc_unit(monkeypatch: pytest.MonkeyPatch):
+    """If neither get_timezone nor get_time are present, timezone falls back to UTC."""
+    from kasa.iot.modules.time import Time as TimeModule
+
+    inst = object.__new__(TimeModule)
+    monkeypatch.setattr(TimeModule, "data", property(lambda self: {}))
+
+    await TimeModule._post_update_hook(inst)
+    assert inst.timezone is UTC
+
+
+async def test_time_post_update_uses_offset_when_index_missing_unit(
+    monkeypatch: pytest.MonkeyPatch, mocker: MockerFixture
+):
+    """When index present but zone not on host, fall back to offset-based guess."""
+    from zoneinfo import ZoneInfoNotFoundError
+
+    from kasa.iot.modules.time import Time as TimeModule
+
+    inst = object.__new__(TimeModule)
+
+    now = datetime.now(UTC)
+    data = {
+        "get_timezone": {"index": 39},  # any index; we'll force failure to load it
+        "get_time": {
+            "year": now.year,
+            "month": now.month,
+            "mday": now.day,
+            "hour": now.hour,
+            "min": now.minute,
+            "sec": now.second,
+        },
+    }
+    monkeypatch.setattr(TimeModule, "data", property(lambda self: data))
+
+    mocker.patch(
+        "kasa.iot.modules.time.get_timezone",
+        new=AsyncMock(side_effect=ZoneInfoNotFoundError("missing on host")),
+    )
+    mock_guess = mocker.patch(
+        "kasa.iot.modules.time._guess_timezone_by_offset",
+        new=AsyncMock(return_value=timezone(timedelta(0))),
+    )
+
+    await TimeModule._post_update_hook(inst)
+    mock_guess.assert_awaited_once()
+    # timezone should be set to a valid tzinfo after fallback
+    assert inst.timezone.utcoffset(now) == timedelta(0)
+
+
+async def test_time_get_time_exception_returns_none_unit(mocker: MockerFixture):
+    """Cover Time.get_time exception path (unit test of iot Time)."""
+    from kasa.iot.modules.time import Time as TimeModule
+
+    inst = object.__new__(TimeModule)
+    mocker.patch.object(inst, "call", new=AsyncMock(side_effect=KasaException("boom")))
+
+    assert await TimeModule.get_time(inst) is None
+
+
+async def test_time_get_time_success_unit(mocker: MockerFixture):
+    """Cover the success path of Time.get_time."""
+    from kasa.iot.modules.time import Time as TimeModule
+
+    inst = object.__new__(TimeModule)
+    # Ensure timezone is available on the instance
+    inst._timezone = UTC
+    ret = {
+        "year": 2024,
+        "month": 1,
+        "mday": 2,
+        "hour": 3,
+        "min": 4,
+        "sec": 5,
+    }
+    mocker.patch.object(inst, "call", new=AsyncMock(return_value=ret))
+
+    dt = await TimeModule.get_time(inst)
+    assert dt is not None
+    assert (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second) == (
+        2024,
+        1,
+        2,
+        3,
+        4,
+        5,
+    )
+    assert dt.tzinfo == inst.timezone
+
+
+async def test_time_post_update_with_time_no_tz_uses_guess_unit(
+    monkeypatch: pytest.MonkeyPatch, mocker: MockerFixture
+):
+    """When get_time is present but get_timezone is missing, use offset-based guess (dst_expected None)."""
+    from kasa.iot.modules.time import Time as TimeModule
+
+    inst = object.__new__(TimeModule)
+    now = datetime.now(UTC)
+    data = {
+        "get_time": {
+            "year": now.year,
+            "month": now.month,
+            "mday": now.day,
+            "hour": now.hour,
+            "min": now.minute,
+            "sec": now.second,
+        }
+        # Note: no "get_timezone" key
+    }
+    monkeypatch.setattr(TimeModule, "data", property(lambda self: data))
+
+    mock_guess = mocker.patch(
+        "kasa.iot.modules.time._guess_timezone_by_offset",
+        new=AsyncMock(return_value=timezone(timedelta(hours=2))),
+    )
+
+    await TimeModule._post_update_hook(inst)
+    mock_guess.assert_awaited_once()
+    assert inst.timezone.utcoffset(now) == timedelta(hours=2)
+
+
+async def test_time_set_time_wraps_exception_unit(
+    monkeypatch: pytest.MonkeyPatch, mocker: MockerFixture
+):
+    """Cover exception wrapping in Time.set_time (unit test of iot Time)."""
+    from kasa.iot.modules.time import Time as TimeModule
+
+    inst = object.__new__(TimeModule)
+    # Keep data empty so set_time path is chosen (no timezone change)
+    monkeypatch.setattr(TimeModule, "data", property(lambda self: {}))
+    mocker.patch.object(inst, "call", new=AsyncMock(side_effect=RuntimeError("err")))
+
+    with pytest.raises(KasaException):
+        await TimeModule.set_time(inst, datetime.now())
+
+
+# New tests to cover remaining smart and smartcam time.py branches
+
+
+async def test_smart_time_set_time_no_region_added_when_tzname_none_unit(
+    mocker: MockerFixture,
+):
+    """In smart Time.set_time, ensure we cover the branch where tzname() returns None, so 'region' is omitted."""
+    from datetime import tzinfo as _tzinfo
+
+    from kasa.smart.modules.time import Time as SmartTimeModule
+
+    class NullNameTZ(_tzinfo):
+        def utcoffset(self, dt):
+            return timedelta(hours=1)
+
+        def dst(self, dt):
+            return timedelta(0)
+
+        def tzname(self, dt):
+            return None
+
+    inst = object.__new__(SmartTimeModule)
+    call_mock = mocker.patch.object(inst, "call", new=AsyncMock(return_value={}))
+
+    aware_dt = datetime(2024, 1, 1, 12, 0, 0, tzinfo=NullNameTZ())
+    await SmartTimeModule.set_time(inst, aware_dt)
+
+    call_mock.assert_awaited_once()
+    args, _ = call_mock.call_args
+    assert args[0] == "set_device_time"
+    params = args[1]
+    # 'region' must not be present when tzname() is None
+    assert "region" not in params
+    # sanity: timestamp and time_diff still provided
+    assert isinstance(params["timestamp"], int)
+    assert isinstance(params["time_diff"], int)
+
+
+async def test_smartcam_time_post_update_fallback_parses_timezone_str_unit(
+    monkeypatch: pytest.MonkeyPatch, mocker: MockerFixture
+):
+    """Exercise smartcam Time._post_update_hook fallback when ZoneInfo not found, parsing 'timezone' string."""
+    from zoneinfo import ZoneInfoNotFoundError
+
+    from kasa.smartcam.modules.time import Time as CamTimeModule
+
+    inst = object.__new__(CamTimeModule)
+    # Provide data with an unknown zone_id but with a 'timezone' string like 'UTC+02:00'
+    ts = 1_700_000_000
+    data = {
+        "getClockStatus": {"system": {"clock_status": {"seconds_from_1970": ts}}},
+        "getTimezone": {
+            "system": {"basic": {"zone_id": "Nowhere/Unknown", "timezone": "UTC+02:00"}}
+        },
+    }
+    monkeypatch.setattr(CamTimeModule, "data", property(lambda self: data))
+
+    # Patch directly via the module path instead of sys.modules lookup
+    mocker.patch(
+        "kasa.smartcam.modules.time.CachedZoneInfo.get_cached_zone_info",
+        new=AsyncMock(side_effect=ZoneInfoNotFoundError("missing on host")),
+    )
+
+    await CamTimeModule._post_update_hook(inst)
+
+    # Check timezone fallback parsed to +02:00
+    now_local = datetime.now(inst.timezone)
+    assert inst.timezone.utcoffset(now_local) == timedelta(hours=2)
+
+    # Check time set from seconds_from_1970 and is tz-aware with the chosen tz
+    assert isinstance(inst.time, datetime)
+    assert inst.time.tzinfo == inst.timezone
+    assert int(inst.time.timestamp()) == ts

@@ -256,6 +256,52 @@ class FakeSmartCamTransport(BaseTransport):
         method = request_dict["method"]
 
         info = self.info
+        if method == "connectAp":
+            if self.verbatim:
+                return {"error_code": -1}
+            return {"result": {}, "error_code": 0}
+        if method == "scanApList":
+            if method in info:
+                result = self._get_method_from_info(method, request_dict.get("params"))
+                if not self.verbatim:
+                    scan = (
+                        result.get("result", {}).get("onboarding", {}).get("scan", {})
+                    )
+                    ap_list = scan.get("ap_list")
+                    if isinstance(ap_list, list) and not any(
+                        ap.get("ssid") == "FOOBAR" for ap in ap_list
+                    ):
+                        ap_list.append(
+                            {
+                                "ssid": "FOOBAR",
+                                "auth": 3,
+                                "encryption": 3,
+                                "rssi": -40,
+                                "bssid": "00:00:00:00:00:00",
+                            }
+                        )
+                return result
+            if self.verbatim:
+                return {"error_code": -1}
+            return {
+                "result": {
+                    "onboarding": {
+                        "scan": {
+                            "publicKey": "",
+                            "ap_list": [
+                                {
+                                    "ssid": "FOOBAR",
+                                    "auth": 3,
+                                    "encryption": 3,
+                                    "rssi": -40,
+                                    "bssid": "00:00:00:00:00:00",
+                                }
+                            ],
+                        }
+                    }
+                },
+                "error_code": 0,
+            }
         if method == "controlChild":
             return await self._handle_control_child(
                 request_dict["params"]["childControl"]
@@ -314,6 +360,8 @@ class FakeSmartCamTransport(BaseTransport):
         elif method in [
             "addScanChildDeviceList",
             "startScanChildDevice",
+            "motorMoveToPreset",
+            "addMotorPostion",  # Note: API has typo in method name
         ]:
             return {"result": {}, "error_code": 0}
 
