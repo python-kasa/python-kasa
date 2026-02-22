@@ -6,6 +6,7 @@ import asyncclick as click
 
 from kasa import (
     Device,
+    KasaException,
 )
 
 from .common import (
@@ -15,8 +16,7 @@ from .common import (
 
 
 @click.group()
-@pass_dev
-def wifi(dev) -> None:
+def wifi() -> None:
     """Commands to control wifi settings."""
 
 
@@ -35,13 +35,23 @@ async def scan(dev):
 
 @wifi.command()
 @click.argument("ssid")
-@click.option("--keytype", prompt=True)
+@click.option(
+    "--keytype",
+    default="",
+    help="KeyType (Not needed for SmartCamDevice).",
+)
 @click.option("--password", prompt=True, hide_input=True)
 @pass_dev
 async def join(dev: Device, ssid: str, password: str, keytype: str):
     """Join the given wifi network."""
     echo(f"Asking the device to connect to {ssid}..")
-    res = await dev.wifi_join(ssid, password, keytype=keytype)
+    try:
+        res = await dev.wifi_join(ssid, password, keytype=keytype)
+    except KasaException as e:
+        if type(e) is KasaException:
+            echo(str(e))
+            return
+        raise
     echo(
         f"Response: {res} - if the device is not able to join the network, "
         f"it will revert back to its previous state."

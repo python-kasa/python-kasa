@@ -138,15 +138,18 @@ class WifiNetwork:
     """Wifi network container."""
 
     ssid: str
-    key_type: int
+    # This is available on both netif and on softaponboarding
+    key_type: int | None = None
     # These are available only on softaponboarding
     cipher_type: int | None = None
-    bssid: str | None = None
     channel: int | None = None
+    # These are available on softaponboarding, SMART, and SMARTCAM devices
+    bssid: str | None = None
     rssi: int | None = None
-
-    # For SMART devices
+    # These are available on both SMART and SMARTCAM devices
     signal_level: int | None = None
+    auth: int | None = None
+    encryption: int | None = None
 
 
 _LOGGER = logging.getLogger(__name__)
