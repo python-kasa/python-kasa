@@ -11,39 +11,6 @@ from kasa import (
     DeviceType,
     Discover,
 )
-from kasa.device_models import (
-    ALL_DEVICES,
-    ALL_DEVICES_IOT,
-    ALL_DEVICES_SMART,
-    BULBS,
-    BULBS_COLOR,
-    BULBS_IOT,
-    BULBS_IOT_COLOR,
-    BULBS_IOT_LIGHT_STRIP,
-    BULBS_IOT_VARIABLE_TEMP,
-    BULBS_SMART_VARIABLE_TEMP,
-    BULBS_VARIABLE_TEMP,
-    DIMMABLE,
-    DIMMERS,
-    DIMMERS_IOT,
-    DIMMERS_SMART,
-    HUBS_SMART,
-    LIGHT_STRIPS,
-    PLUGS,
-    PLUGS_IOT,
-    PLUGS_SMART,
-    SENSORS_SMART,
-    STRIPS,
-    STRIPS_IOT,
-    STRIPS_SMART,
-    SWITCHES,
-    SWITCHES_IOT,
-    SWITCHES_SMART,
-    THERMOSTATS_SMART,
-    WITH_EMETER,
-    WITH_EMETER_IOT,
-    WITH_EMETER_SMART,
-)
 from kasa.iot import IotBulb, IotDimmer, IotLightStrip, IotPlug, IotStrip, IotWallSwitch
 from kasa.smart import SmartDevice
 from kasa.smartcam import SmartCamDevice
@@ -58,6 +25,142 @@ from .fixtureinfo import (
     filter_fixtures,
     idgenerator,
 )
+
+# Tapo bulbs
+BULBS_SMART_VARIABLE_TEMP = {"L430C", "L430P", "L530E", "L535E", "L930-5"}
+BULBS_SMART_LIGHT_STRIP = {"L900-5", "L900-10", "L920-5", "L930-5"}
+BULBS_SMART_COLOR = {"L430C", "L430P", "L530E", "L535E", *BULBS_SMART_LIGHT_STRIP}
+BULBS_SMART_DIMMABLE = {"L510B", "L510E"}
+BULBS_SMART = (
+    BULBS_SMART_VARIABLE_TEMP.union(BULBS_SMART_COLOR)
+    .union(BULBS_SMART_DIMMABLE)
+    .union(BULBS_SMART_LIGHT_STRIP)
+)
+
+# Kasa (IOT-prefixed) bulbs
+BULBS_IOT_LIGHT_STRIP = {"KL400L5", "KL400L10", "KL430", "KL420L5"}
+BULBS_IOT_VARIABLE_TEMP = {
+    "LB120",
+    "LB130",
+    "KL120",
+    "KL125",
+    "KL130",
+    "KL135",
+    "KL430",
+}
+BULBS_IOT_COLOR = {"LB130", "KL125", "KL130", "KL135", *BULBS_IOT_LIGHT_STRIP}
+BULBS_IOT_DIMMABLE = {"KL50", "KL60", "LB100", "LB110", "KL110"}
+BULBS_IOT = (
+    BULBS_IOT_VARIABLE_TEMP.union(BULBS_IOT_COLOR)
+    .union(BULBS_IOT_DIMMABLE)
+    .union(BULBS_IOT_LIGHT_STRIP)
+)
+
+BULBS_VARIABLE_TEMP = {*BULBS_SMART_VARIABLE_TEMP, *BULBS_IOT_VARIABLE_TEMP}
+BULBS_COLOR = {*BULBS_SMART_COLOR, *BULBS_IOT_COLOR}
+
+LIGHT_STRIPS = {*BULBS_SMART_LIGHT_STRIP, *BULBS_IOT_LIGHT_STRIP}
+BULBS = {
+    *BULBS_IOT,
+    *BULBS_SMART,
+}
+
+
+PLUGS_IOT = {
+    "HS100",
+    "HS103",
+    "HS105",
+    "HS110",
+    "EP10",
+    "EP25",
+    "KP100",
+    "KP105",
+    "KP115",
+    "KP125",
+    "KP401",
+}
+PLUGS_SMART = {
+    "P105",
+    "P100",
+    "P110",
+    "P110M",
+    "P115",
+    "KP125M",
+    "EP25",
+    "P125M",
+    "TP10",
+    "TP15",
+}
+PLUGS = {
+    *PLUGS_IOT,
+    *PLUGS_SMART,
+}
+SWITCHES_IOT = {
+    "HS200",
+    "HS210",
+    "KS200",
+    "KS200M",
+}
+SWITCHES_SMART = {
+    "HS200",
+    "KS205",
+    "KS225",
+    "KS240",
+    "S500",
+    "S500D",
+    "S505",
+    "S505D",
+    "TS15",
+}
+SWITCHES = {*SWITCHES_IOT, *SWITCHES_SMART}
+STRIPS_IOT = {"HS107", "HS300", "KP303", "KP200", "KP400", "EP40"}
+STRIPS_SMART = {"P300", "P304M", "TP25", "EP40M", "P210M", "P306", "P316M"}
+STRIPS = {*STRIPS_IOT, *STRIPS_SMART}
+
+DIMMERS_IOT = {"ES20M", "HS220", "KS220", "KS220M", "KS230", "KP405"}
+DIMMERS_SMART = {"HS220", "KS225", "S500D", "P135"}
+DIMMERS = {
+    *DIMMERS_IOT,
+    *DIMMERS_SMART,
+}
+
+HUBS_SMART = {"H100", "KH100"}
+SENSORS_SMART = {
+    "T310",
+    "T315",
+    "T300",
+    "T100",
+    "T110",
+    "S200B",
+    "S200D",
+    "S210",
+    "S220",
+    "D100C",  # needs a home category?
+}
+THERMOSTATS_SMART = {"KE100"}
+
+VACUUMS_SMART = {"RV20"}
+
+WITH_EMETER_IOT = {"EP25", "HS110", "HS300", "KP115", "KP125", *BULBS_IOT}
+WITH_EMETER_SMART = {"P110", "P110M", "P115", "KP125M", "EP25", "P304M"}
+WITH_EMETER = {*WITH_EMETER_IOT, *WITH_EMETER_SMART}
+
+DIMMABLE = {*BULBS, *DIMMERS}
+
+ALL_DEVICES_IOT = (
+    BULBS_IOT.union(PLUGS_IOT).union(STRIPS_IOT).union(DIMMERS_IOT).union(SWITCHES_IOT)
+)
+ALL_DEVICES_SMART = (
+    BULBS_SMART.union(PLUGS_SMART)
+    .union(STRIPS_SMART)
+    .union(DIMMERS_SMART)
+    .union(HUBS_SMART)
+    .union(SENSORS_SMART)
+    .union(SWITCHES_SMART)
+    .union(THERMOSTATS_SMART)
+    .union(VACUUMS_SMART)
+)
+ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
 
 IP_FIXTURE_CACHE: dict[str, FixtureInfo] = {}
 

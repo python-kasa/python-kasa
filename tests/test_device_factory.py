@@ -31,14 +31,6 @@ from kasa.device_factory import (
     get_device_class_from_sys_info,
     get_protocol,
 )
-from kasa.device_models import (
-    BULBS_IOT,
-    BULBS_IOT_LIGHT_STRIP,
-    DIMMERS_IOT,
-    PLUGS_IOT,
-    STRIPS_IOT,
-    SWITCHES_IOT,
-)
 from kasa.deviceconfig import (
     DeviceConfig,
     DeviceConnectionParameters,
@@ -47,14 +39,7 @@ from kasa.deviceconfig import (
 )
 from kasa.discover import DiscoveryResult
 from kasa.exceptions import UnsupportedDeviceError
-from kasa.iot import (
-    IotBulb,
-    IotDimmer,
-    IotLightStrip,
-    IotPlug,
-    IotStrip,
-    IotWallSwitch,
-)
+from kasa.iot import IotBulb
 from kasa.transports import (
     AesTransport,
     BaseTransport,
@@ -75,10 +60,18 @@ pytestmark = [pytest.mark.requires_dummy]
 
 def _get_connection_type_device_class(discovery_info):
     if "result" in discovery_info:
-        device_class = Discover._get_device_class(discovery_info)
         dr = DiscoveryResult.from_dict(discovery_info["result"])
-
         connection_type = Discover._get_connection_parameters(dr)
+        # For IoT device families, the precise subclass is determined by sysinfo
+        # at connect time (not from the discovery response alone); use the base
+        # IotDevice class for isinstance checks in tests.
+        if connection_type.device_family in (
+            DeviceFamily.IotSmartPlugSwitch,
+            DeviceFamily.IotSmartBulb,
+        ):
+            device_class = IotDevice
+        else:
+            device_class = Discover._get_device_class(discovery_info)
     else:
         connection_type = DeviceConnectionParameters.from_values(
             DeviceFamily.IotSmartPlugSwitch.value, DeviceEncryptionType.Xor.value
@@ -341,7 +334,8 @@ async def test_connect_protocol_none_raises():
 
 async def test__connect_iot_ipcamera_unsupported_family():
     """Cover else branch in _connect raising UnsupportedDeviceError."""
-    # Use a valid DeviceFamily that is intentionally unsupported by get_device_class_from_family.
+    # IotIpCamera is disabled in the supported device types table; it should
+    # raise UnsupportedDeviceError even though a valid protocol was created.
     params = DeviceConnectionParameters(
         device_family=DeviceFamily.IotIpCamera,
         encryption_type=DeviceEncryptionType.Aes,
@@ -350,50 +344,9 @@ async def test__connect_iot_ipcamera_unsupported_family():
     cfg = DeviceConfig(host="127.0.0.16", connection_type=params)
     protocol = get_protocol(cfg)
     assert protocol is not None
-    # Ensure first XOR path is not taken.
     assert not isinstance(protocol._transport, XorTransport)
     with pytest.raises(UnsupportedDeviceError):
         await connect(config=cfg)
-
-
-def _sample_model(models):
-    return next(iter(models))
-
-
-def test_get_device_class_from_family_lightstrip_model():
-    model = _sample_model(BULBS_IOT_LIGHT_STRIP)
-    cls = get_device_class_from_family("IOT.SMARTBULB", https=False, device_model=model)
-    assert cls is IotLightStrip
-
-
-def test_get_device_class_from_family_bulb_model():
-    model = next(m for m in BULBS_IOT if m not in BULBS_IOT_LIGHT_STRIP)
-    cls = get_device_class_from_family("IOT.SMARTBULB", https=False, device_model=model)
-    assert cls is IotBulb
-
-
-def test_get_device_class_from_family_plug_model():
-    model = _sample_model(PLUGS_IOT)
-    cls = get_device_class_from_family("IOT.SMARTBULB", https=False, device_model=model)
-    assert cls is IotPlug
-
-
-def test_get_device_class_from_family_switch_model():
-    model = _sample_model(SWITCHES_IOT)
-    cls = get_device_class_from_family("IOT.SMARTBULB", https=False, device_model=model)
-    assert cls is IotWallSwitch
-
-
-def test_get_device_class_from_family_strip_model():
-    model = _sample_model(STRIPS_IOT)
-    cls = get_device_class_from_family("IOT.SMARTBULB", https=False, device_model=model)
-    assert cls is IotStrip
-
-
-def test_get_device_class_from_family_dimmer_model():
-    model = _sample_model(DIMMERS_IOT)
-    cls = get_device_class_from_family("IOT.SMARTBULB", https=False, device_model=model)
-    assert cls is IotDimmer
 
 
 def test_get_protocol_returns_none_for_unsupported_combo():
@@ -428,11 +381,3 @@ async def test_connect_with_host_only_branch_raises_unsupported(mocker):
     mocker.patch("kasa.device_factory.get_protocol", return_value=None)
     with pytest.raises(UnsupportedDeviceError):
         await connect(host="127.0.0.66", config=None)
-
-
-def test_get_device_class_from_family_unknown_model_defaults_to_iotbulb():
-    """Ensure device_model not in any set leaves cls unchanged."""
-    cls = get_device_class_from_family(
-        "IOT.SMARTBULB", https=False, device_model="UNKNOWN_MODEL_123"
-    )
-    assert cls is IotBulb

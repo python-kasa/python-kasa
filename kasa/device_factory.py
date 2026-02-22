@@ -7,14 +7,6 @@ import time
 from typing import Any
 
 from .device import Device
-from .device_models import (
-    BULBS_IOT,
-    BULBS_IOT_LIGHT_STRIP,
-    DIMMERS_IOT,
-    PLUGS_IOT,
-    STRIPS_IOT,
-    SWITCHES_IOT,
-)
 from .device_type import DeviceType
 from .deviceconfig import DeviceConfig, DeviceEncryptionType, DeviceFamily
 from .exceptions import KasaException, UnsupportedDeviceError
@@ -112,25 +104,20 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> Device:
     device_class: type[Device] | None
     device: Device | None = None
 
-    if isinstance(protocol, IotProtocol) and isinstance(
-        protocol._transport, XorTransport
-    ):
-        info = await protocol.query(GET_SYSINFO_QUERY)
-        _perf_log(True, "get_sysinfo")
-        device_class = get_device_class_from_sys_info(info)
-        device = device_class(config.host, protocol=protocol)
-        device.update_from_discover_info(info)
-        await device.update()
-        _perf_log(True, "update")
-        return device
-    elif device_class := get_device_class_from_family(
+    if device_class := get_device_class_from_family(
         config.connection_type.device_family.value, https=config.connection_type.https
     ):
         if issubclass(device_class, IotDevice):
+            # IoT devices report a generic device family (e.g. IOT.SMARTPLUGSWITCH)
+            # that does not distinguish plug/strip/switch/etc.  Query sysinfo for
+            # the precise subclass regardless of which transport is in use.
             info = await protocol.query(GET_SYSINFO_QUERY)
             _perf_log(True, "get_sysinfo")
             device_class = get_device_class_from_sys_info(info)
-        device = device_class(host=config.host, protocol=protocol)
+            device = device_class(config.host, protocol=protocol)
+            device.update_from_discover_info(info)
+        else:
+            device = device_class(host=config.host, protocol=protocol)
         await device.update()
         _perf_log(True, "update")
         return device
@@ -162,7 +149,6 @@ def get_device_class_from_family(
     *,
     https: bool,
     require_exact: bool = False,
-    device_model: str | None = None,
 ) -> type[Device] | None:
     """Return the device class from the type name."""
     supported_device_types: dict[str, type[Device]] = {
@@ -190,21 +176,6 @@ def get_device_class_from_family(
     ):
         _LOGGER.debug("Unknown SMART device with %s, using SmartDevice", device_type)
         cls = SmartDevice
-
-    if cls is not None and issubclass(cls, IotDevice) and device_model is not None:
-        device_model = device_model.split("(")[0]
-        if device_model in BULBS_IOT_LIGHT_STRIP:
-            cls = IotLightStrip
-        elif device_model in BULBS_IOT:
-            cls = IotBulb
-        elif device_model in PLUGS_IOT:
-            cls = IotPlug
-        elif device_model in SWITCHES_IOT:
-            cls = IotWallSwitch
-        elif device_model in STRIPS_IOT:
-            cls = IotStrip
-        elif device_model in DIMMERS_IOT:
-            cls = IotDimmer
 
     if cls is not None:
         _LOGGER.debug("Using %s for %s", cls.__name__, device_type)

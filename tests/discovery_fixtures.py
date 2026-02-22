@@ -316,6 +316,12 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
                 if fixture_info.protocol in {"SMARTCAM", "SMARTCAM.CHILD"}
                 else FakeIotProtocol(fixture_info.data, fixture_info.name)
             )
+            # Also register under the device IP when the host key is a hostname
+            # (e.g. discover_single with a hostname).  _process_new_klap_device
+            # creates a protocol with config.host set to the resolved IP, so
+            # the _query mock must be able to look it up by IP as well.
+            if host != dm.ip:
+                protos[dm.ip] = protos[host]
             port = (
                 dm.port_override
                 if dm.port_override and dm.discovery_port != 20002
