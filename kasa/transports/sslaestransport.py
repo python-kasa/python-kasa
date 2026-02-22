@@ -95,8 +95,12 @@ class SslAesTransport(BaseTransport):
             not self._credentials or self._credentials.username is None
         ) and not self._credentials_hash:
             self._credentials = Credentials()
+        if self._login_version == 3:
+            _default_credentials = DEFAULT_CREDENTIALS["TAPOCAMERA_LV3"]
+        else:
+            _default_credentials = DEFAULT_CREDENTIALS["TAPOCAMERA"]
         self._default_credentials: Credentials = get_default_credentials(
-            DEFAULT_CREDENTIALS["TAPOCAMERA"]
+            _default_credentials
         )
         self._http_client: HttpClient = HttpClient(config)
 

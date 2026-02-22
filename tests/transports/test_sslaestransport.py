@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import logging
 import secrets
 from contextlib import nullcontext as does_not_raise
@@ -12,7 +13,12 @@ import pytest
 from yarl import URL
 
 from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
-from kasa.deviceconfig import DeviceConfig
+from kasa.deviceconfig import (
+    DeviceConfig,
+    DeviceConnectionParameters,
+    DeviceEncryptionType,
+    DeviceFamily,
+)
 from kasa.exceptions import (
     AuthenticationError,
     DeviceError,
@@ -391,6 +397,53 @@ async def test_port_override():
     transport = SslAesTransport(config=config)
 
     assert str(transport._app_url) == f"https://127.0.0.1:{port_override}"
+
+
+@pytest.mark.parametrize(
+    ("login_version", "expected_password_b64"),
+    [
+        pytest.param(
+            3,
+            "VFBMMDc1NTI2NDYwNjAz",  # noqa: S105
+            id="version-3-uses-lv3-credentials",
+        ),
+        pytest.param(
+            2,
+            "YWRtaW4=",  # noqa: S105
+            id="version-2-uses-tapocamera-credentials",
+        ),
+        pytest.param(
+            None,
+            "YWRtaW4=",  # noqa: S105
+            id="no-version-uses-tapocamera-credentials",
+        ),
+    ],
+)
+async def test_login_version_default_credentials(
+    mocker, login_version, expected_password_b64
+):
+    """Test that login_version=3 uses TAPOCAMERA_LV3 credentials while other versions use TAPOCAMERA."""
+    host = "127.0.0.1"
+    tapo_family = DeviceFamily.SmartIpCamera
+    aes_type = DeviceEncryptionType.Aes
+    mock_ssl_aes_device = MockSslAesDevice(host)
+    mocker.patch.object(
+        aiohttp.ClientSession, "post", side_effect=mock_ssl_aes_device.post
+    )
+
+    config = DeviceConfig(
+        host,
+        credentials=Credentials("foo", "bar"),
+        connection_type=DeviceConnectionParameters(
+            tapo_family, aes_type, login_version=login_version
+        ),
+    )
+    transport = SslAesTransport(config=config)
+    assert transport._default_credentials.username == "admin"
+    password_b64 = base64.b64encode(
+        transport._default_credentials.password.encode()
+    ).decode()
+    assert password_b64 == expected_password_b64
 
 
 class MockSslAesDevice:

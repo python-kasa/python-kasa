@@ -16,10 +16,10 @@ class Credentials:
     password: str = field(default="", repr=False)
 
 
-def get_default_credentials(tuple: tuple[str, str]) -> Credentials:
+def get_default_credentials(crdentials: tuple[str, str]) -> Credentials:
     """Return decoded default credentials."""
-    un = base64.b64decode(tuple[0].encode()).decode()
-    pw = base64.b64decode(tuple[1].encode()).decode()
+    un = base64.b64decode(crdentials[0].encode()).decode()
+    pw = base64.b64decode(crdentials[1].encode()).decode()
     return Credentials(un, pw)
 
 
@@ -28,4 +28,5 @@ DEFAULT_CREDENTIALS = {
     "KASACAMERA": ("YWRtaW4=", "MjEyMzJmMjk3YTU3YTVhNzQzODk0YTBlNGE4MDFmYzM="),
     "TAPO": ("dGVzdEB0cC1saW5rLm5ldA==", "dGVzdA=="),
     "TAPOCAMERA": ("YWRtaW4=", "YWRtaW4="),
+    "TAPOCAMERA_LV3": ("YWRtaW4=", "VFBMMDc1NTI2NDYwNjAz"),
 }
