@@ -42,6 +42,7 @@ from kasa.cli.main import TYPES, _legacy_type_to_class, cli, cmd_command, raw_co
 from kasa.cli.time import time
 from kasa.cli.usage import energy
 from kasa.cli.wifi import wifi
+from kasa.device_factory import get_device_class_from_sys_info
 from kasa.discover import Discover, DiscoveryResult, redact_data
 from kasa.iot import IotDevice
 from kasa.json import dumps as json_dumps
@@ -192,6 +193,9 @@ async def test_discover_raw(discovery_mock, runner, mocker):
 async def test_list_update_failed(discovery_mock, mocker, runner, exception, expected):
     """Test that device update is called on main."""
     device_class = Discover._get_device_class(discovery_mock.discovery_data)
+    # For new_klap IoT fixtures the precise subclass comes from sysinfo.
+    if discovery_mock.new_klap and discovery_mock.device_type.startswith("IOT."):
+        device_class = get_device_class_from_sys_info(discovery_mock.query_data)
     mocker.patch.object(
         device_class,
         "update",
@@ -1006,6 +1010,9 @@ async def test_host_auth_failed(discovery_mock, mocker, runner):
     host = "127.0.0.1"
     discovery_mock.ip = host
     device_class = Discover._get_device_class(discovery_mock.discovery_data)
+    # For new_klap IoT fixtures the precise subclass comes from sysinfo.
+    if discovery_mock.new_klap and discovery_mock.device_type.startswith("IOT."):
+        device_class = get_device_class_from_sys_info(discovery_mock.query_data)
     mocker.patch.object(
         device_class,
         "update",
