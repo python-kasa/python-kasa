@@ -201,7 +201,7 @@ The following devices have been tested and confirmed as working. If your device 
 - **Wall Switches**: S210, S220, S500, S500D, S505, S505D, TS15
 - **Bulbs**: L430C, L430P, L510B, L510E, L530B, L530E, L535E, L630
 - **Light Strips**: L900-10, L900-5, L920-5, L930-5
-- **Cameras**: C100, C110, C210, C220, C225, C325WB, C460, C520WS, C720, TC65, TC70
+- **Cameras**: C100, C110, C210, C220, C225, C325WB, C460, C520WS, C720, TC40, TC65, TC70
 - **Doorbells and chimes**: D100C, D130, D230
 - **Vacuums**: RV20 Max Plus, RV30 Max
 - **Hubs**: H100, H200

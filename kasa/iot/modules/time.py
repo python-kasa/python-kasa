@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, tzinfo
+import contextlib
+from datetime import UTC, datetime, timedelta, tzinfo
+from zoneinfo import ZoneInfoNotFoundError
 
 from ...exceptions import KasaException
 from ...interfaces import Time as TimeInterface
 from ..iotmodule import IotModule, merge
-from ..iottimezone import get_timezone, get_timezone_index
+from ..iottimezone import (
+    _expected_dst_behavior_for_index,
+    _guess_timezone_by_offset,
+    get_timezone,
+    get_timezone_index,
+)
 
 
 class Time(IotModule, TimeInterface):
@@ -23,9 +30,46 @@ class Time(IotModule, TimeInterface):
         return q
 
     async def _post_update_hook(self) -> None:
-        """Perform actions after a device update."""
+        """Perform actions after a device update.
+
+        If the configured zone is not available on this host, compute the device's
+        current UTC offset and choose a best-match available zone, preferring DST-
+        observing candidates when the original index implies DST. As a last resort,
+        use a fixed-offset timezone.
+        """
         if res := self.data.get("get_timezone"):
-            self._timezone = await get_timezone(res.get("index"))
+            idx = res.get("index")
+            try:
+                self._timezone = await get_timezone(idx)
+                return
+            except ZoneInfoNotFoundError:
+                pass  # fall through to offset-based match
+
+        gt = self.data.get("get_time")
+        if gt:
+            device_local = datetime(
+                gt["year"],
+                gt["month"],
+                gt["mday"],
+                gt["hour"],
+                gt["min"],
+                gt["sec"],
+            )
+            now_utc = datetime.now(UTC)
+            delta = device_local - now_utc.replace(tzinfo=None)
+            rounded = timedelta(seconds=60 * round(delta.total_seconds() / 60))
+
+            dst_expected = None
+            if res := self.data.get("get_timezone"):
+                idx = res.get("index")
+                with contextlib.suppress(KeyError):
+                    dst_expected = _expected_dst_behavior_for_index(idx)
+
+            self._timezone = await _guess_timezone_by_offset(
+                rounded, when_utc=now_utc, dst_expected=dst_expected
+            )
+        else:
+            self._timezone = UTC
 
     @property
     def time(self) -> datetime:
