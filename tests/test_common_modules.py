@@ -499,7 +499,7 @@ async def test_time_post_update_uses_offset_when_index_missing_unit(
         new=AsyncMock(side_effect=ZoneInfoNotFoundError("missing on host")),
     )
     mock_guess = mocker.patch(
-        "kasa.iot.modules.time.guess_timezone_by_offset",
+        "kasa.iot.modules.time._guess_timezone_by_offset",
         new=AsyncMock(return_value=timezone(timedelta(0))),
     )
 
@@ -571,7 +571,7 @@ async def test_time_post_update_with_time_no_tz_uses_guess_unit(
     monkeypatch.setattr(TimeModule, "data", property(lambda self: data))
 
     mock_guess = mocker.patch(
-        "kasa.iot.modules.time.guess_timezone_by_offset",
+        "kasa.iot.modules.time._guess_timezone_by_offset",
         new=AsyncMock(return_value=timezone(timedelta(hours=2))),
     )
 
