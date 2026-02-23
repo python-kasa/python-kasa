@@ -263,6 +263,7 @@ class Clean(SmartModule):
             "getBatteryInfo": {},
             "getCleanStatus": {},
             "getCleanAttr": {"type": "global"},
+            "getMapInfo": {},
         }
 
     async def start(self) -> dict:
@@ -409,3 +410,43 @@ class Clean(SmartModule):
     async def set_clean_count(self, count: int) -> Annotated[dict, FeatureAttribute()]:
         """Set number of times to clean."""
         return await self._change_setting("clean_number", count)
+
+    @property
+    def current_map_id(self) -> int:
+        """Return the ID of the currently active map."""
+        return self.data["getMapInfo"]["current_map_id"]
+
+    async def clean_rooms(self, room_ids: list[int], map_id: int | None = None) -> dict:
+        """Start cleaning specific rooms.
+
+        :param room_ids: List of room IDs to clean.
+        :param map_id: Map ID to clean on. Defaults to the current active map.
+        """
+        if not room_ids:
+            raise ValueError("room_ids must not be empty")
+        if map_id is None:
+            map_id = self.current_map_id
+        return await self.call(
+            "setSwitchClean",
+            {
+                "clean_mode": 3,
+                "clean_on": True,
+                "clean_order": True,
+                "force_clean": False,
+                "map_id": map_id,
+                "room_list": list(room_ids),
+                "start_type": 1,
+            },
+        )
+
+    async def get_rooms(self, map_id: int | None = None) -> list[dict]:
+        """Return the list of rooms for the given map.
+
+        :param map_id: Map ID to query. Defaults to the current active map.
+        """
+        if map_id is None:
+            map_id = self.current_map_id
+        resp = await self.call("getMapData", {"map_id": map_id, "type": 0})
+        return [
+            area for area in resp.get("area_list", []) if area.get("type") == "room"
+        ]
