@@ -1055,15 +1055,7 @@ async def test_type_camera_login_version(
 
     captured_config: DeviceConfig | None = None
 
-    result_device = FileNotFoundError
-    pass_dev = click.make_pass_decorator(Device)
-
-    @pass_dev
-    async def _state(dev: Device):
-        nonlocal result_device
-        result_device = dev
-
-    mocker.patch("kasa.cli.device.state", new=_state)
+    mocker.patch("kasa.cli.device.state")
 
     async def _mock_connect(config: DeviceConfig):
         nonlocal captured_config
