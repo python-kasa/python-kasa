@@ -82,11 +82,27 @@ class Time(SmartCamModule, TimeInterface):
         else:
             timestamp = dt.timestamp()
 
-        lt = datetime.fromtimestamp(timestamp).isoformat().replace("T", " ")
-        params = {"seconds_from_1970": int(timestamp), "local_time": lt}
-        # Doesn't seem to update the time, perhaps because timing_mode is ntp
-        res = await self.call("setTimezone", {"system": {"clock_status": params}})
+        timestamp_int = int(timestamp)
+        # The device reports local_time in UTC regardless of the configured
+        # zone_id (confirmed by cross-referencing seconds_from_1970 with
+        # local_time in captured traffic).  Use strftime to avoid the
+        # sub-second precision that isoformat() would include.
+        lt = datetime.fromtimestamp(timestamp_int, tz=UTC).strftime("%Y-%m-%d %H:%M:%S")
+
+        # Devices that report timing_mode "ntp" appear to ignore clock_status
+        # updates.  Switching to "manual" first is the working hypothesis;
+        # timing_mode is a field the device itself exposes via getTimezone.
+        # Devices that have no timing_mode (e.g. H200 hub) are left alone.
+        # Combine zone_id here too if a ZoneInfo was supplied, so both
+        # changes land in a single request.
+        tz_basic = self.data.get("getTimezone", {}).get("system", {}).get("basic", {})
+        basic_params: dict[str, str] = {}
+        if "timing_mode" in tz_basic:
+            basic_params["timing_mode"] = "manual"
         if (zinfo := dt.tzinfo) and isinstance(zinfo, ZoneInfo):
-            tz_params = {"zone_id": zinfo.key}
-            res = await self.call("setTimezone", {"system": {"basic": tz_params}})
-        return res
+            basic_params["zone_id"] = zinfo.key
+        if basic_params:
+            await self.call("setTimezone", {"system": {"basic": basic_params}})
+
+        params = {"seconds_from_1970": timestamp_int, "local_time": lt}
+        return await self.call("setTimezone", {"system": {"clock_status": params}})
