@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import logging
 from typing import Any, cast
 
@@ -390,3 +391,31 @@ class SmartCamDevice(SmartDevice):
                 "Received a kasa exception for wifi join, but this is expected"
             )
             return {}
+
+    async def update_credentials(self, username: str, password: str) -> dict:
+        cur_pass = self.credentials.password if self.credentials.password else self.protocol._transport._default_credentials.password
+        cur_pass_hash = hashlib.sha256(cur_pass.encode()).hexdigest().upper()
+        new_pass_hash = hashlib.sha256(password.encode()).hexdigest().upper()
+
+        public_key_b64 = self._public_key or self.STATIC_PUBLIC_KEY_B64
+        key_bytes = base64.b64decode(public_key_b64)
+        public_key = serialization.load_der_public_key(key_bytes)
+        if not isinstance(public_key, RSAPublicKey):
+            raise TypeError("Loaded public key is not an RSA public key")
+        encrypted = public_key.encrypt(password.encode(), padding.PKCS1v15())
+        encrypted_password = base64.b64encode(encrypted).decode()
+
+        payload = {
+            "user_management": {
+                "change_admin_password": {
+                    "encrypt_type": "3",
+                    "secname": "root",
+                    "passwd": new_pass_hash,
+                    "old_passwd": cur_pass_hash,
+                    "ciphertext": encrypted_password,
+                    "username": "admin"
+                }
+            }
+        }
+
+        return await self.protocol.query({"changeAdminPassword": payload})
