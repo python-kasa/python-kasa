@@ -64,6 +64,15 @@ class SmartCamDevice(SmartDevice):
 
         return DeviceType.Camera
 
+    def _pubkey_encrypt(self, plaintext: str) -> str:
+        public_key_b64 = self._public_key or self.STATIC_PUBLIC_KEY_B64
+        key_bytes = base64.b64decode(public_key_b64)
+        public_key = serialization.load_der_public_key(key_bytes)
+        if not isinstance(public_key, RSAPublicKey):
+            raise TypeError("Loaded public key is not an RSA public key")
+        ciphertext_bytes = public_key.encrypt(plaintext.encode(), padding.PKCS1v15())
+        return base64.b64encode(ciphertext_bytes).decode()
+
     @staticmethod
     def _get_device_info(
         info: dict[str, Any], discovery_info: dict[str, Any] | None
@@ -358,13 +367,7 @@ class SmartCamDevice(SmartDevice):
         if net is None:
             raise DeviceError(f"Network with SSID '{ssid}' not found.")
 
-        public_key_b64 = self._public_key or self.STATIC_PUBLIC_KEY_B64
-        key_bytes = base64.b64decode(public_key_b64)
-        public_key = serialization.load_der_public_key(key_bytes)
-        if not isinstance(public_key, RSAPublicKey):
-            raise TypeError("Loaded public key is not an RSA public key")
-        encrypted = public_key.encrypt(password.encode(), padding.PKCS1v15())
-        encrypted_password = base64.b64encode(encrypted).decode()
+        encrypted_password = self._pubkey_encrypt(password)
 
         payload = {
             "onboarding": {
@@ -397,13 +400,7 @@ class SmartCamDevice(SmartDevice):
         cur_pass_hash = hashlib.sha256(cur_pass.encode()).hexdigest().upper()
         new_pass_hash = hashlib.sha256(password.encode()).hexdigest().upper()
 
-        public_key_b64 = self._public_key or self.STATIC_PUBLIC_KEY_B64
-        key_bytes = base64.b64decode(public_key_b64)
-        public_key = serialization.load_der_public_key(key_bytes)
-        if not isinstance(public_key, RSAPublicKey):
-            raise TypeError("Loaded public key is not an RSA public key")
-        encrypted = public_key.encrypt(password.encode(), padding.PKCS1v15())
-        encrypted_password = base64.b64encode(encrypted).decode()
+        encrypted_password = self._pubkey_encrypt(password)
 
         payload = {
             "user_management": {
