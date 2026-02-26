@@ -204,7 +204,7 @@ The following devices have been tested and confirmed as working. If your device 
 - **Cameras**: C100, C110, C210, C220, C225, C325WB, C460, C520WS, C720, TC40, TC65, TC70
 - **Doorbells and chimes**: D100C, D130, D230
 - **Vacuums**: RV20 Max Plus, RV30 Max
-- **Hubs**: H100, H200
+- **Hubs**: H100, H200, H500
 - **Hub-Connected Devices[^3]**: S200B, S200D, T100, T110, T300, T310, T315
 
 <!--SUPPORTED_END-->
