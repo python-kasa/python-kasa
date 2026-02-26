@@ -76,6 +76,10 @@ async def test_device_type_no_update(discovery_mock, caplog: pytest.LogCaptureFi
 
     discovery_result = copy.deepcopy(discovery_mock.discovery_data["result"])
 
+    print("TESTERINO", discovery_result)
+
+    disco_id = discovery_result["device_id"]
+
     disco_model = discovery_result["device_model"]
     short_model, _, _ = disco_model.partition("(")
     dev.update_from_discover_info(discovery_result)
@@ -90,7 +94,7 @@ async def test_device_type_no_update(discovery_mock, caplog: pytest.LogCaptureFi
     assert dev.device_type is DeviceType.Plug
     assert (
         repr(dev)
-        == f"<DeviceType.Plug at {DISCOVERY_MOCK_IP} - None ({short_model}) - update() needed>"
+        == f"<DeviceType.Plug at {DISCOVERY_MOCK_IP} - Plug ({disco_id}) ({short_model}) - update() needed>"
     )
     assert "Unknown device type, falling back to plug" in caplog.text
 
