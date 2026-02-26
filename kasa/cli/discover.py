@@ -140,7 +140,12 @@ async def raw(ctx: click.Context, redact: bool) -> DeviceDict:
             )
         echo(json_dumps(discovered, indent=True))
 
-    return await _discover(ctx, print_raw=print_raw, do_echo=False)
+    prev_redact = Discover._redact_data
+    Discover._redact_data = bool(redact)
+    try:
+        return await _discover(ctx, print_raw=print_raw, do_echo=False)
+    finally:
+        Discover._redact_data = prev_redact
 
 
 @discover.command()
@@ -151,10 +156,17 @@ async def list(ctx: click.Context) -> DeviceDict:
 
     async def print_discovered(dev: Device):
         cparams = dev.config.connection_type
+        host = dev.host or "-"
+        model = dev.model or "-"
+        device_family = getattr(cparams.device_family, "value", "-") or "-"
+        encryption_type = getattr(cparams.encryption_type, "value", "-") or "-"
+        login_version = (
+            cparams.login_version if cparams.login_version is not None else "-"
+        )
+        https_flag = str(int(bool(cparams.https)))
         infostr = (
-            f"{dev.host:<15} {dev.model:<9} {cparams.device_family.value:<20} "
-            f"{cparams.encryption_type.value:<7} {cparams.https:<5} "
-            f"{cparams.login_version or '-':<3}"
+            f"{host:<15} {model:<9} {device_family:<20} "
+            f"{encryption_type:<7} {https_flag:<5} {login_version:<3}"
         )
         async with sem:
             try:
@@ -169,8 +181,8 @@ async def list(ctx: click.Context) -> DeviceDict:
                 echo(f"{infostr} {dev.alias}")
 
     async def print_unsupported(unsupported_exception: UnsupportedDeviceError):
-        if host := unsupported_exception.host:
-            echo(f"{host:<15} UNSUPPORTED DEVICE")
+        host = unsupported_exception.host or "-"
+        echo(f"{host:<15} UNSUPPORTED DEVICE")
 
     echo(
         f"{'HOST':<15} {'MODEL':<9} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} "
