@@ -111,6 +111,7 @@ from mashumaro.types import Alias
 from kasa import Device
 from kasa.credentials import Credentials
 from kasa.device_factory import (
+    GET_SYSINFO_QUERY,
     get_device_class_from_family,
     get_device_class_from_sys_info,
     get_protocol,
@@ -125,7 +126,7 @@ from kasa.exceptions import (
     TimeoutError,
     UnsupportedDeviceError,
 )
-from kasa.iot.iotdevice import IotDevice, _extract_sys_info
+from kasa.iot.iotdevice import _extract_sys_info
 from kasa.json import DataClassJSONMixin
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
@@ -361,22 +362,33 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             config.timeout = self.timeout
         try:
             if port == self.discovery_port:
-                json_func = Discover._get_discovery_json_legacy
-                device_func = Discover._get_device_instance_legacy
+                info = Discover._get_discovery_json_legacy(data, ip)
+                if self.on_discovered_raw is not None:
+                    self.on_discovered_raw(
+                        {
+                            "discovery_response": info,
+                            "meta": {"ip": ip, "port": port},
+                        }
+                    )
+                device = Discover._get_device_instance_legacy(info, config)
             elif port in (Discover.DISCOVERY_PORT_2, Discover.DISCOVERY_PORT_3):
-                json_func = Discover._get_discovery_json
-                device_func = Discover._get_device_instance
+                info = Discover._get_discovery_json(data, ip)
+                if self.on_discovered_raw is not None:
+                    self.on_discovered_raw(
+                        {
+                            "discovery_response": info,
+                            "meta": {"ip": ip, "port": port},
+                        }
+                    )
+                # IoT devices with new_klap firmware use KlapTransportV2 and need
+                # an async sysinfo query to determine the correct device subclass;
+                # spawn a callback task so the datagram handler is not blocked.
+                if self._is_new_klap_iot(info):
+                    self._run_callback_task(self._process_new_klap_device(info, config))
+                    return
+                device = Discover._get_device_instance(info, config)
             else:
                 return
-            info = json_func(data, ip)
-            if self.on_discovered_raw is not None:
-                self.on_discovered_raw(
-                    {
-                        "discovery_response": info,
-                        "meta": {"ip": ip, "port": port},
-                    }
-                )
-            device = device_func(info, config)
         except UnsupportedDeviceError as udex:
             _LOGGER.debug("Unsupported device found at %s << %s", ip, udex)
             self.unsupported_device_exceptions[ip] = udex
@@ -403,6 +415,77 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             self.target_discovered = True
             if self.discover_task:
                 self.discover_task.cancel()
+
+    @staticmethod
+    def _is_new_klap_iot(info: dict) -> bool:
+        """Return True if the port 20002 response is from an IoT new_klap device.
+
+        IoT devices with new_klap firmware advertise KLAP encryption but use
+        KlapTransportV2.  The discovery response alone does not carry enough
+        structural information to determine the precise IoT subclass, so an
+        async sysinfo query is required after connection.
+        """
+        result = info.get("result", {})
+        schm = result.get("mgt_encrypt_schm", {})
+        return bool(schm.get("new_klap")) and result.get("device_type", "").startswith(
+            "IOT."
+        )
+
+    async def _process_new_klap_device(self, info: dict, config: DeviceConfig) -> None:
+        """Process an IoT new_klap device discovered via port 20002.
+
+        These devices use KlapTransportV2 but require a sysinfo query to
+        determine the correct IoT subclass (IotStrip, IotBulb, etc.) because
+        the 20002 discovery response only carries the generic device family.
+        """
+        ip = config.host
+        try:
+            discovery_result = DiscoveryResult.from_dict(info["result"])
+            conn_params = Discover._get_connection_parameters(discovery_result)
+            config.connection_type = conn_params
+
+            if (protocol := get_protocol(config)) is None:
+                raise UnsupportedDeviceError(
+                    f"Unsupported encryption scheme {ip}: "
+                    + f"{config.connection_type.to_dict()}: {info}",
+                    discovery_result=discovery_result.to_dict(),
+                    host=ip,
+                )
+
+            sysinfo = await protocol.query(GET_SYSINFO_QUERY)
+            device_class = get_device_class_from_sys_info(sysinfo)
+            device: Device = device_class(ip, protocol=protocol)
+
+            di = discovery_result.to_dict()
+            di["model"], _, _ = discovery_result.device_model.partition("(")
+            device.update_from_discover_info(di)
+
+            if _LOGGER.isEnabledFor(logging.DEBUG):
+                data = (
+                    redact_data(info, NEW_DISCOVERY_REDACTORS)
+                    if Discover._redact_data
+                    else info
+                )
+                _LOGGER.debug("[DISCOVERY] %s << %s", ip, pf(data))
+        except UnsupportedDeviceError as udex:
+            _LOGGER.debug("Unsupported device found at %s << %s", ip, udex)
+            self.unsupported_device_exceptions[ip] = udex
+            if self.on_unsupported is not None:
+                await self.on_unsupported(udex)
+            self._handle_discovered_event()
+            return
+        except KasaException as ex:
+            _LOGGER.debug("[DISCOVERY] Unable to find device type for %s: %s", ip, ex)
+            self.invalid_device_exceptions[ip] = ex
+            self._handle_discovered_event()
+            return
+
+        self.discovered_devices[ip] = device
+
+        if self.on_discovered is not None:
+            await self.on_discovered(device)
+
+        self._handle_discovered_event()
 
     def error_received(self, ex: Exception) -> None:
         """Handle asyncio.Protocol errors."""
@@ -653,12 +736,14 @@ class Discover:
             for device_family in main_device_families
             for https in (True, False)
             for login_version in (None, 2)
+            for new_klap in (True, None)
             if (
                 conn_params := DeviceConnectionParameters(
                     device_family=device_family,
                     encryption_type=encrypt,
                     login_version=login_version,
                     https=https,
+                    new_klap=new_klap,
                 )
             )
             and (
@@ -713,7 +798,8 @@ class Discover:
                 else False
             )
             dev_class = get_device_class_from_family(
-                discovery_result.device_type, https=https
+                discovery_result.device_type,
+                https=https,
             )
             if not dev_class:
                 raise UnsupportedDeviceError(
@@ -742,7 +828,7 @@ class Discover:
             data = redact_data(info, IOT_REDACTORS) if Discover._redact_data else info
             _LOGGER.debug("[DISCOVERY] %s << %s", config.host, pf(data))
 
-        device_class = cast(type[IotDevice], Discover._get_device_class(info))
+        device_class = cast(type[Device], Discover._get_device_class(info))
         device = device_class(config.host, config=config)
         sys_info = _extract_sys_info(info)
         device_type = sys_info.get("mic_type", sys_info.get("type"))
@@ -842,6 +928,7 @@ class Discover:
             login_version=login_version,
             https=encrypt_schm.is_support_https,
             http_port=encrypt_schm.http_port,
+            new_klap=encrypt_schm.new_klap,
         )
 
     @staticmethod
@@ -849,7 +936,7 @@ class Discover:
         info: dict,
         config: DeviceConfig,
     ) -> Device:
-        """Get SmartDevice from the new 20002 response."""
+        """Get Device for the port 20002 response."""
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
 
         try:
@@ -897,16 +984,6 @@ class Discover:
                 host=config.host,
             ) from ex
 
-        if (
-            device_class := get_device_class_from_family(type_, https=conn_params.https)
-        ) is None:
-            _LOGGER.debug("Got unsupported device type: %s", type_)
-            raise UnsupportedDeviceError(
-                f"Unsupported device {config.host} of type {type_}: {info}",
-                discovery_result=discovery_result.to_dict(),
-                host=config.host,
-            )
-
         if (protocol := get_protocol(config)) is None:
             _LOGGER.debug(
                 "Got unsupported connection type: %s", config.connection_type.to_dict()
@@ -914,6 +991,19 @@ class Discover:
             raise UnsupportedDeviceError(
                 f"Unsupported encryption scheme {config.host} of "
                 + f"type {config.connection_type.to_dict()}: {info}",
+                discovery_result=discovery_result.to_dict(),
+                host=config.host,
+            )
+
+        if (
+            device_class := cast(
+                type[Device],
+                Discover._get_device_class(info),
+            )
+        ) is None:
+            _LOGGER.debug("Got unsupported device type: %s", type_)
+            raise UnsupportedDeviceError(
+                f"Unsupported device {config.host} of type {type_}: {info}",
                 discovery_result=discovery_result.to_dict(),
                 host=config.host,
             )
@@ -953,6 +1043,7 @@ class EncryptionScheme(_DiscoveryBaseMixin):
     encrypt_type: str | None = None
     http_port: int | None = None
     lv: int | None = None
+    new_klap: bool | None = None
 
 
 @dataclass
