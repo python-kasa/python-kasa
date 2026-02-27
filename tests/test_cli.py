@@ -1039,6 +1039,43 @@ async def test_type_param(device_type, mocker, runner):
     assert isinstance(result_device, expected_type)
 
 
+@pytest.mark.parametrize(
+    ("cli_login_version", "expected_login_version"),
+    [
+        pytest.param(None, 2, id="No login-version defaults to 2"),
+        pytest.param(3, 3, id="Explicit login-version 3 is preserved"),
+        pytest.param(2, 2, id="Explicit login-version 2 is preserved"),
+    ],
+)
+async def test_type_camera_login_version(
+    cli_login_version, expected_login_version, mocker, runner
+):
+    """Test that --type camera respects an explicitly provided --login-version."""
+    from kasa.deviceconfig import DeviceConfig
+
+    captured_config: DeviceConfig | None = None
+
+    mocker.patch("kasa.cli.device.state")
+
+    async def _mock_connect(config: DeviceConfig):
+        nonlocal captured_config
+        captured_config = config
+        dev = SmartCamDevice(host="127.0.0.1", config=config)
+        return dev
+
+    mocker.patch("kasa.device.Device.connect", side_effect=_mock_connect)
+    mocker.patch.object(SmartCamDevice, "update")
+
+    args = ["--type", "camera", "--host", "127.0.0.1"]
+    if cli_login_version is not None:
+        args += ["--login-version", str(cli_login_version)]
+
+    res = await runner.invoke(cli, args)
+    assert res.exit_code == 0, res.output
+    assert captured_config is not None
+    assert captured_config.connection_type.login_version == expected_login_version
+
+
 @pytest.mark.skip(
     "Skip until pytest-asyncio supports pytest 8.0, https://github.com/pytest-dev/pytest-asyncio/issues/737"
 )
