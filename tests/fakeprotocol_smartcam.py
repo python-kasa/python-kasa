@@ -337,11 +337,11 @@ class FakeSmartCamTransport(BaseTransport):
                     if setter_keys := self.SETTERS.get((module, section, section_key)):
                         self._get_param_set_value(info, setter_keys, section_value)
                     elif (
-                        section_data := info.get(get_method, {})
+                        section := info.get(get_method, {})
                         .get(module, {})
                         .get(section, {})
-                    ) and section_key in section_data:
-                        section_data[section_key] = section_value
+                    ) and section_key in section:
+                        section[section_key] = section_value
                     else:
                         return {"error_code": -1}
                 break
