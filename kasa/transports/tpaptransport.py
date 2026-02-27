@@ -300,7 +300,6 @@ class NOCClient:
             "https://n-aps1-wap.i.tplinkcloud.com/api/v2/common/getAppServiceUrlById"
         )
         path = "/api/v2/common/getAppServiceUrlById"
-        # codeql[py/weak-sensitive-data-hashing]: disable-next-line
         md5_bytes = hashlib.md5(body_bytes).digest()  # noqa: S324
         content_md5 = base64.b64encode(md5_bytes).decode()
         timestamp = str(int(datetime.now(UTC).timestamp()))
@@ -309,7 +308,6 @@ class NOCClient:
         signature = hmac.new(
             self.SECRET_KEY.encode(),
             message,
-            # codeql[py/weak-sensitive-data-hashing]: disable-next-line
             hashlib.sha1,  # noqa: S324
         ).hexdigest()
         x_auth = (
@@ -350,7 +348,6 @@ class NOCClient:
                 encoding=serialization.Encoding.DER,
                 format=serialization.PublicFormat.SubjectPublicKeyInfo,
             )
-            # codeql[py/weak-sensitive-data-hashing]: disable-next-line
             pub_der_sha1 = hashlib.sha1(pub_der).digest()  # noqa: S324
             subject = asn1_x509.Name.build({"organizational_unit_name": "UNOC"})
             attributes = [
@@ -447,7 +444,6 @@ class BaseAuthContext:
 
     @staticmethod
     def _md5_hex(s: str) -> str:
-        # codeql[py/weak-sensitive-data-hashing]: disable-next-line
         return hashlib.md5(s.encode()).hexdigest()  # noqa: S324
 
     @staticmethod
@@ -741,7 +737,6 @@ class Spake2pAuthContext(BaseAuthContext):
 
     @staticmethod
     def _sha1_hex(s: str) -> str:
-        # codeql[py/weak-sensitive-data-hashing]: disable-next-line
         return hashlib.sha1(s.encode()).hexdigest()  # noqa: S324
 
     @classmethod
@@ -847,7 +842,6 @@ class Spake2pAuthContext(BaseAuthContext):
             name = "admin" if sha_name == 0 else "user"
             try:
                 salt_dec = base64.b64decode(sha_salt_b64).decode()
-                # codeql[py/weak-sensitive-data-hashing]: disable-next-line
                 return hashlib.sha256((name + salt_dec + passcode).encode()).hexdigest()  # noqa: S324
             except Exception:
                 _LOGGER.debug(
