@@ -758,3 +758,10 @@ async def test_smartcam_set_time_naive_datetime_uses_device_timezone_unit(
     clock = second_args[1]["system"]["clock_status"]
     expected_ts = int(naive_dt.replace(tzinfo=inst.timezone).timestamp())
     assert clock["seconds_from_1970"] == expected_ts
+
+
+def test_smartcam_format_utc_offset_none_defaults_to_utc_unit():
+    """_format_utc_offset should default None offsets to UTC+00:00."""
+    from kasa.smartcam.modules.time import Time as CamTimeModule
+
+    assert CamTimeModule._format_utc_offset(None) == "UTC+00:00"
