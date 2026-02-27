@@ -12,6 +12,9 @@ dependencies = [
   "aiohttp>=3",
   "tzdata>=2024.2 ; platform_system == 'Windows'",
   "mashumaro>=3.14",
+  "ecdsa>=0.19.1",
+  "asn1crypto>=1.5.1",
+  "passlib>=1.7.4",
 ]
 
 classifiers = [
@@ -194,3 +197,19 @@ module = [
     "devtools.create_module_fixtures"
 ]
 disable_error_code = "import-not-found,import-untyped"
+
+[[tool.mypy.overrides]]
+module = ["ecdsa", "ecdsa.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["asn1crypto", "asn1crypto.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["requests", "requests.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["passlib", "passlib.*"]
+ignore_missing_imports = true

@@ -34,6 +34,7 @@ from .transports import (
     KlapTransportV2,
     LinkieTransportV2,
     SslTransport,
+    TpapTransport,
     XorTransport,
 )
 from .transports.sslaestransport import SslAesTransport
@@ -233,8 +234,11 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
         "SMART.KLAP.HTTPS": (SmartProtocol, KlapTransportV2),
         # H200 is device family SMART.TAPOHUB and uses SmartCamProtocol so use
-        # https to distuingish from SmartProtocol devices
+        # https to distinguish from SmartProtocol devices
         "SMART.AES.HTTPS": (SmartCamProtocol, SslAesTransport),
+        # TPAP devices (SMART.* with encrypt_type TPAP and TPAP/HTTPS).
+        "SMART.TPAP": (SmartProtocol, TpapTransport),
+        "SMART.TPAP.HTTPS": (SmartProtocol, TpapTransport),
     }
     if not (prot_tran_cls := supported_device_protocols.get(protocol_transport_key)):
         return None

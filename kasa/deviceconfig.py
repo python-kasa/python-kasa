@@ -62,6 +62,7 @@ class DeviceEncryptionType(Enum):
     Klap = "KLAP"
     Aes = "AES"
     Xor = "XOR"
+    Tpap = "TPAP"
 
 
 class DeviceFamily(Enum):
