@@ -312,7 +312,6 @@ async def cli(
         if type == "camera":
             encrypt_type = "AES"
             https = True
-            login_version = 2
             device_family = "SMART.IPCAMERA"
 
         from kasa.device import Device
