@@ -79,26 +79,6 @@ class _CipherLabels(TypedDict):
     key_len: int
 
 
-# codeql[py/weak-sensitive-data-hashing]: disable
-def _tp_link_protocol_md5_digest(data: bytes) -> bytes:
-    return hashlib.md5(data).digest()  # noqa: S324
-
-
-def _tp_link_protocol_md5_hex(data: bytes) -> str:
-    return hashlib.md5(data).hexdigest()  # noqa: S324
-
-
-def _tp_link_protocol_sha1_digest(data: bytes) -> bytes:
-    return hashlib.sha1(data).digest()  # noqa: S324
-
-
-def _tp_link_protocol_sha1_hex(data: bytes) -> str:
-    return hashlib.sha1(data).hexdigest()  # noqa: S324
-
-
-# codeql[py/weak-sensitive-data-hashing]: enable
-
-
 @dataclass
 class _SessionCipher:
     """AEAD session cipher derived from the ECDH/SPAKE shared secret."""
@@ -320,15 +300,16 @@ class NOCClient:
             "https://n-aps1-wap.i.tplinkcloud.com/api/v2/common/getAppServiceUrlById"
         )
         path = "/api/v2/common/getAppServiceUrlById"
-        md5_bytes = _tp_link_protocol_md5_digest(body_bytes)
+        # codeql[py/weak-sensitive-data-hashing]: disable-next-line
+        md5_bytes = hashlib.md5(body_bytes).digest()  # noqa: S324
         content_md5 = base64.b64encode(md5_bytes).decode()
         timestamp = str(int(datetime.now(UTC).timestamp()))
         nonce = str(uuid.uuid4())
         message = (content_md5 + "\n" + timestamp + "\n" + nonce + "\n" + path).encode()
-        # codeql[py/weak-sensitive-data-hashing]: disable-next-line
         signature = hmac.new(
             self.SECRET_KEY.encode(),
             message,
+            # codeql[py/weak-sensitive-data-hashing]: disable-next-line
             hashlib.sha1,  # noqa: S324
         ).hexdigest()
         x_auth = (
@@ -369,6 +350,8 @@ class NOCClient:
                 encoding=serialization.Encoding.DER,
                 format=serialization.PublicFormat.SubjectPublicKeyInfo,
             )
+            # codeql[py/weak-sensitive-data-hashing]: disable-next-line
+            pub_der_sha1 = hashlib.sha1(pub_der).digest()  # noqa: S324
             subject = asn1_x509.Name.build({"organizational_unit_name": "UNOC"})
             attributes = [
                 {
@@ -399,7 +382,7 @@ class NOCClient:
                                         "extn_id": "2.5.29.14",
                                         "critical": False,
                                         "extn_value": asn1_core.OctetString(
-                                            _tp_link_protocol_sha1_digest(pub_der)
+                                            pub_der_sha1
                                         ),
                                     }
                                 ),
@@ -464,7 +447,8 @@ class BaseAuthContext:
 
     @staticmethod
     def _md5_hex(s: str) -> str:
-        return _tp_link_protocol_md5_hex(s.encode())
+        # codeql[py/weak-sensitive-data-hashing]: disable-next-line
+        return hashlib.md5(s.encode()).hexdigest()  # noqa: S324
 
     @staticmethod
     def _base64(b: bytes) -> str:
@@ -757,7 +741,8 @@ class Spake2pAuthContext(BaseAuthContext):
 
     @staticmethod
     def _sha1_hex(s: str) -> str:
-        return _tp_link_protocol_sha1_hex(s.encode())
+        # codeql[py/weak-sensitive-data-hashing]: disable-next-line
+        return hashlib.sha1(s.encode()).hexdigest()  # noqa: S324
 
     @classmethod
     def _authkey_mask(cls, passcode: str, tmpkey: str, dictionary: str) -> str:
