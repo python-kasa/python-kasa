@@ -668,3 +668,93 @@ async def test_smartcam_time_post_update_fallback_parses_timezone_str_unit(
     assert isinstance(inst.time, datetime)
     assert inst.time.tzinfo == inst.timezone
     assert int(inst.time.timestamp()) == ts
+
+
+async def test_smartcam_set_time_separate_timezone_and_clock_calls_unit(
+    monkeypatch: pytest.MonkeyPatch,
+    mocker: MockerFixture,
+):
+    """Smartcam set_time should call setTimezone first, then setClockStatus."""
+    from kasa.smartcam.modules.time import Time as CamTimeModule
+
+    inst = object.__new__(CamTimeModule)
+    fake_data = {
+        "getTimezone": {
+            "system": {
+                "basic": {
+                    "timing_mode": "ntp",
+                    "zone_id": "UTC",
+                    "timezone": "UTC+00:00",
+                }
+            }
+        }
+    }
+    monkeypatch.setattr(CamTimeModule, "data", property(lambda self: fake_data))
+    call_mock = mocker.patch.object(
+        inst,
+        "call",
+        new=AsyncMock(side_effect=[{"tz": True}, {"clock": True}]),
+    )
+
+    test_dt = datetime(2026, 2, 24, 20, 30, 0, tzinfo=ZoneInfo("America/New_York"))
+    res = await CamTimeModule.set_time(inst, test_dt)
+
+    assert call_mock.await_count == 2
+    first_args, _ = call_mock.await_args_list[0]
+    second_args, _ = call_mock.await_args_list[1]
+
+    assert first_args[0] == "setTimezone"
+    assert second_args[0] == "setClockStatus"
+
+    basic = first_args[1]["system"]["basic"]
+    assert basic["timing_mode"] == "manual"
+    assert basic["zone_id"] == "America/New_York"
+    assert basic["timezone"] == "UTC-05:00"
+
+    clock = second_args[1]["system"]["clock_status"]
+    assert clock["local_time"] == "2026-02-25 01:30:00"
+    assert clock["seconds_from_1970"] == int(test_dt.timestamp())
+
+    assert res == {"setTimezone": {"tz": True}, "setClockStatus": {"clock": True}}
+
+
+async def test_smartcam_set_time_naive_datetime_uses_device_timezone_unit(
+    monkeypatch: pytest.MonkeyPatch,
+    mocker: MockerFixture,
+):
+    """Naive datetime should use current device timezone for timestamp/offset."""
+    from kasa.smartcam.modules.time import Time as CamTimeModule
+
+    inst = object.__new__(CamTimeModule)
+    inst._timezone = ZoneInfo("America/New_York")
+    fake_data = {
+        "getTimezone": {
+            "system": {
+                "basic": {
+                    "timing_mode": "ntp",
+                    "zone_id": "UTC",
+                    "timezone": "UTC+00:00",
+                }
+            }
+        }
+    }
+    monkeypatch.setattr(CamTimeModule, "data", property(lambda self: fake_data))
+    call_mock = mocker.patch.object(
+        inst,
+        "call",
+        new=AsyncMock(side_effect=[{}, {}]),
+    )
+
+    naive_dt = datetime(2026, 2, 24, 20, 30, 0)
+    await CamTimeModule.set_time(inst, naive_dt)
+
+    first_args, _ = call_mock.await_args_list[0]
+    second_args, _ = call_mock.await_args_list[1]
+
+    basic = first_args[1]["system"]["basic"]
+    assert basic["timezone"] == "UTC-05:00"
+    assert "zone_id" not in basic
+
+    clock = second_args[1]["system"]["clock_status"]
+    expected_ts = int(naive_dt.replace(tzinfo=inst.timezone).timestamp())
+    assert clock["seconds_from_1970"] == expected_ts

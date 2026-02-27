@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, tzinfo
+from datetime import UTC, datetime, timedelta, tzinfo
 from typing import cast
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -79,14 +79,39 @@ class Time(SmartCamModule, TimeInterface):
         """Set device time."""
         if not dt.tzinfo:
             timestamp = dt.replace(tzinfo=self.timezone).timestamp()
+            utc_offset = cast(timedelta | None, self.timezone.utcoffset(dt))
         else:
             timestamp = dt.timestamp()
+            utc_offset = cast(timedelta | None, dt.utcoffset())
 
-        lt = datetime.fromtimestamp(timestamp).isoformat().replace("T", " ")
-        params = {"seconds_from_1970": int(timestamp), "local_time": lt}
-        # Doesn't seem to update the time, perhaps because timing_mode is ntp
-        res = await self.call("setTimezone", {"system": {"clock_status": params}})
+        timestamp_int = int(timestamp)
+
+        # Timezone and clock status are separate RPC calls.
+        basic_params: dict[str, str] = {"timezone": self._format_utc_offset(utc_offset)}
+        tz_basic = self.data.get("getTimezone", {}).get("system", {}).get("basic", {})
+        if "timing_mode" in tz_basic:
+            basic_params["timing_mode"] = "manual"
         if (zinfo := dt.tzinfo) and isinstance(zinfo, ZoneInfo):
-            tz_params = {"zone_id": zinfo.key}
-            res = await self.call("setTimezone", {"system": {"basic": tz_params}})
-        return res
+            basic_params["zone_id"] = zinfo.key
+        tz_res = await self.call("setTimezone", {"system": {"basic": basic_params}})
+
+        lt = datetime.fromtimestamp(timestamp_int, tz=UTC).strftime("%Y-%m-%d %H:%M:%S")
+        clock_params = {"seconds_from_1970": timestamp_int, "local_time": lt}
+        clock_res = await self.call(
+            "setClockStatus", {"system": {"clock_status": clock_params}}
+        )
+
+        return {"setTimezone": tz_res, "setClockStatus": clock_res}
+
+    @staticmethod
+    def _format_utc_offset(offset: timedelta | None) -> str:
+        """Format a timedelta offset as UTC+HH:MM/UTC-HH:MM."""
+        if offset is None:
+            offset = timedelta(0)
+
+        total_seconds = int(offset.total_seconds())
+        sign = "+" if total_seconds >= 0 else "-"
+        total_seconds = abs(total_seconds)
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes = remainder // 60
+        return f"UTC{sign}{hours:02d}:{minutes:02d}"
