@@ -707,7 +707,6 @@ async def test_nocauth_unknown_encryption_and_alt_session_fields(monkeypatch):
     assert isinstance(out, tp.TlaSession)
     assert out.sessionId == "STK"
     assert out.startSequence == 1
-    assert out.sessionExpired == 0
     assert out.sessionCipher.cipher_id == "aes_128_ccm"
 
 
@@ -885,7 +884,6 @@ async def test_nocauth_alt_session_id_and_defaults(monkeypatch):
     out = await ctx.start()
     assert out.sessionId == ""
     assert out.startSequence == 1
-    assert out.sessionExpired == 0
 
 
 def test_nocauth_sign_proof_with_non_ec_key(monkeypatch):
@@ -1516,7 +1514,7 @@ async def test_authenticator_discover_establish_and_cached(monkeypatch):
 
         async def start(self):
             c = tp._SessionCipher.from_shared_key("aes_128_ccm", b"shared")
-            return tp.TlaSession("SID", 0, "NOC", c, 1)
+            return tp.TlaSession("SID", "NOC", c, 1)
 
     monkeypatch.setattr(tp, "NocAuthContext", NocCtxDummy, raising=True)
 
@@ -1564,7 +1562,7 @@ async def test_authenticator_discover_establish_and_cached(monkeypatch):
 
         async def start(self):
             c = tp._SessionCipher.from_shared_key("aes_128_ccm", b"shared")
-            return tp.TlaSession("SID2", 0, "SPAKE2+", c, 2)
+            return tp.TlaSession("SID2", "SPAKE2+", c, 2)
 
     monkeypatch.setattr(tp, "Spake2pAuthContext", SpakeCtxDummy, raising=True)
     await tr2._authenticator.ensure_authenticator()
@@ -1649,7 +1647,7 @@ async def test_authenticator_set_session_from_tla_branches():
     assert tr._authenticator._ds_url is None
 
     c = tp._SessionCipher.from_shared_key("aes_128_ccm", b"shared")
-    tr._authenticator._cached_session = tp.TlaSession("SIDX", 0, "NOC", c, 3)
+    tr._authenticator._cached_session = tp.TlaSession("SIDX", "NOC", c, 3)
     tr._authenticator._set_session_from_tla()
     assert tr._authenticator._session_id == "SIDX"
     assert tr._authenticator._seq == 3
@@ -1691,7 +1689,7 @@ async def test_authenticator_noc_returns_none_falls_back_to_spake(monkeypatch):
 
         async def start(self):
             c = tp._SessionCipher.from_shared_key("aes_128_ccm", b"shared")
-            return tp.TlaSession("SIDF", 0, "SPAKE2+", c, 7)
+            return tp.TlaSession("SIDF", "SPAKE2+", c, 7)
 
     monkeypatch.setattr(tp, "NocAuthContext", NocNone, raising=True)
     monkeypatch.setattr(tp, "Spake2pAuthContext", SpakeOk, raising=True)

@@ -34,7 +34,7 @@ from cryptography.hazmat.primitives.ciphers import algorithms
 from cryptography.hazmat.primitives.ciphers.aead import AESCCM, ChaCha20Poly1305
 from cryptography.hazmat.primitives.cmac import CMAC
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-from ecdsa import NIST256p, ellipticcurve
+from ecdsa import NIST256p, NIST384p, NIST521p, ellipticcurve
 from ecdsa.ellipticcurve import PointJacobi
 from passlib.hash import md5_crypt, sha256_crypt
 from urllib3.exceptions import InsecureRequestWarning
@@ -77,6 +77,26 @@ class _CipherLabels(TypedDict):
     nonce_salt: bytes
     nonce_info: bytes
     key_len: int
+
+
+# codeql[py/weak-sensitive-data-hashing]: disable
+def _tp_link_protocol_md5_digest(data: bytes) -> bytes:
+    return hashlib.md5(data).digest()  # noqa: S324
+
+
+def _tp_link_protocol_md5_hex(data: bytes) -> str:
+    return hashlib.md5(data).hexdigest()  # noqa: S324
+
+
+def _tp_link_protocol_sha1_digest(data: bytes) -> bytes:
+    return hashlib.sha1(data).digest()  # noqa: S324
+
+
+def _tp_link_protocol_sha1_hex(data: bytes) -> str:
+    return hashlib.sha1(data).hexdigest()  # noqa: S324
+
+
+# codeql[py/weak-sensitive-data-hashing]: enable
 
 
 @dataclass
@@ -230,11 +250,9 @@ class TlaSession:
     """Established TPAP session details."""
 
     sessionId: str
-    sessionExpired: int
     sessionType: str
     sessionCipher: _SessionCipher
     startSequence: int
-    weakCipher: bool = False
 
 
 @dataclass
@@ -302,11 +320,12 @@ class NOCClient:
             "https://n-aps1-wap.i.tplinkcloud.com/api/v2/common/getAppServiceUrlById"
         )
         path = "/api/v2/common/getAppServiceUrlById"
-        md5_bytes = hashlib.md5(body_bytes).digest()  # noqa: S324
+        md5_bytes = _tp_link_protocol_md5_digest(body_bytes)
         content_md5 = base64.b64encode(md5_bytes).decode()
         timestamp = str(int(datetime.now(UTC).timestamp()))
         nonce = str(uuid.uuid4())
         message = (content_md5 + "\n" + timestamp + "\n" + nonce + "\n" + path).encode()
+        # codeql[py/weak-sensitive-data-hashing]: disable-next-line
         signature = hmac.new(
             self.SECRET_KEY.encode(),
             message,
@@ -380,7 +399,7 @@ class NOCClient:
                                         "extn_id": "2.5.29.14",
                                         "critical": False,
                                         "extn_value": asn1_core.OctetString(
-                                            hashlib.sha1(pub_der).digest()  # noqa: S324
+                                            _tp_link_protocol_sha1_digest(pub_der)
                                         ),
                                     }
                                 ),
@@ -445,7 +464,7 @@ class BaseAuthContext:
 
     @staticmethod
     def _md5_hex(s: str) -> str:
-        return hashlib.md5(s.encode()).hexdigest()  # noqa: S324
+        return _tp_link_protocol_md5_hex(s.encode())
 
     @staticmethod
     def _base64(b: bytes) -> str:
@@ -492,7 +511,6 @@ class NocAuthContext(BaseAuthContext):
         self._dev_pub_bytes: bytes | None = None
         self._shared_secret: bytes | None = None
         self._chosen_cipher: _CipherId = "aes_128_ccm"
-        self._session_expired: int = 0
         self._hkdf_hash = "SHA256"
 
     def _gen_ephemeral(self) -> bytes:
@@ -585,7 +603,6 @@ class NocAuthContext(BaseAuthContext):
             if chosen in ("aes_128_ccm", "aes_256_ccm", "chacha20_poly1305")
             else "aes_128_ccm"
         )
-        self._session_expired = int(resp.get("expired") or 0)
         self._shared_secret = self._derive_shared_secret(self._dev_pub_bytes)
         key, base_nonce = _SessionCipher.key_nonce_from_shared(
             self._shared_secret, self._chosen_cipher, hkdf_hash=self._hkdf_hash
@@ -640,7 +657,6 @@ class NocAuthContext(BaseAuthContext):
         )
         return TlaSession(
             sessionId=session_id,
-            sessionExpired=int(proof_res.get("expired") or 0),
             sessionType="NOC",
             sessionCipher=session_cipher,
             startSequence=start_seq,
@@ -741,7 +757,7 @@ class Spake2pAuthContext(BaseAuthContext):
 
     @staticmethod
     def _sha1_hex(s: str) -> str:
-        return hashlib.sha1(s.encode()).hexdigest()  # noqa: S324
+        return _tp_link_protocol_sha1_hex(s.encode())
 
     @classmethod
     def _authkey_mask(cls, passcode: str, tmpkey: str, dictionary: str) -> str:
@@ -846,6 +862,7 @@ class Spake2pAuthContext(BaseAuthContext):
             name = "admin" if sha_name == 0 else "user"
             try:
                 salt_dec = base64.b64decode(sha_salt_b64).decode()
+                # codeql[py/weak-sensitive-data-hashing]: disable-next-line
                 return hashlib.sha256((name + salt_dec + passcode).encode()).hexdigest()  # noqa: S324
             except Exception:
                 _LOGGER.debug(
@@ -938,19 +955,44 @@ class Spake2pAuthContext(BaseAuthContext):
                 self.passcode,
                 self.discover_mac.replace(":", "").replace("-", ""),
             )
-        P256_M_COMP = bytes.fromhex(
-            "02886e2f97ace46e55ba9dd7242579f2993b64e16ef3dcab95afd497333d8fa12f"
-        )
-        P256_N_COMP = bytes.fromhex(
-            "03d8bbd6c639c62937b04d997f38c3770719c629d7014d49a24b4f98baa1292b49"
-        )
-        nist256p = NIST256p
-        curve = nist256p.curve
-        generator: PointJacobi = nist256p.generator
+        # Select curve and hardcoded M/N points based on suite_type
+        if suite_type in (1, 2, 8, 9):
+            # P-256
+            M_comp = bytes.fromhex(
+                "02886e2f97ace46e55ba9dd7242579f2993b64e16ef3dcab95afd497333d8fa12f"
+            )
+            N_comp = bytes.fromhex(
+                "03d8bbd6c639c62937b04d997f38c3770719c629d7014d49a24b4f98baa1292b49"
+            )
+            nist = NIST256p
+        elif suite_type in (3, 4):
+            # P-384
+            M_comp = bytes.fromhex(
+                "030ff0895ae5ebf6187080a82d82b42e2765e3b2f8749c7e05eba366434b363d3dc36f15314739074d2eb8613fceec2853"
+            )
+            N_comp = bytes.fromhex(
+                "02c72cf2e390853a1c1c4ad816a62fd15824f56078918f43f922ca21518f9c543bb252c5490214cf9aa3f0baab4b665c10"
+            )
+            nist = NIST384p
+        elif suite_type == 5:
+            # P-521
+            M_comp = bytes.fromhex(
+                "02003f06f38131b2ba2600791e82488e8d20ab889af753a41806c5db18d37d85608cfae06b82e4a72cd744c719193562a653ea1f119eef9356907edc9b56979962d7aa"
+            )
+            N_comp = bytes.fromhex(
+                "0200c7924b9ec017f3094562894336a53c50167ba8c5963876880542bc669e494b2532d76c5b53dfb349fdf69154b9e0048c58a42e8ed04cef052a3bc349d95575cd25"
+            )
+            nist = NIST521p
+        else:
+            # Unsupported/untreated groups (e.g., curve25519/curve448)
+            raise KasaException(f"Unsupported SPAKE2+ suite type: {suite_type}")
+
+        curve = nist.curve
+        generator: PointJacobi = nist.generator
         G = generator
         order: int = generator.order()
-        Mx, My = self._sec1_to_xy(P256_M_COMP)
-        Nx, Ny = self._sec1_to_xy(P256_N_COMP)
+        Mx, My = self._sec1_to_xy(M_comp)
+        Nx, Ny = self._sec1_to_xy(N_comp)
         M = ellipticcurve.Point(curve, Mx, My, order)
         N = ellipticcurve.Point(curve, Nx, Ny, order)
         cred = cred_str.encode()
@@ -1050,9 +1092,6 @@ class Spake2pAuthContext(BaseAuthContext):
         )
         return TlaSession(
             sessionId=session_id,
-            sessionExpired=int(
-                share.get("sessionExpired") or share.get("expired") or 0
-            ),
             sessionType="SPAKE2+",
             sessionCipher=cipher,
             startSequence=start_seq,
@@ -1159,30 +1198,36 @@ class Authenticator:
         raise DeviceError(full, error_code=error_code)
 
     async def _establish_session(self) -> None:
+        context_classes: list[type[NocAuthContext | Spake2pAuthContext]] = []
         if self._tpap_noc:
+            context_classes.append(NocAuthContext)
+        context_classes.append(Spake2pAuthContext)
+        last_exc: Exception | None = None
+        for ctx_cls in context_classes:
             try:
-                noc_ctx = NocAuthContext(self)
-                session = await noc_ctx.start()
+                auth_ctx = ctx_cls(self)
+                session = await auth_ctx.start()
                 if isinstance(session, TlaSession):
                     self._cached_session = session
                     self._set_session_from_tla()
                     self._transport._state = TransportState.ESTABLISHED
-                    _LOGGER.debug("Authenticator: established session via NOC")
+                    _LOGGER.debug(
+                        "Authenticator: established session via %s",
+                        session.sessionType,
+                    )
                     return
-            except Exception:
-                _LOGGER.debug("Authenticator: NOC attempt failed", exc_info=True)
-        spake_ctx = Spake2pAuthContext(self)
-        session = await spake_ctx.start()
-        if isinstance(session, TlaSession):
-            self._cached_session = session
-            self._set_session_from_tla()
-            self._transport._state = TransportState.ESTABLISHED
-            _LOGGER.debug("Authenticator: established session via SPAKE2+")
-            return
-        raise KasaException(
-            "Authenticator: failed to establish session via NOC or SPAKE2+ with "
-            f"{self._transport._host}"
-        )
+            except Exception as exc:
+                last_exc = exc
+                _LOGGER.debug(
+                    "Authenticator: %s attempt failed",
+                    ctx_cls.__name__,
+                    exc_info=True,
+                )
+        if last_exc is not None:
+            raise KasaException(
+                "Authenticator: failed to establish session via NOC or SPAKE2+ with "
+                f"{self._transport._host}"
+            ) from last_exc
 
 
 class TpapTransport(BaseTransport):
