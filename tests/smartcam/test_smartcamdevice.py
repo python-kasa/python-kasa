@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import base64
-from datetime import UTC, datetime
 from unittest.mock import AsyncMock, PropertyMock, patch
+from zoneinfo import ZoneInfo
 
 import pytest
-from freezegun.api import FrozenDateTimeFactory
 
 from kasa import Device, DeviceType, Module
 from kasa.exceptions import AuthenticationError, DeviceError, KasaException
@@ -154,14 +153,23 @@ async def test_wifi_join_success_and_errors(dev: SmartCamDevice):
 
 
 @device_smartcam
-async def test_device_time(dev: Device, freezer: FrozenDateTimeFactory):
-    """Test a child device gets the time from it's parent module."""
-    fallback_time = datetime.now(UTC).astimezone().replace(microsecond=0)
-    assert dev.time != fallback_time
+async def test_device_time(dev: Device):
+    """Test that set_time on a smartcam device only updates the timezone.
+
+    SmartCam devices have no API to set the hardware clock; set_time only
+    writes the timezone configuration to the device.
+    """
     module = dev.modules[Module.Time]
-    await module.set_time(fallback_time)
+    original_tz = module.timezone
+    if isinstance(original_tz, ZoneInfo) and original_tz.key != "Europe/Berlin":
+        new_tz = ZoneInfo("Europe/Berlin")
+    else:
+        new_tz = ZoneInfo("Europe/London")
+
+    new_time_dt = module.time.astimezone(new_tz)
+    await module.set_time(new_time_dt)
     await dev.update()
-    assert dev.time == fallback_time
+    assert module.timezone == new_tz
 
 
 @device_smartcam

@@ -487,6 +487,7 @@ async def test_time_set(dev: Device, mocker, runner):
     """Test time set command."""
     time_mod = dev.modules[Module.Time]
     set_time_mock = mocker.spy(time_mod, "set_time")
+    is_smartcam = isinstance(dev, SmartCamDevice)
     dt = datetime(2024, 10, 15, 8, 15)
     res = await runner.invoke(
         time,
@@ -494,7 +495,9 @@ async def test_time_set(dev: Device, mocker, runner):
         obj=dev,
     )
     set_time_mock.assert_called()
-    assert time_mod.time == dt.replace(tzinfo=time_mod.timezone)
+    if not is_smartcam:
+        # SmartCam cannot set the hardware clock; only timezone is updated.
+        assert time_mod.time == dt.replace(tzinfo=time_mod.timezone)
 
     assert res.exit_code == 0
     assert "Old time: " in res.output
@@ -518,7 +521,11 @@ async def test_time_set(dev: Device, mocker, runner):
         obj=dev,
     )
 
-    assert time_mod.time == dt
+    if is_smartcam:
+        # SmartCam only updates the timezone, not the clock value.
+        assert time_mod.timezone == zone
+    else:
+        assert time_mod.time == dt
 
     assert res.exit_code == 0
     assert "Old time: " in res.output
