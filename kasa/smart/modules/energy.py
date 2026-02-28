@@ -63,7 +63,7 @@ class Energy(SmartModule, EnergyInterface):
     def optional_response_keys(self) -> list[str]:
         """Return optional response keys for the module."""
         if self.supported_version > 1:
-            return ["get_energy_usage"]
+            return ["get_energy_usage", "get_current_power"]
         return []
 
     @property

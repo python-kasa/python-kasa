@@ -59,7 +59,7 @@ async def test_get_energy_usage_error(
 
     if ed := resp.get("get_emeter_data"):
         ed["power_mw"] = 2002
-    if cp := resp.get("get_current_power"):
+    if (cp := resp.get("get_current_power")) and isinstance(cp, dict):
         cp["current_power"] = 2.002
     resp["get_energy_usage"] = SmartErrorCode.JSON_DECODE_FAIL_ERROR
 
@@ -88,8 +88,11 @@ async def test_get_energy_usage_error(
     caplog.clear()
     resp = copy.deepcopy(last_update)
 
-    if cp := resp.get("get_current_power"):
+    if (cp := resp.get("get_current_power")) and isinstance(cp, dict):
         cp["current_power"] = 2.002
+        expected_current_consumption = 2.002
+    else:
+        expected_current_consumption = None
     resp["get_energy_usage"] = SmartErrorCode.JSON_DECODE_FAIL_ERROR
 
     # Remove get_emeter_data from the response and from the device which will
@@ -107,3 +110,36 @@ async def test_get_energy_usage_error(
 
     # message should only be logged once
     assert msg not in caplog.text
+
+
+@pytest.mark.xdist_group(name="caplog")
+@has_emeter_smart
+async def test_missing_get_current_power_for_v2_fixture(
+    dev: SmartDevice,
+    caplog: pytest.LogCaptureFixture,
+):
+    """Energy v2 devices should tolerate get_current_power query errors."""
+    caplog.set_level(logging.DEBUG)
+
+    energy_module = dev.modules.get(Module.Energy)
+    if not energy_module:
+        pytest.skip(f"Energy module not supported for {dev}.")
+
+    assert isinstance(energy_module, SmartEnergyModule)
+    if energy_module.supported_version <= 1:
+        pytest.skip("Only applicable for energy v2+ fixtures.")
+
+    resp = copy.deepcopy(dev._last_update)
+    resp["get_current_power"] = SmartErrorCode.PARAMS_ERROR
+
+    with patch.object(dev.protocol, "query", return_value=resp):
+        await dev.update()
+
+    assert energy_module.disabled is False
+    assert energy_module._last_update_error is None
+    assert "get_current_power" not in energy_module.data
+
+    # Some fixtures may have already logged this key removal during initial update,
+    # so duplicate log messages can be suppressed.
+    if "Removed key get_current_power" in caplog.text:
+        assert "PARAMS_ERROR" in caplog.text
