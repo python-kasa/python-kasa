@@ -12,6 +12,7 @@ from pytest_mock import MockerFixture
 import kasa.interfaces
 from kasa import Device, KasaException, LightState, Module, ThermostatState
 from kasa.module import _get_feature_attribute
+from kasa.smartcam import SmartCamDevice
 
 from .device_fixtures import (
     bulb_iot,
@@ -437,7 +438,13 @@ async def test_set_time(dev: Device):
 
         await time_mod.set_time(test_time)
         await dev.update()
-        assert time_mod.time == test_time
+        if isinstance(dev, SmartCamDevice):
+            # SmartCam cannot set the hardware clock via the API; only the
+            # timezone is written to the device.  test_time is already in
+            # original_timezone so the timezone is unchanged here.
+            assert time_mod.timezone == original_timezone
+        else:
+            assert time_mod.time == test_time
 
         if (
             isinstance(original_timezone, ZoneInfo)
@@ -670,11 +677,17 @@ async def test_smartcam_time_post_update_fallback_parses_timezone_str_unit(
     assert int(inst.time.timestamp()) == ts
 
 
-async def test_smartcam_set_time_separate_timezone_and_clock_calls_unit(
+async def test_smartcam_set_time_only_updates_timezone_unit(
     monkeypatch: pytest.MonkeyPatch,
     mocker: MockerFixture,
 ):
-    """Smartcam set_time should call setTimezone first, then setClockStatus."""
+    """Smartcam set_time issues a single setTimezone call with only timezone params.
+
+    Smartcam devices have no API to set the actual clock time: there is no
+    setClockStatus method and passing clock_status params inside setTimezone does
+    not update the clock.  timing_mode is intentionally left unchanged so that
+    the device's NTP client keeps the clock correct.
+    """
     from kasa.smartcam.modules.time import Time as CamTimeModule
 
     inst = object.__new__(CamTimeModule)
@@ -693,29 +706,27 @@ async def test_smartcam_set_time_separate_timezone_and_clock_calls_unit(
     call_mock = mocker.patch.object(
         inst,
         "call",
-        new=AsyncMock(side_effect=[{"tz": True}, {"clock": True}]),
+        new=AsyncMock(return_value={"tz": True}),
     )
 
     test_dt = datetime(2026, 2, 24, 20, 30, 0, tzinfo=ZoneInfo("America/New_York"))
     res = await CamTimeModule.set_time(inst, test_dt)
 
-    assert call_mock.await_count == 2
+    assert call_mock.await_count == 1
     first_args, _ = call_mock.await_args_list[0]
-    second_args, _ = call_mock.await_args_list[1]
 
     assert first_args[0] == "setTimezone"
-    assert second_args[0] == "setClockStatus"
 
     basic = first_args[1]["system"]["basic"]
-    assert basic["timing_mode"] == "manual"
     assert basic["zone_id"] == "America/New_York"
     assert basic["timezone"] == "UTC-05:00"
+    # timing_mode must NOT be changed: setting to 'manual' would disable NTP
+    # without any ability to then set the clock via the API.
+    assert "timing_mode" not in basic
+    # No clock_status should appear - it has no effect on smartcam devices.
+    assert "clock_status" not in first_args[1]["system"]
 
-    clock = second_args[1]["system"]["clock_status"]
-    assert clock["local_time"] == "2026-02-25 01:30:00"
-    assert clock["seconds_from_1970"] == int(test_dt.timestamp())
-
-    assert res == {"setTimezone": {"tz": True}, "setClockStatus": {"clock": True}}
+    assert res == {"tz": True}
 
 
 async def test_smartcam_set_time_naive_datetime_uses_device_timezone_unit(
@@ -742,22 +753,22 @@ async def test_smartcam_set_time_naive_datetime_uses_device_timezone_unit(
     call_mock = mocker.patch.object(
         inst,
         "call",
-        new=AsyncMock(side_effect=[{}, {}]),
+        new=AsyncMock(return_value={}),
     )
 
     naive_dt = datetime(2026, 2, 24, 20, 30, 0)
     await CamTimeModule.set_time(inst, naive_dt)
 
+    assert call_mock.await_count == 1
     first_args, _ = call_mock.await_args_list[0]
-    second_args, _ = call_mock.await_args_list[1]
+
+    assert first_args[0] == "setTimezone"
 
     basic = first_args[1]["system"]["basic"]
     assert basic["timezone"] == "UTC-05:00"
     assert "zone_id" not in basic
-
-    clock = second_args[1]["system"]["clock_status"]
-    expected_ts = int(naive_dt.replace(tzinfo=inst.timezone).timestamp())
-    assert clock["seconds_from_1970"] == expected_ts
+    # No clock_status - it has no effect on smartcam devices
+    assert "clock_status" not in first_args[1]["system"]
 
 
 def test_smartcam_format_utc_offset_none_defaults_to_utc_unit():

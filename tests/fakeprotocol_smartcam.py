@@ -189,20 +189,6 @@ class FakeSmartCamTransport(BaseTransport):
             "basic_info",
             "device_alias",
         ],
-        # setTimezone maps to getClockStatus
-        ("system", "clock_status", "seconds_from_1970"): [
-            "getClockStatus",
-            "system",
-            "clock_status",
-            "seconds_from_1970",
-        ],
-        # setTimezone maps to getClockStatus
-        ("system", "clock_status", "local_time"): [
-            "getClockStatus",
-            "system",
-            "clock_status",
-            "local_time",
-        ],
     }
 
     def _hub_remove_device(self, info, params):

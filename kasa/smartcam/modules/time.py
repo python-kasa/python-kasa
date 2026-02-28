@@ -76,32 +76,24 @@ class Time(SmartCamModule, TimeInterface):
 
     @allow_update_after
     async def set_time(self, dt: datetime) -> dict:
-        """Set device time."""
+        """Set the device time.
+
+        Note: smartcam devices do not expose an API method to set the actual
+        clock time.  Neither a dedicated setClockStatus method nor passing
+        clock_status parameters inside a setTimezone request updates the clock.
+        Only the timezone string (and zone_id when a ZoneInfo is provided) will
+        be written to the device.  The hardware clock continues to be managed
+        by the device's NTP client, so timing_mode is intentionally left
+        unchanged to avoid disabling NTP synchronisation.
+        """
         if not dt.tzinfo:
-            timestamp = dt.replace(tzinfo=self.timezone).timestamp()
             utc_offset = cast(timedelta | None, self.timezone.utcoffset(dt))
         else:
-            timestamp = dt.timestamp()
             utc_offset = cast(timedelta | None, dt.utcoffset())
-
-        timestamp_int = int(timestamp)
-
-        # Timezone and clock status are separate RPC calls.
-        basic_params: dict[str, str] = {"timezone": self._format_utc_offset(utc_offset)}
-        tz_basic = self.data.get("getTimezone", {}).get("system", {}).get("basic", {})
-        if "timing_mode" in tz_basic:
-            basic_params["timing_mode"] = "manual"
+        params: dict[str, str] = {"timezone": self._format_utc_offset(utc_offset)}
         if (zinfo := dt.tzinfo) and isinstance(zinfo, ZoneInfo):
-            basic_params["zone_id"] = zinfo.key
-        tz_res = await self.call("setTimezone", {"system": {"basic": basic_params}})
-
-        lt = datetime.fromtimestamp(timestamp_int, tz=UTC).strftime("%Y-%m-%d %H:%M:%S")
-        clock_params = {"seconds_from_1970": timestamp_int, "local_time": lt}
-        clock_res = await self.call(
-            "setClockStatus", {"system": {"clock_status": clock_params}}
-        )
-
-        return {"setTimezone": tz_res, "setClockStatus": clock_res}
+            params["zone_id"] = zinfo.key
+        return await self.call("setTimezone", {"system": {"basic": params}})
 
     @staticmethod
     def _format_utc_offset(offset: timedelta | None) -> str:
