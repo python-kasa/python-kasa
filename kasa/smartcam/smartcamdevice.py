@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import logging
 from typing import Any, cast
 
@@ -10,6 +11,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 
+from ..credentials import DEFAULT_CREDENTIALS, get_default_credentials
 from ..device import DeviceInfo, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
@@ -357,13 +359,7 @@ class SmartCamDevice(SmartDevice):
         if net is None:
             raise DeviceError(f"Network with SSID '{ssid}' not found.")
 
-        public_key_b64 = self._public_key or self.STATIC_PUBLIC_KEY_B64
-        key_bytes = base64.b64decode(public_key_b64)
-        public_key = serialization.load_der_public_key(key_bytes)
-        if not isinstance(public_key, RSAPublicKey):
-            raise TypeError("Loaded public key is not an RSA public key")
-        encrypted = public_key.encrypt(password.encode(), padding.PKCS1v15())
-        encrypted_password = base64.b64encode(encrypted).decode()
+        encrypted_password = self._encrypt_password(password)
 
         payload = {
             "onboarding": {
@@ -390,3 +386,112 @@ class SmartCamDevice(SmartDevice):
                 "Received a kasa exception for wifi join, but this is expected"
             )
             return {}
+
+    def _encrypt_password(self, password: str) -> str:
+        public_key_b64 = self._public_key or self.STATIC_PUBLIC_KEY_B64
+        key_bytes = base64.b64decode(public_key_b64)
+        public_key = serialization.load_der_public_key(key_bytes)
+        if not isinstance(public_key, RSAPublicKey):
+            raise TypeError("Loaded public key is not an RSA public key")
+        encrypted = public_key.encrypt(password.encode(), padding.PKCS1v15())
+        return base64.b64encode(encrypted).decode()
+
+    async def update_admin_password(self, password: str) -> dict:
+        """Update smart camera admin password."""
+        login_version = self.config.connection_type.login_version
+        default_old_password = get_default_credentials(
+            DEFAULT_CREDENTIALS["TAPOCAMERA_LV3"]
+            if login_version == 3
+            else DEFAULT_CREDENTIALS["TAPOCAMERA"]
+        ).password
+
+        old_password_candidates: list[str] = [default_old_password]
+        if self.credentials and self.credentials.password:
+            current_password = self.credentials.password
+            if current_password not in old_password_candidates:
+                old_password_candidates.append(current_password)
+
+        new_password_hash = self._hash_password(password, login_version)
+
+        last_error: DeviceError | None = None
+        for old_password_candidate in old_password_candidates:
+            old_password_hash = self._hash_password(
+                old_password_candidate, login_version
+            )
+
+            change_admin_password_payload: dict[str, str] = {
+                "secname": "root",
+                "username": "admin",
+                "old_passwd": old_password_hash,
+                "passwd": new_password_hash,
+                "ciphertext": self._encrypt_password(new_password_hash),
+            }
+            if login_version == 3:
+                change_admin_password_payload["encrypt_type"] = "3"
+
+            payload = {
+                "user_management": {
+                    "change_admin_password": change_admin_password_payload
+                }
+            }
+            try:
+                return await self.protocol.query({"changeAdminPassword": payload})
+            except DeviceError as ex:
+                last_error = ex
+
+        if last_error is not None:
+            raise last_error
+        raise KasaException(
+            "Unable to determine current admin password."
+        )  # pragma: no cover
+
+    async def update_credentials(self, username: str, password: str) -> dict:
+        """Update smart camera credentials."""
+        login_version = self.config.connection_type.login_version
+        default_old_password = get_default_credentials(
+            DEFAULT_CREDENTIALS["TAPOCAMERA_LV3"]
+            if login_version == 3
+            else DEFAULT_CREDENTIALS["TAPOCAMERA"]
+        ).password
+
+        new_password_hash = self._hash_password(password, login_version)
+        old_password_candidates: list[str | None] = [default_old_password]
+        if self.credentials and self.credentials.password:
+            current_password = self.credentials.password
+            if current_password not in old_password_candidates:
+                old_password_candidates.append(current_password)
+        old_password_candidates.append(None)
+
+        last_error: DeviceError | None = None
+        for old_password_candidate in old_password_candidates:
+            change_local_account_payload: dict[str, str] = {
+                "email": username,
+                "secname": "local_account",
+                "passwd": new_password_hash,
+                "ciphertext": self._encrypt_password(password),
+            }
+            if old_password_candidate is not None:
+                change_local_account_payload["old_passwd"] = self._hash_password(
+                    old_password_candidate, login_version
+                )
+
+            payload = {
+                "user_management": {
+                    "change_local_account": change_local_account_payload
+                }
+            }
+
+            try:
+                return await self.protocol.query({"changeLocalAccount": payload})
+            except DeviceError as ex:
+                last_error = ex
+
+        if last_error is not None:
+            raise last_error
+        raise KasaException("Unable to update credentials.")  # pragma: no cover
+
+    @staticmethod
+    def _hash_password(password: str, login_version: int | None) -> str:
+        if login_version == 3:
+            return hashlib.sha256(password.encode()).hexdigest().upper()  # noqa: S324
+        return hashlib.md5(password.encode()).hexdigest().upper()  # noqa: S324
