@@ -477,6 +477,18 @@ async def test_update_admin_password(dev, mocker, runner):
     )
 
 
+@device_smart
+async def test_update_admin_password_non_smartcam(dev, runner):
+    res = await runner.invoke(
+        update_admin_password,
+        ["--password", "bar"],
+        obj=dev,
+    )
+
+    assert res.exit_code != 0
+    assert "Admin password can only be updated on smart camera devices." in res.output
+
+
 async def test_time_get(dev, runner):
     """Test time get command."""
     res = await runner.invoke(
