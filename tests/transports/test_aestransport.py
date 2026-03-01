@@ -15,6 +15,7 @@ import aiohttp
 import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from freezegun.api import FrozenDateTimeFactory
 from yarl import URL
 
@@ -501,6 +502,7 @@ class MockAesDevice:
 
         client_pub_key_data = base64.b64decode(client_pub_key.encode())
         client_pub_key = serialization.load_der_public_key(client_pub_key_data, None)
+        assert isinstance(client_pub_key, RSAPublicKey)
         encrypted_key = client_pub_key.encrypt(KEY_IV, asymmetric_padding.PKCS1v15())
         key_64 = base64.b64encode(encrypted_key).decode()
         return self._mock_response(

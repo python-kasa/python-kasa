@@ -11,7 +11,8 @@ dependencies = [
   "cryptography>=1.9",
   "aiohttp>=3",
   "tzdata>=2024.2 ; platform_system == 'Windows'",
-  "mashumaro>=3.14",
+  "mashumaro>=3.14; python_version < '3.14'",
+  "mashumaro>=3.17; python_version >= '3.14'",
 ]
 
 classifiers = [
@@ -21,17 +22,11 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 
 [project.optional-dependencies]
-speedups = ["orjson>=3.9.1", "kasa-crypt>=0.2.0"]
-docs = [
-    "sphinx_rtd_theme~=2.0",
-    "sphinxcontrib-programoutput~=0.0",
-    "myst-parser",
-    "docutils>=0.17",
-    "sphinx>=7.4.7",
-]
+speedups = ["orjson>=3.11.1", "kasa-crypt>=0.2.0"]
 shell = ["ptpython", "rich"]
 
 [project.urls]
@@ -43,8 +38,8 @@ shell = ["ptpython", "rich"]
 [project.scripts]
 kasa = "kasa.cli.__main__:cli"
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
   "pytest",
   "pytest-cov",
   "pytest-asyncio",
@@ -63,7 +58,13 @@ dev-dependencies = [
   "pytest-socket>=0.7.0",
   "ruff>=0.9.0",
 ]
-
+docs = [
+    "sphinx_rtd_theme~=2.0",
+    "sphinxcontrib-programoutput~=0.0",
+    "myst-parser",
+    "docutils>=0.17",
+    "sphinx>=7.4.7",
+]
 
 [build-system]
 requires = ["hatchling"]

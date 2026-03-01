@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.13]
+        python-version: [3.14]
     steps:
       - name: Checkout Source Files
         id: checkout
@@ -55,7 +55,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [3.11, 3.12, 3.13]
+        python-version: [3.11, 3.12, 3.13, 3.14]
         os: [ubuntu-latest, macos-latest, windows-latest]
         extras: [false, true]
         exclude:

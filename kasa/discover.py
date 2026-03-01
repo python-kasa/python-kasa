@@ -746,6 +746,8 @@ class Discover:
         device = device_class(config.host, config=config)
         sys_info = _extract_sys_info(info)
         device_type = sys_info.get("mic_type", sys_info.get("type"))
+        if device_type is None:
+            raise UnsupportedDeviceError("type nor mic_type found in sysinfo response")
         login_version = (
             sys_info.get("stream_version") if device_type == "IOT.IPCAMERA" else None
         )
