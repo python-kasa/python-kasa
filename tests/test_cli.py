@@ -128,7 +128,7 @@ async def test_list_devices(discovery_mock, runner):
 async def test_discover_raw(discovery_mock, runner, mocker):
     """Test the discover raw command."""
     redact_spy = mocker.patch(
-        "kasa.protocols.protocol.redact_data", side_effect=redact_data
+        "kasa.cli.discover.redact_data", side_effect=redact_data
     )
     res = await runner.invoke(
         cli,
