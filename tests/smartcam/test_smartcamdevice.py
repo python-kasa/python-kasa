@@ -582,7 +582,7 @@ async def test_update_credentials_with_no_credentials(dev: SmartCamDevice):
         result = await dev.update_credentials("new-user@example.com", "new-password")
 
     assert result == {}
-    # Only default + None candidate (2 attempts: default succeeds on first)
+    # Only the default candidate is used and it succeeds on the first query (1 attempt)
     assert query_mock.await_count == 1
     payload = query_mock.await_args_list[0].args[0]
     assert (
