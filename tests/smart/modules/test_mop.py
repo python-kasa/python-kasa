@@ -45,10 +45,9 @@ async def test_mop_waterlevel(dev: SmartDevice, mocker: MockerFixture):
     new_level = Waterlevel.High
     await mop_module.set_waterlevel(new_level.name)
 
-    params = mop_module._settings.copy()
-    params["cistern"] = new_level.value
-
-    call.assert_called_with("setCleanAttr", params)
+    call.assert_called_with(
+        "setCleanAttr", {"cistern": new_level.value, "type": "global"}
+    )
 
     await dev.update()
 

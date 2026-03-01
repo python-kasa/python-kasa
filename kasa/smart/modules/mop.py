@@ -85,6 +85,7 @@ class Mop(SmartModule):
         if mode not in name_to_value:
             raise ValueError("Invalid waterlevel %s, available %s", mode, name_to_value)
 
-        settings = self._settings.copy()
-        settings["cistern"] = name_to_value[mode]
-        return await self.call("setCleanAttr", settings)
+        return await self.call(
+            "setCleanAttr",
+            {"cistern": name_to_value[mode], "type": "global"},
+        )
