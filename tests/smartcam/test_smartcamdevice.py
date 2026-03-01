@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, PropertyMock, patch
 
 import pytest
 from freezegun.api import FrozenDateTimeFactory
 
-from kasa import Device, DeviceType, Module
+from kasa import Credentials, Device, DeviceType, Module
+from kasa.credentials import DEFAULT_CREDENTIALS, get_default_credentials
 from kasa.exceptions import AuthenticationError, DeviceError, KasaException
 from kasa.smartcam import SmartCamDevice
 
@@ -195,3 +197,420 @@ async def test_wifi_join_typeerror_on_non_rsa_key(dev: SmartCamDevice):
             ),
         ):
             await dev.wifi_join("TestSSID", "password123")
+
+
+@device_smartcam
+async def test_update_admin_password_non_lv3_request(dev: SmartCamDevice):
+    dev.config.connection_type.login_version = 2
+    default_old_password = get_default_credentials(
+        DEFAULT_CREDENTIALS["TAPOCAMERA"]
+    ).password
+    expected_old_hash = hashlib.md5(default_old_password.encode()).hexdigest().upper()  # noqa: S324
+    expected_new_hash = hashlib.md5(b"new-password").hexdigest().upper()  # noqa: S324
+
+    query_mock = AsyncMock(return_value={})
+    with (
+        patch.object(dev.protocol, "query", query_mock),
+        patch.object(
+            dev,
+            "_encrypt_password",
+            return_value="encrypted-ciphertext",
+        ) as encrypt_mock,
+    ):
+        result = await dev.update_admin_password("new-password")
+
+    assert result == {}
+    encrypt_mock.assert_called_once_with(expected_new_hash)
+    query_mock.assert_awaited_once_with(
+        {
+            "changeAdminPassword": {
+                "user_management": {
+                    "change_admin_password": {
+                        "secname": "root",
+                        "username": "admin",
+                        "old_passwd": expected_old_hash,
+                        "passwd": expected_new_hash,
+                        "ciphertext": "encrypted-ciphertext",
+                    }
+                }
+            }
+        }
+    )
+
+
+@device_smartcam
+async def test_update_admin_password_lv3_request(dev: SmartCamDevice):
+    dev.config.connection_type.login_version = 3
+    default_old_password = get_default_credentials(
+        DEFAULT_CREDENTIALS["TAPOCAMERA_LV3"]
+    ).password
+    expected_old_hash = (
+        hashlib.sha256(default_old_password.encode()).hexdigest().upper()
+    )  # noqa: S324
+    expected_new_hash = hashlib.sha256(b"new-password").hexdigest().upper()  # noqa: S324
+
+    query_mock = AsyncMock(return_value={})
+    with (
+        patch.object(dev.protocol, "query", query_mock),
+        patch.object(
+            dev,
+            "_encrypt_password",
+            return_value="encrypted-ciphertext",
+        ) as encrypt_mock,
+    ):
+        result = await dev.update_admin_password("new-password")
+
+    assert result == {}
+    encrypt_mock.assert_called_once_with(expected_new_hash)
+    query_mock.assert_awaited_once_with(
+        {
+            "changeAdminPassword": {
+                "user_management": {
+                    "change_admin_password": {
+                        "encrypt_type": "3",
+                        "secname": "root",
+                        "username": "admin",
+                        "old_passwd": expected_old_hash,
+                        "passwd": expected_new_hash,
+                        "ciphertext": "encrypted-ciphertext",
+                    }
+                }
+            }
+        }
+    )
+
+
+@device_smartcam
+async def test_update_admin_password_falls_back_to_current_when_default_fails(
+    dev: SmartCamDevice,
+):
+    dev.config.connection_type.login_version = 2
+    default_old_password = get_default_credentials(
+        DEFAULT_CREDENTIALS["TAPOCAMERA"]
+    ).password
+    expected_default_old_hash = (
+        hashlib.md5(default_old_password.encode()).hexdigest().upper()  # noqa: S324
+    )
+    expected_current_old_hash = hashlib.md5(b"old-password").hexdigest().upper()  # noqa: S324
+
+    query_mock = AsyncMock(side_effect=[DeviceError("bad old"), {}])
+    with (
+        patch.object(type(dev), "credentials", new_callable=PropertyMock) as cred_mock,
+        patch.object(dev.protocol, "query", query_mock),
+        patch.object(dev, "_encrypt_password", return_value="encrypted-ciphertext"),
+    ):
+        cred_mock.return_value = Credentials(username="admin", password="old-password")  # noqa: S106
+        result = await dev.update_admin_password("new-password")
+
+    assert result == {}
+    assert query_mock.await_count == 2
+    first_payload = query_mock.await_args_list[0].args[0]
+    second_payload = query_mock.await_args_list[1].args[0]
+
+    assert (
+        first_payload["changeAdminPassword"]["user_management"][
+            "change_admin_password"
+        ]["old_passwd"]
+        == expected_default_old_hash
+    )
+    assert (
+        second_payload["changeAdminPassword"]["user_management"][
+            "change_admin_password"
+        ]["old_passwd"]
+        == expected_current_old_hash
+    )
+
+
+@device_smartcam
+async def test_update_credentials_non_lv3_request(dev: SmartCamDevice):
+    dev.config.connection_type.login_version = 2
+    default_old_password = get_default_credentials(
+        DEFAULT_CREDENTIALS["TAPOCAMERA"]
+    ).password
+    expected_old_hash = hashlib.md5(default_old_password.encode()).hexdigest().upper()  # noqa: S324
+    expected_new_hash = hashlib.md5(b"new-password").hexdigest().upper()  # noqa: S324
+
+    query_mock = AsyncMock(return_value={})
+    with (
+        patch.object(type(dev), "credentials", new_callable=PropertyMock) as cred_mock,
+        patch.object(dev.protocol, "query", query_mock),
+        patch.object(
+            dev, "_encrypt_password", return_value="encrypted-ciphertext"
+        ) as encrypt_mock,
+    ):
+        cred_mock.return_value = Credentials(username="admin", password="old-password")  # noqa: S106
+        result = await dev.update_credentials("new-user", "new-password")
+
+    assert result == {}
+    encrypt_mock.assert_called_once_with("new-password")
+    query_mock.assert_awaited_once_with(
+        {
+            "changeLocalAccount": {
+                "user_management": {
+                    "change_local_account": {
+                        "email": "new-user",
+                        "secname": "local_account",
+                        "old_passwd": expected_old_hash,
+                        "passwd": expected_new_hash,
+                        "ciphertext": "encrypted-ciphertext",
+                    }
+                }
+            }
+        }
+    )
+
+
+@device_smartcam
+async def test_update_credentials_lv3_request(dev: SmartCamDevice):
+    dev.config.connection_type.login_version = 3
+    default_old_password = get_default_credentials(
+        DEFAULT_CREDENTIALS["TAPOCAMERA_LV3"]
+    ).password
+    expected_old_hash = (
+        hashlib.sha256(default_old_password.encode()).hexdigest().upper()
+    )  # noqa: S324
+    expected_new_hash = hashlib.sha256(b"new-password").hexdigest().upper()  # noqa: S324
+
+    query_mock = AsyncMock(return_value={})
+    with (
+        patch.object(type(dev), "credentials", new_callable=PropertyMock) as cred_mock,
+        patch.object(dev.protocol, "query", query_mock),
+        patch.object(
+            dev, "_encrypt_password", return_value="encrypted-ciphertext"
+        ) as encrypt_mock,
+    ):
+        cred_mock.return_value = Credentials(username="admin", password="old-password")  # noqa: S106
+        result = await dev.update_credentials("new-user", "new-password")
+
+    assert result == {}
+    encrypt_mock.assert_called_once_with("new-password")
+    query_mock.assert_awaited_once_with(
+        {
+            "changeLocalAccount": {
+                "user_management": {
+                    "change_local_account": {
+                        "email": "new-user",
+                        "secname": "local_account",
+                        "old_passwd": expected_old_hash,
+                        "passwd": expected_new_hash,
+                        "ciphertext": "encrypted-ciphertext",
+                    }
+                }
+            }
+        }
+    )
+
+
+@device_smartcam
+async def test_update_credentials_falls_back_to_current_password_when_default_fails(
+    dev: SmartCamDevice,
+):
+    dev.config.connection_type.login_version = 2
+    default_old_password = get_default_credentials(
+        DEFAULT_CREDENTIALS["TAPOCAMERA"]
+    ).password
+    expected_default_old_hash = (
+        hashlib.md5(default_old_password.encode()).hexdigest().upper()  # noqa: S324
+    )
+    expected_current_old_hash = hashlib.md5(b"old-password").hexdigest().upper()  # noqa: S324
+    expected_new_hash = hashlib.md5(b"new-password").hexdigest().upper()  # noqa: S324
+
+    query_mock = AsyncMock(side_effect=[DeviceError("bad old"), {}])
+    with (
+        patch.object(type(dev), "credentials", new_callable=PropertyMock) as cred_mock,
+        patch.object(dev.protocol, "query", query_mock),
+        patch.object(dev, "_encrypt_password", return_value="encrypted-ciphertext"),
+    ):
+        cred_mock.return_value = Credentials(username="admin", password="old-password")  # noqa: S106
+        result = await dev.update_credentials("new-user@example.com", "new-password")
+
+    assert result == {}
+    assert query_mock.await_count == 2
+    first_payload = query_mock.await_args_list[0].args[0]
+    second_payload = query_mock.await_args_list[1].args[0]
+
+    assert (
+        first_payload["changeLocalAccount"]["user_management"]["change_local_account"][
+            "old_passwd"
+        ]
+        == expected_default_old_hash
+    )
+    assert (
+        second_payload["changeLocalAccount"]["user_management"]["change_local_account"][
+            "old_passwd"
+        ]
+        == expected_current_old_hash
+    )
+    assert (
+        second_payload["changeLocalAccount"]["user_management"]["change_local_account"][
+            "passwd"
+        ]
+        == expected_new_hash
+    )
+
+
+@device_smartcam
+async def test_update_credentials_omits_old_password_after_candidates_fail(
+    dev: SmartCamDevice,
+):
+    dev.config.connection_type.login_version = 2
+    default_old_password = get_default_credentials(
+        DEFAULT_CREDENTIALS["TAPOCAMERA"]
+    ).password
+    expected_default_old_hash = (
+        hashlib.md5(default_old_password.encode()).hexdigest().upper()  # noqa: S324
+    )
+    expected_current_old_hash = hashlib.md5(b"old-password").hexdigest().upper()  # noqa: S324
+
+    query_mock = AsyncMock(
+        side_effect=[DeviceError("bad default"), DeviceError("bad current"), {}]
+    )
+    with (
+        patch.object(type(dev), "credentials", new_callable=PropertyMock) as cred_mock,
+        patch.object(dev.protocol, "query", query_mock),
+        patch.object(dev, "_encrypt_password", return_value="encrypted-ciphertext"),
+    ):
+        cred_mock.return_value = Credentials(username="admin", password="old-password")  # noqa: S106
+        result = await dev.update_credentials("new-user@example.com", "new-password")
+
+    assert result == {}
+    assert query_mock.await_count == 3
+    first_payload = query_mock.await_args_list[0].args[0]
+    second_payload = query_mock.await_args_list[1].args[0]
+    third_payload = query_mock.await_args_list[2].args[0]
+
+    assert (
+        first_payload["changeLocalAccount"]["user_management"]["change_local_account"][
+            "old_passwd"
+        ]
+        == expected_default_old_hash
+    )
+    assert (
+        second_payload["changeLocalAccount"]["user_management"]["change_local_account"][
+            "old_passwd"
+        ]
+        == expected_current_old_hash
+    )
+    assert (
+        "old_passwd"
+        not in third_payload["changeLocalAccount"]["user_management"][
+            "change_local_account"
+        ]
+    )
+
+
+@device_smartcam
+async def test_update_admin_password_all_candidates_fail(dev: SmartCamDevice):
+    dev.config.connection_type.login_version = 2
+    error = DeviceError("always fails")
+    query_mock = AsyncMock(side_effect=error)
+    with (
+        patch.object(type(dev), "credentials", new_callable=PropertyMock) as cred_mock,
+        patch.object(dev.protocol, "query", query_mock),
+        patch.object(dev, "_encrypt_password", return_value="encrypted-ciphertext"),
+    ):
+        cred_mock.return_value = Credentials(username="admin", password="old-password")  # noqa: S106
+        with pytest.raises(DeviceError):
+            await dev.update_admin_password("new-password")
+
+
+@device_smartcam
+async def test_update_admin_password_with_no_credentials(dev: SmartCamDevice):
+    dev.config.connection_type.login_version = 2
+    query_mock = AsyncMock(return_value={})
+    with (
+        patch.object(type(dev), "credentials", new_callable=PropertyMock) as cred_mock,
+        patch.object(dev.protocol, "query", query_mock),
+        patch.object(dev, "_encrypt_password", return_value="encrypted-ciphertext"),
+    ):
+        cred_mock.return_value = None
+        result = await dev.update_admin_password("new-password")
+
+    assert result == {}
+    assert query_mock.await_count == 1
+
+
+@device_smartcam
+async def test_update_admin_password_current_password_equals_default(
+    dev: SmartCamDevice,
+):
+    dev.config.connection_type.login_version = 2
+    default_old_password = get_default_credentials(
+        DEFAULT_CREDENTIALS["TAPOCAMERA"]
+    ).password
+    query_mock = AsyncMock(return_value={})
+    with (
+        patch.object(type(dev), "credentials", new_callable=PropertyMock) as cred_mock,
+        patch.object(dev.protocol, "query", query_mock),
+        patch.object(dev, "_encrypt_password", return_value="encrypted-ciphertext"),
+    ):
+        # current password is same as default — should not be added a second time
+        cred_mock.return_value = Credentials(
+            username="admin", password=default_old_password
+        )
+        result = await dev.update_admin_password("new-password")
+
+    assert result == {}
+    assert query_mock.await_count == 1
+
+
+@device_smartcam
+async def test_update_credentials_all_candidates_fail(dev: SmartCamDevice):
+    dev.config.connection_type.login_version = 2
+    error = DeviceError("always fails")
+    query_mock = AsyncMock(side_effect=error)
+    with (
+        patch.object(type(dev), "credentials", new_callable=PropertyMock) as cred_mock,
+        patch.object(dev.protocol, "query", query_mock),
+        patch.object(dev, "_encrypt_password", return_value="encrypted-ciphertext"),
+    ):
+        cred_mock.return_value = Credentials(username="admin", password="old-password")  # noqa: S106
+        with pytest.raises(DeviceError):
+            await dev.update_credentials("new-user@example.com", "new-password")
+
+
+@device_smartcam
+async def test_update_credentials_with_no_credentials(dev: SmartCamDevice):
+    dev.config.connection_type.login_version = 2
+    query_mock = AsyncMock(return_value={})
+    with (
+        patch.object(type(dev), "credentials", new_callable=PropertyMock) as cred_mock,
+        patch.object(dev.protocol, "query", query_mock),
+        patch.object(dev, "_encrypt_password", return_value="encrypted-ciphertext"),
+    ):
+        cred_mock.return_value = None
+        result = await dev.update_credentials("new-user@example.com", "new-password")
+
+    assert result == {}
+    # Only the default candidate is used and it succeeds on the first query (1 attempt)
+    assert query_mock.await_count == 1
+    payload = query_mock.await_args_list[0].args[0]
+    assert (
+        "old_passwd"
+        in payload["changeLocalAccount"]["user_management"]["change_local_account"]
+    )
+
+
+@device_smartcam
+async def test_update_credentials_current_password_equals_default(
+    dev: SmartCamDevice,
+):
+    dev.config.connection_type.login_version = 2
+    default_old_password = get_default_credentials(
+        DEFAULT_CREDENTIALS["TAPOCAMERA"]
+    ).password
+    query_mock = AsyncMock(return_value={})
+    with (
+        patch.object(type(dev), "credentials", new_callable=PropertyMock) as cred_mock,
+        patch.object(dev.protocol, "query", query_mock),
+        patch.object(dev, "_encrypt_password", return_value="encrypted-ciphertext"),
+    ):
+        # current password is same as default — should not be added a second time
+        cred_mock.return_value = Credentials(
+            username="admin", password=default_old_password
+        )
+        result = await dev.update_credentials("new-user@example.com", "new-password")
+
+    assert result == {}
+    # Only default + None (current == default so not duplicated); default succeeds
+    assert query_mock.await_count == 1

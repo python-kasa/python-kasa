@@ -12,6 +12,7 @@ from kasa import (
     Module,
 )
 from kasa.smart import SmartDevice
+from kasa.smartcam import SmartCamDevice
 
 from .common import (
     echo,
@@ -202,6 +203,26 @@ async def update_credentials(dev, username, password):
     click.confirm("Do you really want to replace the existing credentials?", abort=True)
 
     return await dev.update_credentials(username, password)
+
+
+@device.command()
+@pass_dev
+@click.option(
+    "--password",
+    required=True,
+    prompt=True,
+    help="New admin password to set on the device",
+)
+async def update_admin_password(dev, password):
+    """Update smart camera admin password."""
+    if not isinstance(dev, SmartCamDevice):
+        error("Admin password can only be updated on smart camera devices.")
+
+    click.confirm(
+        "Do you really want to replace the existing admin password?", abort=True
+    )
+
+    return await dev.update_admin_password(password)
 
 
 @device.command(name="logs")

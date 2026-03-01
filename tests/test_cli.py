@@ -28,6 +28,7 @@ from kasa.cli.device import (
     state,
     sysinfo,
     toggle,
+    update_admin_password,
     update_credentials,
 )
 from kasa.cli.light import (
@@ -454,6 +455,38 @@ async def test_update_credentials(dev, runner):
         "Do you really want to replace the existing credentials? [y/N]: y\n"
         in res.output
     )
+
+
+@device_smartcam
+async def test_update_admin_password(dev, mocker, runner):
+    update_admin_password_mock = mocker.patch.object(
+        dev, "update_admin_password", return_value={}
+    )
+    res = await runner.invoke(
+        update_admin_password,
+        ["--password", "bar"],
+        input="y\n",
+        obj=dev,
+    )
+
+    assert res.exit_code == 0
+    update_admin_password_mock.assert_called_once_with("bar")
+    assert (
+        "Do you really want to replace the existing admin password? [y/N]: y\n"
+        in res.output
+    )
+
+
+@device_smart
+async def test_update_admin_password_non_smartcam(dev, runner):
+    res = await runner.invoke(
+        update_admin_password,
+        ["--password", "bar"],
+        obj=dev,
+    )
+
+    assert res.exit_code != 0
+    assert "Admin password can only be updated on smart camera devices." in res.output
 
 
 async def test_time_get(dev, runner):
