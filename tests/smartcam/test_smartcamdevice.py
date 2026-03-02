@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, PropertyMock, patch
+from zoneinfo import ZoneInfo
 
 import pytest
 from freezegun.api import FrozenDateTimeFactory
@@ -156,12 +157,40 @@ async def test_wifi_join_success_and_errors(dev: SmartCamDevice):
 @device_smartcam
 async def test_device_time(dev: Device, freezer: FrozenDateTimeFactory):
     """Test a child device gets the time from it's parent module."""
-    fallback_time = datetime.now(UTC).astimezone().replace(microsecond=0)
-    assert dev.time != fallback_time
+    original_time = dev.time
+    fallback_time = datetime.now(UTC).replace(tzinfo=ZoneInfo("America/New_York"))
     module = dev.modules[Module.Time]
     await module.set_time(fallback_time)
     await dev.update()
-    assert dev.time == fallback_time
+    assert dev.timezone == fallback_time.tzinfo
+    # SmartCam set_time updates timezone only; device clock remains unchanged.
+    assert dev.time.timestamp() == original_time.timestamp()
+
+
+@pytest.mark.parametrize(
+    ("set_time_value", "expected_timezone"),
+    [
+        pytest.param(datetime(2024, 1, 15, 12, 0, tzinfo=UTC), "UTC+00:00", id="utc"),
+        pytest.param(
+            datetime(2024, 1, 15, 12, 0, tzinfo=ZoneInfo("America/New_York")),
+            "UTC-05:00",
+            id="negative-offset",
+        ),
+    ],
+)
+@device_smartcam
+async def test_set_time_formats_timezone_parametrized(
+    dev: Device, set_time_value: datetime, expected_timezone: str
+):
+    """Test SmartCam set_time formats timezone offsets consistently."""
+    module = dev.modules[Module.Time]
+    with patch.object(module, "call", AsyncMock(return_value={})) as call_mock:
+        await module.set_time(set_time_value)
+
+    call_mock.assert_awaited_once()
+    call = call_mock.await_args_list[0]
+    assert call.args[0] == "setTimezone"
+    assert call.args[1]["system"]["basic"]["timezone"] == expected_timezone
 
 
 @device_smartcam

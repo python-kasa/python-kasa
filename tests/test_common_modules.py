@@ -1,5 +1,6 @@
 import importlib
 import inspect
+import logging
 import pkgutil
 import sys
 from datetime import UTC, datetime, timedelta, timezone
@@ -12,6 +13,7 @@ from pytest_mock import MockerFixture
 import kasa.interfaces
 from kasa import Device, KasaException, LightState, Module, ThermostatState
 from kasa.module import _get_feature_attribute
+from kasa.smartcam import SmartCamDevice
 
 from .device_fixtures import (
     bulb_iot,
@@ -422,7 +424,7 @@ async def test_thermostat(dev: Device, mocker: MockerFixture):
     assert therm_mod.temperature_unit == "fahrenheit"
 
 
-async def test_set_time(dev: Device):
+async def test_set_time(dev: Device, caplog: pytest.LogCaptureFixture):
     """Test setting the device time."""
     time_mod = dev.modules[Module.Time]
 
@@ -435,9 +437,18 @@ async def test_set_time(dev: Device):
     try:
         assert time_mod.time != test_time
 
-        await time_mod.set_time(test_time)
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            await time_mod.set_time(test_time)
         await dev.update()
-        assert time_mod.time == test_time
+        if isinstance(dev, SmartCamDevice):
+            assert (
+                "SmartCam devices do not support setting clock time directly; "
+                "only timezone settings are updated."
+            ) in caplog.text
+            assert time_mod.timezone == test_time.tzinfo
+        else:
+            assert time_mod.time == test_time
 
         if (
             isinstance(original_timezone, ZoneInfo)
@@ -451,12 +462,18 @@ async def test_set_time(dev: Device):
         new_time = time_mod.time.astimezone(test_zonezone)
         await time_mod.set_time(new_time)
         await dev.update()
-        assert time_mod.time == new_time
+        if isinstance(dev, SmartCamDevice):
+            assert time_mod.timezone == new_time.tzinfo
+        else:
+            assert time_mod.time == new_time
     finally:
         # Reset back to the original
         await time_mod.set_time(original_time)
         await dev.update()
-        assert time_mod.time == original_time
+        if isinstance(dev, SmartCamDevice):
+            assert time_mod.timezone == original_timezone
+        else:
+            assert time_mod.time == original_time
 
 
 async def test_time_post_update_no_time_uses_utc_unit(monkeypatch: pytest.MonkeyPatch):
