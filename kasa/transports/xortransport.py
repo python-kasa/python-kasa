@@ -29,7 +29,12 @@ from kasa.json import loads as json_loads
 from .basetransport import BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
-_NO_RETRY_ERRORS = {errno.EHOSTDOWN, errno.EHOSTUNREACH, errno.ECONNREFUSED}
+_NO_RETRY_ERRORS = {
+    errno.EHOSTDOWN,
+    errno.EHOSTUNREACH,
+    errno.ENETUNREACH,
+    errno.ECONNREFUSED,
+}
 _UNSIGNED_INT_NETWORK_ORDER = struct.Struct(">I")
 
 
