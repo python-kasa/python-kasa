@@ -43,6 +43,24 @@ NON_HUB_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
 
 ComponentsRaw: TypeAlias = dict[str, list[dict[str, int | str]]]
 
+DEVICE_TYPE_TO_LABEL = {
+    DeviceType.Plug: "Plug",
+    DeviceType.Strip: "Power Strip",
+    DeviceType.StripSocket: "Power Strip",
+    DeviceType.Dimmer: "Wall Switch",
+    DeviceType.WallSwitch: "Wall Switch",
+    DeviceType.Fan: "Fan",
+    DeviceType.Bulb: "Bulb",
+    DeviceType.LightStrip: "Light Strip",
+    DeviceType.Camera: "Camera",
+    DeviceType.Doorbell: "Doorbell",
+    DeviceType.Chime: "Chime",
+    DeviceType.Vacuum: "Vacuum",
+    DeviceType.Hub: "Hub",
+    DeviceType.Sensor: "Sensor",
+    DeviceType.Thermostat: "Hub-Connected Thermostat",
+}
+
 
 # Device must go last as the other interfaces also inherit Device
 # and python needs a consistent method resolution order.
@@ -598,6 +616,8 @@ class SmartDevice(Device):
         """Returns the device alias or nickname."""
         if self._info and (nickname := self._info.get("nickname")):
             return base64.b64decode(nickname).decode()
+        elif label := DEVICE_TYPE_TO_LABEL.get(self._device_type):
+            return f"{label} ({self.device_id})"
         else:
             return None
 
