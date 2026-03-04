@@ -164,6 +164,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
         login_version: int | None = None
         port_override: int | None = None
         http_port: int | None = None
+        new_klap: bool | None = None
 
         @property
         def model(self) -> str:
@@ -205,6 +206,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             default_port = 443 if https else 80
         else:
             default_port = http_port
+        new_klap = discovery_result["mgt_encrypt_schm"].get("new_klap", None)
         dm = _DiscoveryMock(
             ip,
             default_port,
@@ -216,6 +218,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             https,
             login_version,
             http_port=http_port,
+            new_klap=new_klap,
         )
     else:
         sys_info = fixture_data["system"]["get_sysinfo"]
@@ -233,6 +236,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             encrypt_type,
             False,
             login_version,
+            new_klap=None,
         )
 
     return dm
@@ -312,6 +316,12 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
                 if fixture_info.protocol in {"SMARTCAM", "SMARTCAM.CHILD"}
                 else FakeIotProtocol(fixture_info.data, fixture_info.name)
             )
+            # Also register under the device IP when the host key is a hostname
+            # (e.g. discover_single with a hostname).  _process_new_klap_device
+            # creates a protocol with config.host set to the resolved IP, so
+            # the _query mock must be able to look it up by IP as well.
+            if host != dm.ip:
+                protos[dm.ip] = protos[host]
             port = (
                 dm.port_override
                 if dm.port_override and dm.discovery_port != 20002

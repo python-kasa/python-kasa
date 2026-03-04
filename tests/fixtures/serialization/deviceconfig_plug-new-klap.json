@@ -1,0 +1,11 @@
+{
+    "connection_type": {
+        "device_family": "IOT.SMARTPLUGSWITCH",
+        "encryption_type": "KLAP",
+        "https": false,
+        "login_version": 2,
+        "new_klap": true
+    },
+    "host": "127.0.0.1",
+    "timeout": 5
+}
