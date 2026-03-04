@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, tzinfo
+import logging
+from datetime import UTC, datetime, timedelta, tzinfo
 from typing import cast
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -11,6 +12,8 @@ from ...feature import Feature
 from ...interfaces import Time as TimeInterface
 from ...smart.smartmodule import allow_update_after
 from ..smartcammodule import SmartCamModule
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class Time(SmartCamModule, TimeInterface):
@@ -77,16 +80,30 @@ class Time(SmartCamModule, TimeInterface):
     @allow_update_after
     async def set_time(self, dt: datetime) -> dict:
         """Set device time."""
+        _LOGGER.warning(
+            "SmartCam devices do not support setting clock time directly; "
+            "only timezone settings are updated."
+        )
         if not dt.tzinfo:
-            timestamp = dt.replace(tzinfo=self.timezone).timestamp()
+            utc_offset = cast(timedelta | None, self.timezone.utcoffset(dt))
         else:
-            timestamp = dt.timestamp()
+            utc_offset = cast(timedelta | None, dt.utcoffset())
 
-        lt = datetime.fromtimestamp(timestamp).isoformat().replace("T", " ")
-        params = {"seconds_from_1970": int(timestamp), "local_time": lt}
-        # Doesn't seem to update the time, perhaps because timing_mode is ntp
-        res = await self.call("setTimezone", {"system": {"clock_status": params}})
+        params: dict[str, str] = {"timezone": self._format_utc_offset(utc_offset)}
         if (zinfo := dt.tzinfo) and isinstance(zinfo, ZoneInfo):
-            tz_params = {"zone_id": zinfo.key}
-            res = await self.call("setTimezone", {"system": {"basic": tz_params}})
-        return res
+            params["zone_id"] = zinfo.key
+
+        return await self.call("setTimezone", {"system": {"basic": params}})
+
+    @staticmethod
+    def _format_utc_offset(offset: timedelta | None) -> str:
+        """Format a timedelta offset as UTC+HH:MM/UTC-HH:MM."""
+        if offset is None:
+            offset = timedelta(0)
+
+        total_seconds = int(offset.total_seconds())
+        sign = "+" if total_seconds >= 0 else "-"
+        total_seconds = abs(total_seconds)
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes = remainder // 60
+        return f"UTC{sign}{hours:02d}:{minutes:02d}"
