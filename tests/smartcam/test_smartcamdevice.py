@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import base64
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, tzinfo
 from unittest.mock import AsyncMock, PropertyMock, patch
 from zoneinfo import ZoneInfo
 
@@ -191,6 +191,30 @@ async def test_set_time_formats_timezone_parametrized(
     call = call_mock.await_args_list[0]
     assert call.args[0] == "setTimezone"
     assert call.args[1]["system"]["basic"]["timezone"] == expected_timezone
+
+
+@device_smartcam
+async def test_set_time_format_none_offset_defaults_to_utc(dev: Device):
+    """Test SmartCam set_time handles None offset as UTC+00:00."""
+
+    class NoneOffsetTz(tzinfo):
+        def utcoffset(self, dt: datetime | None) -> timedelta | None:
+            return None
+
+        def dst(self, dt: datetime | None) -> timedelta | None:
+            return None
+
+        def tzname(self, dt: datetime | None) -> str | None:
+            return "NoneOffset"
+
+    module = dev.modules[Module.Time]
+    with patch.object(module, "call", AsyncMock(return_value={})) as call_mock:
+        await module.set_time(datetime(2024, 1, 15, 12, 0, tzinfo=NoneOffsetTz()))
+
+    call_mock.assert_awaited_once()
+    call = call_mock.await_args_list[0]
+    assert call.args[0] == "setTimezone"
+    assert call.args[1]["system"]["basic"]["timezone"] == "UTC+00:00"
 
 
 @device_smartcam
