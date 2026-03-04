@@ -807,10 +807,17 @@ async def test_transport_credentials_hash_from_config(mocker, transport_class):
     [
         (ConnectionRefusedError("dummy exception"), False),
         (OSError(errno.EHOSTDOWN, os.strerror(errno.EHOSTDOWN)), False),
+        (OSError(errno.ENETUNREACH, os.strerror(errno.ENETUNREACH)), False),
         (OSError(errno.ECONNRESET, os.strerror(errno.ECONNRESET)), True),
         (Exception("dummy exception"), True),
     ],
-    ids=("ConnectionRefusedError", "OSErrorNoRetry", "OSErrorRetry", "Exception"),
+    ids=(
+        "ConnectionRefusedError",
+        "OSErrorHostDown",
+        "OSErrorNetUnreach",
+        "OSErrorRetry",
+        "Exception",
+    ),
 )
 @pytest.mark.parametrize(
     ("protocol_class", "transport_class"),
