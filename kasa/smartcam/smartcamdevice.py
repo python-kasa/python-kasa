@@ -396,8 +396,8 @@ class SmartCamDevice(SmartDevice):
         encrypted = public_key.encrypt(password.encode(), padding.PKCS1v15())
         return base64.b64encode(encrypted).decode()
 
-    async def update_admin_password(self, password: str) -> dict:
-        """Update smart camera admin password."""
+    async def update_credentials(self, username: str, password: str) -> dict:
+        """Update smart camera credentials."""
         login_version = self.config.connection_type.login_version
         default_old_password = get_default_credentials(
             DEFAULT_CREDENTIALS["TAPOCAMERA_LV3"]
@@ -441,54 +441,7 @@ class SmartCamDevice(SmartDevice):
 
         if last_error is not None:
             raise last_error
-        raise KasaException(
-            "Unable to determine current admin password."
-        )  # pragma: no cover
-
-    async def update_credentials(self, username: str, password: str) -> dict:
-        """Update smart camera credentials."""
-        login_version = self.config.connection_type.login_version
-        default_old_password = get_default_credentials(
-            DEFAULT_CREDENTIALS["TAPOCAMERA_LV3"]
-            if login_version == 3
-            else DEFAULT_CREDENTIALS["TAPOCAMERA"]
-        ).password
-
-        new_password_hash = self._hash_password(password, login_version)
-        old_password_candidates: list[str | None] = [default_old_password]
-        if self.credentials and self.credentials.password:
-            current_password = self.credentials.password
-            if current_password not in old_password_candidates:
-                old_password_candidates.append(current_password)
-        old_password_candidates.append(None)
-
-        last_error: DeviceError | None = None
-        for old_password_candidate in old_password_candidates:
-            change_local_account_payload: dict[str, str] = {
-                "email": username,
-                "secname": "local_account",
-                "passwd": new_password_hash,
-                "ciphertext": self._encrypt_password(password),
-            }
-            if old_password_candidate is not None:
-                change_local_account_payload["old_passwd"] = self._hash_password(
-                    old_password_candidate, login_version
-                )
-
-            payload = {
-                "user_management": {
-                    "change_local_account": change_local_account_payload
-                }
-            }
-
-            try:
-                return await self.protocol.query({"changeLocalAccount": payload})
-            except DeviceError as ex:
-                last_error = ex
-
-        if last_error is not None:
-            raise last_error
-        raise KasaException("Unable to update credentials.")  # pragma: no cover
+        raise KasaException("Unable to determine current admin password.")
 
     @staticmethod
     def _hash_password(password: str, login_version: int | None) -> str:
