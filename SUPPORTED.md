@@ -156,6 +156,8 @@ Some newer Kasa devices require authentication. These are marked with [^1] in th
   - Hardware: 1.0 (US) / Firmware: 1.8.11
 - **LB110**
   - Hardware: 1.0 (US) / Firmware: 1.8.11
+- **LB130**
+  - Hardware: 1.0 (US) / Firmware: 1.8.11
 
 ### Light Strips
 
