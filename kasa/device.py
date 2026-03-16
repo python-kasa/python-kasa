@@ -509,10 +509,13 @@ class Device(ABC):
         update_needed = " - update() needed" if not self._last_update else ""
         if not self._last_update and not self._discovery_info:
             return f"<{self.device_type} at {self.host}{update_needed}>"
-        return (
-            f"<{self.device_type} at {self.host} -"
-            f" {self.alias} ({self.model}){update_needed}>"
-        )
+        try:
+            return (
+                f"<{self.device_type} at {self.host} -"
+                f" {self.alias} ({self.model}){update_needed}>"
+            )
+        except Exception:
+            return f"<{self.device_type} at {self.host}{update_needed}>"
 
     _deprecated_device_type_attributes = {
         # is_type
