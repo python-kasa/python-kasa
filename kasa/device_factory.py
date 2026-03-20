@@ -104,8 +104,8 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> Device:
     device_class: type[Device] | None
     device: Device | None = None
 
-    if isinstance(protocol, IotProtocol) and isinstance(
-        protocol._transport, XorTransport
+    if isinstance(protocol, IotProtocol) and not isinstance(
+        protocol._transport, LinkieTransportV2
     ):
         info = await protocol.query(GET_SYSINFO_QUERY)
         _perf_log(True, "get_sysinfo")
@@ -228,7 +228,6 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
         str, tuple[type[BaseProtocol], type[BaseTransport]]
     ] = {
         "IOT.XOR": (IotProtocol, XorTransport),
-        "IOT.KLAP": (IotProtocol, KlapTransport),
         "SMART.AES": (SmartProtocol, AesTransport),
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
         "SMART.KLAP.HTTPS": (SmartProtocol, KlapTransportV2),
@@ -236,6 +235,12 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
         # https to distuingish from SmartProtocol devices
         "SMART.AES.HTTPS": (SmartCamProtocol, SslAesTransport),
     }
+    if protocol_transport_key == "IOT.KLAP":
+        transport_cls: type[BaseTransport] = (
+            KlapTransportV2 if ctype.login_version == 2 else KlapTransport
+        )
+        return IotProtocol(transport=transport_cls(config=config))
+
     if not (prot_tran_cls := supported_device_protocols.get(protocol_transport_key)):
         return None
     protocol_cls, transport_cls = prot_tran_cls

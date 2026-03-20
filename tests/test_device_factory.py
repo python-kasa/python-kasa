@@ -260,6 +260,12 @@ ET = DeviceEncryptionType
             id="iot-klap",
         ),
         pytest.param(
+            CP(DF.IotSmartPlugSwitch, ET.Klap, login_version=2, https=False),
+            IotProtocol,
+            KlapTransportV2,
+            id="iot-klap-lv2",
+        ),
+        pytest.param(
             CP(DF.IotSmartPlugSwitch, ET.Xor, https=False),
             IotProtocol,
             XorTransport,
