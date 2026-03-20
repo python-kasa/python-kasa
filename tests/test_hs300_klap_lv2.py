@@ -25,9 +25,7 @@ def _get_credentials_from_request(request) -> Credentials:
     password = request.config.getoption("--password") or os.environ.get("KASA_PASSWORD")
 
     if not username or not password:
-        pytest.skip(
-            "requires --username/--password or KASA_USERNAME/KASA_PASSWORD"
-        )
+        pytest.skip("requires --username/--password or KASA_USERNAME/KASA_PASSWORD")
 
     return Credentials(username=username, password=password)
 
