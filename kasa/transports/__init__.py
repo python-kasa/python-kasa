@@ -6,7 +6,7 @@ from .klaptransport import KlapTransport, KlapTransportV2
 from .linkietransport import LinkieTransportV2
 from .sslaestransport import SslAesTransport
 from .ssltransport import SslTransport
-from .tpaptransport import TpapTransport
+from .tpaptransport import TpapSmartCamTransport, TpapTransport
 from .xortransport import XorEncryption, XorTransport
 
 __all__ = [
@@ -18,6 +18,7 @@ __all__ = [
     "LinkieTransportV2",
     "SslAesTransport",
     "SslTransport",
+    "TpapSmartCamTransport",
     "TpapTransport",
     "XorEncryption",
     "XorTransport",

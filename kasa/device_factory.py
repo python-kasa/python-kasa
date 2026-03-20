@@ -34,6 +34,7 @@ from .transports import (
     KlapTransportV2,
     LinkieTransportV2,
     SslTransport,
+    TpapSmartCamTransport,
     TpapTransport,
     XorTransport,
 )
@@ -196,6 +197,16 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
     ctype = config.connection_type
     protocol_name = ctype.device_family.value.split(".")[0]
     _LOGGER.debug("Finding protocol for %s", ctype.device_family)
+
+    if ctype.encryption_type is DeviceEncryptionType.Tpap and (
+        ctype.device_family
+        in {
+            DeviceFamily.SmartIpCamera,
+            DeviceFamily.SmartTapoDoorbell,
+        }
+        or (ctype.device_family is DeviceFamily.SmartTapoHub and ctype.https)
+    ):
+        return SmartCamProtocol(transport=TpapSmartCamTransport(config=config))
 
     if ctype.device_family in {
         DeviceFamily.SmartIpCamera,

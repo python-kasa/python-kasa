@@ -6,7 +6,7 @@ import asyncio
 import logging
 import ssl
 import time
-from typing import Any
+from typing import Any, cast
 
 import aiohttp
 from yarl import URL
@@ -160,6 +160,134 @@ class HttpClient:
             self._last_request_time = time.monotonic()
 
         return resp.status, response_data
+
+    async def post_with_info(
+        self,
+        url: URL,
+        *,
+        params: dict[str, Any] | None = None,
+        data: bytes | None = None,
+        json: dict | Any | None = None,
+        headers: dict[str, str] | None = None,
+        cookies_dict: dict[str, str] | None = None,
+        ssl: ssl.SSLContext | bool = False,
+    ) -> tuple[int, dict | bytes | None, bytes | None]:
+        """Send an http post request and capture low-level response information."""
+        # Once we know a device needs a wait between sequential queries always wait
+        # first rather than keep erroring then waiting.
+        if self._wait_between_requests:
+            now = time.monotonic()
+            gap = now - self._last_request_time
+            if gap < self._wait_between_requests:
+                sleep = self._wait_between_requests - gap
+                _LOGGER.debug(
+                    "Device %s waiting %s seconds to send request",
+                    self._config.host,
+                    sleep,
+                )
+                await asyncio.sleep(sleep)
+
+        _LOGGER.debug("Posting to %s", url)
+        response_data = None
+        peer_cert_der = None
+        self._last_url = url
+        self.client.cookie_jar.clear()
+        return_json = bool(json)
+        if self._config.timeout is None:
+            _LOGGER.warning("Request timeout is set to None.")
+        client_timeout = aiohttp.ClientTimeout(total=self._config.timeout)
+
+        # If json is not a dict send as data.
+        # This allows the json parameter to be used to pass other
+        # types of data such as async_generator and still have json
+        # returned.
+        if json and not isinstance(json, dict):
+            data = json
+            json = None
+        try:
+            resp = await self.client.post(
+                url,
+                params=params,
+                data=data,
+                json=json,
+                timeout=client_timeout,
+                cookies=cookies_dict,
+                headers=headers,
+                ssl=ssl,
+            )
+            async with resp:
+                peer_cert_der = self._get_peer_cert_der(resp)
+                response_data = await resp.read()
+
+            if resp.status == 200:
+                if return_json:
+                    response_data = json_loads(response_data.decode())
+            else:
+                _LOGGER.debug(
+                    "Device %s received status code %s with response %s",
+                    self._config.host,
+                    resp.status,
+                    str(response_data),
+                )
+                if response_data and return_json:
+                    try:
+                        response_data = json_loads(response_data.decode())
+                    except Exception:
+                        _LOGGER.debug(
+                            "Device %s response could not be parsed as json",
+                            self._config.host,
+                        )
+
+        except (aiohttp.ServerDisconnectedError, aiohttp.ClientOSError) as ex:
+            if not self._wait_between_requests:
+                _LOGGER.debug(
+                    "Device %s received an os error, "
+                    "enabling sequential request delay: %s",
+                    self._config.host,
+                    ex,
+                )
+                self._wait_between_requests = self.WAIT_BETWEEN_REQUESTS_ON_OSERROR
+            self._last_request_time = time.monotonic()
+            raise _ConnectionError(
+                f"Device connection error: {self._config.host}: {ex}", ex
+            ) from ex
+        except (aiohttp.ServerTimeoutError, TimeoutError) as ex:
+            raise TimeoutError(
+                "Unable to query the device, "
+                + f"timed out: {self._config.host}: {ex}",
+                ex,
+            ) from ex
+        except Exception as ex:
+            raise KasaException(
+                f"Unable to query the device: {self._config.host}: {ex}", ex
+            ) from ex
+
+        # For performance only request system time if waiting is enabled
+        if self._wait_between_requests:
+            self._last_request_time = time.monotonic()
+
+        return resp.status, response_data, peer_cert_der
+
+    @staticmethod
+    def _get_peer_cert_der(resp: aiohttp.ClientResponse) -> bytes | None:
+        """Return the peer certificate in DER form when HTTPS is in use."""
+        connection = resp.connection
+        transport = connection.transport if connection is not None else None
+        if transport is None:
+            return None
+
+        ssl_object = cast(
+            ssl.SSLObject | ssl.SSLSocket | None,
+            transport.get_extra_info("ssl_object"),
+        )
+        if ssl_object is None:
+            return None
+
+        try:
+            peer_cert = ssl_object.getpeercert(binary_form=True)
+        except Exception:
+            return None
+        return peer_cert if isinstance(peer_cert, bytes) else None
 
     def get_cookie(self, cookie_name: str) -> str | None:
         """Return the cookie with cookie_name."""

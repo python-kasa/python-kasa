@@ -424,15 +424,20 @@ async def test_discover_single_http_client(discovery_mock, mocker):
     discovery_mock.ip = host
 
     http_client = aiohttp.ClientSession()
+    x: Device | None = None
+    try:
+        x = await Discover.discover_single(host)
 
-    x: Device = await Discover.discover_single(host)
+        assert x.config.uses_http == (discovery_mock.default_port != 9999)
 
-    assert x.config.uses_http == (discovery_mock.default_port != 9999)
-
-    if discovery_mock.default_port != 9999:
-        assert x.protocol._transport._http_client.client != http_client
-        x.config.http_client = http_client
-        assert x.protocol._transport._http_client.client == http_client
+        if discovery_mock.default_port != 9999:
+            assert x.protocol._transport._http_client.client != http_client
+            x.config.http_client = http_client
+            assert x.protocol._transport._http_client.client == http_client
+    finally:
+        if x is not None:
+            await x.disconnect()
+        await http_client.close()
 
 
 async def test_discover_http_client(discovery_mock, mocker):
@@ -441,15 +446,20 @@ async def test_discover_http_client(discovery_mock, mocker):
     discovery_mock.ip = host
 
     http_client = aiohttp.ClientSession()
+    x: Device | None = None
+    try:
+        devices = await Discover.discover(discovery_timeout=0)
+        x = devices[host]
+        assert x.config.uses_http == (discovery_mock.default_port != 9999)
 
-    devices = await Discover.discover(discovery_timeout=0)
-    x: Device = devices[host]
-    assert x.config.uses_http == (discovery_mock.default_port != 9999)
-
-    if discovery_mock.default_port != 9999:
-        assert x.protocol._transport._http_client.client != http_client
-        x.config.http_client = http_client
-        assert x.protocol._transport._http_client.client == http_client
+        if discovery_mock.default_port != 9999:
+            assert x.protocol._transport._http_client.client != http_client
+            x.config.http_client = http_client
+            assert x.protocol._transport._http_client.client == http_client
+    finally:
+        if x is not None:
+            await x.disconnect()
+        await http_client.close()
 
 
 LEGACY_DISCOVER_DATA = {
@@ -716,15 +726,21 @@ async def test_discover_try_connect_all(discovery_mock, mocker):
     mocker.patch.object(dev_class, "update", new=_update)
 
     session = aiohttp.ClientSession()
-    dev = await Discover.try_connect_all(discovery_mock.ip, http_client=session)
+    dev: Device | None = None
+    try:
+        dev = await Discover.try_connect_all(discovery_mock.ip, http_client=session)
 
-    assert dev
-    assert isinstance(dev, dev_class)
-    assert isinstance(dev.protocol, protocol_class)
-    assert isinstance(dev.protocol._transport, transport_class)
-    assert dev.config.uses_http is (transport_class != XorTransport)
-    if transport_class != XorTransport:
-        assert dev.protocol._transport._http_client.client == session
+        assert dev
+        assert isinstance(dev, dev_class)
+        assert isinstance(dev.protocol, protocol_class)
+        assert isinstance(dev.protocol._transport, transport_class)
+        assert dev.config.uses_http is (transport_class != XorTransport)
+        if transport_class != XorTransport:
+            assert dev.protocol._transport._http_client.client == session
+    finally:
+        if dev is not None:
+            await dev.disconnect()
+        await session.close()
 
 
 async def test_discovery_device_repr(discovery_mock, mocker):
