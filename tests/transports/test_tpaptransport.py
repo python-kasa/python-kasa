@@ -159,11 +159,6 @@ def _make_established_transport() -> tuple[tp.TpapTransport, tp.TpapEncryptionSe
     return transport, session
 
 
-def _der_utf8_string(value: str) -> bytes:
-    payload = value.encode()
-    return bytes([0x0C, len(payload)]) + payload
-
-
 def _build_certificate(
     private_key: ec.EllipticCurvePrivateKey | rsa.RSAPrivateKey,
     subject_common_name: str,
@@ -171,7 +166,6 @@ def _build_certificate(
     issuer_private_key: ec.EllipticCurvePrivateKey | rsa.RSAPrivateKey,
     *,
     is_ca: bool = False,
-    othername_mac: str | None = None,
 ) -> x509.Certificate:
     now = datetime.now(UTC).replace(tzinfo=None)
     builder = (
@@ -191,18 +185,6 @@ def _build_certificate(
             critical=True,
         )
     )
-    if othername_mac is not None:
-        builder = builder.add_extension(
-            x509.SubjectAlternativeName(
-                [
-                    x509.OtherName(
-                        tp.TpapTransport.TPAP_DEVICE_MAC_OID,
-                        _der_utf8_string(othername_mac),
-                    )
-                ]
-            ),
-            critical=False,
-        )
     return builder.sign(issuer_private_key, hashes.SHA256())
 
 
@@ -747,7 +729,7 @@ async def test_default_passcode_type_when_pake_is_missing() -> None:
 
 
 @pytest.mark.asyncio
-async def test_tls2_ssl_context_loads_root_ca(
+async def test_tls2_ssl_context_loads_noc_root_ca(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     root_key = ec.generate_private_key(ec.SECP256R1())
@@ -756,7 +738,7 @@ async def test_tls2_ssl_context_loads_root_ca(
 
     monkeypatch.setattr(
         tp.TpapTransport,
-        "TPAP_ROOT_CA_PEM",
+        "TPAP_TLS2_NOC_ROOT_CA_PEM",
         root_pem,
         raising=True,
     )
@@ -771,31 +753,20 @@ async def test_tls2_ssl_context_loads_root_ca(
 
 
 @pytest.mark.asyncio
-async def test_tls2_certificate_validation_uses_device_mac() -> None:
-    root_key = ec.generate_private_key(ec.SECP256R1())
-    leaf_key = ec.generate_private_key(ec.SECP256R1())
-    leaf_cert = _build_certificate(
-        leaf_key,
-        "device",
-        "root",
-        root_key,
-        othername_mac="AA:BB:CC:DD:EE:FF",
-    )
-
+async def test_tls2_ssl_context_can_disable_verification_with_env(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     transport = tp.TpapTransport(config=DeviceConfig("tls-host"))
-    session = transport._encryption_session
-    session._tpap_tls = 2
-    session._device_mac = "AA:BB:CC:DD:EE:FF"
+    transport._encryption_session._tpap_tls = 2
+    monkeypatch.setenv(tp.TpapTransport.TLS2_DISABLE_VERIFY_ENV, "1")
 
-    transport._validate_peer_certificate(
-        leaf_cert.public_bytes(serialization.Encoding.DER)
-    )
+    with caplog.at_level(logging.WARNING):
+        context = transport._create_ssl_context()
 
-    session._device_mac = "11:22:33:44:55:66"
-    with pytest.raises(KasaException, match="Device MAC address does not match"):
-        transport._validate_peer_certificate(
-            leaf_cert.public_bytes(serialization.Encoding.DER)
-        )
+    assert isinstance(context, ssl.SSLContext)
+    assert context.verify_mode == ssl.CERT_NONE
+    assert "TPAP TLS2 certificate verification disabled" in caplog.text
 
 
 @pytest.mark.asyncio
@@ -1191,24 +1162,11 @@ async def test_login_propagates_error_code_handling() -> None:
 
 
 @pytest.mark.asyncio
-async def test_login_tls2_uses_post_with_info_and_validates_peer_certificate(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+async def test_login_tls2_uses_post() -> None:
     transport = tp.TpapTransport(config=DeviceConfig("login-host"))
     session = transport._encryption_session
     session._tpap_tls = 2
-    seen_peer_certs: list[bytes | None] = []
-
-    async def post_with_info(
-        url: URL,
-        *,
-        json: dict[str, Any] | None = None,
-        data: bytes | None = None,
-        headers: dict[str, str] | None = None,
-        ssl: ssl.SSLContext | bool | None = None,
-    ) -> tuple[int, dict[str, Any], bytes | None]:
-        del url, json, data, headers, ssl
-        return 200, {"error_code": 0, "result": {}}, b"peer-cert"
+    session._update_transport_url()
 
     async def post(
         url: URL,
@@ -1220,17 +1178,15 @@ async def test_login_tls2_uses_post_with_info_and_validates_peer_certificate(
         cookies_dict: dict[str, str] | None = None,
         ssl: ssl.SSLContext | bool | None = None,
     ) -> tuple[int, dict[str, Any]]:
-        del url, params, data, json, headers, cookies_dict, ssl
-        raise AssertionError("post() should not be used for TLS2 login")
+        del params, data, cookies_dict, ssl
+        assert url == URL("https://login-host:4433/")
+        assert json == {"method": "login", "params": {}}
+        assert headers == transport.COMMON_HEADERS
+        return 200, {"error_code": 0, "result": {}}
 
-    monkeypatch.setattr(
-        transport, "_validate_peer_certificate", seen_peer_certs.append, raising=True
-    )
-    transport._http_client.post_with_info = post_with_info  # type: ignore[assignment]
     transport._http_client.post = post  # type: ignore[assignment]
 
     assert await session._login({}, step_name="pake_register") == {}
-    assert seen_peer_certs == [b"peer-cert"]
 
 
 @pytest.mark.asyncio
@@ -1806,98 +1762,6 @@ def test_verify_dac_certificate_chain_variants(
         tp.TpapTransport._verify_dac_certificate_chain(dac_cert, None)
 
 
-@pytest.mark.parametrize(
-    ("value", "index", "expected"),
-    [
-        (b"\x03abc", 0, (3, 1)),
-        (b"\x81\x05abcde", 0, (5, 2)),
-    ],
-)
-def test_decode_der_length_valid(
-    value: bytes, index: int, expected: tuple[int, int]
-) -> None:
-    assert tp.TpapTransport._decode_der_length(value, index) == expected
-
-
-@pytest.mark.parametrize(
-    ("value", "index", "message"),
-    [
-        (b"", 0, "Missing DER length"),
-        (b"\x80", 0, "Invalid DER length"),
-        (b"\x82\x01", 0, "Invalid DER length"),
-    ],
-)
-def test_decode_der_length_invalid(value: bytes, index: int, message: str) -> None:
-    with pytest.raises(ValueError, match=message):
-        tp.TpapTransport._decode_der_length(value, index)
-
-
-def test_decode_othername_value_variants() -> None:
-    assert tp.TpapTransport._decode_othername_value(b"") is None
-    assert tp.TpapTransport._decode_othername_value(b"A") == "A"
-    assert tp.TpapTransport._decode_othername_value(b"\xff") is None
-    assert tp.TpapTransport._decode_othername_value(_der_utf8_string("mac")) == "mac"
-    assert tp.TpapTransport._decode_othername_value(b"\x1e\x06\x00m\x00a\x00c") == "mac"
-    assert (
-        tp.TpapTransport._decode_othername_value(b"\xa0\x05" + _der_utf8_string("x"))
-        == "x"
-    )
-    assert tp.TpapTransport._decode_othername_value(b"\x00broken") == "roken"
-    assert tp.TpapTransport._decode_othername_value(b"\x0c\x01\xff") is None
-    assert tp.TpapTransport._decode_othername_value(b"\x1e\x01\xff") is None
-    assert tp.TpapTransport._decode_othername_value(b"\x05\x01\xff") is None
-
-
-@pytest.mark.asyncio
-async def test_extract_tpap_mac_values_and_validation_errors() -> None:
-    key = ec.generate_private_key(ec.SECP256R1())
-    cert_without_san = _build_certificate(key, "leaf", "leaf", key)
-    assert tp.TpapTransport._extract_tpap_mac_values(cert_without_san) == []
-
-    mixed_san_cert = (
-        x509.CertificateBuilder()
-        .subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "leaf")]))
-        .issuer_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "leaf")]))
-        .public_key(key.public_key())
-        .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.now(UTC).replace(tzinfo=None) - timedelta(days=1))
-        .not_valid_after(datetime.now(UTC).replace(tzinfo=None) + timedelta(days=30))
-        .add_extension(
-            x509.BasicConstraints(ca=False, path_length=None),
-            critical=True,
-        )
-        .add_extension(
-            x509.SubjectAlternativeName(
-                [
-                    x509.DNSName("example.com"),
-                    x509.OtherName(
-                        tp.TpapTransport.TPAP_DEVICE_MAC_OID,
-                        _der_utf8_string("AA:BB:CC:DD:EE:FF"),
-                    ),
-                ]
-            ),
-            critical=False,
-        )
-        .sign(key, hashes.SHA256())
-    )
-    assert tp.TpapTransport._extract_tpap_mac_values(mixed_san_cert) == [
-        "AA:BB:CC:DD:EE:FF"
-    ]
-
-    transport = tp.TpapTransport(config=DeviceConfig("tpap-host"))
-    session = transport._encryption_session
-    session._tpap_tls = 1
-    transport._validate_peer_certificate(None)
-
-    session._tpap_tls = 2
-    with pytest.raises(KasaException, match="Missing peer certificate"):
-        transport._validate_peer_certificate(None)
-    session._device_mac = ""
-    with pytest.raises(KasaException, match="Missing device MAC"):
-        transport._validate_peer_certificate(b"abcd")
-    await transport.close()
-
-
 # --------------------------
 # Transport and Payload Handling
 # --------------------------
@@ -2073,24 +1937,9 @@ async def test_send_once_error_paths(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_send_once_tls2_uses_post_with_info_and_validates_peer_certificate(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+async def test_send_once_tls2_uses_post() -> None:
     transport, session = _make_established_transport()
     session._tpap_tls = 2
-    seen_peer_certs: list[bytes | None] = []
-
-    async def post_with_info(
-        url: URL,
-        *,
-        json: dict[str, Any] | None = None,
-        data: bytes | None = None,
-        headers: dict[str, str] | None = None,
-        ssl: ssl.SSLContext | bool | None = None,
-    ) -> tuple[int, bytes, bytes | None]:
-        del url, json, headers, ssl
-        assert data is not None
-        return 200, data, b"peer-cert"
 
     async def post(
         url: URL,
@@ -2102,18 +1951,16 @@ async def test_send_once_tls2_uses_post_with_info_and_validates_peer_certificate
         cookies_dict: dict[str, str] | None = None,
         ssl: ssl.SSLContext | bool | None = None,
     ) -> tuple[int, bytes]:
-        del url, params, data, json, headers, cookies_dict, ssl
-        raise AssertionError("post() should not be used for TLS2 secure requests")
+        del params, json, cookies_dict, ssl
+        assert url == session.ds_url
+        assert headers == {"Content-Type": "application/octet-stream"}
+        assert data is not None
+        return 200, data
 
-    monkeypatch.setattr(
-        transport, "_validate_peer_certificate", seen_peer_certs.append, raising=True
-    )
-    transport._http_client.post_with_info = post_with_info  # type: ignore[assignment]
     transport._http_client.post = post  # type: ignore[assignment]
 
     out = await transport._send_once('{"result": {"ok": true}}')
     assert out["result"]["ok"] is True
-    assert seen_peer_certs == [b"peer-cert"]
 
 
 @pytest.mark.asyncio

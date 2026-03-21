@@ -264,20 +264,6 @@ class TpapEncryptionSession:
         self, body: dict[str, Any]
     ) -> tuple[int, dict[str, Any] | bytes | None]:
         ssl_context = await self._transport.get_ssl_context()
-        if self._tpap_tls == 2:
-            (
-                status,
-                data,
-                peer_cert_der,
-            ) = await self._transport._http_client.post_with_info(
-                self._transport._app_url.with_path("/"),
-                json=body,
-                headers=self._transport.COMMON_HEADERS,
-                ssl=ssl_context,
-            )
-            self._transport._validate_peer_certificate(peer_cert_der)
-            return status, data
-
         return await self._transport._http_client.post(
             self._transport._app_url.with_path("/"),
             json=body,
@@ -1133,6 +1119,7 @@ class TpapTransport(BaseTransport):
     """Transport implementing the TPAP encrypted DS channel."""
 
     USE_SMARTCAM_AUTH = False
+    TLS2_DISABLE_VERIFY_ENV = "KASA_TEST_DISABLE_TPAP_TLS2_VERIFY"
     DEFAULT_PORT: int = 80
     DEFAULT_HTTPS_PORT: int = 4433
     CIPHERS = ":".join(
@@ -1168,7 +1155,19 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
 5rbc0IIvD6MCIQCZuGGssu4Ygt2V8Vr0QF2fO9wxfNB3aRRMYQ+6lMrLGA==
 -----END CERTIFICATE-----
 """.strip()
-    TPAP_DEVICE_MAC_OID = x509.ObjectIdentifier("1.0.15961.13.375")
+    TPAP_TLS2_NOC_ROOT_CA_PEM = """
+-----BEGIN CERTIFICATE-----
+MIIBoTCCAUagAwIBAgIRALrLhIfqPp19zqEruo1iTFswCgYIKoZIzj0EAwIwIjEM
+MAoGA1UECxMDUkNBMRIwEAYDVQQDEwkxNzk2NjU4MDUwHhcNMjUwNjI4MjAzNzA2
+WhcNMzUwNjI4MjAzNzA2WjAiMQwwCgYDVQQLEwNSQ0ExEjAQBgNVBAMTCTE3OTY2
+NTgwNTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABBrQJmMLm4rebYh7dd0iV+go
+ZfjDRaUgJGOqbJAzAN3iwFgccm28OyWvQM1WmG+vr9RWI8t1BdQuNYM5LjmUVKKj
+XTBbMAwGA1UdEwQFMAMBAf8wCwYDVR0PBAQDAgEGMB0GA1UdDgQWBBTxpqV3pN0D
+CCh+htC5F4v6KkgcpjAfBgNVHSMEGDAWgBTxpqV3pN0DCCh+htC5F4v6KkgcpjAK
+BggqhkjOPQQDAgNJADBGAiEAwNMLYH14PVsMUdvREaoZCKJKwvulpno6z8CMP+jq
+6FECIQDXHAka8wAnijBG/CRPGG3WQHHCvF87PwbxOqwC5ekfBg==
+-----END CERTIFICATE-----
+""".strip()
 
     def __init__(self, *, config: DeviceConfig) -> None:
         """Initialize HTTP client and state."""
@@ -1320,92 +1319,6 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
             ) from exc
 
     @staticmethod
-    def _decode_der_length(value: bytes, index: int) -> tuple[int, int]:
-        if index >= len(value):
-            raise ValueError("Missing DER length")
-        first = value[index]
-        if first & 0x80 == 0:
-            return first, index + 1
-        num_octets = first & 0x7F
-        if num_octets == 0 or index + 1 + num_octets > len(value):
-            raise ValueError("Invalid DER length")
-        length = int.from_bytes(value[index + 1 : index + 1 + num_octets], "big")
-        return length, index + 1 + num_octets
-
-    @classmethod
-    def _decode_othername_value(cls, value: bytes) -> str | None:
-        if not value:
-            return None
-
-        try:
-            tag = value[0]
-            length, payload_index = cls._decode_der_length(value, 1)
-            payload = value[payload_index : payload_index + length]
-        except ValueError:
-            try:
-                return value.decode("utf-8")
-            except UnicodeDecodeError:
-                return None
-
-        if tag in (0x0C, 0x13, 0x16):
-            try:
-                return payload.decode("utf-8")
-            except UnicodeDecodeError:
-                return None
-        if tag == 0x1E:
-            try:
-                return payload.decode("utf-16-be")
-            except UnicodeDecodeError:
-                return None
-        if tag == 0x04 or (tag & 0xE0) == 0xA0:
-            return cls._decode_othername_value(payload)
-        try:
-            return payload.decode("utf-8")
-        except UnicodeDecodeError:
-            return None
-
-    @classmethod
-    def _extract_tpap_mac_values(cls, certificate: x509.Certificate) -> list[str]:
-        try:
-            subject_alt_name = certificate.extensions.get_extension_for_class(
-                x509.SubjectAlternativeName
-            ).value
-        except x509.ExtensionNotFound:
-            return []
-
-        values: list[str] = []
-        for general_name in subject_alt_name:
-            if (
-                isinstance(general_name, x509.OtherName)
-                and general_name.type_id == cls.TPAP_DEVICE_MAC_OID
-                and (decoded := cls._decode_othername_value(general_name.value))
-            ):
-                values.append(decoded)
-        return values
-
-    @staticmethod
-    def _normalize_mac(value: str) -> str:
-        return "".join(char for char in value if char.isalnum()).upper()
-
-    def _validate_peer_certificate(self, peer_cert_der: bytes | None) -> None:
-        if self._encryption_session.tls_mode != 2:
-            return
-        if not peer_cert_der:
-            raise KasaException("Missing peer certificate for TPAP TLS verification")
-
-        device_mac = self._encryption_session.device_mac
-        if not device_mac:
-            raise KasaException("Missing device MAC for TPAP TLS verification")
-
-        certificate = x509.load_der_x509_certificate(peer_cert_der)
-        normalized_device_mac = self._normalize_mac(device_mac)
-        for certificate_mac in self._extract_tpap_mac_values(certificate):
-            if normalized_device_mac in self._normalize_mac(certificate_mac):
-                return
-
-        raise KasaException("Device MAC address does not match TPAP certificate")
-
-    @staticmethod
     def _require_response_dict(
         response_data: dict[str, Any] | bytes | None, *, context: str
     ) -> dict[str, Any]:
@@ -1458,8 +1371,20 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
             context.verify_mode = ssl.CERT_NONE
             return context
 
+        disable_verify = os.environ.get(
+            self.TLS2_DISABLE_VERIFY_ENV, ""
+        ).strip().lower() in {"1", "true", "yes"}
+        if disable_verify:
+            _LOGGER.warning(
+                "TPAP TLS2 certificate verification disabled for %s via %s",
+                self._host,
+                self.TLS2_DISABLE_VERIFY_ENV,
+            )
+            context.verify_mode = ssl.CERT_NONE
+            return context
+
         context.verify_mode = ssl.CERT_REQUIRED
-        context.load_verify_locations(cadata=self.TPAP_ROOT_CA_PEM)
+        context.load_verify_locations(cadata=self.TPAP_TLS2_NOC_ROOT_CA_PEM)
         return context
 
     async def send(self, request: str) -> dict[str, Any]:
@@ -1525,16 +1450,6 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
         headers: dict[str, str],
     ) -> tuple[int, dict[str, Any] | bytes | None]:
         ssl_context = await self.get_ssl_context()
-        if self._encryption_session.tls_mode == 2:
-            status, data, peer_cert_der = await self._http_client.post_with_info(
-                ds_url,
-                data=payload,
-                headers=headers,
-                ssl=ssl_context,
-            )
-            self._validate_peer_certificate(peer_cert_der)
-            return status, data
-
         return await self._http_client.post(
             ds_url,
             data=payload,
