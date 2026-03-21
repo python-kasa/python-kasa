@@ -482,6 +482,21 @@ class Clean(SmartModule):
         return self.data["getMapInfo"]["current_map_id"]
 
     @property
+    def current_map_name(self) -> str | None:
+        """Return the name of the currently active map, or ``None``."""
+        map_info = self.data["getMapInfo"]
+        current_id = map_info["current_map_id"]
+        for m in map_info.get("map_list", []):
+            if m.get("map_id") == current_id:
+                if raw_name := m.get("map_name"):
+                    try:
+                        return base64.b64decode(raw_name).decode()
+                    except Exception:
+                        return raw_name
+                return None
+        return None
+
+    @property
     def clean_type(self) -> CleanMode | None:
         """Return the active cleaning mode, or ``None`` if unavailable."""
         cs = self.data.get("getCleanStatus")

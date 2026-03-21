@@ -242,6 +242,44 @@ async def test_invalid_settings(
 
 
 @clean
+async def test_current_map_name(dev: SmartDevice, mocker: MockerFixture):
+    """Test current_map_name decodes the base64 name of the active map."""
+    import base64
+
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+
+    map_info = {
+        "current_map_id": 42,
+        "map_list": [
+            {"map_id": 42, "map_name": base64.b64encode(b"Upstairs").decode()},
+            {"map_id": 99, "map_name": base64.b64encode(b"Downstairs").decode()},
+        ],
+    }
+    mocker.patch.object(
+        type(clean),
+        "data",
+        new_callable=mocker.PropertyMock,
+        return_value={**clean.data, "getMapInfo": map_info},
+    )
+    assert clean.current_map_name == "Upstairs"
+
+
+@clean
+async def test_current_map_name_missing(dev: SmartDevice, mocker: MockerFixture):
+    """Test current_map_name returns None when map_list is empty."""
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+
+    map_info = {"current_map_id": 0, "map_list": []}
+    mocker.patch.object(
+        type(clean),
+        "data",
+        new_callable=mocker.PropertyMock,
+        return_value={**clean.data, "getMapInfo": map_info},
+    )
+    assert clean.current_map_name is None
+
+
+@clean
 async def test_clean_rooms(dev: SmartDevice, mocker: MockerFixture):
     """Test clean_rooms sends the correct setSwitchClean payload."""
     clean = next(get_parent_and_child_modules(dev, Module.Clean))
