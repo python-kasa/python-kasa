@@ -81,19 +81,22 @@ async def test_httpclient_errors(mocker, error, error_raises, error_message, moc
 
     conn = mocker.patch.object(aiohttp.ClientSession, "post", side_effect=side_effect)
     client = HttpClient(DeviceConfig(host))
-    # Exceptions with parameters print with double quotes, without use single quotes
-    full_msg = (
-        re.escape("(")
-        + "['\"]"
-        + re.escape(f"{error_message}{host}: {error}")
-        + "['\"]"
-        + re.escape(f", {repr(error)})")
-    )
-    with pytest.raises(error_raises, match=error_message) as exc_info:
-        await client.post("http://foobar")
+    try:
+        # Exceptions with parameters print with double quotes, without use single quotes
+        full_msg = (
+            re.escape("(")
+            + "['\"]"
+            + re.escape(f"{error_message}{host}: {error}")
+            + "['\"]"
+            + re.escape(f", {repr(error)})")
+        )
+        with pytest.raises(error_raises, match=error_message) as exc_info:
+            await client.post("http://foobar")
 
-    assert re.match(full_msg, str(exc_info.value))
-    if mock_read:
-        assert mock_response.call_count == 1
-    else:
-        assert conn.call_count == 1
+        assert re.match(full_msg, str(exc_info.value))
+        if mock_read:
+            assert mock_response.call_count == 1
+        else:
+            assert conn.call_count == 1
+    finally:
+        await client.close()

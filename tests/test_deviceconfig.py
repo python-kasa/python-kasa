@@ -34,13 +34,17 @@ CAMERA_AES_CONFIG = DeviceConfig(
 
 async def test_serialization():
     """Test device config serialization."""
-    config = DeviceConfig(host="Foo", http_client=aiohttp.ClientSession())
-    config_dict = config.to_dict()
-    config_json = json_dumps(config_dict)
-    config2_dict = json_loads(config_json)
-    config2 = DeviceConfig.from_dict(config2_dict)
-    assert config == config2
-    assert config.to_dict_control_credentials() == config.to_dict()
+    http_client = aiohttp.ClientSession()
+    try:
+        config = DeviceConfig(host="Foo", http_client=http_client)
+        config_dict = config.to_dict()
+        config_json = json_dumps(config_dict)
+        config2_dict = json_loads(config_json)
+        config2 = DeviceConfig.from_dict(config2_dict)
+        assert config == config2
+        assert config.to_dict_control_credentials() == config.to_dict()
+    finally:
+        await http_client.close()
 
 
 @pytest.mark.parametrize(
@@ -96,41 +100,53 @@ def test_deserialization_errors(input_value, expected_error):
 
 
 async def test_credentials_hash():
-    config = DeviceConfig(
-        host="Foo",
-        http_client=aiohttp.ClientSession(),
-        credentials=Credentials("foo", "bar"),
-    )
-    config_dict = config.to_dict_control_credentials(credentials_hash="credhash")
-    config_json = json_dumps(config_dict)
-    config2_dict = json_loads(config_json)
-    config2 = DeviceConfig.from_dict(config2_dict)
-    assert config2.credentials_hash == "credhash"
-    assert config2.credentials is None
+    http_client = aiohttp.ClientSession()
+    try:
+        config = DeviceConfig(
+            host="Foo",
+            http_client=http_client,
+            credentials=Credentials("foo", "bar"),
+        )
+        config_dict = config.to_dict_control_credentials(credentials_hash="credhash")
+        config_json = json_dumps(config_dict)
+        config2_dict = json_loads(config_json)
+        config2 = DeviceConfig.from_dict(config2_dict)
+        assert config2.credentials_hash == "credhash"
+        assert config2.credentials is None
+    finally:
+        await http_client.close()
 
 
 async def test_blank_credentials_hash():
-    config = DeviceConfig(
-        host="Foo",
-        http_client=aiohttp.ClientSession(),
-        credentials=Credentials("foo", "bar"),
-    )
-    config_dict = config.to_dict_control_credentials(credentials_hash="")
-    config_json = json_dumps(config_dict)
-    config2_dict = json_loads(config_json)
-    config2 = DeviceConfig.from_dict(config2_dict)
-    assert config2.credentials_hash is None
-    assert config2.credentials is None
+    http_client = aiohttp.ClientSession()
+    try:
+        config = DeviceConfig(
+            host="Foo",
+            http_client=http_client,
+            credentials=Credentials("foo", "bar"),
+        )
+        config_dict = config.to_dict_control_credentials(credentials_hash="")
+        config_json = json_dumps(config_dict)
+        config2_dict = json_loads(config_json)
+        config2 = DeviceConfig.from_dict(config2_dict)
+        assert config2.credentials_hash is None
+        assert config2.credentials is None
+    finally:
+        await http_client.close()
 
 
 async def test_exclude_credentials():
-    config = DeviceConfig(
-        host="Foo",
-        http_client=aiohttp.ClientSession(),
-        credentials=Credentials("foo", "bar"),
-    )
-    config_dict = config.to_dict_control_credentials(exclude_credentials=True)
-    config_json = json_dumps(config_dict)
-    config2_dict = json_loads(config_json)
-    config2 = DeviceConfig.from_dict(config2_dict)
-    assert config2.credentials is None
+    http_client = aiohttp.ClientSession()
+    try:
+        config = DeviceConfig(
+            host="Foo",
+            http_client=http_client,
+            credentials=Credentials("foo", "bar"),
+        )
+        config_dict = config.to_dict_control_credentials(exclude_credentials=True)
+        config_json = json_dumps(config_dict)
+        config2_dict = json_loads(config_json)
+        config2 = DeviceConfig.from_dict(config2_dict)
+        assert config2.credentials is None
+    finally:
+        await http_client.close()

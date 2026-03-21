@@ -1,5 +1,5 @@
 import base64
-from unittest.mock import ANY
+from unittest.mock import ANY, patch
 
 import aiohttp
 import pytest
@@ -16,6 +16,24 @@ KASACAM_REQUEST_PLAINTEXT = '{"smartlife.cam.ipcamera.dateTime":{"get_status":{}
 KASACAM_RESPONSE_ENCRYPTED = "0PKG74LnnfKc+dvhw5bCgaycqZOjk7Gdv96syaiKsJLTvtupwKPC7aPGse632KrB48/tiPiX9JzDsNW2lK6fqZCgmKuZoZGh3A=="
 KASACAM_RESPONSE_ERROR = '{"smartlife.cam.ipcamera.cloud": {"get_inf": {"err_code": -10008, "err_msg": "Unsupported API call."}}}'
 KASA_DEFAULT_CREDENTIALS_HASH = "YWRtaW46MjEyMzJmMjk3YTU3YTVhNzQzODk0YTBlNGE4MDFmYzM="
+
+
+@pytest.fixture(autouse=True)
+async def _close_created_transports():
+    """Ensure linkie transports close their internal HttpClient sessions."""
+    created_transports = []
+
+    def _tracked_init(self, *args, **kwargs):
+        original_init(self, *args, **kwargs)
+        created_transports.append(self)
+
+    original_init = LinkieTransportV2.__init__
+    with patch.object(LinkieTransportV2, "__init__", _tracked_init):
+        yield
+
+    while created_transports:
+        transport = created_transports.pop()
+        await transport.close()
 
 
 async def test_working(mocker):

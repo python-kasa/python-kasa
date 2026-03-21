@@ -4,6 +4,7 @@ import re
 import secrets
 import time
 from contextlib import nullcontext as does_not_raise
+from unittest.mock import patch
 
 import aiohttp
 import pytest
@@ -32,6 +33,42 @@ DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
 
 # Transport tests are not designed for real devices
 pytestmark = [pytest.mark.requires_dummy]
+
+
+@pytest.fixture(autouse=True)
+async def _close_created_transports():
+    """Ensure transport-owned http sessions are closed even on error paths."""
+    created_transports = []
+
+    def _track_transport_init(original_init):
+        def _wrapped(self, *args, **kwargs):
+            original_init(self, *args, **kwargs)
+            created_transports.append(self)
+
+        return _wrapped
+
+    with (
+        patch.object(
+            AesTransport,
+            "__init__",
+            _track_transport_init(AesTransport.__init__),
+        ),
+        patch.object(
+            KlapTransport,
+            "__init__",
+            _track_transport_init(KlapTransport.__init__),
+        ),
+        patch.object(
+            KlapTransportV2,
+            "__init__",
+            _track_transport_init(KlapTransportV2.__init__),
+        ),
+    ):
+        yield
+
+    while created_transports:
+        transport = created_transports.pop()
+        await transport.close()
 
 
 class _mock_response:
@@ -411,7 +448,6 @@ async def test_handshake(
 
     config = DeviceConfig("127.0.0.1", credentials=client_credentials)
     protocol = IotProtocol(transport=transport_class(config=config))
-    protocol._transport.http_client = aiohttp.ClientSession()
 
     response_status = 200
     await protocol._transport.perform_handshake()
@@ -459,12 +495,15 @@ async def test_query(mocker):
     config = DeviceConfig("127.0.0.1", credentials=client_credentials)
     protocol = IotProtocol(transport=KlapTransport(config=config))
 
-    for _ in range(10):
-        resp = await protocol.query({})
-        assert resp == {"great": "success"}
-        # Check the protocol is incrementing the sequence number
-        assert last_seq is None or last_seq + 1 == seq
-        last_seq = seq
+    try:
+        for _ in range(10):
+            resp = await protocol.query({})
+            assert resp == {"great": "success"}
+            # Check the protocol is incrementing the sequence number
+            assert last_seq is None or last_seq + 1 == seq
+            last_seq = seq
+    finally:
+        await protocol.close()
 
 
 @pytest.mark.parametrize(

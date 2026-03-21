@@ -39,6 +39,22 @@ from kasa.transports.sslaestransport import (
 # SslAesTransport use a socket to get it's own ip address
 pytestmark = [pytest.mark.requires_dummy, pytest.mark.enable_socket]
 
+
+@pytest.fixture(autouse=True)
+async def _close_created_transports(monkeypatch):
+    transports: list[SslAesTransport] = []
+    original_init = SslAesTransport.__init__
+
+    def _tracking_init(self, *args, **kwargs):
+        original_init(self, *args, **kwargs)
+        transports.append(self)
+
+    monkeypatch.setattr(SslAesTransport, "__init__", _tracking_init)
+    yield
+    for transport in transports:
+        await transport.close()
+
+
 MOCK_ADMIN_USER = get_default_credentials(DEFAULT_CREDENTIALS["TAPOCAMERA"]).username
 MOCK_PWD = "correct_pwd"  # noqa: S105
 MOCK_USER = "mock@example.com"
