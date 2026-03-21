@@ -88,8 +88,8 @@ class CleanMode(IntEnum):
 class CleanAreaSettings:
     """Per-area cleaning settings shared by rooms and zones."""
 
-    #: Suction power level (matches :class:`FanSpeed` values).
-    suction: int = 0
+    #: Suction power level, or ``None`` when not configured per-area.
+    suction: FanSpeed | None = None
     #: Water level for mopping.
     cistern: int = 0
     #: Number of cleaning passes.
@@ -546,6 +546,11 @@ class Clean(SmartModule):
         rooms: list[RoomInfo] = []
         for area in resp.get("area_list", []):
             if area.get("type") != AreaType.Room:
+                _LOGGER.debug(
+                    "Skipping non-room area: type=%s, id=%s",
+                    area.get("type"),
+                    area.get("id"),
+                )
                 continue
             name = None
             if raw_name := area.get("name"):
@@ -553,12 +558,14 @@ class Clean(SmartModule):
                     name = base64.b64decode(raw_name).decode()
                 except Exception:
                     name = raw_name
+
+            suction_val = area.get("suction")
             rooms.append(
                 RoomInfo(
                     id=area["id"],
                     name=name,
                     color=area.get("color", 0),
-                    suction=area.get("suction", 0),
+                    suction=FanSpeed(suction_val) if suction_val else None,
                     cistern=area.get("cistern", 0),
                     clean_number=area.get("clean_number", 0),
                 )

@@ -7,7 +7,7 @@ from pytest_mock import MockerFixture
 
 from kasa import Module
 from kasa.smart import SmartDevice
-from kasa.smart.modules.clean import CleanMode, ErrorCode, RoomInfo, Status
+from kasa.smart.modules.clean import CleanMode, ErrorCode, FanSpeed, RoomInfo, Status
 
 from ...device_fixtures import get_parent_and_child_modules, parametrize
 
@@ -375,8 +375,10 @@ async def test_get_rooms(dev: SmartDevice, mocker: MockerFixture):
     assert rooms[0].id == 2
     assert rooms[0].name == "Kitchen"
     assert rooms[0].color == 1
+    assert rooms[0].suction is FanSpeed.Standard
     assert rooms[1].id == 3
     assert rooms[1].name == "Living Room"
+    assert rooms[1].suction is FanSpeed.Turbo
 
 
 @clean
@@ -417,6 +419,8 @@ async def test_get_rooms_no_name(dev: SmartDevice, mocker: MockerFixture):
     assert len(rooms) == 1
     assert rooms[0].id == 5
     assert rooms[0].name is None
+    assert rooms[0].suction is None
+
 
 
 @clean
