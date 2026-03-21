@@ -459,12 +459,15 @@ async def test_query(mocker):
     config = DeviceConfig("127.0.0.1", credentials=client_credentials)
     protocol = IotProtocol(transport=KlapTransport(config=config))
 
-    for _ in range(10):
-        resp = await protocol.query({})
-        assert resp == {"great": "success"}
-        # Check the protocol is incrementing the sequence number
-        assert last_seq is None or last_seq + 1 == seq
-        last_seq = seq
+    try:
+        for _ in range(10):
+            resp = await protocol.query({})
+            assert resp == {"great": "success"}
+            # Check the protocol is incrementing the sequence number
+            assert last_seq is None or last_seq + 1 == seq
+            last_seq = seq
+    finally:
+        await protocol.close()
 
 
 @pytest.mark.parametrize(

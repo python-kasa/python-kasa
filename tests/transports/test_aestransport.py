@@ -38,6 +38,23 @@ pytestmark = [pytest.mark.requires_dummy]
 DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
 
 key = b"8\x89\x02\xfa\xf5Xs\x1c\xa1 H\x9a\x82\xc7\xd9\t"
+
+
+@pytest.fixture(autouse=True)
+async def _close_created_transports(monkeypatch):
+    transports: list[AesTransport] = []
+    original_init = AesTransport.__init__
+
+    def _tracking_init(self, *args, **kwargs):
+        original_init(self, *args, **kwargs)
+        transports.append(self)
+
+    monkeypatch.setattr(AesTransport, "__init__", _tracking_init)
+    yield
+    for transport in transports:
+        await transport.close()
+
+
 iv = b"9=\xf8\x1bS\xcd0\xb5\x89i\xba\xfd^9\x9f\xfa"
 KEY_IV = key + iv
 

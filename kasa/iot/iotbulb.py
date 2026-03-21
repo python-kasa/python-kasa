@@ -107,7 +107,7 @@ class IotBulb(IotDevice):
 
     All changes to the device are done using awaitable methods,
     which will not change the cached values,
-    so you must await :func:`update()` to fetch updates values from the device.
+    so you must await :func:`update()` to fetch updated values from the device.
 
     Errors reported by the device are raised as
     :class:`KasaException <kasa.exceptions.KasaException>`,
@@ -118,7 +118,7 @@ class IotBulb(IotDevice):
         >>> bulb = IotBulb("127.0.0.1")
         >>> asyncio.run(bulb.update())
         >>> print(bulb.alias)
-        Bulb2
+        Bedroom Bulb
 
         Bulbs, like any other supported devices, can be turned on and off:
 
@@ -128,43 +128,51 @@ class IotBulb(IotDevice):
         >>> print(bulb.is_on)
         True
 
-        You can use the ``is_``-prefixed properties to check for supported features:
+        Get the light module to interact with light-specific features:
 
-        >>> bulb.is_dimmable
+        >>> light = bulb.modules[Module.Light]
+
+        You can use the :func:`has_feature` method to check for supported light features:
+
+        >>> light.has_feature("brightness")
         True
-        >>> bulb.is_color
+        >>> light.has_feature("hsv")
         True
-        >>> bulb.is_variable_color_temp
+        >>> light.has_feature("color_temp")
         True
 
         All known bulbs support changing the brightness:
 
-        >>> bulb.brightness
+        >>> light.brightness
         30
-        >>> asyncio.run(bulb.set_brightness(50))
+        >>> asyncio.run(light.set_brightness(50))
         >>> asyncio.run(bulb.update())
-        >>> bulb.brightness
+        >>> light.brightness
         50
 
         Bulbs supporting color temperature can be queried for the supported range:
 
-        >>> bulb.valid_temperature_range
-        ColorTempRange(min=2500, max=9000)
-        >>> asyncio.run(bulb.set_color_temp(3000))
+        >>> if color_temp_feature := light.get_feature("color_temp"):
+        >>>     print(
+        >>>         f"{color_temp_feature.minimum_value}, "
+        >>>         f"{color_temp_feature.maximum_value}"
+        >>>     )
+        2500, 9000
+        >>> asyncio.run(light.set_color_temp(3000))
         >>> asyncio.run(bulb.update())
-        >>> bulb.color_temp
+        >>> light.color_temp
         3000
 
         Color bulbs can be adjusted by passing hue, saturation and value:
 
-        >>> asyncio.run(bulb.set_hsv(180, 100, 80))
+        >>> asyncio.run(light.set_hsv(180, 100, 80))
         >>> asyncio.run(bulb.update())
-        >>> bulb.hsv
+        >>> light.hsv
         HSV(hue=180, saturation=100, value=80)
 
         If you don't want to use the default transitions,
         you can pass `transition` in milliseconds.
-        All methods changing the state of the device support this parameter:
+        All methods changing the light state support this parameter:
 
         * :func:`turn_on`
         * :func:`turn_off`
@@ -176,24 +184,26 @@ class IotBulb(IotDevice):
         but silently ignore the parameter.
         The following changes the brightness over a period of 10 seconds:
 
-        >>> asyncio.run(bulb.set_brightness(100, transition=10_000))
+        >>> asyncio.run(light.set_brightness(100, transition=10_000))
 
-        Bulb configuration presets can be accessed using the :func:`presets` property:
+        Bulb configuration presets can be accessed using the light preset module:
 
-        >>> [ preset.to_dict() for preset in bulb.presets }
-        [{'brightness': 50, 'hue': 0, 'saturation': 0, 'color_temp': 2700, 'index': 0}, {'brightness': 100, 'hue': 0, 'saturation': 75, 'color_temp': 0, 'index': 1}, {'brightness': 100, 'hue': 120, 'saturation': 75, 'color_temp': 0, 'index': 2}, {'brightness': 100, 'hue': 240, 'saturation': 75, 'color_temp': 0, 'index': 3}]
+        >>> light_preset = bulb.modules[Module.LightPreset]
+        >>> light_preset.preset_states_list[0]
+        IotLightPreset(light_on=None, brightness=50, hue=0, saturation=0, color_temp=2700, transition=None)
 
-        To modify an existing preset, pass :class:`~kasa.interfaces.light.LightPreset`
-        instance to :func:`save_preset` method:
+        To modify an existing preset, update one of the entries in
+        ``preset_states_list`` and pass it to
+        :func:`save_preset`:
 
-        >>> preset = bulb.presets[0]
+        >>> preset = light_preset.preset_states_list[0]
         >>> preset.brightness
         50
         >>> preset.brightness = 100
-        >>> asyncio.run(bulb.save_preset(preset))
+        >>> asyncio.run(light_preset.save_preset("Light preset 1", preset))
         >>> asyncio.run(bulb.update())
-        >>> bulb.presets[0].brightness
-        100
+        >>> light_preset.preset_states_list[0]
+        IotLightPreset(light_on=None, brightness=100, hue=0, saturation=0, color_temp=2700, transition=None)
 
     """  # noqa: E501
 

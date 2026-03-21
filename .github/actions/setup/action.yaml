@@ -44,7 +44,7 @@ runs:
     - name: pre-commit Cache
       id: pre-commit-cache
       if: inputs.cache-pre-commit == 'true'
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ~/.cache/pre-commit/
         key: cache-${{ inputs.cache-version }}-${{ runner.os }}-${{ runner.arch }}-pre-commit-${{ steps.pre-commit-version.outputs.pre-commit-version }}-python-${{ inputs.python-version }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
