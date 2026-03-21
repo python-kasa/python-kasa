@@ -125,6 +125,9 @@ def pytest_testnodedown(node, error):
         pytest.client_session_leaks.extend(
             _ClientSessionLeak(**leak) for leak in worker_leaks
         )
+    worker_missing_methods = node.workeroutput.get("fixtures_missing_methods", {})
+    for fixture, methods in worker_missing_methods.items():
+        pytest.fixtures_missing_methods.setdefault(fixture, set()).update(methods)
 
 
 def pytest_sessionfinish(session, exitstatus):
@@ -140,6 +143,12 @@ def pytest_sessionfinish(session, exitstatus):
             }
             for leak in getattr(pytest, "client_session_leaks", [])
         ]
+        config.workeroutput["fixtures_missing_methods"] = {
+            fixture: sorted(methods)
+            for fixture, methods in getattr(
+                pytest, "fixtures_missing_methods", {}
+            ).items()
+        }
         return
 
     if pytest.client_session_leaks:
