@@ -133,18 +133,18 @@
         "auto_change_map": true
     },
     "getBatteryInfo": {
-        "battery_percentage": 98
+        "battery_percentage": 97
     },
     "getCarpetClean": {
-        "carpet_clean_prefer": "normal"
+        "carpet_clean_prefer": "boost"
     },
     "getChildLockInfo": {
         "child_lock_status": false
     },
     "getCleanAttr": {
-        "cistern": 0,
-        "clean_number": 3,
-        "suction": 1
+        "cistern": 2,
+        "clean_number": 1,
+        "suction": 2
     },
     "getCleanInfo": {
         "clean_area": 0,
@@ -152,226 +152,44 @@
     },
     "getCleanRecords": {
         "lastest_day_record": [
-            1772315795,
-            40,
-            29,
-            12
+            1774214264,
+            4,
+            4,
+            1
         ],
         "record_list": [
             {
-                "clean_area": 10,
-                "clean_time": 15,
+                "clean_area": 4,
+                "clean_time": 4,
                 "dust_collection": false,
-                "error": 1,
+                "error": 0,
                 "info_num": 0,
-                "map_id": 1713717508,
+                "map_id": 1774213754,
                 "message": 0,
                 "record_index": 0,
                 "start_type": 1,
-                "task_type": 0,
-                "timestamp": 1772265624
-            },
-            {
-                "clean_area": 3,
-                "clean_time": 3,
-                "dust_collection": false,
-                "error": 1,
-                "info_num": 0,
-                "map_id": 1713717508,
-                "message": 0,
-                "record_index": 1,
-                "start_type": 1,
-                "task_type": 2,
-                "timestamp": 1772293758
-            },
-            {
-                "clean_area": 1,
-                "clean_time": 1,
-                "dust_collection": false,
-                "error": 1,
-                "info_num": 0,
-                "map_id": 1713717508,
-                "message": 0,
-                "record_index": 2,
-                "start_type": 1,
-                "task_type": 2,
-                "timestamp": 1772293875
-            },
-            {
-                "clean_area": 1,
-                "clean_time": 2,
-                "dust_collection": false,
-                "error": 1,
-                "info_num": 1,
-                "map_id": 1713717508,
-                "message": 0,
-                "record_index": 3,
-                "start_type": 1,
                 "task_type": 3,
-                "timestamp": 1772295310
-            },
-            {
-                "clean_area": 3,
-                "clean_time": 4,
-                "dust_collection": false,
-                "error": 3,
-                "info_num": 0,
-                "map_id": 1713717508,
-                "message": 0,
-                "record_index": 4,
-                "start_type": 1,
-                "task_type": 3,
-                "timestamp": 1772296949
-            },
-            {
-                "clean_area": 2,
-                "clean_time": 2,
-                "dust_collection": false,
-                "error": 1,
-                "info_num": 0,
-                "map_id": 1713717508,
-                "message": 0,
-                "record_index": 5,
-                "start_type": 1,
-                "task_type": 4,
-                "timestamp": 1772298153
-            },
-            {
-                "clean_area": 2,
-                "clean_time": 2,
-                "dust_collection": false,
-                "error": 1,
-                "info_num": 0,
-                "map_id": 1713717508,
-                "message": 0,
-                "record_index": 6,
-                "start_type": 1,
-                "task_type": 1,
-                "timestamp": 1772298977
-            },
-            {
-                "clean_area": 1,
-                "clean_time": 2,
-                "dust_collection": false,
-                "error": 0,
-                "info_num": 0,
-                "map_id": 1713717508,
-                "message": 0,
-                "record_index": 7,
-                "start_type": 1,
-                "task_type": 4,
-                "timestamp": 1772299578
-            },
-            {
-                "clean_area": 2,
-                "clean_time": 1,
-                "dust_collection": false,
-                "error": 1,
-                "info_num": 0,
-                "map_id": 1713717508,
-                "message": 0,
-                "record_index": 8,
-                "start_type": 1,
-                "task_type": 0,
-                "timestamp": 1772300797
-            },
-            {
-                "clean_area": 1,
-                "clean_time": 2,
-                "dust_collection": false,
-                "error": 1,
-                "info_num": 0,
-                "map_id": 1713717508,
-                "message": 0,
-                "record_index": 9,
-                "start_type": 1,
-                "task_type": 3,
-                "timestamp": 1772310575
-            },
-            {
-                "clean_area": 2,
-                "clean_time": 4,
-                "dust_collection": false,
-                "error": 1,
-                "info_num": 0,
-                "map_id": 1713717508,
-                "message": 0,
-                "record_index": 10,
-                "start_type": 1,
-                "task_type": 3,
-                "timestamp": 1772310837
-            },
-            {
-                "clean_area": 1,
-                "clean_time": 2,
-                "dust_collection": false,
-                "error": 1,
-                "info_num": 0,
-                "map_id": 1713717508,
-                "message": 0,
-                "record_index": 11,
-                "start_type": 1,
-                "task_type": 3,
-                "timestamp": 1772315795
-            },
-            {
-                "clean_area": 15,
-                "clean_time": 18,
-                "dust_collection": false,
-                "error": 0,
-                "info_num": 1,
-                "map_id": 1713717508,
-                "message": 0,
-                "record_index": 12,
-                "start_type": 1,
-                "task_type": 3,
-                "timestamp": 1768917762
-            },
-            {
-                "clean_area": 16,
-                "clean_time": 19,
-                "dust_collection": false,
-                "error": 2,
-                "info_num": 1,
-                "map_id": 1713717508,
-                "message": 0,
-                "record_index": 13,
-                "start_type": 0,
-                "task_type": 0,
-                "timestamp": 1769426609
-            },
-            {
-                "clean_area": 10,
-                "clean_time": 18,
-                "dust_collection": false,
-                "error": 2,
-                "info_num": 1,
-                "map_id": 1713717508,
-                "message": 0,
-                "record_index": 14,
-                "start_type": 0,
-                "task_type": 0,
-                "timestamp": 1769444881
+                "timestamp": 1774214264
             }
         ],
-        "record_list_num": 15,
-        "total_area": 10739,
-        "total_number": 687,
-        "total_time": 13843
+        "record_list_num": 1,
+        "total_area": 4,
+        "total_number": 1,
+        "total_time": 4
     },
     "getCleanStatus": {
-        "clean_status": 0,
+        "clean_status": 3,
         "is_mapping": false,
-        "is_working": false
+        "is_working": true
     },
     "getConsumablesInfo": {
-        "charge_contact_time": 1331,
-        "edge_brush_time": 6990,
-        "filter_time": 4158,
-        "main_brush_lid_time": 3598,
+        "charge_contact_time": 4,
+        "edge_brush_time": 10,
+        "filter_time": 8,
+        "main_brush_lid_time": 4,
         "rag_time": 0,
-        "roll_brush_time": 15376,
-        "sensor_time": 1733
+        "roll_brush_time": 10,
+        "sensor_time": 10
     },
     "getCurrentVoiceLanguage": {
         "name": "ad39b2ffe410790425d89b7e61146150",
@@ -383,8 +201,58 @@
         "s_min": 1320
     },
     "getMapData": {
-        "area_list": [],
-        "auto_area_flag": false,
+        "area_list": [
+            {
+                "cistern": 2,
+                "clean_number": 1,
+                "color": 1,
+                "id": 1,
+                "suction": 2,
+                "type": "room"
+            },
+            {
+                "cistern": 2,
+                "clean_number": 1,
+                "color": 2,
+                "id": 2,
+                "suction": 2,
+                "type": "room"
+            },
+            {
+                "cistern": 2,
+                "clean_number": 1,
+                "color": 3,
+                "id": 3,
+                "suction": 2,
+                "type": "room"
+            },
+            {
+                "cistern": -1,
+                "clean_number": 1,
+                "id": 501,
+                "suction": -1,
+                "type": "area",
+                "vertexs": [
+                    [
+                        -513,
+                        559
+                    ],
+                    [
+                        -106,
+                        559
+                    ],
+                    [
+                        -106,
+                        76
+                    ],
+                    [
+                        -513,
+                        76
+                    ]
+                ]
+            }
+        ],
+        "auto_area_flag": true,
         "bit_list": {
             "auto_area": [
                 0,
@@ -396,62 +264,62 @@
         },
         "bitnum": 8,
         "charge_coor": [
-            127,
-            140,
-            359
+            71,
+            128,
+            90
         ],
         "furniture_list": [],
         "goto_point": [
             -836,
             2780
         ],
-        "height": 214,
+        "height": 215,
         "map_data": "#SCRUBBED_MAPDATA#",
-        "map_hash": "582FDD885BDE0327D34101327D822D44",
-        "map_id": 1713717508,
+        "map_hash": "A7AFEDF6C774EAA5664DD6D79A0EF09F",
+        "map_id": 1774213754,
         "origin_coor": [
-            -191,
-            -112,
+            -71,
+            -140,
             0
         ],
-        "path_id": 112,
-        "pix_len": 52430,
-        "pix_lz4len": 6387,
+        "path_id": 195,
+        "pix_len": 31390,
+        "pix_lz4len": 2429,
         "real_charge_coor": [
-            -3187,
-            1427,
-            359
+            15,
+            -609,
+            90
         ],
         "real_origin_coor": [
-            -9563,
-            -5616,
+            -3574,
+            -7020,
             0
         ],
         "real_vac_coor": [
-            -2972,
-            1421,
-            178
+            -226,
+            -1754,
+            264
         ],
         "resolution": 50,
         "resolution_unit": "mm",
         "vac_coor": [
-            131,
-            140,
-            178
+            66,
+            105,
+            264
         ],
         "version": "LDS",
-        "width": 245
+        "width": 146
     },
     "getMapInfo": {
         "auto_change_map": true,
-        "current_map_id": 1713717508,
+        "current_map_id": 1774213754,
         "map_list": [
             {
-                "auto_area_flag": false,
-                "is_saved": false,
-                "map_id": 1713717508,
+                "auto_area_flag": true,
+                "is_saved": true,
+                "map_id": 1774213754,
                 "rotate_angle": 0,
-                "update_time": 1772326925
+                "update_time": 1774214547
             }
         ],
         "map_num": 1,
@@ -465,14 +333,14 @@
             0
         ],
         "errorCode_id": [
-            2747296172
+            4650373397
         ],
         "prompt": [],
         "promptCode_id": [],
-        "status": 5
+        "status": 1
     },
     "getVolume": {
-        "volume": 30
+        "volume": 75
     },
     "get_device_info": {
         "auto_pack_ver": "0.0.49.1720",
@@ -498,7 +366,7 @@
         "oem_id": "00000000000000000000000000000000",
         "overheated": false,
         "region": "Europe/Rome",
-        "rssi": -28,
+        "rssi": -38,
         "signal_level": 3,
         "specs": "",
         "ssid": "I01BU0tFRF9TU0lEIw==",
@@ -509,7 +377,7 @@
     "get_device_time": {
         "region": "Europe/Rome",
         "time_diff": 60,
-        "timestamp": 1772327828
+        "timestamp": 1774214551
     },
     "get_fw_download_state": {
         "auto_upgrade": false,
@@ -518,7 +386,9 @@
         "status": 0,
         "upgrade_time": 5
     },
-    "get_inherit_info": null,
+    "get_inherit_info": {
+        "inherit_status": false
+    },
     "get_latest_fw": {
         "fw_size": 0,
         "fw_ver": "1.2.2 Build 240627 Rel.162730",
@@ -546,57 +416,7 @@
             },
             {
                 "key_type": "wpa2_psk",
-                "signal_level": 1,
-                "ssid": "I01BU0tFRF9TU0lEIw=="
-            },
-            {
-                "key_type": "wpa2_psk",
-                "signal_level": 1,
-                "ssid": "I01BU0tFRF9TU0lEIw=="
-            },
-            {
-                "key_type": "wpa2_psk",
-                "signal_level": 1,
-                "ssid": "I01BU0tFRF9TU0lEIw=="
-            },
-            {
-                "key_type": "none",
-                "signal_level": 1,
-                "ssid": "I01BU0tFRF9TU0lEIw=="
-            },
-            {
-                "key_type": "none",
-                "signal_level": 1,
-                "ssid": "I01BU0tFRF9TU0lEIw=="
-            },
-            {
-                "key_type": "wpa2_psk",
-                "signal_level": 1,
-                "ssid": "I01BU0tFRF9TU0lEIw=="
-            },
-            {
-                "key_type": "none",
-                "signal_level": 1,
-                "ssid": "I01BU0tFRF9TU0lEIw=="
-            },
-            {
-                "key_type": "wpa2_psk",
-                "signal_level": 1,
-                "ssid": "I01BU0tFRF9TU0lEIw=="
-            },
-            {
-                "key_type": "wpa2_psk",
-                "signal_level": 1,
-                "ssid": "I01BU0tFRF9TU0lEIw=="
-            },
-            {
-                "key_type": "wpa2_psk",
-                "signal_level": 1,
-                "ssid": "I01BU0tFRF9TU0lEIw=="
-            },
-            {
-                "key_type": "none",
-                "signal_level": 1,
+                "signal_level": 2,
                 "ssid": "I01BU0tFRF9TU0lEIw=="
             },
             {
@@ -626,22 +446,12 @@
             },
             {
                 "key_type": "wpa2_psk",
-                "signal_level": 1,
-                "ssid": "I01BU0tFRF9TU0lEIw=="
-            },
-            {
-                "key_type": "none",
-                "signal_level": 1,
-                "ssid": "I01BU0tFRF9TU0lEIw=="
-            },
-            {
-                "key_type": "none",
                 "signal_level": 1,
                 "ssid": "I01BU0tFRF9TU0lEIw=="
             }
         ],
         "start_index": 0,
-        "sum": 20,
+        "sum": 8,
         "wep_supported": true
     },
     "qs_component_nego": {
