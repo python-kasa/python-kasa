@@ -17,7 +17,10 @@ _LOGGER = logging.getLogger(__name__)
 
 # Only known value for start_type in setSwitchClean; required for
 # targeted cleaning modes (Room) but not for StandardHome.
-_START_TYPE_RESUME = 1
+_START_TYPE_DEFAULT = 1
+
+# Only known value for the type parameter in getMapData.
+_MAP_DATA_TYPE_DEFAULT = 0
 
 
 class Status(IntEnum):
@@ -528,7 +531,7 @@ class Clean(SmartModule):
                 "force_clean": False,
                 "map_id": map_id,
                 "room_list": list(room_ids),
-                "start_type": _START_TYPE_RESUME,
+                "start_type": _START_TYPE_DEFAULT,
             },
         )
 
@@ -541,7 +544,9 @@ class Clean(SmartModule):
         """
         if map_id is None:
             map_id = self.current_map_id
-        resp = await self.call("getMapData", {"map_id": map_id, "type": 0})
+        resp = await self.call(
+            "getMapData", {"map_id": map_id, "type": _MAP_DATA_TYPE_DEFAULT}
+        )
 
         rooms: list[RoomInfo] = []
         for area in resp.get("area_list", []):

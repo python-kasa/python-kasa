@@ -422,7 +422,6 @@ async def test_get_rooms_no_name(dev: SmartDevice, mocker: MockerFixture):
     assert rooms[0].suction is None
 
 
-
 @clean
 async def test_clean_type(dev: SmartDevice, mocker: MockerFixture):
     """Test clean_type returns the correct CleanMode."""
