@@ -547,9 +547,10 @@ class Clean(SmartModule):
         resp = await self.call(
             "getMapData", {"map_id": map_id, "type": _MAP_DATA_TYPE_DEFAULT}
         )
+        map_data = resp.get("getMapData", resp)
 
         rooms: list[RoomInfo] = []
-        for area in resp.get("area_list", []):
+        for area in map_data.get("area_list", []):
             if area.get("type") != AreaType.Room:
                 _LOGGER.debug(
                     "Skipping non-room area: type=%s, id=%s",
