@@ -166,7 +166,7 @@ async def handle_device(
         if autosave:
             save = "y"
         else:
-            save = click.prompt(
+            save = await click.prompt(
                 f"Do you want to save the above content to {save_filename} (y/n)"
             )
         if save == "y":
