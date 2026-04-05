@@ -7,7 +7,7 @@ from pytest_mock import MockerFixture
 
 from kasa import Module
 from kasa.smart import SmartDevice
-from kasa.smart.modules.clean import ErrorCode, Status
+from kasa.smart.modules.clean import CleanMode, ErrorCode, RoomInfo, Status
 
 from ...device_fixtures import get_parent_and_child_modules, parametrize
 
@@ -239,3 +239,180 @@ async def test_invalid_settings(
 
     with pytest.raises(exc, match=exc_message):
         await setter(value)
+
+
+@clean
+async def test_clean_rooms(dev: SmartDevice, mocker: MockerFixture):
+    """Test clean_rooms sends the correct setSwitchClean payload."""
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+    call = mocker.spy(clean, "call")
+
+    room_ids = [2, 3]
+    await clean.clean_rooms(room_ids)
+
+    call.assert_called_with(
+        "setSwitchClean",
+        {
+            "clean_mode": CleanMode.Room,
+            "clean_on": True,
+            "clean_order": True,
+            "force_clean": False,
+            "map_id": clean.current_map_id,
+            "room_list": room_ids,
+            "start_type": 1,
+        },
+    )
+
+
+@clean
+async def test_clean_rooms_explicit_map_id(dev: SmartDevice, mocker: MockerFixture):
+    """Test clean_rooms uses the provided map_id when given."""
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+    call = mocker.spy(clean, "call")
+
+    await clean.clean_rooms([5], map_id=12345)
+
+    call.assert_called_with(
+        "setSwitchClean",
+        {
+            "clean_mode": CleanMode.Room,
+            "clean_on": True,
+            "clean_order": True,
+            "force_clean": False,
+            "map_id": 12345,
+            "room_list": [5],
+            "start_type": 1,
+        },
+    )
+
+
+@clean
+async def test_clean_rooms_empty_raises(dev: SmartDevice):
+    """Test clean_rooms raises ValueError when room_ids is empty."""
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+
+    with pytest.raises(ValueError, match="room_ids must not be empty"):
+        await clean.clean_rooms([])
+
+
+@clean
+async def test_get_rooms(dev: SmartDevice, mocker: MockerFixture):
+    """Test get_rooms returns RoomInfo objects with decoded names."""
+    import base64
+
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+
+    map_data = {
+        "area_list": [
+            {
+                "id": 2,
+                "name": base64.b64encode(b"Kitchen").decode(),
+                "type": "room",
+                "color": 1,
+                "suction": 2,
+                "cistern": 1,
+                "clean_number": 1,
+            },
+            {
+                "id": 3,
+                "name": base64.b64encode(b"Living Room").decode(),
+                "type": "room",
+                "color": 2,
+                "suction": 3,
+                "cistern": 2,
+                "clean_number": 2,
+            },
+            {"id": 401, "type": "virtual_wall", "vertexs": []},
+        ]
+    }
+    call_mock = mocker.patch.object(clean, "call", return_value=map_data)
+
+    rooms = await clean.get_rooms()
+
+    call_mock.assert_called_once_with(
+        "getMapData", {"map_id": clean.current_map_id, "type": 0}
+    )
+    assert len(rooms) == 2
+    assert all(isinstance(r, RoomInfo) for r in rooms)
+    assert rooms[0].id == 2
+    assert rooms[0].name == "Kitchen"
+    assert rooms[0].color == 1
+    assert rooms[1].id == 3
+    assert rooms[1].name == "Living Room"
+
+
+@clean
+async def test_get_rooms_explicit_map_id(dev: SmartDevice, mocker: MockerFixture):
+    """Test get_rooms uses the provided map_id when given."""
+    import base64
+
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+
+    map_data = {
+        "area_list": [
+            {
+                "id": 1,
+                "name": base64.b64encode(b"Hall").decode(),
+                "type": "room",
+            },
+        ]
+    }
+    call_mock = mocker.patch.object(clean, "call", return_value=map_data)
+
+    rooms = await clean.get_rooms(map_id=99999)
+
+    call_mock.assert_called_once_with("getMapData", {"map_id": 99999, "type": 0})
+    assert len(rooms) == 1
+    assert rooms[0].name == "Hall"
+
+
+@clean
+async def test_get_rooms_no_name(dev: SmartDevice, mocker: MockerFixture):
+    """Test get_rooms handles rooms without names."""
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+
+    map_data = {"area_list": [{"id": 5, "type": "room"}]}
+    mocker.patch.object(clean, "call", return_value=map_data)
+
+    rooms = await clean.get_rooms()
+
+    assert len(rooms) == 1
+    assert rooms[0].id == 5
+    assert rooms[0].name is None
+
+
+@clean
+async def test_clean_type(dev: SmartDevice, mocker: MockerFixture):
+    """Test clean_type returns the correct CleanMode."""
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+
+    mocker.patch.object(
+        type(clean),
+        "data",
+        new_callable=mocker.PropertyMock,
+        return_value={**clean.data, "getCleanStatus": {"clean_status": 0}},
+    )
+    assert clean.clean_type is CleanMode.StandardHome
+
+    mocker.patch.object(
+        type(clean),
+        "data",
+        new_callable=mocker.PropertyMock,
+        return_value={**clean.data, "getCleanStatus": {"clean_status": 3}},
+    )
+    assert clean.clean_type is CleanMode.Room
+
+
+@clean
+async def test_clean_type_missing(dev: SmartDevice, mocker: MockerFixture):
+    """Test clean_type returns None when clean_status is unavailable."""
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+
+    data_without = {k: v for k, v in clean.data.items() if k != "getCleanStatus"}
+    mocker.patch.object(
+        type(clean),
+        "data",
+        new_callable=mocker.PropertyMock,
+        return_value=data_without,
+    )
+    assert clean.clean_type is None
