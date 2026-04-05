@@ -123,6 +123,7 @@ from kasa.deviceconfig import (
 from kasa.exceptions import (
     KasaException,
     TimeoutError,
+    UnsupportedAuthenticationError,
     UnsupportedDeviceError,
 )
 from kasa.iot.iotdevice import IotDevice, _extract_sys_info
@@ -808,6 +809,13 @@ class Discover:
         discovery_result: DiscoveryResult,
     ) -> DeviceConnectionParameters:
         """Get connection parameters from the discovery result."""
+        # Raise specific exception for unsupported authentication source
+        if getattr(discovery_result, "obd_src", None) == "tss":
+            raise UnsupportedAuthenticationError(
+                f"Device at {discovery_result.ip} uses unsupported onboarding 'tss'.",
+                discovery_result=discovery_result.to_dict(),
+                host=discovery_result.ip,
+            )
         type_ = discovery_result.device_type
         if (encrypt_schm := discovery_result.mgt_encrypt_schm) is None:
             raise UnsupportedDeviceError(
@@ -888,7 +896,7 @@ class Discover:
             conn_params = Discover._get_connection_parameters(discovery_result)
             config.connection_type = conn_params
         except KasaException as ex:
-            if isinstance(ex, UnsupportedDeviceError):
+            if isinstance(ex, UnsupportedDeviceError | UnsupportedAuthenticationError):
                 raise
             raise UnsupportedDeviceError(
                 f"Unsupported device {config.host} of type {type_} "
