@@ -137,6 +137,8 @@ class KlapTransport(BaseTransport):
         self._session_expire_at: float | None = None
 
         self._session_cookie: dict[str, Any] | None = None
+        # Track whether we're using v2 hashing (sha256/sha1 instead of md5)
+        self._uses_v2_hashing: bool = False
 
         _LOGGER.debug("Created KLAP transport for %s", self._host)
         protocol = "https" if config.connection_type.https else "http"
@@ -265,6 +267,51 @@ class KlapTransport(BaseTransport):
                 )
                 return local_seed, remote_seed, self._blank_auth_hash  # type: ignore
 
+        # Try v2 hashing (sha256/sha1) as a fallback for IOT devices with newer firmware
+        # that use KLAP v2 authentication despite being classified as IOT devices
+        v2_auth_hash = self._generate_auth_hash_v2(self._credentials) if self._credentials else None
+        if v2_auth_hash:
+            v2_seed_auth_hash = self._handshake1_seed_auth_hash_v2(
+                local_seed, remote_seed, v2_auth_hash
+            )
+            if v2_seed_auth_hash == server_hash:
+                _LOGGER.debug(
+                    "Device %s responded to KLAP v2 hashing, using v2 auth",
+                    self._host,
+                )
+                self._uses_v2_hashing = True
+                return local_seed, remote_seed, v2_auth_hash
+
+        # Try v2 with default credentials
+        for key, value in DEFAULT_CREDENTIALS.items():
+            default_credentials = get_default_credentials(value)
+            v2_default_hash = self._generate_auth_hash_v2(default_credentials)
+            v2_default_seed_hash = self._handshake1_seed_auth_hash_v2(
+                local_seed, remote_seed, v2_default_hash
+            )
+            if v2_default_seed_hash == server_hash:
+                _LOGGER.debug(
+                    "Device %s responded to KLAP v2 with %s default credentials",
+                    self._host,
+                    key,
+                )
+                self._uses_v2_hashing = True
+                return local_seed, remote_seed, v2_default_hash
+
+        # Try v2 with blank credentials
+        if self._credentials != blank_creds:
+            v2_blank_hash = self._generate_auth_hash_v2(blank_creds)
+            v2_blank_seed_hash = self._handshake1_seed_auth_hash_v2(
+                local_seed, remote_seed, v2_blank_hash
+            )
+            if v2_blank_seed_hash == server_hash:
+                _LOGGER.debug(
+                    "Device %s responded to KLAP v2 with blank credentials",
+                    self._host,
+                )
+                self._uses_v2_hashing = True
+                return local_seed, remote_seed, v2_blank_hash
+
         msg = (
             f"Device response did not match our challenge on ip {self._host}, "
             f"check that your e-mail and password (both case-sensitive) are correct. "
@@ -281,7 +328,11 @@ class KlapTransport(BaseTransport):
 
         url = self._app_url / "handshake2"
 
-        payload = self.handshake2_seed_auth_hash(local_seed, remote_seed, auth_hash)
+        # Use v2 hashing if the device responded to v2 in handshake1
+        if self._uses_v2_hashing:
+            payload = self._handshake2_seed_auth_hash_v2(local_seed, remote_seed, auth_hash)
+        else:
+            payload = self.handshake2_seed_auth_hash(local_seed, remote_seed, auth_hash)
 
         response_status, _ = await self._http_client.post(
             url,
@@ -410,6 +461,7 @@ class KlapTransport(BaseTransport):
     async def reset(self) -> None:
         """Reset internal handshake state."""
         self._handshake_done = False
+        self._uses_v2_hashing = False
 
     @staticmethod
     def generate_auth_hash(creds: Credentials) -> bytes:
@@ -438,6 +490,29 @@ class KlapTransport(BaseTransport):
         """Return the MD5 hash of the username in this object."""
         un = creds.username
         return md5(un.encode())
+
+    # V2 hash methods for devices that use sha256/sha1 instead of md5
+    # Some IOT devices with newer firmware use v2 hashing
+    @staticmethod
+    def _generate_auth_hash_v2(creds: Credentials) -> bytes:
+        """Generate a sha256/sha1 auth hash (KLAP v2) for the credentials."""
+        un = creds.username
+        pw = creds.password
+        return _sha256(_sha1(un.encode()) + _sha1(pw.encode()))
+
+    @staticmethod
+    def _handshake1_seed_auth_hash_v2(
+        local_seed: bytes, remote_seed: bytes, auth_hash: bytes
+    ) -> bytes:
+        """Generate handshake1 seed auth hash using KLAP v2 method."""
+        return _sha256(local_seed + remote_seed + auth_hash)
+
+    @staticmethod
+    def _handshake2_seed_auth_hash_v2(
+        local_seed: bytes, remote_seed: bytes, auth_hash: bytes
+    ) -> bytes:
+        """Generate handshake2 seed auth hash using KLAP v2 method."""
+        return _sha256(remote_seed + local_seed + auth_hash)
 
     # Copy & paste from sslaestransport.
     def _create_ssl_context(self) -> ssl.SSLContext:
