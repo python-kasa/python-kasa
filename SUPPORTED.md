@@ -156,6 +156,8 @@ Some newer Kasa devices require authentication. These are marked with [^1] in th
   - Hardware: 1.0 (US) / Firmware: 1.8.11
 - **LB110**
   - Hardware: 1.0 (US) / Firmware: 1.8.11
+- **LB130**
+  - Hardware: 1.0 (US) / Firmware: 1.8.11
 
 ### Light Strips
 
@@ -302,6 +304,8 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 
 - **C100**
   - Hardware: 4.0 / Firmware: 1.3.14
+- **C101**
+  - Hardware: 5.0 (US) / Firmware: 1.4.3
 - **C110**
   - Hardware: 2.0 (EU) / Firmware: 1.4.3
 - **C210**
