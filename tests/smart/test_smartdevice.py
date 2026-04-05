@@ -1010,3 +1010,23 @@ async def test_unpair(dev: SmartDevice, mocker: MockerFixture):
     await unpair_feat.set_value(None)
 
     unpair_call.assert_called_with(child.device_id)
+
+
+@device_smart
+@pytest.mark.requires_dummy
+async def test_device_info_with_smarterrorcode(dev: SmartDevice):
+    """Test that __repr__ doesn't crash when get_device_info is a SmartErrorCode.
+
+    When a device returns INTERNAL_QUERY_ERROR for get_device_info, the response
+    is stored as a SmartErrorCode enum value instead of a dict. __repr__ accesses
+    .model which calls _get_device_info, and should not crash with
+    'SmartErrorCode object is not subscriptable'.
+
+    See https://github.com/python-kasa/python-kasa/issues/1671
+    """
+    # Simulate the device returning an error for get_device_info
+    dev._last_update["get_device_info"] = SmartErrorCode.INTERNAL_QUERY_ERROR
+
+    # __repr__ should not raise
+    result = repr(dev)
+    assert dev.host in result
