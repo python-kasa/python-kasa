@@ -3,10 +3,10 @@
 >>> from kasa import Discover, Module, LightState
 >>>
 >>> dev = await Discover.discover_single(
->>>     "127.0.0.3",
->>>     username="user@example.com",
->>>     password="great_password"
->>> )
+...     "127.0.0.3",
+...     username="user@example.com",
+...     password="great_password"
+... )
 >>> await dev.update()
 >>> print(dev.alias)
 Living Room Bulb
@@ -48,9 +48,9 @@ LightState(light_on=True, brightness=50, hue=0,\
 You can save a new preset state if the device supports it:
 
 >>> if light_preset.has_save_preset:
->>>     new_preset_state = LightState(light_on=True, brightness=75, hue=0,\
+...     new_preset_state = LightState(light_on=True, brightness=75, hue=0,\
  saturation=100, color_temp=2700, transition=None)
->>>     await light_preset.save_preset("Light preset 1", new_preset_state)
+...     await light_preset.save_preset("Light preset 1", new_preset_state)
 >>> await dev.update()
 >>> light_preset.preset  # Saving updates the preset state for the preset, it does not \
 set the preset

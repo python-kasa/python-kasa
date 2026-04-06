@@ -1,11 +1,11 @@
 """Discover TPLink Smart Home devices.
 
-The main entry point for this library is :func:`Discover.discover()`,
+The main entry point for this library is :meth:`Discover.discover()`,
 which returns a dictionary of the found devices. The key is the IP address
 of the device and the value contains ready-to-use, SmartDevice-derived
 device object.
 
-:func:`discover_single()` can be used to initialize a single device given its
+:meth:`discover_single()` can be used to initialize a single device given its
 IP address. If the :class:`DeviceConfig` of the device is already known,
 you can initialize the corresponding device class directly without discovery.
 
@@ -27,9 +27,9 @@ Discovery returns a dict of {ip: discovered devices}:
 You can pass username and password for devices requiring authentication
 
 >>> devices = await Discover.discover(
->>>     username="user@example.com",
->>>     password="great_password",
->>> )
+...     username="user@example.com",
+...     password="great_password",
+... )
 >>> print(len(devices))
 6
 
@@ -61,8 +61,8 @@ None
 It is also possible to pass a coroutine to be executed for each found device:
 
 >>> async def print_dev_info(dev):
->>>     await dev.update()
->>>     print(f"Discovered {dev.alias} (model: {dev.model})")
+...     await dev.update()
+...     print(f"Discovered {dev.alias} (model: {dev.model})")
 >>>
 >>> devices = await Discover.discover(on_discovered=print_dev_info, credentials=creds)
 Discovered Bedroom Power Strip (model: KP303)
