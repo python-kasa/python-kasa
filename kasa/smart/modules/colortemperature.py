@@ -65,7 +65,7 @@ class ColorTemperature(SmartModule):
                     *valid_temperature_range, temp
                 )
             )
-        params = {"color_temp": temp}
+        params: dict = {"color_temp": temp, "device_on": True}
         if brightness:
             params["brightness"] = brightness
         return await self.call("set_device_info", params)

@@ -73,7 +73,9 @@ class Brightness(SmartModule):
         ) is not None and light_effect.is_active:
             return await light_effect.set_brightness(brightness)
 
-        return await self.call("set_device_info", {"brightness": brightness})
+        return await self.call(
+            "set_device_info", {"brightness": brightness, "device_on": True}
+        )
 
     async def _check_supported(self) -> bool:
         """Additional check to see if the module is supported by the device."""

@@ -91,6 +91,7 @@ class Color(SmartModule):
             "color_temp": 0,  # If set, color_temp takes precedence over hue&sat
             "hue": hue,
             "saturation": saturation,
+            "device_on": True,
         }
         # The device errors on invalid brightness values.
         if value is not None:
