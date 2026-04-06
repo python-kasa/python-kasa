@@ -13,6 +13,9 @@ from .conftest import (
 def test_bulb_examples(mocker):
     """Use KL130 (bulb with all features) to test the doctests."""
     p = asyncio.run(get_device_for_fixture_protocol("KL130(US)_1.0_1.8.11.json", "IOT"))
+    asyncio.run(p.set_alias("Bedroom Bulb"))
+    asyncio.run(p.update())
+
     mocker.patch("kasa.iot.iotbulb.IotBulb", return_value=p)
     mocker.patch("kasa.iot.iotbulb.IotBulb.update")
     res = xdoctest.doctest_module("kasa.iot.iotbulb", "all")
