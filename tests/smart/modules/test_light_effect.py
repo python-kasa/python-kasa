@@ -81,4 +81,6 @@ async def test_light_effect_brightness(
         assert not light_effect.is_active
 
         brightness_set_brightness.assert_called_with(10)
-        mock_brightness_call.assert_called_with("set_device_info", {"brightness": 10, "device_on": True})
+        mock_brightness_call.assert_called_with(
+            "set_device_info", {"brightness": 10, "device_on": True}
+        )
