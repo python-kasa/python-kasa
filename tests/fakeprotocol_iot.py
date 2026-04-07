@@ -8,7 +8,7 @@ from kasa.transports.basetransport import BaseTransport
 _LOGGER = logging.getLogger(__name__)
 
 
-def get_realtime(obj, x, *args):
+def get_realtime(obj, x: dict, *args):
     return {
         "current": 0.268587,
         "voltage": 125.836131,
@@ -17,7 +17,7 @@ def get_realtime(obj, x, *args):
     }
 
 
-def get_monthstat(obj, x, *args):
+def get_monthstat(obj, x: dict, *args):
     if x["year"] < 2016:
         return {"month_list": []}
 
@@ -29,7 +29,7 @@ def get_monthstat(obj, x, *args):
     }
 
 
-def get_daystat(obj, x, *args):
+def get_daystat(obj, x: dict, *args):
     if x["year"] < 2016:
         return {"day_list": []}
 
@@ -48,11 +48,11 @@ emeter_support = {
 }
 
 
-def get_realtime_units(obj, x, *args):
+def get_realtime_units(obj, x: dict, *args):
     return {"power_mw": 10800}
 
 
-def get_monthstat_units(obj, x, *args):
+def get_monthstat_units(obj, x: dict, *args):
     if x["year"] < 2016:
         return {"month_list": []}
 
@@ -64,7 +64,7 @@ def get_monthstat_units(obj, x, *args):
     }
 
 
-def get_daystat_units(obj, x, *args):
+def get_daystat_units(obj, x: dict, *args):
     if x["year"] < 2016:
         return {"day_list": []}
 
@@ -89,11 +89,11 @@ emeter_commands = {
 }
 
 
-def error(msg="default msg"):
+def error(msg: str = "default msg"):
     return {"err_code": -1323, "msg": msg}
 
 
-def success(res):
+def success(res: dict):
     if res:
         res.update({"err_code": 0})
     else:
@@ -223,7 +223,9 @@ DEFAULT_BEHAVIOR = {
 
 
 class FakeIotProtocol(IotProtocol):
-    def __init__(self, info, fixture_name=None, *, verbatim=False):
+    def __init__(
+        self, info: dict, fixture_name: str | None = None, *, verbatim: bool = False
+    ) -> None:
         super().__init__(
             transport=FakeIotTransport(info, fixture_name, verbatim=verbatim),
         )
@@ -235,7 +237,9 @@ class FakeIotProtocol(IotProtocol):
 
 
 class FakeIotTransport(BaseTransport):
-    def __init__(self, info, fixture_name=None, *, verbatim=False):
+    def __init__(
+        self, info: dict, fixture_name: str | None = None, *, verbatim: bool = False
+    ) -> None:
         super().__init__(config=DeviceConfig("127.0.0.123"))
         info = copy.deepcopy(info)
         self.discovery_data = info
@@ -292,7 +296,7 @@ class FakeIotTransport(BaseTransport):
     def credentials_hash(self) -> None:
         return None
 
-    def set_alias(self, x, child_ids=None):
+    def set_alias(self, x: dict, child_ids: list | None = None) -> None:
         if child_ids is None:
             child_ids = []
         _LOGGER.debug("Setting alias to %s, child_ids: %s", x["alias"], child_ids)
@@ -303,7 +307,7 @@ class FakeIotTransport(BaseTransport):
         else:
             self.proto["system"]["get_sysinfo"]["alias"] = x["alias"]
 
-    def set_relay_state(self, x, child_ids=None):
+    def set_relay_state(self, x: dict, child_ids: list | None = None) -> None:
         if child_ids is None:
             child_ids = []
         _LOGGER.debug("Setting relay state to %s", x["state"])
@@ -317,19 +321,19 @@ class FakeIotTransport(BaseTransport):
         else:
             self.proto["system"]["get_sysinfo"]["relay_state"] = x["state"]
 
-    def set_led_off(self, x, *args):
+    def set_led_off(self, x: dict, *args) -> None:
         _LOGGER.debug("Setting led off to %s", x)
         self.proto["system"]["get_sysinfo"]["led_off"] = x["off"]
 
-    def set_mac(self, x, *args):
+    def set_mac(self, x: dict, *args) -> None:
         _LOGGER.debug("Setting mac to %s", x)
         self.proto["system"]["get_sysinfo"]["mac"] = x["mac"]
 
-    def set_hs220_brightness(self, x, *args):
+    def set_hs220_brightness(self, x: dict, *args) -> None:
         _LOGGER.debug("Setting brightness to %s", x)
         self.proto["system"]["get_sysinfo"]["brightness"] = x["brightness"]
 
-    def set_hs220_dimmer_transition(self, x, *args):
+    def set_hs220_dimmer_transition(self, x: dict, *args) -> None:
         _LOGGER.debug("Setting dimmer transition to %s", x)
         brightness = x["brightness"]
         if brightness == 0:
@@ -338,11 +342,11 @@ class FakeIotTransport(BaseTransport):
             self.proto["system"]["get_sysinfo"]["relay_state"] = 1
             self.proto["system"]["get_sysinfo"]["brightness"] = x["brightness"]
 
-    def set_lighting_effect(self, effect, *args):
+    def set_lighting_effect(self, effect: dict, *args) -> None:
         _LOGGER.debug("Setting light effect to %s", effect)
         self.proto["system"]["get_sysinfo"]["lighting_effect_state"] = dict(effect)
 
-    def transition_light_state(self, state_changes, *args):
+    def transition_light_state(self, state_changes: dict, *args) -> None:
         # Setting the light state on a device will turn off any active lighting effects.
         # Unless it's just the brightness in which case it will update the brightness for
         # the lighting effect
@@ -388,13 +392,13 @@ class FakeIotTransport(BaseTransport):
         _LOGGER.debug("New light state: %s", new_state)
         self.proto["system"]["get_sysinfo"]["light_state"] = new_state
 
-    def set_preferred_state(self, new_state, *args):
+    def set_preferred_state(self, new_state: dict, *args) -> None:
         """Implement set_preferred_state."""
         self.proto["system"]["get_sysinfo"]["preferred_state"][new_state["index"]] = (
             new_state
         )
 
-    def light_state(self, x, *args):
+    def light_state(self, x: dict, *args):
         light_state = self.proto["system"]["get_sysinfo"]["light_state"]
         # Our tests have light state off, so we simply return the dft_on_state when device is on.
         _LOGGER.debug("reporting light state: %s", light_state)
@@ -404,7 +408,7 @@ class FakeIotTransport(BaseTransport):
         else:
             return light_state
 
-    def set_time(self, new_state: dict, *args):
+    def set_time(self, new_state: dict, *args) -> None:
         """Implement set_time."""
         mods = [
             v
@@ -478,7 +482,7 @@ class FakeIotTransport(BaseTransport):
         "smartlife.iot.common.schedule": SCHEDULE_MODULE,
     }
 
-    async def send(self, request, port=9999):
+    async def send(self, request, port: int | None = 9999):
         if not self.verbatim:
             return await self._send(request, port)
 
@@ -491,7 +495,7 @@ class FakeIotTransport(BaseTransport):
                 response.update({"err_msg": "module not support"})
         return copy.deepcopy(response)
 
-    async def _send(self, request, port=9999):
+    async def _send(self, request, port: int | None = 9999):
         proto = self.proto
         # collect child ids from context
         try:
@@ -500,13 +504,13 @@ class FakeIotTransport(BaseTransport):
         except KeyError:
             child_ids = []
 
-        def get_response_for_module(target):
+        def get_response_for_module(target: str):
             if target not in proto:
                 return error(msg="target not found")
             if "err_code" in proto[target] and proto[target]["err_code"] != 0:
                 return {target: proto[target]}
 
-            def get_response_for_command(cmd):
+            def get_response_for_command(cmd: str):
                 if cmd not in proto[target]:
                     return error(msg=f"command {cmd} not found")
 
@@ -528,7 +532,7 @@ class FakeIotTransport(BaseTransport):
 
             from collections import defaultdict
 
-            cmd_responses = defaultdict(dict)
+            cmd_responses: dict = defaultdict(dict)
             for cmd in request[target]:
                 cmd_responses[target][cmd] = get_response_for_command(cmd)
 

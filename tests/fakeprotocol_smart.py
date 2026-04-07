@@ -13,7 +13,14 @@ from kasa.transports.basetransport import BaseTransport
 
 
 class FakeSmartProtocol(SmartProtocol):
-    def __init__(self, info, fixture_name, *, is_child=False, verbatim=False):
+    def __init__(
+        self,
+        info: dict,
+        fixture_name: str,
+        *,
+        is_child: bool = False,
+        verbatim: bool = False,
+    ) -> None:
         super().__init__(
             transport=FakeSmartTransport(
                 info, fixture_name, is_child=is_child, verbatim=verbatim
@@ -198,7 +205,7 @@ class FakeSmartTransport(BaseTransport):
         ),
     }
 
-    def _missing_result(self, method):
+    def _missing_result(self, method: str):
         """Check the FIXTURE_MISSING_MAP for responses.
 
         Fixtures generated prior to a query being supported by dump_devinfo
@@ -242,7 +249,10 @@ class FakeSmartTransport(BaseTransport):
 
     @staticmethod
     def _get_child_protocols(
-        parent_fixture_info, parent_fixture_name, child_devices_key, verbatim
+        parent_fixture_info: dict,
+        parent_fixture_name: str,
+        child_devices_key: str,
+        verbatim: bool,
     ):
         child_infos = parent_fixture_info.get(child_devices_key, {}).get(
             "child_device_list", []
@@ -250,11 +260,11 @@ class FakeSmartTransport(BaseTransport):
         if not child_infos:
             return
         found_child_fixture_infos = []
-        child_protocols = {}
+        child_protocols: dict[str, SmartProtocol] = {}
         # imported here to avoid circular import
         from .conftest import filter_fixtures
 
-        def try_get_child_fixture_info(child_dev_info, protocol):
+        def try_get_child_fixture_info(child_dev_info: dict, protocol: str):
             hw_version = child_dev_info["hw_ver"]
             sw_version = child_dev_info.get("sw_ver", child_dev_info.get("fw_ver"))
             sw_version = sw_version.split(" ")[0]
@@ -436,7 +446,7 @@ class FakeSmartTransport(BaseTransport):
 
         raise NotImplementedError(f"Method {child_method} not implemented for children")
 
-    def _get_on_off_gradually_info(self, info, params):
+    def _get_on_off_gradually_info(self, info: dict, params: dict | None):
         if self.components["on_off_gradually"] == 1:
             info["get_on_off_gradually_info"] = {"enable": True}
         else:
@@ -446,7 +456,7 @@ class FakeSmartTransport(BaseTransport):
             }
         return copy.deepcopy(info["get_on_off_gradually_info"])
 
-    def _set_on_off_gradually_info(self, info, params):
+    def _set_on_off_gradually_info(self, info: dict, params: dict):
         # Child devices can have the required properties directly in info
 
         # the _handle_control_child_missing directly passes in get_device_info
@@ -482,7 +492,7 @@ class FakeSmartTransport(BaseTransport):
                     )
         return {"error_code": 0}
 
-    def _set_dynamic_light_effect(self, info, params):
+    def _set_dynamic_light_effect(self, info: dict, params: dict) -> None:
         """Set or remove values as per the device behaviour."""
         info["get_device_info"]["dynamic_light_effect_enable"] = params["enable"]
         info["get_dynamic_light_effect_rules"]["enable"] = params["enable"]
@@ -495,7 +505,7 @@ class FakeSmartTransport(BaseTransport):
             if "current_rule_id" in info["get_dynamic_light_effect_rules"]:
                 del info["get_dynamic_light_effect_rules"]["current_rule_id"]
 
-    def _set_edit_dynamic_light_effect_rule(self, info, params):
+    def _set_edit_dynamic_light_effect_rule(self, info: dict, params: dict) -> None:
         """Edit dynamic light effect rule."""
         rules = info["get_dynamic_light_effect_rules"]["rule_list"]
         for rule in rules:
@@ -505,7 +515,7 @@ class FakeSmartTransport(BaseTransport):
 
         raise Exception("Unable to find rule with id")
 
-    def _set_light_strip_effect(self, info, params):
+    def _set_light_strip_effect(self, info: dict, params: dict) -> None:
         """Set or remove values as per the device behaviour."""
         # Brightness is not always available
         if (brightness := params.get("brightness")) is not None:
@@ -516,12 +526,12 @@ class FakeSmartTransport(BaseTransport):
             info["get_device_info"]["lighting_effect"]["id"] = params["id"]
             info["get_lighting_effect"] = copy.deepcopy(params)
 
-    def _set_led_info(self, info, params):
+    def _set_led_info(self, info: dict, params: dict) -> None:
         """Set or remove values as per the device behaviour."""
         info["get_led_info"]["led_status"] = params["led_rule"] != "never"
         info["get_led_info"]["led_rule"] = params["led_rule"]
 
-    def _set_preset_rules(self, info, params):
+    def _set_preset_rules(self, info: dict, params: dict):
         """Set or remove values as per the device behaviour."""
         if "brightness" not in info["get_preset_rules"]:
             return {"error_code": SmartErrorCode.PARAMS_ERROR}
@@ -535,7 +545,7 @@ class FakeSmartTransport(BaseTransport):
             ]
         return {"error_code": 0}
 
-    def _set_child_preset_rules(self, info, params):
+    def _set_child_preset_rules(self, info: dict, params: dict):
         """Set or remove values as per the device behaviour."""
         # So far the only child device with light preset (KS240) has the
         # data available to read in the device_info.  If a child device
@@ -545,14 +555,14 @@ class FakeSmartTransport(BaseTransport):
         info["preset_state"] = [{"brightness": b} for b in params["brightness"]]
         return {"error_code": 0}
 
-    def _edit_preset_rules(self, info, params):
+    def _edit_preset_rules(self, info: dict, params: dict):
         """Set or remove values as per the device behaviour."""
         if "states" not in info["get_preset_rules"] is None:
             return {"error_code": SmartErrorCode.PARAMS_ERROR}
         info["get_preset_rules"]["states"][params["index"]] = params["state"]
         return {"error_code": 0}
 
-    def _set_temperature_unit(self, info, params):
+    def _set_temperature_unit(self, info: dict, params: dict):
         """Set or remove values as per the device behaviour."""
         unit = params["temp_unit"]
         if unit not in {"celsius", "fahrenheit"}:
@@ -573,7 +583,7 @@ class FakeSmartTransport(BaseTransport):
 
         return {"error_code": 0}
 
-    def _hub_remove_device(self, info, params):
+    def _hub_remove_device(self, info: dict, params: dict):
         """Remove hub device."""
         items_to_remove = [dev["device_id"] for dev in params["child_device_list"]]
         children = info["get_child_device_list"]["child_device_list"]
@@ -584,10 +594,10 @@ class FakeSmartTransport(BaseTransport):
 
         return {"error_code": 0}
 
-    def get_child_device_queries(self, method, params):
+    def get_child_device_queries(self, method: str, params: dict):
         return self._get_method_from_info(method, params)
 
-    def _get_method_from_info(self, method, params):
+    def _get_method_from_info(self, method: str, params: dict | None):
         result = copy.deepcopy(self.info[method])
         if result and "start_index" in result and "sum" in result:
             list_key = next(

@@ -13,7 +13,14 @@ from .fakeprotocol_smart import FakeSmartTransport
 
 
 class FakeSmartCamProtocol(SmartCamProtocol):
-    def __init__(self, info, fixture_name, *, is_child=False, verbatim=False):
+    def __init__(
+        self,
+        info: dict,
+        fixture_name: str,
+        *,
+        is_child: bool = False,
+        verbatim: bool = False,
+    ) -> None:
         super().__init__(
             transport=FakeSmartCamTransport(
                 info, fixture_name, is_child=is_child, verbatim=verbatim
@@ -29,15 +36,15 @@ class FakeSmartCamProtocol(SmartCamProtocol):
 class FakeSmartCamTransport(BaseTransport):
     def __init__(
         self,
-        info,
-        fixture_name,
+        info: dict,
+        fixture_name: str,
         *,
         list_return_size=10,
-        is_child=False,
+        is_child: bool = False,
         get_child_fixtures=True,
-        verbatim=False,
+        verbatim: bool = False,
         components_not_included=False,
-    ):
+    ) -> None:
         super().__init__(
             config=DeviceConfig(
                 "127.0.0.123",
@@ -125,7 +132,7 @@ class FakeSmartCamTransport(BaseTransport):
             }
 
     @staticmethod
-    def _get_param_set_value(info: dict, set_keys: list[str], value):
+    def _get_param_set_value(info: dict, set_keys: list[str], value: dict) -> None:
         cifp = info.get(CHILD_INFO_FROM_PARENT)
 
         for key in set_keys[:-1]:
@@ -205,7 +212,7 @@ class FakeSmartCamTransport(BaseTransport):
         ],
     }
 
-    def _hub_remove_device(self, info, params):
+    def _hub_remove_device(self, info: dict, params: dict):
         """Remove hub device."""
         items_to_remove = [dev["device_id"] for dev in params["child_device_list"]]
         children = info["getChildDeviceList"]["child_device_list"]
@@ -225,10 +232,10 @@ class FakeSmartCamTransport(BaseTransport):
         next(it, None)
         return next(it)
 
-    def get_child_device_queries(self, method, params):
+    def get_child_device_queries(self, method: str, params: dict | None):
         return self._get_method_from_info(method, params)
 
-    def _get_method_from_info(self, method, params):
+    def _get_method_from_info(self, method: str, params: dict | None):
         result = copy.deepcopy(self.info[method])
         if "start_index" in result and "sum" in result:
             list_key = next(
