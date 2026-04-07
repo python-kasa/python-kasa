@@ -557,7 +557,7 @@ class FakeSmartTransport(BaseTransport):
 
     def _edit_preset_rules(self, info: dict, params: dict):
         """Set or remove values as per the device behaviour."""
-        if "states" not in info["get_preset_rules"] is None:
+        if info["get_preset_rules"].get("states") is None:
             return {"error_code": SmartErrorCode.PARAMS_ERROR}
         info["get_preset_rules"]["states"][params["index"]] = params["state"]
         return {"error_code": 0}

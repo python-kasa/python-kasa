@@ -60,7 +60,7 @@ async def test_httpclient_errors(
     error_raises: type[Exception],
     error_message: str,
     mock_read: bool,
-):
+) -> None:
     class _mock_response:
         def __init__(self, status, error) -> None:
             self.status = status
@@ -73,7 +73,7 @@ async def test_httpclient_errors(
         async def __aexit__(self, exc_t, exc_v, exc_tb) -> None:
             pass
 
-        async def read(self) -> None:
+        async def read(self) -> bytes:
             self.call_count += 1
             raise self.error
 
