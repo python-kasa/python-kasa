@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import asyncio
+import functools
 import os
 import sys
 import warnings
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import aiohttp
 import pytest
 
 # TODO: this and runner fixture could be moved to tests/cli/conftest.py
@@ -17,6 +19,7 @@ from kasa import (
     DeviceConfig,
     SmartProtocol,
 )
+from kasa.httpclient import HttpClient
 from kasa.transports.basetransport import BaseTransport
 
 from .device_fixtures import *  # noqa: F403
@@ -25,6 +28,45 @@ from .fixtureinfo import fixture_info  # noqa: F401
 
 # Parametrize tests to run with device both on and off
 turn_on = pytest.mark.parametrize("turn_on", [True, False])
+
+
+@pytest.fixture(autouse=True)
+async def _close_transport_and_http_sessions(monkeypatch):
+    """Ensure all transports and http clients close their sessions after tests."""
+    transports: list[BaseTransport] = []
+    http_clients: list[HttpClient] = []
+    aiohttp_sessions: list[aiohttp.ClientSession] = []
+
+    original_transport_init = BaseTransport.__init__
+    original_http_init = HttpClient.__init__
+    original_session_init = aiohttp.ClientSession.__init__
+
+    @functools.wraps(original_transport_init)
+    def _track_transport(self, *args, **kwargs):
+        original_transport_init(self, *args, **kwargs)
+        transports.append(self)
+
+    @functools.wraps(original_http_init)
+    def _track_http(self, *args, **kwargs):
+        original_http_init(self, *args, **kwargs)
+        http_clients.append(self)
+
+    @functools.wraps(original_session_init)
+    def _track_session(self, *args, **kwargs):
+        original_session_init(self, *args, **kwargs)
+        aiohttp_sessions.append(self)
+
+    monkeypatch.setattr(BaseTransport, "__init__", _track_transport)
+    monkeypatch.setattr(HttpClient, "__init__", _track_http)
+    monkeypatch.setattr(aiohttp.ClientSession, "__init__", _track_session)
+    yield
+    for transport in transports:
+        await transport.close()
+    for client in http_clients:
+        await client.close()
+    for session in aiohttp_sessions:
+        if not session.closed:
+            await session.close()
 
 
 def load_fixture(foldername: str, filename: str):
