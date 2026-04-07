@@ -10,7 +10,7 @@ from .conftest import handle_turn_on, strip, strip_iot, turn_on
 
 @strip
 @turn_on
-async def test_children_change_state(dev, turn_on):
+async def test_children_change_state(dev: Device, turn_on: bool) -> None:
     await handle_turn_on(dev, turn_on)
     for plug in dev.children:
         orig_state = plug.is_on
@@ -37,7 +37,7 @@ async def test_children_change_state(dev, turn_on):
 
 
 @strip
-async def test_children_alias(dev):
+async def test_children_alias(dev: Device) -> None:
     test_alias = "TEST1234"
     for plug in dev.children:
         original = plug.alias
@@ -45,13 +45,14 @@ async def test_children_alias(dev):
         await dev.update()  # TODO: set_alias does not call parent's update()..
         assert plug.alias == test_alias
 
+        assert original is not None
         await plug.set_alias(alias=original)
         await dev.update()  # TODO: set_alias does not call parent's update()..
         assert plug.alias == original
 
 
 @strip
-async def test_children_on_since(dev):
+async def test_children_on_since(dev: Device) -> None:
     on_sinces = []
     for plug in dev.children:
         if plug.is_on:
@@ -69,7 +70,7 @@ async def test_children_on_since(dev):
 
 
 @strip
-async def test_get_plug_by_name(dev: IotStrip):
+async def test_get_plug_by_name(dev: IotStrip) -> None:
     name = dev.children[0].alias
     assert dev.get_plug_by_name(name) == dev.children[0]  # type: ignore[arg-type]
 
@@ -78,7 +79,7 @@ async def test_get_plug_by_name(dev: IotStrip):
 
 
 @strip
-async def test_get_plug_by_index(dev: IotStrip):
+async def test_get_plug_by_index(dev: IotStrip) -> None:
     assert dev.get_plug_by_index(0) == dev.children[0]
 
     with pytest.raises(KasaException):
@@ -89,7 +90,7 @@ async def test_get_plug_by_index(dev: IotStrip):
 
 
 @strip
-async def test_plug_features(dev: IotStrip):
+async def test_plug_features(dev: IotStrip) -> None:
     """Test the child plugs have default features."""
     for child in dev.children:
         assert "state" in child.features
@@ -97,7 +98,7 @@ async def test_plug_features(dev: IotStrip):
 
 
 @pytest.mark.skip("this test will wear out your relays")
-async def test_all_binary_states(dev):
+async def test_all_binary_states(dev) -> None:
     # test every binary state
     # TODO: this needs to be fixed, dev.plugs is not available for each device..
     for state in range(2 ** len(dev.children)):
@@ -142,7 +143,7 @@ async def test_all_binary_states(dev):
 
 
 @strip
-def test_children_api(dev):
+def test_children_api(dev: Device) -> None:
     """Test the child device API."""
     first = dev.children[0]
     first_by_get_child_device = dev.get_child_device(first.device_id)
@@ -150,7 +151,7 @@ def test_children_api(dev):
 
 
 @strip_iot
-async def test_children_energy(dev: Device):
+async def test_children_energy(dev: Device) -> None:
     if Module.Energy not in dev.modules:
         pytest.skip(f"skipping device {dev.model} does not support energy")
 
