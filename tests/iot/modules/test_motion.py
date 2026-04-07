@@ -9,7 +9,7 @@ from ...device_fixtures import dimmer_iot
 
 
 @dimmer_iot
-def test_motion_getters(dev: IotDimmer):
+def test_motion_getters(dev: IotDimmer) -> None:
     assert Module.IotMotion in dev.modules
     motion: Motion = dev.modules[Module.IotMotion]
 
@@ -19,7 +19,7 @@ def test_motion_getters(dev: IotDimmer):
 
 
 @dimmer_iot
-async def test_motion_setters(dev: IotDimmer, mocker: MockerFixture):
+async def test_motion_setters(dev: IotDimmer, mocker: MockerFixture) -> None:
     motion: Motion = dev.modules[Module.IotMotion]
     query_helper = mocker.patch("kasa.iot.IotDimmer._query_helper")
 
@@ -33,7 +33,7 @@ async def test_motion_setters(dev: IotDimmer, mocker: MockerFixture):
 
 
 @dimmer_iot
-async def test_motion_range(dev: IotDimmer, mocker: MockerFixture):
+async def test_motion_range(dev: IotDimmer, mocker: MockerFixture) -> None:
     motion: Motion = dev.modules[Module.IotMotion]
     query_helper = mocker.patch("kasa.iot.IotDimmer._query_helper")
 
@@ -47,7 +47,7 @@ async def test_motion_range(dev: IotDimmer, mocker: MockerFixture):
 
 
 @dimmer_iot
-async def test_motion_range_from_string(dev: IotDimmer, mocker: MockerFixture):
+async def test_motion_range_from_string(dev: IotDimmer, mocker: MockerFixture) -> None:
     motion: Motion = dev.modules[Module.IotMotion]
     query_helper = mocker.patch("kasa.iot.IotDimmer._query_helper")
 
@@ -74,7 +74,7 @@ async def test_motion_range_from_string(dev: IotDimmer, mocker: MockerFixture):
 
 
 @dimmer_iot
-async def test_motion_threshold(dev: IotDimmer, mocker: MockerFixture):
+async def test_motion_threshold(dev: IotDimmer, mocker: MockerFixture) -> None:
     motion: Motion = dev.modules[Module.IotMotion]
     query_helper = mocker.patch("kasa.iot.IotDimmer._query_helper")
 
@@ -97,7 +97,7 @@ async def test_motion_threshold(dev: IotDimmer, mocker: MockerFixture):
 
 
 @dimmer_iot
-async def test_motion_realtime(dev: IotDimmer, mocker: MockerFixture):
+async def test_motion_realtime(dev: IotDimmer, mocker: MockerFixture) -> None:
     motion: Motion = dev.modules[Module.IotMotion]
     query_helper = mocker.patch("kasa.iot.IotDimmer._query_helper")
 
@@ -106,7 +106,7 @@ async def test_motion_realtime(dev: IotDimmer, mocker: MockerFixture):
 
 
 @dimmer_iot
-def test_motion_feature(dev: IotDimmer):
+def test_motion_feature(dev: IotDimmer) -> None:
     assert Module.IotMotion in dev.modules
     motion: Motion = dev.modules[Module.IotMotion]
 

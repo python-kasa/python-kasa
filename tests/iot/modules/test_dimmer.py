@@ -14,7 +14,7 @@ _TD_ONE_MS: Final[timedelta] = timedelta(milliseconds=1)
 
 
 @dimmer_iot
-def test_dimmer_getters(dev: IotDimmer):
+def test_dimmer_getters(dev: IotDimmer) -> None:
     assert Module.IotDimmer in dev.modules
     dimmer: Dimmer = dev.modules[Module.IotDimmer]
 
@@ -27,7 +27,7 @@ def test_dimmer_getters(dev: IotDimmer):
 
 
 @dimmer_iot
-async def test_dimmer_setters(dev: IotDimmer, mocker: MockerFixture):
+async def test_dimmer_setters(dev: IotDimmer, mocker: MockerFixture) -> None:
     dimmer: Dimmer = dev.modules[Module.IotDimmer]
     query_helper = mocker.patch("kasa.iot.IotDimmer._query_helper")
 
@@ -65,7 +65,7 @@ async def test_dimmer_setters(dev: IotDimmer, mocker: MockerFixture):
 
 
 @dimmer_iot
-async def test_dimmer_setter_min(dev: IotDimmer, mocker: MockerFixture):
+async def test_dimmer_setter_min(dev: IotDimmer, mocker: MockerFixture) -> None:
     dimmer: Dimmer = dev.modules[Module.IotDimmer]
     query_helper = mocker.patch("kasa.iot.IotDimmer._query_helper")
 
@@ -103,7 +103,7 @@ async def test_dimmer_setter_min(dev: IotDimmer, mocker: MockerFixture):
 
 
 @dimmer_iot
-async def test_dimmer_setter_max(dev: IotDimmer, mocker: MockerFixture):
+async def test_dimmer_setter_max(dev: IotDimmer, mocker: MockerFixture) -> None:
     dimmer: Dimmer = dev.modules[Module.IotDimmer]
     query_helper = mocker.patch("kasa.iot.IotDimmer._query_helper")
 
@@ -141,7 +141,7 @@ async def test_dimmer_setter_max(dev: IotDimmer, mocker: MockerFixture):
 
 
 @dimmer_iot
-async def test_dimmer_setters_min_oob(dev: IotDimmer, mocker: MockerFixture):
+async def test_dimmer_setters_min_oob(dev: IotDimmer, mocker: MockerFixture) -> None:
     dimmer: Dimmer = dev.modules[Module.IotDimmer]
     query_helper = mocker.patch("kasa.iot.IotDimmer._query_helper")
 
@@ -173,7 +173,7 @@ async def test_dimmer_setters_min_oob(dev: IotDimmer, mocker: MockerFixture):
 
 
 @dimmer_iot
-async def test_dimmer_setters_max_oob(dev: IotDimmer, mocker: MockerFixture):
+async def test_dimmer_setters_max_oob(dev: IotDimmer, mocker: MockerFixture) -> None:
     dimmer: Dimmer = dev.modules[Module.IotDimmer]
     query_helper = mocker.patch("kasa.iot.IotDimmer._query_helper")
 
