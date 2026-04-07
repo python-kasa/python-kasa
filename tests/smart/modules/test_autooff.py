@@ -26,7 +26,7 @@ autooff = parametrize(
 )
 async def test_autooff_features(
     dev: SmartDevice, feature: str, prop_name: str, type: type
-):
+) -> None:
     """Test that features are registered and work as expected."""
     autooff = next(get_parent_and_child_modules(dev, Module.AutoOff))
     assert autooff is not None
@@ -40,7 +40,7 @@ async def test_autooff_features(
 
 
 @autooff
-async def test_settings(dev: SmartDevice, mocker: MockerFixture):
+async def test_settings(dev: SmartDevice, mocker: MockerFixture) -> None:
     """Test autooff settings."""
     autooff = next(get_parent_and_child_modules(dev, Module.AutoOff))
     assert autooff
@@ -79,7 +79,7 @@ async def test_settings(dev: SmartDevice, mocker: MockerFixture):
 @pytest.mark.parametrize("is_timer_active", [True, False])
 async def test_auto_off_at(
     dev: SmartDevice, mocker: MockerFixture, is_timer_active: bool
-):
+) -> None:
     """Test auto-off at sensor."""
     autooff = next(get_parent_and_child_modules(dev, Module.AutoOff))
     assert autooff

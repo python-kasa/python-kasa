@@ -1,8 +1,10 @@
 import logging
 import re
+from typing import cast
 
 import pytest
 
+from kasa.smart import SmartDevice
 from kasa.smart.modules import TemperatureControl
 from kasa.smart.modules.temperaturecontrol import ThermostatState
 
@@ -23,9 +25,11 @@ temperature = parametrize(
         ("temperature_offset", int),
     ],
 )
-async def test_temperature_control_features(dev, feature, type):
+async def test_temperature_control_features(
+    dev: SmartDevice, feature: str, type: type
+) -> None:
     """Test that features are registered and work as expected."""
-    temp_module: TemperatureControl = dev.modules["TemperatureControl"]
+    temp_module = cast(TemperatureControl, dev.modules["TemperatureControl"])
 
     prop = getattr(temp_module, feature)
     assert isinstance(prop, type)
@@ -40,9 +44,9 @@ async def test_temperature_control_features(dev, feature, type):
 
 
 @thermostats_smart
-async def test_set_temperature_turns_heating_on(dev):
+async def test_set_temperature_turns_heating_on(dev: SmartDevice) -> None:
     """Test that set_temperature turns heating on."""
-    temp_module: TemperatureControl = dev.modules["TemperatureControl"]
+    temp_module = cast(TemperatureControl, dev.modules["TemperatureControl"])
 
     await temp_module.set_state(False)
     await dev.update()
@@ -57,9 +61,9 @@ async def test_set_temperature_turns_heating_on(dev):
 
 
 @thermostats_smart
-async def test_set_temperature_invalid_values(dev):
+async def test_set_temperature_invalid_values(dev: SmartDevice) -> None:
     """Test that out-of-bounds temperature values raise errors."""
-    temp_module: TemperatureControl = dev.modules["TemperatureControl"]
+    temp_module = cast(TemperatureControl, dev.modules["TemperatureControl"])
 
     with pytest.raises(
         ValueError, match="Invalid target temperature -1, must be in range"
@@ -73,9 +77,9 @@ async def test_set_temperature_invalid_values(dev):
 
 
 @thermostats_smart
-async def test_temperature_offset(dev):
+async def test_temperature_offset(dev: SmartDevice) -> None:
     """Test the temperature offset API."""
-    temp_module: TemperatureControl = dev.modules["TemperatureControl"]
+    temp_module = cast(TemperatureControl, dev.modules["TemperatureControl"])
     with pytest.raises(
         ValueError, match=re.escape("Temperature offset must be [-10, 10]")
     ):
@@ -111,9 +115,11 @@ async def test_temperature_offset(dev):
         pytest.param(ThermostatState.Unknown, ["invalid"], False, id="unknown state"),
     ],
 )
-async def test_thermostat_mode(dev, mode, states, frost_protection):
+async def test_thermostat_mode(
+    dev: SmartDevice, mode: ThermostatState, states: list[str], frost_protection: bool
+) -> None:
     """Test different thermostat modes."""
-    temp_module: TemperatureControl = dev.modules["TemperatureControl"]
+    temp_module = cast(TemperatureControl, dev.modules["TemperatureControl"])
 
     temp_module.data["frost_protection_on"] = frost_protection
     temp_module.data["trv_states"] = states
@@ -138,9 +144,15 @@ async def test_thermostat_mode(dev, mode, states, frost_protection):
     ],
 )
 @pytest.mark.xdist_group(name="caplog")
-async def test_thermostat_mode_warnings(dev, mode, states, msg, caplog):
+async def test_thermostat_mode_warnings(
+    dev: SmartDevice,
+    mode: ThermostatState,
+    states: list[str],
+    msg: str,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """Test thermostat modes that should log a warning."""
-    temp_module: TemperatureControl = dev.modules["TemperatureControl"]
+    temp_module = cast(TemperatureControl, dev.modules["TemperatureControl"])
     caplog.set_level(logging.WARNING)
 
     temp_module.data["trv_states"] = states
@@ -149,17 +161,19 @@ async def test_thermostat_mode_warnings(dev, mode, states, msg, caplog):
 
 
 @thermostats_smart
-async def test_thermostat_heating_with_low_battery(dev):
+async def test_thermostat_heating_with_low_battery(dev: SmartDevice) -> None:
     """Test that mode is reported correctly with extra states."""
-    temp_module: TemperatureControl = dev.modules["TemperatureControl"]
+    temp_module = cast(TemperatureControl, dev.modules["TemperatureControl"])
     temp_module.data["trv_states"] = ["low_battery", "heating"]
     assert temp_module.mode is ThermostatState.Heating
 
 
 @thermostats_smart
-async def test_thermostat_idle_with_low_battery(dev, caplog):
+async def test_thermostat_idle_with_low_battery(
+    dev: SmartDevice, caplog: pytest.LogCaptureFixture
+) -> None:
     """Test that mode is reported correctly with extra states."""
-    temp_module: TemperatureControl = dev.modules["TemperatureControl"]
+    temp_module = cast(TemperatureControl, dev.modules["TemperatureControl"])
     temp_module.data["trv_states"] = ["low_battery"]
     with caplog.at_level(logging.WARNING):
         assert temp_module.mode is ThermostatState.Idle
