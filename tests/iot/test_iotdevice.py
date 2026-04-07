@@ -4,6 +4,7 @@ import re
 from datetime import datetime
 
 import pytest
+from pytest_mock import MockerFixture
 from voluptuous import (
     REMOVE_EXTRA,
     All,
@@ -84,20 +85,20 @@ SYSINFO_SCHEMA = Schema(
 
 
 @device_iot
-async def test_state_info(dev):
+async def test_state_info(dev: IotDevice) -> None:
     assert isinstance(dev.state_information, dict)
 
 
 @pytest.mark.requires_dummy
 @device_iot
-async def test_invalid_connection(mocker, dev):
+async def test_invalid_connection(mocker: MockerFixture, dev: IotDevice) -> None:
     mocker.patch.object(FakeIotProtocol, "query", side_effect=KasaException)
     with pytest.raises(KasaException):
         await dev.update()
 
 
 @has_emeter_iot
-async def test_initial_update_emeter(dev, mocker):
+async def test_initial_update_emeter(dev: IotDevice, mocker: MockerFixture) -> None:
     """Test that the initial update performs second query if emeter is available."""
     dev._last_update = {}
     dev._legacy_features = set()
@@ -109,7 +110,7 @@ async def test_initial_update_emeter(dev, mocker):
 
 
 @no_emeter_iot
-async def test_initial_update_no_emeter(dev, mocker):
+async def test_initial_update_no_emeter(dev: IotDevice, mocker: MockerFixture) -> None:
     """Test that the initial update performs second query if emeter is available."""
     dev._last_update = {}
     dev._legacy_features = set()
@@ -128,7 +129,7 @@ async def test_initial_update_no_emeter(dev, mocker):
 
 
 @device_iot
-async def test_query_helper(dev):
+async def test_query_helper(dev: IotDevice) -> None:
     with pytest.raises(KasaException):
         await dev._query_helper("test", "testcmd", {})
     # TODO check for unwrapping?
@@ -136,7 +137,7 @@ async def test_query_helper(dev):
 
 @device_iot
 @turn_on
-async def test_state(dev, turn_on):
+async def test_state(dev: IotDevice, turn_on: bool) -> None:
     orig_state = dev.is_on
     await handle_turn_on(dev, turn_on)
     await dev.update()
@@ -164,7 +165,7 @@ async def test_state(dev, turn_on):
 
 @device_iot
 @turn_on
-async def test_on_since(dev, turn_on):
+async def test_on_since(dev: IotDevice, turn_on: bool) -> None:
     await handle_turn_on(dev, turn_on)
     orig_state = dev.is_on
     if "on_time" not in dev.sys_info and dev.device_type is not DeviceType.Strip:
@@ -176,43 +177,43 @@ async def test_on_since(dev, turn_on):
 
 
 @device_iot
-async def test_time(dev):
+async def test_time(dev: IotDevice) -> None:
     assert isinstance(dev.modules[Module.Time].time, datetime)
 
 
 @device_iot
-async def test_timezone(dev):
+async def test_timezone(dev: IotDevice) -> None:
     TZ_SCHEMA(await dev.modules[Module.Time].get_timezone())
 
 
 @device_iot
-async def test_hw_info(dev):
+async def test_hw_info(dev: IotDevice) -> None:
     SYSINFO_SCHEMA(dev.hw_info)
 
 
 @device_iot
-async def test_location(dev):
+async def test_location(dev: IotDevice) -> None:
     SYSINFO_SCHEMA(dev.location)
 
 
 @device_iot
-async def test_rssi(dev):
+async def test_rssi(dev: IotDevice) -> None:
     SYSINFO_SCHEMA({"rssi": dev.rssi})  # wrapping for vol
 
 
 @device_iot
-async def test_mac(dev):
+async def test_mac(dev: IotDevice) -> None:
     SYSINFO_SCHEMA({"mac": dev.mac})  # wrapping for val
 
 
 @device_iot
-async def test_representation(dev):
+async def test_representation(dev: IotDevice) -> None:
     pattern = re.compile(r"<DeviceType\..+ at .+? - .*? \(.+?\)>")
     assert pattern.match(str(dev))
 
 
 @device_iot
-async def test_children(dev):
+async def test_children(dev: IotDevice) -> None:
     """Make sure that children property is exposed by every device."""
     if dev.device_type is DeviceType.Strip:
         assert len(dev.children) > 0
@@ -221,7 +222,7 @@ async def test_children(dev):
 
 
 @device_iot
-async def test_modules_preserved(dev: IotDevice):
+async def test_modules_preserved(dev: IotDevice) -> None:
     """Make modules that are not being updated are preserved between updates."""
     dev._last_update["some_module_not_being_updated"] = "should_be_kept"
     await dev.update()
@@ -229,13 +230,13 @@ async def test_modules_preserved(dev: IotDevice):
 
 
 @device_iot
-async def test_internal_state(dev):
+async def test_internal_state(dev: IotDevice) -> None:
     """Make sure the internal state returns the last update results."""
     assert dev.internal_state == dev._last_update
 
 
 @device_iot
-async def test_features(dev):
+async def test_features(dev: IotDevice) -> None:
     """Make sure features is always accessible."""
     sysinfo = dev._last_update["system"]["get_sysinfo"]
     if "feature" in sysinfo:
@@ -245,20 +246,20 @@ async def test_features(dev):
 
 
 @device_iot
-async def test_max_device_response_size(dev):
+async def test_max_device_response_size(dev: IotDevice) -> None:
     """Make sure every device return has a set max response size."""
     assert dev.max_device_response_size > 0
 
 
 @device_iot
-async def test_estimated_response_sizes(dev):
+async def test_estimated_response_sizes(dev: IotDevice) -> None:
     """Make sure every module has an estimated response size set."""
     for mod in dev.modules.values():
         assert mod.estimated_query_response_size > 0
 
 
 @device_iot
-async def test_modules_not_supported(dev: IotDevice):
+async def test_modules_not_supported(dev: IotDevice) -> None:
     """Test that unsupported modules do not break the device."""
     for module in dev.modules.values():
         assert module.is_supported is not None
@@ -267,7 +268,7 @@ async def test_modules_not_supported(dev: IotDevice):
         assert module.is_supported is not None
 
 
-async def test_get_modules():
+async def test_get_modules() -> None:
     """Test getting modules for child and parent modules."""
     dummy_device = await get_device_for_fixture_protocol(
         "HS100(US)_2.0_1.5.6.json", "IOT"
@@ -293,10 +294,10 @@ async def test_get_modules():
     assert module is None
 
 
-def test_merge_dict():
+def test_merge_dict() -> None:
     """Test the recursive dict merge."""
-    dest = {"a": 1, "b": {"c": 2, "d": 3}}
-    source = {"b": {"c": 4, "e": 5}}
+    dest: dict = {"a": 1, "b": {"c": 2, "d": 3}}
+    source: dict = {"b": {"c": 4, "e": 5}}
     assert _merge_dict(dest, source) == {"a": 1, "b": {"c": 4, "d": 3, "e": 5}}
 
     dest = {"smartlife.iot.common.emeter": {"get_realtime": None}}
