@@ -15,7 +15,7 @@ childsetup = parametrize(
 
 
 @childsetup
-async def test_childsetup_features(dev: Device):
+async def test_childsetup_features(dev: Device) -> None:
     """Test the exposed features."""
     cs = dev.modules[Module.ChildSetup]
 
@@ -27,7 +27,7 @@ async def test_childsetup_features(dev: Device):
 @childsetup
 async def test_childsetup_pair(
     dev: Device, mocker: MockerFixture, caplog: pytest.LogCaptureFixture
-):
+) -> None:
     """Test device pairing."""
     caplog.set_level(logging.INFO)
     mock_query_helper = mocker.spy(dev, "_query_helper")
@@ -70,7 +70,7 @@ async def test_childsetup_pair(
 @childsetup
 async def test_childsetup_unpair(
     dev: Device, mocker: MockerFixture, caplog: pytest.LogCaptureFixture
-):
+) -> None:
     """Test unpair."""
     mock_query_helper = mocker.spy(dev, "_query_helper")
     DUMMY_ID = "dummy_id"

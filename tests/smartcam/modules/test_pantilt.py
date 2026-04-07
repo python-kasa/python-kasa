@@ -15,7 +15,7 @@ pantilt = parametrize(
 
 
 @pantilt
-async def test_pantilt_presets(dev: Device, mocker: MockerFixture):
+async def test_pantilt_presets(dev: Device, mocker: MockerFixture) -> None:
     """Test PanTilt module preset functionality."""
     pantilt_mod = dev.modules.get(Module.PanTilt)
     assert pantilt_mod is not None
@@ -42,7 +42,7 @@ async def test_pantilt_presets(dev: Device, mocker: MockerFixture):
 
 
 @pantilt
-async def test_pantilt_save_preset(dev: Device, mocker: MockerFixture):
+async def test_pantilt_save_preset(dev: Device, mocker: MockerFixture) -> None:
     """Test PanTilt save_preset functionality."""
     pantilt_mod = dev.modules.get(Module.PanTilt)
     assert pantilt_mod is not None
@@ -62,7 +62,7 @@ async def test_pantilt_save_preset(dev: Device, mocker: MockerFixture):
 
 
 @pantilt
-async def test_pantilt_invalid_preset(dev: Device, mocker: MockerFixture):
+async def test_pantilt_invalid_preset(dev: Device, mocker: MockerFixture) -> None:
     """Test set_preset with invalid preset name raises ValueError."""
     pantilt_mod = dev.modules.get(Module.PanTilt)
     assert pantilt_mod is not None
@@ -81,7 +81,7 @@ async def test_pantilt_invalid_preset(dev: Device, mocker: MockerFixture):
 
 
 @pantilt
-async def test_pantilt_move(dev: Device, mocker: MockerFixture):
+async def test_pantilt_move(dev: Device, mocker: MockerFixture) -> None:
     """Test PanTilt move commands."""
     pantilt_mod = dev.modules.get(Module.PanTilt)
     assert pantilt_mod is not None
@@ -103,7 +103,7 @@ async def test_pantilt_move(dev: Device, mocker: MockerFixture):
 
 
 @pantilt
-async def test_pantilt_goto_preset(dev: Device, mocker: MockerFixture):
+async def test_pantilt_goto_preset(dev: Device, mocker: MockerFixture) -> None:
     """Test PanTilt goto_preset command."""
     pantilt_mod = dev.modules.get(Module.PanTilt)
     assert pantilt_mod is not None
@@ -119,7 +119,7 @@ async def test_pantilt_goto_preset(dev: Device, mocker: MockerFixture):
 
 
 @pantilt
-async def test_pantilt_get_presets(dev: Device, mocker: MockerFixture):
+async def test_pantilt_get_presets(dev: Device, mocker: MockerFixture) -> None:
     """Test PanTilt get_presets command."""
     pantilt_mod = dev.modules.get(Module.PanTilt)
     assert pantilt_mod is not None
@@ -135,7 +135,7 @@ async def test_pantilt_get_presets(dev: Device, mocker: MockerFixture):
 
 
 @pantilt
-async def test_pantilt_set_preset_by_id(dev: Device, mocker: MockerFixture):
+async def test_pantilt_set_preset_by_id(dev: Device, mocker: MockerFixture) -> None:
     """Test set_preset with preset ID instead of name."""
     pantilt_mod = dev.modules.get(Module.PanTilt)
     assert pantilt_mod is not None
@@ -160,7 +160,7 @@ async def test_pantilt_set_preset_by_id(dev: Device, mocker: MockerFixture):
 
 
 @pantilt
-async def test_pantilt_set_preset_not_found(dev: Device, mocker: MockerFixture):
+async def test_pantilt_set_preset_not_found(dev: Device, mocker: MockerFixture) -> None:
     """Test set_preset with non-existent preset returns empty dict."""
     pantilt_mod = dev.modules.get(Module.PanTilt)
     assert pantilt_mod is not None
@@ -177,7 +177,7 @@ async def test_pantilt_set_preset_not_found(dev: Device, mocker: MockerFixture):
 
 
 @pantilt
-async def test_pantilt_step_features(dev: Device, mocker: MockerFixture):
+async def test_pantilt_step_features(dev: Device, mocker: MockerFixture) -> None:
     """Test pan/tilt step features."""
     pantilt_mod = dev.modules.get(Module.PanTilt)
     assert pantilt_mod is not None
@@ -200,7 +200,7 @@ async def test_pantilt_step_features(dev: Device, mocker: MockerFixture):
 
 
 @pantilt
-async def test_pantilt_no_presets_in_data(dev: Device, mocker: MockerFixture):
+async def test_pantilt_no_presets_in_data(dev: Device, mocker: MockerFixture) -> None:
     """Test _presets returns empty dict when no preset data."""
     pantilt_mod = dev.modules.get(Module.PanTilt)
     assert pantilt_mod is not None
