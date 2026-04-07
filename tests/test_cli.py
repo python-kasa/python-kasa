@@ -64,7 +64,7 @@ from .conftest import (
 pytestmark = [pytest.mark.requires_dummy]
 
 
-async def test_help(runner):
+async def test_help(runner: CliRunner) -> None:
     """Test that all the lazy modules are correctly names."""
     res = await runner.invoke(cli, ["--help"])
     assert res.exit_code == 0, "--help failed, check lazy module names"
@@ -77,7 +77,9 @@ async def test_help(runner):
         pytest.param("SMART.TAPOPLUG", None, id="Only device_family"),
     ],
 )
-async def test_update_called_by_cli(dev, mocker, runner, device_family, encrypt_type):
+async def test_update_called_by_cli(
+    dev: Device, mocker: MockerFixture, runner: CliRunner, device_family, encrypt_type
+) -> None:
     """Test that device update is called on main."""
     update = mocker.patch.object(dev, "update")
 
@@ -107,7 +109,7 @@ async def test_update_called_by_cli(dev, mocker, runner, device_family, encrypt_
     update.assert_called()
 
 
-async def test_list_devices(discovery_mock, runner):
+async def test_list_devices(discovery_mock, runner: CliRunner) -> None:
     """Test that device update is called on main."""
     res = await runner.invoke(
         cli,
@@ -128,7 +130,9 @@ async def test_list_devices(discovery_mock, runner):
     assert row in res.output
 
 
-async def test_discover_raw(discovery_mock, runner, mocker):
+async def test_discover_raw(
+    discovery_mock, runner: CliRunner, mocker: MockerFixture
+) -> None:
     """Test the discover raw command."""
     redact_spy = mocker.patch(
         "kasa.protocols.protocol.redact_data", side_effect=redact_data
@@ -171,7 +175,13 @@ async def test_discover_raw(discovery_mock, runner, mocker):
     ],
 )
 @new_discovery
-async def test_list_update_failed(discovery_mock, mocker, runner, exception, expected):
+async def test_list_update_failed(
+    discovery_mock,
+    mocker: MockerFixture,
+    runner: CliRunner,
+    exception: type[Exception],
+    expected: str,
+) -> None:
     """Test that device update is called on main."""
     device_class = Discover._get_device_class(discovery_mock.discovery_data)
     mocker.patch.object(
@@ -198,7 +208,9 @@ async def test_list_update_failed(discovery_mock, mocker, runner, exception, exp
     assert row in res.output.replace("\n", "")
 
 
-async def test_list_unsupported(unsupported_device_info, runner):
+async def test_list_unsupported(
+    unsupported_device_info: dict, runner: CliRunner
+) -> None:
     """Test that device update is called on main."""
     res = await runner.invoke(
         cli,
@@ -215,14 +227,14 @@ async def test_list_unsupported(unsupported_device_info, runner):
     assert row in res.output
 
 
-async def test_sysinfo(dev: Device, runner):
+async def test_sysinfo(dev: Device, runner: CliRunner) -> None:
     res = await runner.invoke(sysinfo, obj=dev)
     assert "System info" in res.output
     assert dev.model in res.output
 
 
 @turn_on
-async def test_state(dev, turn_on, runner):
+async def test_state(dev: Device, turn_on: bool, runner: CliRunner) -> None:
     await handle_turn_on(dev, turn_on)
     await dev.update()
     res = await runner.invoke(state, obj=dev)
@@ -234,7 +246,7 @@ async def test_state(dev, turn_on, runner):
 
 
 @turn_on
-async def test_toggle(dev, turn_on, runner):
+async def test_toggle(dev: Device, turn_on: bool, runner: CliRunner) -> None:
     if isinstance(dev, SmartCamDevice) and dev.device_type == DeviceType.Hub:
         pytest.skip(reason="Hub cannot toggle state")
 
@@ -247,7 +259,7 @@ async def test_toggle(dev, turn_on, runner):
     assert dev.is_on != turn_on
 
 
-async def test_alias(dev, runner):
+async def test_alias(dev: Device, runner: CliRunner) -> None:
     res = await runner.invoke(alias, obj=dev)
     assert f"Alias: {dev.alias}" in res.output
 
@@ -265,7 +277,9 @@ async def test_alias(dev, runner):
     await dev.set_alias(old_alias or "")
 
 
-async def test_raw_command(dev, mocker, runner):
+async def test_raw_command(
+    dev: Device, mocker: MockerFixture, runner: CliRunner
+) -> None:
     update = mocker.patch.object(dev, "update")
     from kasa.smart import SmartDevice
 
@@ -293,17 +307,17 @@ async def test_raw_command(dev, mocker, runner):
     assert "Usage" in res.output
 
 
-async def test_command_with_child(dev, mocker, runner):
+async def test_command_with_child(dev, mocker: MockerFixture, runner: CliRunner):
     """Test 'command' command with --child."""
     update_mock = mocker.patch.object(dev, "update")
 
     # create_autospec for device slows tests way too much, so we use a dummy here
     class DummyDevice(dev.__class__):
-        def __init__(self):
+        def __init__(self) -> None:
             super().__init__("127.0.0.1")
             # device_type and _info initialised for repr
             self._device_type = Device.Type.StripSocket
-            self._info = {}
+            self._info: dict = {}
 
         async def _query_helper(*_, **__):
             return {"dummy": "response"}
@@ -326,7 +340,7 @@ async def test_command_with_child(dev, mocker, runner):
 
 
 @device_smart
-async def test_reboot(dev, mocker, runner):
+async def test_reboot(dev: Device, mocker: MockerFixture, runner: CliRunner) -> None:
     """Test that reboot works on SMART devices."""
     query_mock = mocker.patch.object(dev.protocol, "query")
 
@@ -340,7 +354,9 @@ async def test_reboot(dev, mocker, runner):
 
 
 @device_smart
-async def test_factory_reset(dev, mocker, runner):
+async def test_factory_reset(
+    dev: Device, mocker: MockerFixture, runner: CliRunner
+) -> None:
     """Test that factory reset works on SMART devices."""
     query_mock = mocker.patch.object(dev.protocol, "query")
 
@@ -355,7 +371,7 @@ async def test_factory_reset(dev, mocker, runner):
 
 
 @device_smart
-async def test_wifi_scan(dev, runner):
+async def test_wifi_scan(dev: Device, runner: CliRunner) -> None:
     res = await runner.invoke(wifi, ["scan"], obj=dev)
 
     assert res.exit_code == 0
@@ -363,7 +379,7 @@ async def test_wifi_scan(dev, runner):
 
 
 @parametrize_combine([device_smart, device_iot])
-async def test_wifi_join(dev, mocker, runner):
+async def test_wifi_join(dev: Device, mocker: MockerFixture, runner: CliRunner) -> None:
     update = mocker.patch.object(dev, "update")
     res = await runner.invoke(
         wifi,
@@ -380,7 +396,9 @@ async def test_wifi_join(dev, mocker, runner):
 
 
 @parametrize_combine([device_smart, device_iot])
-async def test_wifi_join_missing_keytype(dev, mocker, runner):
+async def test_wifi_join_missing_keytype(
+    dev: Device, mocker: MockerFixture, runner: CliRunner
+) -> None:
     """Test that missing keytype raises KasaException and CLI echoes the message."""
     update = mocker.patch.object(dev, "update")
     res = await runner.invoke(
@@ -398,7 +416,9 @@ async def test_wifi_join_missing_keytype(dev, mocker, runner):
 
 
 @device_smartcam
-async def test_wifi_join_smartcam(dev, mocker, runner):
+async def test_wifi_join_smartcam(
+    dev: Device, mocker: MockerFixture, runner: CliRunner
+) -> None:
     update = mocker.patch.object(dev, "update")
     res = await runner.invoke(
         wifi,
@@ -415,7 +435,7 @@ async def test_wifi_join_smartcam(dev, mocker, runner):
 
 
 @device_smart
-async def test_wifi_join_no_creds(dev, runner):
+async def test_wifi_join_no_creds(dev: Device, runner: CliRunner) -> None:
     dev.protocol._transport._credentials = None
     res = await runner.invoke(
         wifi,
@@ -428,7 +448,9 @@ async def test_wifi_join_no_creds(dev, runner):
 
 
 @device_smart
-async def test_wifi_join_exception(dev, mocker, runner):
+async def test_wifi_join_exception(
+    dev: Device, mocker: MockerFixture, runner: CliRunner
+) -> None:
     mocker.patch.object(dev.protocol, "query", side_effect=DeviceError(error_code=9999))
     res = await runner.invoke(
         wifi,
@@ -441,7 +463,7 @@ async def test_wifi_join_exception(dev, mocker, runner):
 
 
 @device_smart
-async def test_update_credentials(dev, runner):
+async def test_update_credentials(dev: Device, runner: CliRunner) -> None:
     res = await runner.invoke(
         update_credentials,
         ["--username", "foo", "--password", "bar"],
@@ -456,7 +478,7 @@ async def test_update_credentials(dev, runner):
     )
 
 
-async def test_time_get(dev, runner):
+async def test_time_get(dev: Device, runner: CliRunner) -> None:
     """Test time get command."""
     res = await runner.invoke(
         time,
@@ -466,7 +488,7 @@ async def test_time_get(dev, runner):
     assert "Current time: " in res.output
 
 
-async def test_time_sync(dev, mocker, runner):
+async def test_time_sync(dev: Device, mocker: MockerFixture, runner: CliRunner) -> None:
     """Test time sync command."""
     update = mocker.patch.object(dev, "update")
     set_time_mock = mocker.spy(dev.modules[Module.Time], "set_time")
@@ -483,7 +505,7 @@ async def test_time_sync(dev, mocker, runner):
     assert "New time: " in res.output
 
 
-async def test_time_set(dev: Device, mocker, runner):
+async def test_time_set(dev: Device, mocker: MockerFixture, runner: CliRunner) -> None:
     """Test time set command."""
     time_mod = dev.modules[Module.Time]
     set_time_mock = mocker.spy(time_mod, "set_time")
@@ -525,7 +547,7 @@ async def test_time_set(dev: Device, mocker, runner):
     assert "New time: " in res.output
 
 
-async def test_emeter(dev: Device, mocker, runner):
+async def test_emeter(dev: Device, mocker: MockerFixture, runner: CliRunner) -> None:
     mocker.patch("kasa.Discover.discover_single", return_value=dev)
     base_cmd = ["--host", "dummy", "energy"]
     res = await runner.invoke(cli, base_cmd, obj=dev)
@@ -555,9 +577,9 @@ async def test_emeter(dev: Device, mocker, runner):
             child_status.assert_called()
             assert child_status.call_count == 1
 
-            res = await runner.invoke(
-                cli, [*base_cmd, "--name", dev.children[0].alias], obj=dev
-            )
+            child_alias = dev.children[0].alias
+            assert child_alias is not None
+            res = await runner.invoke(cli, [*base_cmd, "--name", child_alias], obj=dev)
             assert "Voltage: 122.066 V" in res.output
             assert child_status.call_count == 2
 
@@ -584,7 +606,7 @@ async def test_emeter(dev: Device, mocker, runner):
     daily.assert_called_with(year=1900, month=12)
 
 
-async def test_brightness(dev: Device, runner):
+async def test_brightness(dev: Device, runner: CliRunner) -> None:
     res = await runner.invoke(brightness, obj=dev)
     if not (light := dev.modules.get(Module.Light)) or not light.has_feature(
         "brightness"
@@ -603,7 +625,7 @@ async def test_brightness(dev: Device, runner):
     assert "Brightness: 12" in res.output
 
 
-async def test_color_temperature(dev: Device, runner):
+async def test_color_temperature(dev: Device, runner: CliRunner) -> None:
     res = await runner.invoke(temperature, obj=dev)
     if not (light := dev.modules.get(Module.Light)) or not (
         color_temp_feat := light.get_feature("color_temp")
@@ -638,7 +660,7 @@ async def test_color_temperature(dev: Device, runner):
     assert res.exit_code == 2
 
 
-async def test_color_hsv(dev: Device, runner: CliRunner):
+async def test_color_hsv(dev: Device, runner: CliRunner) -> None:
     res = await runner.invoke(hsv, obj=dev)
     if not (light := dev.modules.get(Module.Light)) or not light.has_feature("hsv"):
         assert "Device does not support colors" in res.output
@@ -657,7 +679,7 @@ async def test_color_hsv(dev: Device, runner: CliRunner):
     assert res.exit_code == 2
 
 
-async def test_light_effect(dev: Device, runner: CliRunner):
+async def test_light_effect(dev: Device, runner: CliRunner) -> None:
     res = await runner.invoke(effect, obj=dev)
     if not (light_effect := dev.modules.get(Module.LightEffect)):
         assert "Device does not support effects" in res.output
@@ -683,7 +705,7 @@ async def test_light_effect(dev: Device, runner: CliRunner):
     assert res.exit_code == 2
 
 
-async def test_light_preset(dev: Device, runner: CliRunner):
+async def test_light_preset(dev: Device, runner: CliRunner) -> None:
     res = await runner.invoke(presets, obj=dev)
     if not (light_preset := dev.modules.get(Module.LightPreset)):
         assert "Device does not support light presets" in res.output
@@ -726,7 +748,7 @@ async def test_light_preset(dev: Device, runner: CliRunner):
     assert "Need to supply at least one option to modify." in res.output
 
 
-async def test_led(dev: Device, runner: CliRunner):
+async def test_led(dev: Device, runner: CliRunner) -> None:
     res = await runner.invoke(led, obj=dev)
     if not (led_module := dev.modules.get(Module.Led)):
         assert "Device does not support led" in res.output
@@ -749,7 +771,9 @@ async def test_led(dev: Device, runner: CliRunner):
     assert led_module.led is False
 
 
-async def test_json_output(dev: Device, mocker, runner):
+async def test_json_output(
+    dev: Device, mocker: MockerFixture, runner: CliRunner
+) -> None:
     """Test that the json output produces correct output."""
     mocker.patch("kasa.Discover.discover_single", return_value=dev)
     # These will mock the features to avoid accessing non-existing ones
@@ -762,13 +786,15 @@ async def test_json_output(dev: Device, mocker, runner):
 
 
 @new_discovery
-async def test_credentials(discovery_mock, mocker, runner):
+async def test_credentials(
+    discovery_mock, mocker: MockerFixture, runner: CliRunner
+) -> None:
     """Test credentials are passed correctly from cli to device."""
     # Patch state to echo username and password
-    pass_dev = click.make_pass_decorator(Device)
+    pass_dev = click.make_pass_decorator(Device)  # type: ignore[type-abstract]
 
     @pass_dev
-    async def _state(dev: Device):
+    async def _state(dev: Device) -> None:
         if dev.credentials:
             click.echo(
                 f"Username:{dev.credentials.username} Password:{dev.credentials.password}"
@@ -777,6 +803,8 @@ async def test_credentials(discovery_mock, mocker, runner):
     mocker.patch("kasa.cli.device.state", new=_state)
 
     dr = DiscoveryResult.from_dict(discovery_mock.discovery_data["result"])
+    assert dr.mgt_encrypt_schm is not None
+    assert dr.mgt_encrypt_schm.encrypt_type is not None
     res = await runner.invoke(
         cli,
         [
@@ -791,7 +819,7 @@ async def test_credentials(discovery_mock, mocker, runner):
             "--encrypt-type",
             dr.mgt_encrypt_schm.encrypt_type,
             "--login-version",
-            dr.mgt_encrypt_schm.lv or 1,
+            str(dr.mgt_encrypt_schm.lv or 1),
         ],
     )
     assert res.exit_code == 0
@@ -799,7 +827,9 @@ async def test_credentials(discovery_mock, mocker, runner):
     assert "Username:foo Password:bar\n" in res.output
 
 
-async def test_without_device_type(dev, mocker, runner):
+async def test_without_device_type(
+    dev: Device, mocker: MockerFixture, runner: CliRunner
+) -> None:
     """Test connecting without the device type."""
     discovery_mock = mocker.patch(
         "kasa.discover.Discover.discover_single", return_value=dev
@@ -834,7 +864,7 @@ async def test_without_device_type(dev, mocker, runner):
 
 
 @pytest.mark.parametrize("auth_param", ["--username", "--password"])
-async def test_invalid_credential_params(auth_param, runner):
+async def test_invalid_credential_params(auth_param: str, runner: CliRunner) -> None:
     """Test for handling only one of username or password supplied."""
     res = await runner.invoke(
         cli,
@@ -854,7 +884,7 @@ async def test_invalid_credential_params(auth_param, runner):
     )
 
 
-async def test_duplicate_target_device(runner):
+async def test_duplicate_target_device(runner: CliRunner) -> None:
     """Test that defining both --host or --alias gives an error."""
     res = await runner.invoke(
         cli,
@@ -869,7 +899,9 @@ async def test_duplicate_target_device(runner):
     assert "Error: Use either --alias or --host, not both." in res.output
 
 
-async def test_discover(discovery_mock, mocker, runner):
+async def test_discover(
+    discovery_mock, mocker: MockerFixture, runner: CliRunner
+) -> None:
     """Test discovery output."""
     # These will mock the features to avoid accessing non-existing
     mocker.patch("kasa.device.Device.features", return_value={})
@@ -879,7 +911,7 @@ async def test_discover(discovery_mock, mocker, runner):
         cli,
         [
             "--discovery-timeout",
-            0,
+            "0",
             "--username",
             "foo",
             "--password",
@@ -891,7 +923,9 @@ async def test_discover(discovery_mock, mocker, runner):
     assert res.exit_code == 0
 
 
-async def test_discover_host(discovery_mock, mocker, runner):
+async def test_discover_host(
+    discovery_mock, mocker: MockerFixture, runner: CliRunner
+) -> None:
     """Test discovery output."""
     # These will mock the features to avoid accessing non-existing
     mocker.patch("kasa.device.Device.features", return_value={})
@@ -901,7 +935,7 @@ async def test_discover_host(discovery_mock, mocker, runner):
         cli,
         [
             "--discovery-timeout",
-            0,
+            "0",
             "--host",
             "127.0.0.123",
             "--username",
@@ -914,13 +948,15 @@ async def test_discover_host(discovery_mock, mocker, runner):
     assert res.exit_code == 0
 
 
-async def test_discover_unsupported(unsupported_device_info, runner):
+async def test_discover_unsupported(
+    unsupported_device_info: dict, runner: CliRunner
+) -> None:
     """Test discovery output."""
     res = await runner.invoke(
         cli,
         [
             "--discovery-timeout",
-            0,
+            "0",
             "--username",
             "foo",
             "--password",
@@ -933,7 +969,9 @@ async def test_discover_unsupported(unsupported_device_info, runner):
     assert "== Unsupported device ==" in res.output
 
 
-async def test_host_unsupported(unsupported_device_info, runner):
+async def test_host_unsupported(
+    unsupported_device_info: dict, runner: CliRunner
+) -> None:
     """Test discovery output."""
     host = "127.0.0.1"
 
@@ -955,7 +993,9 @@ async def test_host_unsupported(unsupported_device_info, runner):
 
 
 @new_discovery
-async def test_discover_auth_failed(discovery_mock, mocker, runner):
+async def test_discover_auth_failed(
+    discovery_mock, mocker: MockerFixture, runner: CliRunner
+) -> None:
     """Test discovery output."""
     host = "127.0.0.1"
     discovery_mock.ip = host
@@ -969,7 +1009,7 @@ async def test_discover_auth_failed(discovery_mock, mocker, runner):
         cli,
         [
             "--discovery-timeout",
-            0,
+            "0",
             "--username",
             "foo",
             "--password",
@@ -985,7 +1025,9 @@ async def test_discover_auth_failed(discovery_mock, mocker, runner):
 
 
 @new_discovery
-async def test_host_auth_failed(discovery_mock, mocker, runner):
+async def test_host_auth_failed(
+    discovery_mock, mocker: MockerFixture, runner: CliRunner
+) -> None:
     """Test discovery output."""
     host = "127.0.0.1"
     discovery_mock.ip = host
@@ -1013,17 +1055,20 @@ async def test_host_auth_failed(discovery_mock, mocker, runner):
 
 
 @pytest.mark.parametrize("device_type", TYPES)
-async def test_type_param(device_type, mocker, runner):
+async def test_type_param(
+    device_type: str, mocker: MockerFixture, runner: CliRunner
+) -> None:
     """Test for handling only one of username or password supplied."""
-    result_device = FileNotFoundError
-    pass_dev = click.make_pass_decorator(Device)
+    result_device: type[FileNotFoundError] | Device = FileNotFoundError
+    pass_dev = click.make_pass_decorator(Device)  # type: ignore[type-abstract]
 
     @pass_dev
-    async def _state(dev: Device):
+    async def _state(dev: Device) -> None:
         nonlocal result_device
         result_device = dev
 
     mocker.patch("kasa.cli.device.state", new=_state)
+    expected_type: type[Device]
     if device_type == "camera":
         expected_type = SmartCamDevice
     elif device_type == "smart":
@@ -1048,7 +1093,10 @@ async def test_type_param(device_type, mocker, runner):
     ],
 )
 async def test_type_camera_login_version(
-    cli_login_version, expected_login_version, mocker, runner
+    cli_login_version: int | None,
+    expected_login_version: int,
+    mocker: MockerFixture,
+    runner: CliRunner,
 ):
     """Test that --type camera respects an explicitly provided --login-version."""
     from kasa.deviceconfig import DeviceConfig
@@ -1079,7 +1127,7 @@ async def test_type_camera_login_version(
 @pytest.mark.skip(
     "Skip until pytest-asyncio supports pytest 8.0, https://github.com/pytest-dev/pytest-asyncio/issues/737"
 )
-async def test_shell(dev: Device, mocker, runner):
+async def test_shell(dev: Device, mocker: MockerFixture, runner: CliRunner) -> None:
     """Test that the shell commands tries to embed a shell."""
     mocker.patch("kasa.Discover.discover", return_value=[dev])
     # repl = mocker.patch("ptpython.repl")
@@ -1093,7 +1141,7 @@ async def test_shell(dev: Device, mocker, runner):
     embed.assert_called()
 
 
-async def test_errors(mocker, runner):
+async def test_errors(mocker: MockerFixture, runner: CliRunner) -> None:
     err = KasaException("Foobar")
 
     # Test masking
@@ -1138,7 +1186,7 @@ async def test_errors(mocker, runner):
     assert "Raised error:" not in res.output
 
 
-async def test_feature(mocker, runner):
+async def test_feature(mocker: MockerFixture, runner: CliRunner) -> None:
     """Test feature command."""
     dummy_device = await get_device_for_fixture_protocol(
         "P300(EU)_1.0_1.0.13.json", "SMART"
@@ -1155,7 +1203,9 @@ async def test_feature(mocker, runner):
     assert res.exit_code == 0
 
 
-async def test_features_all(discovery_mock, mocker, runner):
+async def test_features_all(
+    discovery_mock, mocker: MockerFixture, runner: CliRunner
+) -> None:
     """Test feature command on all fixtures."""
     res = await runner.invoke(
         cli,
@@ -1169,7 +1219,7 @@ async def test_features_all(discovery_mock, mocker, runner):
     assert res.exit_code == 0
 
 
-async def test_feature_single(mocker, runner):
+async def test_feature_single(mocker: MockerFixture, runner: CliRunner) -> None:
     """Test feature command returning single value."""
     dummy_device = await get_device_for_fixture_protocol(
         "P300(EU)_1.0_1.0.13.json", "SMART"
@@ -1185,7 +1235,7 @@ async def test_feature_single(mocker, runner):
     assert res.exit_code == 0
 
 
-async def test_feature_missing(mocker, runner):
+async def test_feature_missing(mocker: MockerFixture, runner: CliRunner) -> None:
     """Test feature command returning single value."""
     dummy_device = await get_device_for_fixture_protocol(
         "P300(EU)_1.0_1.0.13.json", "SMART"
@@ -1201,7 +1251,7 @@ async def test_feature_missing(mocker, runner):
     assert res.exit_code == 1
 
 
-async def test_feature_set(mocker, runner):
+async def test_feature_set(mocker: MockerFixture, runner: CliRunner) -> None:
     """Test feature command's set value."""
     dummy_device = await get_device_for_fixture_protocol(
         "P300(EU)_1.0_1.0.13.json", "SMART"
@@ -1220,7 +1270,7 @@ async def test_feature_set(mocker, runner):
     assert res.exit_code == 0
 
 
-async def test_feature_set_child(mocker, runner):
+async def test_feature_set_child(mocker: MockerFixture, runner: CliRunner) -> None:
     """Test feature command's set value."""
     dummy_device = await get_device_for_fixture_protocol(
         "P300(EU)_1.0_1.0.13.json", "SMART"
@@ -1255,7 +1305,7 @@ async def test_feature_set_child(mocker, runner):
     assert res.exit_code == 0
 
 
-async def test_feature_set_unquoted(mocker, runner):
+async def test_feature_set_unquoted(mocker: MockerFixture, runner: CliRunner) -> None:
     """Test feature command's set value."""
     dummy_device = await get_device_for_fixture_protocol(
         "ES20M(US)_1.0_1.0.11.json", "IOT"
@@ -1274,7 +1324,7 @@ async def test_feature_set_unquoted(mocker, runner):
     assert res.exit_code != 0
 
 
-async def test_feature_set_badquoted(mocker, runner):
+async def test_feature_set_badquoted(mocker: MockerFixture, runner: CliRunner) -> None:
     """Test feature command's set value."""
     dummy_device = await get_device_for_fixture_protocol(
         "ES20M(US)_1.0_1.0.11.json", "IOT"
@@ -1293,7 +1343,7 @@ async def test_feature_set_badquoted(mocker, runner):
     assert res.exit_code != 0
 
 
-async def test_feature_set_goodquoted(mocker, runner):
+async def test_feature_set_goodquoted(mocker: MockerFixture, runner: CliRunner) -> None:
     """Test feature command's set value."""
     dummy_device = await get_device_for_fixture_protocol(
         "ES20M(US)_1.0_1.0.11.json", "IOT"
@@ -1314,7 +1364,7 @@ async def test_feature_set_goodquoted(mocker, runner):
 
 async def test_cli_child_commands(
     dev: Device, runner: CliRunner, mocker: MockerFixture
-):
+) -> None:
     if not dev.children:
         res = await runner.invoke(alias, ["--child-index", "0"], obj=dev)
         assert f"Device: {dev.host} does not have children" in res.output
@@ -1419,7 +1469,9 @@ async def test_cli_child_commands(
         assert dev.children[0].update == child_update_method
 
 
-async def test_discover_config(dev: Device, mocker, runner):
+async def test_discover_config(
+    dev: Device, mocker: MockerFixture, runner: CliRunner
+) -> None:
     """Test that device config is returned."""
     host = "127.0.0.1"
     mocker.patch("kasa.device_factory._connect", side_effect=[Exception, dev])
@@ -1452,7 +1504,9 @@ async def test_discover_config(dev: Device, mocker, runner):
     )
 
 
-async def test_discover_config_invalid(mocker, runner):
+async def test_discover_config_invalid(
+    mocker: MockerFixture, runner: CliRunner
+) -> None:
     """Test the device config command with invalids."""
     host = "127.0.0.1"
     mocker.patch("kasa.discover.Discover.try_connect_all", return_value=None)

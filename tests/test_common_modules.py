@@ -74,7 +74,7 @@ temp_control_smart = parametrize(
 interfaces = pytest.mark.parametrize("interface", kasa.interfaces.__all__)
 
 
-def _get_subclasses(of_class, package):
+def _get_subclasses(of_class: type, package):
     """Get all the subclasses of a given class."""
     subclasses = set()
     # iter_modules returns ModuleInfo: (module_finder, name, ispkg)
@@ -97,7 +97,7 @@ def _get_subclasses(of_class, package):
 
 
 @interfaces
-def test_feature_attributes(interface):
+def test_feature_attributes(interface: str) -> None:
     """Test that all common derived classes define the FeatureAttributes."""
     klass = getattr(kasa.interfaces, interface)
 
@@ -123,7 +123,7 @@ def test_feature_attributes(interface):
 
 
 @led
-async def test_led_module(dev: Device, mocker: MockerFixture):
+async def test_led_module(dev: Device, mocker: MockerFixture) -> None:
     """Test fan speed feature."""
     led_module = dev.modules.get(Module.Led)
     assert led_module
@@ -150,7 +150,7 @@ async def test_led_module(dev: Device, mocker: MockerFixture):
 
 
 @light_effect
-async def test_light_effect_module(dev: Device, mocker: MockerFixture):
+async def test_light_effect_module(dev: Device, mocker: MockerFixture) -> None:
     """Test fan speed feature."""
     light_effect_module = dev.modules[Module.LightEffect]
     assert light_effect_module
@@ -202,7 +202,7 @@ async def test_light_effect_module(dev: Device, mocker: MockerFixture):
 
 
 @light_effect
-async def test_light_effect_brightness(dev: Device, mocker: MockerFixture):
+async def test_light_effect_brightness(dev: Device, mocker: MockerFixture) -> None:
     """Test that light module uses light_effect for brightness when active."""
     light_module = dev.modules[Module.Light]
 
@@ -227,7 +227,7 @@ async def test_light_effect_brightness(dev: Device, mocker: MockerFixture):
 
 
 @dimmable
-async def test_light_brightness(dev: Device):
+async def test_light_brightness(dev: Device) -> None:
     """Test brightness setter and getter."""
     assert isinstance(dev, Device)
     light = next(get_parent_and_child_modules(dev, Module.Light))
@@ -250,7 +250,7 @@ async def test_light_brightness(dev: Device):
 
 
 @variable_temp
-async def test_light_color_temp(dev: Device):
+async def test_light_color_temp(dev: Device) -> None:
     """Test color temp setter and getter."""
     assert isinstance(dev, Device)
 
@@ -289,7 +289,7 @@ async def test_light_color_temp(dev: Device):
 
 
 @light
-async def test_light_set_state(dev: Device):
+async def test_light_set_state(dev: Device) -> None:
     """Test brightness setter and getter."""
     assert isinstance(dev, Device)
     light = next(get_parent_and_child_modules(dev, Module.Light))
@@ -316,7 +316,7 @@ async def test_light_set_state(dev: Device):
 
 
 @light_preset
-async def test_light_preset_module(dev: Device, mocker: MockerFixture):
+async def test_light_preset_module(dev: Device, mocker: MockerFixture) -> None:
     """Test light preset module."""
     preset_mod = next(get_parent_and_child_modules(dev, Module.LightPreset))
     assert preset_mod
@@ -367,7 +367,7 @@ async def test_light_preset_module(dev: Device, mocker: MockerFixture):
 
 
 @light_preset
-async def test_light_preset_save(dev: Device, mocker: MockerFixture):
+async def test_light_preset_save(dev: Device, mocker: MockerFixture) -> None:
     """Test saving a new preset value."""
     preset_mod = next(get_parent_and_child_modules(dev, Module.LightPreset))
     assert preset_mod
@@ -390,7 +390,7 @@ async def test_light_preset_save(dev: Device, mocker: MockerFixture):
 
 
 @temp_control_smart
-async def test_thermostat(dev: Device, mocker: MockerFixture):
+async def test_thermostat(dev: Device, mocker: MockerFixture) -> None:
     """Test saving a new preset value."""
     therm_mod = next(get_parent_and_child_modules(dev, Module.Thermostat))
     assert therm_mod
@@ -422,7 +422,7 @@ async def test_thermostat(dev: Device, mocker: MockerFixture):
     assert therm_mod.temperature_unit == "fahrenheit"
 
 
-async def test_set_time(dev: Device):
+async def test_set_time(dev: Device) -> None:
     """Test setting the device time."""
     time_mod = dev.modules[Module.Time]
 
@@ -459,7 +459,9 @@ async def test_set_time(dev: Device):
         assert time_mod.time == original_time
 
 
-async def test_time_post_update_no_time_uses_utc_unit(monkeypatch: pytest.MonkeyPatch):
+async def test_time_post_update_no_time_uses_utc_unit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """If neither get_timezone nor get_time are present, timezone falls back to UTC."""
     from kasa.iot.modules.time import Time as TimeModule
 
@@ -472,7 +474,7 @@ async def test_time_post_update_no_time_uses_utc_unit(monkeypatch: pytest.Monkey
 
 async def test_time_post_update_uses_offset_when_index_missing_unit(
     monkeypatch: pytest.MonkeyPatch, mocker: MockerFixture
-):
+) -> None:
     """When index present but zone not on host, fall back to offset-based guess."""
     from zoneinfo import ZoneInfoNotFoundError
 
@@ -509,7 +511,7 @@ async def test_time_post_update_uses_offset_when_index_missing_unit(
     assert inst.timezone.utcoffset(now) == timedelta(0)
 
 
-async def test_time_get_time_exception_returns_none_unit(mocker: MockerFixture):
+async def test_time_get_time_exception_returns_none_unit(mocker: MockerFixture) -> None:
     """Cover Time.get_time exception path (unit test of iot Time)."""
     from kasa.iot.modules.time import Time as TimeModule
 
@@ -519,7 +521,7 @@ async def test_time_get_time_exception_returns_none_unit(mocker: MockerFixture):
     assert await TimeModule.get_time(inst) is None
 
 
-async def test_time_get_time_success_unit(mocker: MockerFixture):
+async def test_time_get_time_success_unit(mocker: MockerFixture) -> None:
     """Cover the success path of Time.get_time."""
     from kasa.iot.modules.time import Time as TimeModule
 
@@ -551,7 +553,7 @@ async def test_time_get_time_success_unit(mocker: MockerFixture):
 
 async def test_time_post_update_with_time_no_tz_uses_guess_unit(
     monkeypatch: pytest.MonkeyPatch, mocker: MockerFixture
-):
+) -> None:
     """When get_time is present but get_timezone is missing, use offset-based guess (dst_expected None)."""
     from kasa.iot.modules.time import Time as TimeModule
 
@@ -582,7 +584,7 @@ async def test_time_post_update_with_time_no_tz_uses_guess_unit(
 
 async def test_time_set_time_wraps_exception_unit(
     monkeypatch: pytest.MonkeyPatch, mocker: MockerFixture
-):
+) -> None:
     """Cover exception wrapping in Time.set_time (unit test of iot Time)."""
     from kasa.iot.modules.time import Time as TimeModule
 
@@ -635,7 +637,7 @@ async def test_smart_time_set_time_no_region_added_when_tzname_none_unit(
 
 async def test_smartcam_time_post_update_fallback_parses_timezone_str_unit(
     monkeypatch: pytest.MonkeyPatch, mocker: MockerFixture
-):
+) -> None:
     """Exercise smartcam Time._post_update_hook fallback when ZoneInfo not found, parsing 'timezone' string."""
     from zoneinfo import ZoneInfoNotFoundError
 

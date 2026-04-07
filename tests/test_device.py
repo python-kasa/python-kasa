@@ -34,7 +34,7 @@ from kasa.smart import SmartChildDevice, SmartDevice
 from kasa.smartcam import SmartCamChild, SmartCamDevice
 
 
-def _get_subclasses(of_class):
+def _get_subclasses(of_class: type):
     package = sys.modules["kasa"]
     subclasses = set()
     for _, modname, _ in pkgutil.iter_modules(package.__path__):
@@ -44,6 +44,7 @@ def _get_subclasses(of_class):
             if (
                 inspect.isclass(obj)
                 and issubclass(obj, of_class)
+                and module.__package__ is not None
                 and module.__package__ != "kasa"
                 and module.__package__ != "kasa.interfaces"
             ):
@@ -56,12 +57,12 @@ device_classes = pytest.mark.parametrize(
 )
 
 
-async def test_device_id(dev: Device):
+async def test_device_id(dev: Device) -> None:
     """Test all devices have a device id."""
     assert dev.device_id
 
 
-async def test_alias(dev):
+async def test_alias(dev: Device) -> None:
     test_alias = "TEST1234"
     original = dev.alias
 
@@ -77,7 +78,7 @@ async def test_alias(dev):
 
 
 @device_classes
-async def test_device_class_ctors(device_class_name_obj):
+async def test_device_class_ctors(device_class_name_obj) -> None:
     """Make sure constructor api not broken for new and existing SmartDevices."""
     host = "127.0.0.2"
     port = 1234
@@ -112,7 +113,7 @@ async def test_device_class_ctors(device_class_name_obj):
 
 
 @device_classes
-async def test_device_class_repr(device_class_name_obj):
+async def test_device_class_repr(device_class_name_obj) -> None:
     """Test device repr when update() not called and no discovery info."""
     host = "127.0.0.2"
     port = 1234
@@ -155,16 +156,16 @@ async def test_device_class_repr(device_class_name_obj):
     assert repr(dev) == expected_repr
 
 
-async def test_create_device_with_timeout():
+async def test_create_device_with_timeout() -> None:
     """Make sure timeout is passed to the protocol."""
     host = "127.0.0.1"
-    dev = IotDevice(host, config=DeviceConfig(host, timeout=100))
+    dev: Device = IotDevice(host, config=DeviceConfig(host, timeout=100))
     assert dev.protocol._transport._timeout == 100
     dev = SmartDevice(host, config=DeviceConfig(host, timeout=100))
     assert dev.protocol._transport._timeout == 100
 
 
-async def test_create_thin_wrapper():
+async def test_create_thin_wrapper() -> None:
     """Make sure thin wrapper is created with the correct device type."""
     mock = AsyncMock()
     config = DeviceConfig(
@@ -186,7 +187,7 @@ async def test_create_thin_wrapper():
 @pytest.mark.parametrize(
     ("device_class", "use_class"), kasa.deprecated_smart_devices.items()
 )
-def test_deprecated_devices(device_class, use_class):
+def test_deprecated_devices(device_class, use_class) -> None:
     package_name = ".".join(use_class.__module__.split(".")[:-1])
     msg = f"{device_class} is deprecated, use {use_class.__name__} from package {package_name} instead"
     with pytest.deprecated_call(match=msg):
@@ -201,7 +202,7 @@ def test_deprecated_devices(device_class, use_class):
 @pytest.mark.parametrize(
     ("deprecated_class", "use_class"), kasa.deprecated_classes.items()
 )
-def test_deprecated_classes(deprecated_class, use_class):
+def test_deprecated_classes(deprecated_class, use_class) -> None:
     msg = f"{deprecated_class} is deprecated, use {use_class.__name__} instead"
     with pytest.deprecated_call(match=msg):
         getattr(kasa, deprecated_class)
@@ -227,7 +228,7 @@ deprecated_is_light_function_smart_module = {
 def test_deprecated_device_type_attributes(dev: SmartDevice):
     """Test deprecated attributes on all devices."""
 
-    def _test_attr(attribute):
+    def _test_attr(attribute: str):
         msg = f"{attribute} is deprecated"
         if module := Device._deprecated_device_type_attributes[attribute][0]:
             msg += f", use: {module} in device.modules instead"
@@ -242,8 +243,13 @@ def test_deprecated_device_type_attributes(dev: SmartDevice):
 
 
 async def _test_attribute(
-    dev: Device, attribute_name, is_expected, module_name, *args, will_raise=False
-):
+    dev: Device,
+    attribute_name: str,
+    is_expected: bool,
+    module_name: str | None,
+    *args,
+    will_raise=False,
+) -> None:
     if is_expected and will_raise:
         ctx: AbstractContextManager | nullcontext = pytest.raises(will_raise)
         dep_context: pytest.WarningsRecorder | nullcontext = pytest.deprecated_call(
@@ -268,7 +274,7 @@ async def _test_attribute(
             assert attribute_val is not None
 
 
-async def test_deprecated_light_effect_attributes(dev: Device):
+async def test_deprecated_light_effect_attributes(dev: Device) -> None:
     light_effect = dev.modules.get(Module.LightEffect)
 
     await _test_attribute(dev, "effect", bool(light_effect), "LightEffect")
@@ -289,7 +295,7 @@ async def test_deprecated_light_effect_attributes(dev: Device):
     )
 
 
-async def test_deprecated_light_attributes(dev: Device):
+async def test_deprecated_light_attributes(dev: Device) -> None:
     light = dev.modules.get(Module.Light)
 
     await _test_attribute(dev, "is_dimmable", bool(light), "Light")
@@ -320,7 +326,7 @@ async def test_deprecated_light_attributes(dev: Device):
     await _test_attribute(dev, "has_effects", bool(light), "Light")
 
 
-async def test_deprecated_other_attributes(dev: Device):
+async def test_deprecated_other_attributes(dev: Device) -> None:
     led_module = dev.modules.get(Module.Led)
 
     await _test_attribute(dev, "led", bool(led_module), "Led")
@@ -328,7 +334,7 @@ async def test_deprecated_other_attributes(dev: Device):
     await _test_attribute(dev, "supported_modules", True, None)
 
 
-async def test_deprecated_emeter_attributes(dev: Device):
+async def test_deprecated_emeter_attributes(dev: Device) -> None:
     energy_module = dev.modules.get(Module.Energy)
 
     await _test_attribute(dev, "get_emeter_realtime", bool(energy_module), "Energy")
@@ -340,7 +346,7 @@ async def test_deprecated_emeter_attributes(dev: Device):
     await _test_attribute(dev, "get_emeter_monthly", bool(energy_module), "Energy")
 
 
-async def test_deprecated_light_preset_attributes(dev: Device):
+async def test_deprecated_light_preset_attributes(dev: Device) -> None:
     preset = dev.modules.get(Module.LightPreset)
 
     exc: type[AttributeError] | type[KasaException] | None = (
@@ -371,7 +377,7 @@ async def test_deprecated_light_preset_attributes(dev: Device):
 async def test_device_type_aliases():
     """Test that the device type aliases in Device work."""
 
-    def _mock_connect(config, *args, **kwargs):
+    def _mock_connect(config: DeviceConfig, *args, **kwargs):
         mock = AsyncMock()
         mock.config = config
         return mock
@@ -392,7 +398,7 @@ async def test_device_type_aliases():
         assert DeviceType.Dimmer == Device.Type.Dimmer
 
 
-async def test_device_timezones():
+async def test_device_timezones() -> None:
     """Test the timezone data is good."""
     # Check all indexes return a zoneinfo
     for i in range(110):

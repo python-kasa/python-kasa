@@ -2,6 +2,7 @@ import asyncio
 
 import pytest
 import xdoctest
+from pytest_mock import MockerFixture
 
 from .conftest import (
     get_device_for_fixture_protocol,
@@ -10,7 +11,7 @@ from .conftest import (
 )
 
 
-def test_bulb_examples(mocker):
+def test_bulb_examples(mocker: MockerFixture) -> None:
     """Use KL130 (bulb with all features) to test the doctests."""
     p = asyncio.run(get_device_for_fixture_protocol("KL130(US)_1.0_1.8.11.json", "IOT"))
     mocker.patch("kasa.iot.iotbulb.IotBulb", return_value=p)
@@ -19,7 +20,7 @@ def test_bulb_examples(mocker):
     assert not res["failed"]
 
 
-def test_iotdevice_examples(mocker):
+def test_iotdevice_examples(mocker: MockerFixture) -> None:
     """Use HS110 for emeter examples."""
     p = asyncio.run(get_device_for_fixture_protocol("HS110(EU)_1.0_1.2.5.json", "IOT"))
     asyncio.run(p.set_alias("Bedroom Lamp Plug"))
@@ -31,7 +32,7 @@ def test_iotdevice_examples(mocker):
     assert not res["failed"]
 
 
-def test_plug_examples(mocker):
+def test_plug_examples(mocker: MockerFixture) -> None:
     """Test plug examples."""
     p = asyncio.run(get_device_for_fixture_protocol("HS110(EU)_1.0_1.2.5.json", "IOT"))
     asyncio.run(p.set_alias("Bedroom Lamp Plug"))
@@ -42,13 +43,13 @@ def test_plug_examples(mocker):
     assert not res["failed"]
 
 
-def test_strip_examples(readmes_mock):
+def test_strip_examples(readmes_mock) -> None:
     """Test strip examples."""
     res = xdoctest.doctest_module("kasa.iot.iotstrip", "all")
     assert not res["failed"]
 
 
-def test_dimmer_examples(mocker):
+def test_dimmer_examples(mocker: MockerFixture) -> None:
     """Test dimmer examples."""
     p = asyncio.run(get_device_for_fixture_protocol("HS220(US)_1.0_1.5.7.json", "IOT"))
     mocker.patch("kasa.iot.iotdimmer.IotDimmer", return_value=p)
@@ -57,7 +58,7 @@ def test_dimmer_examples(mocker):
     assert not res["failed"]
 
 
-def test_lightstrip_examples(mocker):
+def test_lightstrip_examples(mocker: MockerFixture) -> None:
     """Test lightstrip examples."""
     p = asyncio.run(get_device_for_fixture_protocol("KL430(US)_1.0_1.0.10.json", "IOT"))
     asyncio.run(p.set_alias("Bedroom Lightstrip"))
@@ -68,7 +69,7 @@ def test_lightstrip_examples(mocker):
     assert not res["failed"]
 
 
-def test_discovery_examples(readmes_mock):
+def test_discovery_examples(readmes_mock) -> None:
     """Test discovery examples."""
     res = xdoctest.doctest_module("kasa.discover", "all")
     assert res["n_passed"] > 0
@@ -76,7 +77,7 @@ def test_discovery_examples(readmes_mock):
     assert not res["failed"]
 
 
-def test_deviceconfig_examples(readmes_mock):
+def test_deviceconfig_examples(readmes_mock) -> None:
     """Test discovery examples."""
     res = xdoctest.doctest_module("kasa.deviceconfig", "all")
     assert res["n_passed"] > 0
@@ -84,7 +85,7 @@ def test_deviceconfig_examples(readmes_mock):
     assert not res["failed"]
 
 
-def test_device_examples(readmes_mock):
+def test_device_examples(readmes_mock) -> None:
     """Test device examples."""
     res = xdoctest.doctest_module("kasa.device", "all")
     assert res["n_passed"] > 0
@@ -92,7 +93,7 @@ def test_device_examples(readmes_mock):
     assert not res["failed"]
 
 
-def test_light_examples(readmes_mock):
+def test_light_examples(readmes_mock) -> None:
     """Test device examples."""
     res = xdoctest.doctest_module("kasa.interfaces.light", "all")
     assert res["n_passed"] > 0
@@ -100,7 +101,7 @@ def test_light_examples(readmes_mock):
     assert not res["failed"]
 
 
-def test_light_preset_examples(readmes_mock):
+def test_light_preset_examples(readmes_mock) -> None:
     """Test device examples."""
     res = xdoctest.doctest_module("kasa.interfaces.lightpreset", "all")
     assert res["n_passed"] > 0
@@ -108,7 +109,7 @@ def test_light_preset_examples(readmes_mock):
     assert not res["failed"]
 
 
-def test_light_effect_examples(readmes_mock):
+def test_light_effect_examples(readmes_mock) -> None:
     """Test device examples."""
     res = xdoctest.doctest_module("kasa.interfaces.lighteffect", "all")
     assert res["n_passed"] > 0
@@ -116,7 +117,7 @@ def test_light_effect_examples(readmes_mock):
     assert not res["failed"]
 
 
-def test_child_examples(readmes_mock):
+def test_child_examples(readmes_mock) -> None:
     """Test device examples."""
     res = xdoctest.doctest_module("kasa.smart.modules.childdevice", "all")
     assert res["n_passed"] > 0
@@ -124,7 +125,7 @@ def test_child_examples(readmes_mock):
     assert not res["failed"]
 
 
-def test_module_examples(readmes_mock):
+def test_module_examples(readmes_mock) -> None:
     """Test device examples."""
     res = xdoctest.doctest_module("kasa.module", "all")
     assert res["n_passed"] > 0
@@ -132,7 +133,7 @@ def test_module_examples(readmes_mock):
     assert not res["failed"]
 
 
-def test_feature_examples(readmes_mock):
+def test_feature_examples(readmes_mock) -> None:
     """Test device examples."""
     res = xdoctest.doctest_module("kasa.feature", "all")
     assert res["n_passed"] > 0
@@ -140,7 +141,7 @@ def test_feature_examples(readmes_mock):
     assert not res["failed"]
 
 
-def test_tutorial_examples(readmes_mock):
+def test_tutorial_examples(readmes_mock) -> None:
     """Test discovery examples."""
     res = xdoctest.doctest_module("docs/tutorial.py", "all")
     assert res["n_passed"] > 0
@@ -148,7 +149,7 @@ def test_tutorial_examples(readmes_mock):
     assert not res["failed"]
 
 
-def test_childsetup_examples(readmes_mock, mocker):
+def test_childsetup_examples(readmes_mock, mocker: MockerFixture) -> None:
     """Test device examples."""
     pair_resp = [
         {
@@ -168,7 +169,7 @@ def test_childsetup_examples(readmes_mock, mocker):
 
 
 @pytest.fixture
-async def readmes_mock(mocker):
+async def readmes_mock(mocker: MockerFixture):
     fixture_infos = {
         "127.0.0.1": get_fixture_info("KP303(UK)_1.0_1.0.3.json", "IOT"),  # Strip
         "127.0.0.2": get_fixture_info("HS110(EU)_1.0_1.2.5.json", "IOT"),  # Plug
