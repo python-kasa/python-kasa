@@ -44,7 +44,9 @@ hub_all = parametrize_combine([hubs_smart, hub_smartcam])
 @device_smart
 @pytest.mark.requires_dummy
 @pytest.mark.xdist_group(name="caplog")
-async def test_try_get_response(dev: SmartDevice, caplog):
+async def test_try_get_response(
+    dev: SmartDevice, caplog: pytest.LogCaptureFixture
+) -> None:
     mock_response: dict = {
         "get_device_info": SmartErrorCode.PARAMS_ERROR,
     }
@@ -56,7 +58,7 @@ async def test_try_get_response(dev: SmartDevice, caplog):
 
 @device_smart
 @pytest.mark.requires_dummy
-async def test_update_no_device_info(dev: SmartDevice, mocker: MockerFixture):
+async def test_update_no_device_info(dev: SmartDevice, mocker: MockerFixture) -> None:
     mock_response: dict = {
         "get_device_usage": {},
         "get_device_time": {},
@@ -68,7 +70,9 @@ async def test_update_no_device_info(dev: SmartDevice, mocker: MockerFixture):
 
 
 @smart_discovery
-async def test_device_type_no_update(discovery_mock, caplog: pytest.LogCaptureFixture):
+async def test_device_type_no_update(
+    discovery_mock, caplog: pytest.LogCaptureFixture
+) -> None:
     """Test device type and repr when device not updated."""
     dev = SmartDevice(DISCOVERY_MOCK_IP)
     assert dev.device_type is DeviceType.Unknown
@@ -96,7 +100,7 @@ async def test_device_type_no_update(discovery_mock, caplog: pytest.LogCaptureFi
 
 
 @device_smart
-async def test_initial_update(dev: SmartDevice, mocker: MockerFixture):
+async def test_initial_update(dev: SmartDevice, mocker: MockerFixture) -> None:
     """Test the initial update cycle."""
     # As the fixture data is already initialized, we reset the state for testing
     dev._components_raw = None
@@ -124,7 +128,7 @@ async def test_initial_update(dev: SmartDevice, mocker: MockerFixture):
 
 
 @device_smart
-async def test_negotiate(dev: SmartDevice, mocker: MockerFixture):
+async def test_negotiate(dev: SmartDevice, mocker: MockerFixture) -> None:
     """Test that the initial negotiation performs expected steps."""
     # As the fixture data is already initialized, we reset the state for testing
     dev._components_raw = None
@@ -158,7 +162,7 @@ async def test_negotiate(dev: SmartDevice, mocker: MockerFixture):
 
 
 @device_smart
-async def test_update_module_queries(dev: SmartDevice, mocker: MockerFixture):
+async def test_update_module_queries(dev: SmartDevice, mocker: MockerFixture) -> None:
     """Test that the regular update uses queries from all supported modules."""
     # We need to have some modules initialized by now
     assert dev._modules
@@ -195,7 +199,7 @@ async def test_update_module_update_delays(
     mocker: MockerFixture,
     caplog: pytest.LogCaptureFixture,
     freezer: FrozenDateTimeFactory,
-):
+) -> None:
     """Test that modules with minimum delays delay."""
     # We need to have some modules initialized by now
     assert dev._modules
@@ -253,7 +257,7 @@ async def test_hub_children_update_delays(
     mocker: MockerFixture,
     caplog: pytest.LogCaptureFixture,
     freezer: FrozenDateTimeFactory,
-):
+) -> None:
     """Test that hub children use the correct delay."""
     if not dev.children:
         pytest.skip(f"Device {dev.model} does not have children.")
@@ -416,14 +420,15 @@ async def test_update_module_query_errors(
     mocker: MockerFixture,
     caplog: pytest.LogCaptureFixture,
     freezer: FrozenDateTimeFactory,
-    first_update,
-    error_type,
-    recover,
-):
+    first_update: bool,
+    error_type: SmartErrorCode | TimeoutError,
+    recover: bool,
+) -> None:
     """Test that modules that disabled / removed on query failures.
 
     i.e. the whole query times out rather than device returns an error.
     """
+    caplog.set_level(logging.DEBUG)
     # We need to have some modules initialized by now
     assert dev._modules
 
@@ -480,8 +485,6 @@ async def test_update_module_query_errors(
                     raise TimeoutError()
                 if len(child_requests) > 1:
                     raise TimeoutError()
-
-            if raise_error:
                 resp = {
                     "method": child_requests[0]["method"],
                     "error_code": error_type.value,
@@ -594,7 +597,7 @@ async def test_update_module_query_errors(
                     assert emod.status is not None
 
 
-async def test_get_modules():
+async def test_get_modules() -> None:
     """Test getting modules for child and parent modules."""
     dummy_device = await get_device_for_fixture_protocol(
         "KS240(US)_1.0_1.0.5.json", "SMART"
@@ -629,7 +632,9 @@ async def test_get_modules():
 
 
 @device_smart
-async def test_smartdevice_cloud_connection(dev: SmartDevice, mocker: MockerFixture):
+async def test_smartdevice_cloud_connection(
+    dev: SmartDevice, mocker: MockerFixture
+) -> None:
     """Test is_cloud_connected property."""
     assert isinstance(dev, SmartDevice)
     assert "cloud_connect" in dev._components
@@ -697,7 +702,7 @@ async def test_smartdevice_cloud_connection(dev: SmartDevice, mocker: MockerFixt
 
 
 @variable_temp_smart
-async def test_smart_temp_range(dev: Device):
+async def test_smart_temp_range(dev: Device) -> None:
     light = dev.modules.get(Module.Light)
     assert light
     color_temp_feat = light.get_feature("color_temp")
@@ -708,7 +713,7 @@ async def test_smart_temp_range(dev: Device):
 @device_smart
 async def test_initialize_modules_sysinfo_lookup_keys(
     dev: SmartDevice, mocker: MockerFixture
-):
+) -> None:
     """Test that matching modules using SYSINFO_LOOKUP_KEYS are initialized correctly."""
 
     class AvailableKey(SmartModule):
@@ -737,7 +742,7 @@ async def test_initialize_modules_sysinfo_lookup_keys(
 @device_smart
 async def test_initialize_modules_required_component(
     dev: SmartDevice, mocker: MockerFixture
-):
+) -> None:
     """Test that matching modules using REQUIRED_COMPONENT are initialized correctly."""
 
     class AvailableComponent(SmartModule):
@@ -763,7 +768,7 @@ async def test_initialize_modules_required_component(
     assert "NonExistingComponent" not in dev.modules
 
 
-async def test_smartmodule_query():
+async def test_smartmodule_query() -> None:
     """Test that a module that doesn't set QUERY_GETTER_NAME has empty query."""
 
     class DummyModule(SmartModule):
@@ -779,7 +784,7 @@ async def test_smartmodule_query():
 @hub_all
 @pytest.mark.xdist_group(name="caplog")
 @pytest.mark.requires_dummy
-async def test_dynamic_devices(dev: Device, caplog: pytest.LogCaptureFixture):
+async def test_dynamic_devices(dev: Device, caplog: pytest.LogCaptureFixture) -> None:
     """Test dynamic child devices."""
     if not dev.children:
         pytest.skip(f"Device {dev.model} does not have children.")
@@ -992,7 +997,7 @@ async def test_dynamic_devices(dev: Device, caplog: pytest.LogCaptureFixture):
 
 
 @hubs_smart
-async def test_unpair(dev: SmartDevice, mocker: MockerFixture):
+async def test_unpair(dev: SmartDevice, mocker: MockerFixture) -> None:
     """Verify that unpair calls childsetup module."""
     if not dev.children:
         pytest.skip("device has no children")

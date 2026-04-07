@@ -16,7 +16,7 @@ motion = parametrize(
         ("motion_detected", bool),
     ],
 )
-async def test_motion_features(dev: Device, feature, type):
+async def test_motion_features(dev: Device, feature: str, type: type) -> None:
     """Test that features are registered and work as expected."""
     motion = dev.modules.get(Module.MotionSensor)
     assert motion is not None

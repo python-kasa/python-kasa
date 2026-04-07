@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 from pytest_mock import MockerFixture
 
@@ -23,7 +25,9 @@ alarm = parametrize("has alarm", component_filter="alarm", protocol_filter={"SMA
         ("alarm_volume_level", "alarm_volume", int),
     ],
 )
-async def test_features(dev: SmartDevice, feature: str, prop_name: str, type: type):
+async def test_features(
+    dev: SmartDevice, feature: str, prop_name: str, type: type
+) -> None:
     """Test that features are registered and work as expected."""
     alarm = next(get_parent_and_child_modules(dev, Module.Alarm))
     assert alarm is not None
@@ -37,7 +41,7 @@ async def test_features(dev: SmartDevice, feature: str, prop_name: str, type: ty
 
 
 @alarm
-async def test_volume_feature(dev: SmartDevice):
+async def test_volume_feature(dev: SmartDevice) -> None:
     """Test that volume features have correct choices and range."""
     alarm = next(get_parent_and_child_modules(dev, Module.Alarm))
     assert alarm is not None
@@ -64,7 +68,12 @@ async def test_volume_feature(dev: SmartDevice):
         ),
     ],
 )
-async def test_play(dev: SmartDevice, kwargs, request_params, mocker: MockerFixture):
+async def test_play(
+    dev: SmartDevice,
+    kwargs: dict[str, Any],
+    request_params: dict[str, str | int],
+    mocker: MockerFixture,
+) -> None:
     """Test that play parameters are handled correctly."""
     alarm: Alarm = next(get_parent_and_child_modules(dev, Module.Alarm))
     call_spy = mocker.spy(alarm, "call")
@@ -86,7 +95,7 @@ async def test_play(dev: SmartDevice, kwargs, request_params, mocker: MockerFixt
 
 
 @alarm
-async def test_stop(dev: SmartDevice, mocker: MockerFixture):
+async def test_stop(dev: SmartDevice, mocker: MockerFixture) -> None:
     """Test that stop creates the correct call."""
     alarm: Alarm = next(get_parent_and_child_modules(dev, Module.Alarm))
     call_spy = mocker.spy(alarm, "call")
@@ -112,7 +121,7 @@ async def test_set_alarm_configure(
     method: str,
     value: str | int,
     target_key: str,
-):
+) -> None:
     """Test that set_alarm_sound creates the correct call."""
     alarm: Alarm = next(get_parent_and_child_modules(dev, Module.Alarm))
     call_spy = mocker.spy(alarm, "call")

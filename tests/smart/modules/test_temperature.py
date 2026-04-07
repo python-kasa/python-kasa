@@ -1,5 +1,8 @@
+from typing import cast
+
 import pytest
 
+from kasa.smart import SmartDevice
 from kasa.smart.modules import TemperatureSensor
 
 from ...device_fixtures import parametrize
@@ -23,9 +26,9 @@ temperature_warning = parametrize(
         ("temperature_unit", str),
     ],
 )
-async def test_temperature_features(dev, feature, type):
+async def test_temperature_features(dev: SmartDevice, feature: str, type: type) -> None:
     """Test that features are registered and work as expected."""
-    temp_module: TemperatureSensor = dev.modules["TemperatureSensor"]
+    temp_module = cast(TemperatureSensor, dev.modules["TemperatureSensor"])
 
     prop = getattr(temp_module, feature)
     assert isinstance(prop, type)
@@ -36,9 +39,9 @@ async def test_temperature_features(dev, feature, type):
 
 
 @temperature_warning
-async def test_temperature_warning(dev):
+async def test_temperature_warning(dev: SmartDevice) -> None:
     """Test that features are registered and work as expected."""
-    temp_module: TemperatureSensor = dev.modules["TemperatureSensor"]
+    temp_module = cast(TemperatureSensor, dev.modules["TemperatureSensor"])
 
     assert hasattr(temp_module, "temperature_warning")
     assert isinstance(temp_module.temperature_warning, bool)

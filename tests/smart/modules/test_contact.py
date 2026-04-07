@@ -16,7 +16,7 @@ contact = parametrize(
         ("is_open", bool),
     ],
 )
-async def test_contact_features(dev: Device, feature, type):
+async def test_contact_features(dev: Device, feature: str, type: type) -> None:
     """Test that features are registered and work as expected."""
     contact = dev.modules.get(Module.ContactSensor)
     assert contact is not None

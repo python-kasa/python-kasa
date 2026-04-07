@@ -1,6 +1,9 @@
+from typing import cast
+
 import pytest
 
 from kasa import Module
+from kasa.smart import SmartDevice
 from kasa.smart.modules import ChildProtection
 
 from ...device_fixtures import parametrize
@@ -19,9 +22,11 @@ child_protection = parametrize(
         ("child_lock", "enabled", bool),
     ],
 )
-async def test_features(dev, feature, prop_name, type):
+async def test_features(
+    dev: SmartDevice, feature: str, prop_name: str, type: type
+) -> None:
     """Test that features are registered and work as expected."""
-    protect: ChildProtection = dev.modules[Module.ChildProtection]
+    protect = cast(ChildProtection, dev.modules[Module.ChildProtection])
     assert protect is not None
 
     prop = getattr(protect, prop_name)
@@ -33,9 +38,9 @@ async def test_features(dev, feature, prop_name, type):
 
 
 @child_protection
-async def test_enabled(dev):
+async def test_enabled(dev: SmartDevice) -> None:
     """Test the API."""
-    protect: ChildProtection = dev.modules[Module.ChildProtection]
+    protect = cast(ChildProtection, dev.modules[Module.ChildProtection])
     assert protect is not None
 
     assert isinstance(protect.enabled, bool)

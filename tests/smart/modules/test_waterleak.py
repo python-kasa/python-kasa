@@ -1,8 +1,10 @@
 from datetime import datetime
 from enum import Enum
+from typing import cast
 
 import pytest
 
+from kasa.smart import SmartDevice
 from kasa.smart.modules import WaterleakSensor
 
 from ...conftest import get_device_for_fixture_protocol
@@ -28,10 +30,12 @@ async def parent(request):
         ("water_leak", "status", Enum),
     ],
 )
-async def test_waterleak_properties(dev, parent, feature, prop_name, type):
+async def test_waterleak_properties(
+    dev: SmartDevice, parent: SmartDevice, feature: str, prop_name: str, type: type
+) -> None:
     """Test that features are registered and work as expected."""
     dev._parent = parent
-    waterleak: WaterleakSensor = dev.modules["WaterleakSensor"]
+    waterleak = cast(WaterleakSensor, dev.modules["WaterleakSensor"])
 
     prop = getattr(waterleak, prop_name)
     assert isinstance(prop, type)
@@ -42,10 +46,10 @@ async def test_waterleak_properties(dev, parent, feature, prop_name, type):
 
 
 @waterleak
-async def test_waterleak_features(dev, parent):
+async def test_waterleak_features(dev: SmartDevice, parent: SmartDevice) -> None:
     """Test waterleak features."""
     dev._parent = parent
-    waterleak: WaterleakSensor = dev.modules["WaterleakSensor"]
+    waterleak = cast(WaterleakSensor, dev.modules["WaterleakSensor"])
 
     assert "water_leak" in dev.features
     assert dev.features["water_leak"].value == waterleak.status
