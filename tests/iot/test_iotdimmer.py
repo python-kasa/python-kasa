@@ -1,4 +1,5 @@
 import pytest
+from pytest_mock import MockerFixture
 
 from kasa import DeviceType, Module
 from kasa.iot import IotDimmer
@@ -6,7 +7,7 @@ from tests.conftest import dimmer_iot, handle_turn_on, turn_on
 
 
 @dimmer_iot
-async def test_set_brightness(dev):
+async def test_set_brightness(dev: IotDimmer) -> None:
     light = dev.modules.get(Module.Light)
     assert light
     await handle_turn_on(dev, False)
@@ -26,7 +27,9 @@ async def test_set_brightness(dev):
 
 @dimmer_iot
 @turn_on
-async def test_set_brightness_transition(dev, turn_on, mocker):
+async def test_set_brightness_transition(
+    dev: IotDimmer, turn_on: bool, mocker: MockerFixture
+) -> None:
     light = dev.modules.get(Module.Light)
     assert light
     await handle_turn_on(dev, turn_on)
@@ -49,7 +52,7 @@ async def test_set_brightness_transition(dev, turn_on, mocker):
 
 
 @dimmer_iot
-async def test_set_brightness_invalid(dev):
+async def test_set_brightness_invalid(dev: IotDimmer) -> None:
     light = dev.modules.get(Module.Light)
     assert light
     for invalid_brightness in [-1, 101]:
@@ -62,7 +65,7 @@ async def test_set_brightness_invalid(dev):
 
 
 @dimmer_iot
-async def test_set_brightness_invalid_transition(dev):
+async def test_set_brightness_invalid_transition(dev: IotDimmer) -> None:
     light = dev.modules.get(Module.Light)
     assert light
     for invalid_transition in [-1]:
@@ -74,7 +77,7 @@ async def test_set_brightness_invalid_transition(dev):
 
 
 @dimmer_iot
-async def test_turn_on_transition(dev, mocker):
+async def test_turn_on_transition(dev: IotDimmer, mocker: MockerFixture) -> None:
     light = dev.modules.get(Module.Light)
     assert light
     query_helper = mocker.spy(IotDimmer, "_query_helper")
@@ -93,7 +96,7 @@ async def test_turn_on_transition(dev, mocker):
 
 
 @dimmer_iot
-async def test_turn_off_transition(dev, mocker):
+async def test_turn_off_transition(dev: IotDimmer, mocker: MockerFixture) -> None:
     light = dev.modules.get(Module.Light)
     assert light
     await handle_turn_on(dev, True)
@@ -115,7 +118,9 @@ async def test_turn_off_transition(dev, mocker):
 
 @dimmer_iot
 @turn_on
-async def test_set_dimmer_transition(dev, turn_on, mocker):
+async def test_set_dimmer_transition(
+    dev: IotDimmer, turn_on: bool, mocker: MockerFixture
+) -> None:
     light = dev.modules.get(Module.Light)
     assert light
     await handle_turn_on(dev, turn_on)
@@ -135,7 +140,9 @@ async def test_set_dimmer_transition(dev, turn_on, mocker):
 
 @dimmer_iot
 @turn_on
-async def test_set_dimmer_transition_to_off(dev, turn_on, mocker):
+async def test_set_dimmer_transition_to_off(
+    dev: IotDimmer, turn_on: bool, mocker: MockerFixture
+) -> None:
     light = dev.modules.get(Module.Light)
     assert light
     await handle_turn_on(dev, turn_on)
@@ -156,26 +163,26 @@ async def test_set_dimmer_transition_to_off(dev, turn_on, mocker):
 
 
 @dimmer_iot
-async def test_set_dimmer_transition_invalid_brightness(dev):
+async def test_set_dimmer_transition_invalid_brightness(dev: IotDimmer) -> None:
     for invalid_brightness in [-1, 101]:
         with pytest.raises(ValueError, match="Invalid brightness value: "):
             await dev.set_dimmer_transition(invalid_brightness, 1000)
 
     for invalid_type in [0.5, "foo"]:
         with pytest.raises(TypeError, match="Transition must be integer"):
-            await dev.set_dimmer_transition(1, invalid_type)
+            await dev.set_dimmer_transition(1, invalid_type)  # type: ignore[arg-type]
 
 
 @dimmer_iot
-async def test_set_dimmer_transition_invalid_transition(dev):
+async def test_set_dimmer_transition_invalid_transition(dev: IotDimmer) -> None:
     for invalid_transition in [-1]:
         with pytest.raises(ValueError, match="Transition value .+? is not valid."):
             await dev.set_dimmer_transition(1, transition=invalid_transition)
     for invalid_type in [0.5, "foo"]:
         with pytest.raises(TypeError, match="Transition must be integer"):
-            await dev.set_dimmer_transition(1, transition=invalid_type)
+            await dev.set_dimmer_transition(1, transition=invalid_type)  # type: ignore[arg-type]
 
 
 @dimmer_iot
-def test_device_type_dimmer(dev):
+def test_device_type_dimmer(dev: IotDimmer) -> None:
     assert dev.device_type == DeviceType.Dimmer
