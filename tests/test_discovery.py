@@ -428,7 +428,7 @@ async def test_device_update_from_new_discovery_info(discovery_mock) -> None:
             KasaException,
             match=re.escape("You need to await update() to access the data"),
         ):
-            assert device.supported_modules
+            assert device.modules
 
 
 async def test_discover_single_http_client(

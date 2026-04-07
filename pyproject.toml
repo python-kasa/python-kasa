@@ -182,7 +182,7 @@ convention = "pep257"
 warn_unused_configs = true  # warns if overrides sections unused/mis-spelled
 
 [[tool.mypy.overrides]]
-module = [ "kasa.tests.*", "devtools.*" ]
+module = [ "tests.*", "devtools.*" ]
 disable_error_code = "annotation-unchecked"
 
 [[tool.mypy.overrides]]

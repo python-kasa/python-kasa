@@ -134,9 +134,7 @@ async def test_discover_raw(
     discovery_mock, runner: CliRunner, mocker: MockerFixture
 ) -> None:
     """Test the discover raw command."""
-    redact_spy = mocker.patch(
-        "kasa.protocols.protocol.redact_data", side_effect=redact_data
-    )
+    redact_spy = mocker.patch("kasa.cli.discover.redact_data", side_effect=redact_data)
     res = await runner.invoke(
         cli,
         ["--username", "foo", "--password", "bar", "discover", "raw"],
