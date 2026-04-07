@@ -3,10 +3,11 @@ from datetime import UTC, datetime
 
 import pytest
 from freezegun.api import FrozenDateTimeFactory
+from pytest_mock import MockerFixture
 
 from kasa import Device
 from kasa.device_type import DeviceType
-from kasa.protocols.smartprotocol import _ChildProtocolWrapper
+from kasa.protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 from kasa.smart.smartchilddevice import SmartChildDevice
 from kasa.smart.smartdevice import NON_HUB_PARENT_ONLY_MODULES, SmartDevice
 
@@ -30,7 +31,9 @@ has_children = parametrize_combine([has_children_smart, strip_iot])
 
 
 @strip_smart
-def test_childdevice_init(dev, dummy_protocol, mocker):
+def test_childdevice_init(
+    dev, dummy_protocol: SmartProtocol, mocker: MockerFixture
+) -> None:
     """Test that child devices get initialized and use protocol wrapper."""
     assert len(dev.children) > 0
 
@@ -42,7 +45,9 @@ def test_childdevice_init(dev, dummy_protocol, mocker):
 
 
 @strip_smart
-async def test_childdevice_update(dev, dummy_protocol, mocker):
+async def test_childdevice_update(
+    dev, dummy_protocol: SmartProtocol, mocker: MockerFixture
+) -> None:
     """Test that parent update updates children."""
     child_info = dev.internal_state["get_child_device_list"]
     child_list = child_info["child_device_list"]
@@ -101,7 +106,9 @@ async def test_childdevice_properties(dev: SmartChildDevice):
 
 
 @non_hub_parent_smart
-async def test_parent_only_modules(dev, dummy_protocol, mocker):
+async def test_parent_only_modules(
+    dev, dummy_protocol: SmartProtocol, mocker: MockerFixture
+) -> None:
     """Test that parent only modules are not available on children."""
     for child in dev.children:
         for module in NON_HUB_PARENT_ONLY_MODULES:
@@ -109,7 +116,7 @@ async def test_parent_only_modules(dev, dummy_protocol, mocker):
 
 
 @has_children
-async def test_parent_property(dev: Device):
+async def test_parent_property(dev: Device) -> None:
     """Test a child device exposes it's parent."""
     if not dev.children:
         pytest.skip(f"Device {dev} fixture does not have any children")
@@ -121,7 +128,7 @@ async def test_parent_property(dev: Device):
 
 @has_children_smart
 @pytest.mark.requires_dummy
-async def test_child_time(dev: Device, freezer: FrozenDateTimeFactory):
+async def test_child_time(dev: Device, freezer: FrozenDateTimeFactory) -> None:
     """Test a child device gets the time from it's parent module.
 
     This is excluded from real device testing as the test often fail if the
@@ -137,11 +144,11 @@ async def test_child_time(dev: Device, freezer: FrozenDateTimeFactory):
 
 
 @pytest.mark.xdist_group(name="caplog")
-async def test_child_device_type_unknown(caplog):
+async def test_child_device_type_unknown(caplog: pytest.LogCaptureFixture) -> None:
     """Test for device type when category is unknown."""
 
     class DummyDevice(SmartChildDevice):
-        def __init__(self):
+        def __init__(self) -> None:
             super().__init__(
                 SmartDevice("127.0.0.1"),
                 {"device_id": "1", "category": "foobar"},

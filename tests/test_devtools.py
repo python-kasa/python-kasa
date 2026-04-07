@@ -35,7 +35,7 @@ iot_fixtures = parametrize(
 )
 
 
-async def test_fixture_names(fixture_info: FixtureInfo):
+async def test_fixture_names(fixture_info: FixtureInfo) -> None:
     """Test that device info gets the right fixture names."""
     if fixture_info.protocol in {"SMARTCAM"}:
         device_info = SmartCamDevice._get_device_info(
@@ -58,7 +58,7 @@ async def test_fixture_names(fixture_info: FixtureInfo):
 
 
 @smart_fixtures
-async def test_smart_fixtures(fixture_info: FixtureInfo):
+async def test_smart_fixtures(fixture_info: FixtureInfo) -> None:
     """Test that smart fixtures are created the same."""
     dev = await get_device_for_fixture(fixture_info, verbatim=True)
     assert isinstance(dev, SmartDevice)
@@ -74,7 +74,7 @@ async def test_smart_fixtures(fixture_info: FixtureInfo):
     assert fixture_info.data == fixture_result.data
 
 
-def _normalize_child_device_ids(info: dict):
+def _normalize_child_device_ids(info: dict) -> None:
     """Scrubbed child device ids in hubs may not match ids in child fixtures.
 
     Different hub fixtures could create the same child fixture so we scrub
@@ -91,7 +91,7 @@ def _normalize_child_device_ids(info: dict):
 
 
 @smartcam_fixtures
-async def test_smartcam_fixtures(fixture_info: FixtureInfo):
+async def test_smartcam_fixtures(fixture_info: FixtureInfo) -> None:
     """Test that smartcam fixtures are created the same."""
     dev = await get_device_for_fixture(fixture_info, verbatim=True)
     assert isinstance(dev, SmartCamDevice)
@@ -136,7 +136,7 @@ async def test_smartcam_fixtures(fixture_info: FixtureInfo):
 
 
 @iot_fixtures
-async def test_iot_fixtures(fixture_info: FixtureInfo):
+async def test_iot_fixtures(fixture_info: FixtureInfo) -> None:
     """Test that iot fixtures are created the same."""
     # Iot fixtures often do not have enough data to perform a device update()
     # without missing info being added to suppress the update

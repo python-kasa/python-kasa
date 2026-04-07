@@ -1,21 +1,25 @@
 from __future__ import annotations
 
 import asyncio
+import functools
 import os
 import sys
 import warnings
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import aiohttp
 import pytest
 
 # TODO: this and runner fixture could be moved to tests/cli/conftest.py
 from asyncclick.testing import CliRunner
 
 from kasa import (
+    Device,
     DeviceConfig,
     SmartProtocol,
 )
+from kasa.httpclient import HttpClient
 from kasa.transports.basetransport import BaseTransport
 
 from .device_fixtures import *  # noqa: F403
@@ -26,14 +30,53 @@ from .fixtureinfo import fixture_info  # noqa: F401
 turn_on = pytest.mark.parametrize("turn_on", [True, False])
 
 
-def load_fixture(foldername, filename):
+@pytest.fixture(autouse=True)
+async def _close_transport_and_http_sessions(monkeypatch):
+    """Ensure all transports and http clients close their sessions after tests."""
+    transports: list[BaseTransport] = []
+    http_clients: list[HttpClient] = []
+    aiohttp_sessions: list[aiohttp.ClientSession] = []
+
+    original_transport_init = BaseTransport.__init__
+    original_http_init = HttpClient.__init__
+    original_session_init = aiohttp.ClientSession.__init__
+
+    @functools.wraps(original_transport_init)
+    def _track_transport(self, *args, **kwargs):
+        original_transport_init(self, *args, **kwargs)
+        transports.append(self)
+
+    @functools.wraps(original_http_init)
+    def _track_http(self, *args, **kwargs):
+        original_http_init(self, *args, **kwargs)
+        http_clients.append(self)
+
+    @functools.wraps(original_session_init)
+    def _track_session(self, *args, **kwargs):
+        original_session_init(self, *args, **kwargs)
+        aiohttp_sessions.append(self)
+
+    monkeypatch.setattr(BaseTransport, "__init__", _track_transport)
+    monkeypatch.setattr(HttpClient, "__init__", _track_http)
+    monkeypatch.setattr(aiohttp.ClientSession, "__init__", _track_session)
+    yield
+    for transport in transports:
+        await transport.close()
+    for client in http_clients:
+        await client.close()
+    for session in aiohttp_sessions:
+        if not session.closed:
+            await session.close()
+
+
+def load_fixture(foldername: str, filename: str):
     """Load a fixture."""
     path = Path(Path(__file__).parent / "fixtures" / foldername / filename)
     with path.open() as fdp:
         return fdp.read()
 
 
-async def handle_turn_on(dev, turn_on):
+async def handle_turn_on(dev: Device, turn_on: bool) -> None:
     if turn_on:
         await dev.turn_on()
     else:
@@ -68,15 +111,16 @@ def dummy_protocol():
         yield protocol
 
 
-def pytest_configure():
-    pytest.fixtures_missing_methods = {}
+def pytest_configure() -> None:
+    pytest.fixtures_missing_methods = {}  # type: ignore[attr-defined]
 
 
-def pytest_sessionfinish(session, exitstatus):
-    if not pytest.fixtures_missing_methods:
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    fixtures_missing: dict = getattr(pytest, "fixtures_missing_methods", {})
+    if not fixtures_missing:
         return
     msg = "\n"
-    for fixture, methods in sorted(pytest.fixtures_missing_methods.items()):
+    for fixture, methods in sorted(fixtures_missing.items()):
         method_list = ", ".join(methods)
         msg += f"Fixture {fixture} missing: {method_list}\n"
 
@@ -86,7 +130,7 @@ def pytest_sessionfinish(session, exitstatus):
     )
 
 
-def pytest_addoption(parser):
+def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         "--ip", action="store", default=None, help="run against device on given ip"
     )
@@ -98,7 +142,9 @@ def pytest_addoption(parser):
     )
 
 
-def pytest_collection_modifyitems(config, items):
+def pytest_collection_modifyitems(
+    config: pytest.Config, items: list[pytest.Item]
+) -> None:
     if not config.getoption("--ip"):
         print("Testing against fixtures.")
         # pytest_socket doesn't work properly in windows with asyncio
@@ -119,11 +165,11 @@ def pytest_collection_modifyitems(config, items):
 
 
 @pytest.fixture(autouse=True, scope="session")
-def asyncio_sleep_fixture(request):  # noqa: PT004
+def asyncio_sleep_fixture(request: pytest.FixtureRequest):  # noqa: PT004
     """Patch sleep to prevent tests actually waiting."""
     orig_asyncio_sleep = asyncio.sleep
 
-    async def _asyncio_sleep(*_, **__):
+    async def _asyncio_sleep(*_, **__) -> None:
         await orig_asyncio_sleep(0)
 
     if request.config.getoption("--ip"):
@@ -134,7 +180,7 @@ def asyncio_sleep_fixture(request):  # noqa: PT004
 
 
 @pytest.fixture(autouse=True, scope="session")
-def mock_datagram_endpoint(request):  # noqa: PT004
+def mock_datagram_endpoint(request: pytest.FixtureRequest):  # noqa: PT004
     """Mock create_datagram_endpoint so it doesn't perform io."""
 
     async def _create_datagram_endpoint(protocol_factory, *_, **__):

@@ -14,6 +14,7 @@ import aiohttp
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
+from pytest_mock import MockerFixture
 
 from kasa import (
     Credentials,
@@ -79,7 +80,7 @@ UNSUPPORTED = {
 
 
 @wallswitch_iot
-async def test_type_detection_switch(dev: Device):
+async def test_type_detection_switch(dev: Device) -> None:
     d = Discover._get_device_class(dev._last_update)("localhost")
     with pytest.deprecated_call(match="use device_type property instead"):
         assert d.is_wallswitch
@@ -87,13 +88,13 @@ async def test_type_detection_switch(dev: Device):
 
 
 @plug_iot
-async def test_type_detection_plug(dev: Device):
+async def test_type_detection_plug(dev: Device) -> None:
     d = Discover._get_device_class(dev._last_update)("localhost")
     assert d.device_type == DeviceType.Plug
 
 
 @bulb_iot
-async def test_type_detection_bulb(dev: Device):
+async def test_type_detection_bulb(dev: Device) -> None:
     d = Discover._get_device_class(dev._last_update)("localhost")
     # TODO: light_strip is a special case for now to force bulb tests on it
 
@@ -102,25 +103,25 @@ async def test_type_detection_bulb(dev: Device):
 
 
 @strip_iot
-async def test_type_detection_strip(dev: Device):
+async def test_type_detection_strip(dev: Device) -> None:
     d = Discover._get_device_class(dev._last_update)("localhost")
     assert d.device_type == DeviceType.Strip
 
 
 @dimmer_iot
-async def test_type_detection_dimmer(dev: Device):
+async def test_type_detection_dimmer(dev: Device) -> None:
     d = Discover._get_device_class(dev._last_update)("localhost")
     assert d.device_type == DeviceType.Dimmer
 
 
 @lightstrip_iot
-async def test_type_detection_lightstrip(dev: Device):
+async def test_type_detection_lightstrip(dev: Device) -> None:
     d = Discover._get_device_class(dev._last_update)("localhost")
     assert d.device_type == DeviceType.LightStrip
 
 
 @pytest.mark.xdist_group(name="caplog")
-async def test_type_unknown(caplog):
+async def test_type_unknown(caplog: pytest.LogCaptureFixture) -> None:
     invalid_info = {"system": {"get_sysinfo": {"type": "nosuchtype"}}}
     assert Discover._get_device_class(invalid_info) is IotPlug
     msg = "Unknown device type nosuchtype, falling back to plug"
@@ -128,7 +129,9 @@ async def test_type_unknown(caplog):
 
 
 @pytest.mark.parametrize("custom_port", [123, None])
-async def test_discover_single(discovery_mock, custom_port, mocker):
+async def test_discover_single(
+    discovery_mock, custom_port: int | None, mocker: MockerFixture
+) -> None:
     """Make sure that discover_single returns an initialized SmartDevice instance."""
     host = "127.0.0.1"
     discovery_mock.ip = host
@@ -176,7 +179,7 @@ async def test_discover_single(discovery_mock, custom_port, mocker):
     assert x.config == config
 
 
-async def test_discover_single_hostname(discovery_mock, mocker):
+async def test_discover_single_hostname(discovery_mock, mocker: MockerFixture) -> None:
     """Make sure that discover_single returns an initialized SmartDevice instance."""
     host = "foobar"
     ip = "127.0.0.1"
@@ -196,7 +199,7 @@ async def test_discover_single_hostname(discovery_mock, mocker):
         x = await Discover.discover_single(host, credentials=Credentials())
 
 
-async def test_discover_credentials(mocker):
+async def test_discover_credentials(mocker: MockerFixture) -> None:
     """Make sure that discover gives credentials precedence over un and pw."""
     host = "127.0.0.1"
 
@@ -224,7 +227,7 @@ async def test_discover_credentials(mocker):
     assert dp.mock_calls[3].kwargs["credentials"] is None
 
 
-async def test_discover_single_credentials(mocker):
+async def test_discover_single_credentials(mocker: MockerFixture) -> None:
     """Make sure that discover_single gives credentials precedence over un and pw."""
     host = "127.0.0.1"
 
@@ -252,7 +255,9 @@ async def test_discover_single_credentials(mocker):
     assert dp.mock_calls[3].kwargs["credentials"] is None
 
 
-async def test_discover_single_unsupported(unsupported_device_info, mocker):
+async def test_discover_single_unsupported(
+    unsupported_device_info: dict, mocker: MockerFixture
+) -> None:
     """Make sure that discover_single handles unsupported devices correctly."""
     host = "127.0.0.1"
 
@@ -263,7 +268,7 @@ async def test_discover_single_unsupported(unsupported_device_info, mocker):
         await Discover.discover_single(host)
 
 
-async def test_discover_single_no_response(mocker):
+async def test_discover_single_no_response(mocker: MockerFixture) -> None:
     """Make sure that discover_single handles no response correctly."""
     host = "127.0.0.1"
     mocker.patch.object(_DiscoverProtocol, "do_discover")
@@ -283,7 +288,9 @@ INVALIDS = [
 
 
 @pytest.mark.parametrize(("msg", "data"), INVALIDS)
-async def test_discover_invalid_info(msg, data, mocker):
+async def test_discover_invalid_info(
+    msg: str, data: dict, mocker: MockerFixture
+) -> None:
     """Make sure that invalid discovery information raises an exception."""
     host = "127.0.0.1"
 
@@ -298,7 +305,7 @@ async def test_discover_invalid_info(msg, data, mocker):
         await Discover.discover_single(host)
 
 
-async def test_discover_send(mocker):
+async def test_discover_send(mocker: MockerFixture) -> None:
     """Test discovery parameters."""
     discovery_timeout = 0
     discovery_ports = 3
@@ -310,7 +317,9 @@ async def test_discover_send(mocker):
     assert transport.sendto.call_count == proto.discovery_packets * discovery_ports
 
 
-async def test_discover_datagram_received(mocker, discovery_data):
+async def test_discover_datagram_received(
+    mocker: MockerFixture, discovery_data: dict
+) -> None:
     """Verify that datagram received fills discovered_devices."""
     proto = _DiscoverProtocol()
 
@@ -336,7 +345,9 @@ async def test_discover_datagram_received(mocker, discovery_data):
 
 
 @pytest.mark.parametrize(("msg", "data"), INVALIDS)
-async def test_discover_invalid_responses(msg, data, mocker):
+async def test_discover_invalid_responses(
+    msg: str, data: dict, mocker: MockerFixture
+) -> None:
     """Verify that we don't crash whole discovery if some devices in the network are sending unexpected data."""
     proto = _DiscoverProtocol()
     mocker.patch("kasa.discover.json_loads", return_value=data)
@@ -369,7 +380,9 @@ AUTHENTICATION_DATA_KLAP = {
 
 
 @new_discovery
-async def test_discover_single_authentication(discovery_mock, mocker):
+async def test_discover_single_authentication(
+    discovery_mock, mocker: MockerFixture
+) -> None:
     """Make sure that discover_single handles authenticating devices correctly."""
     host = "127.0.0.1"
     discovery_mock.ip = host
@@ -396,7 +409,7 @@ async def test_discover_single_authentication(discovery_mock, mocker):
 
 
 @new_discovery
-async def test_device_update_from_new_discovery_info(discovery_mock):
+async def test_device_update_from_new_discovery_info(discovery_mock) -> None:
     """Make sure that new discovery devices update from discovery info correctly."""
     discovery_data = discovery_mock.discovery_data
     device_class = Discover._get_device_class(discovery_data)
@@ -415,10 +428,12 @@ async def test_device_update_from_new_discovery_info(discovery_mock):
             KasaException,
             match=re.escape("You need to await update() to access the data"),
         ):
-            assert device.supported_modules
+            assert device.modules
 
 
-async def test_discover_single_http_client(discovery_mock, mocker):
+async def test_discover_single_http_client(
+    discovery_mock, mocker: MockerFixture
+) -> None:
     """Make sure that discover_single returns an initialized SmartDevice instance."""
     host = "127.0.0.1"
     discovery_mock.ip = host
@@ -435,7 +450,7 @@ async def test_discover_single_http_client(discovery_mock, mocker):
         assert x.protocol._transport._http_client.client == http_client
 
 
-async def test_discover_http_client(discovery_mock, mocker):
+async def test_discover_http_client(discovery_mock, mocker: MockerFixture) -> None:
     """Make sure that discover returns an initialized SmartDevice instance."""
     host = "127.0.0.1"
     discovery_mock.ip = host
@@ -474,7 +489,7 @@ LEGACY_DISCOVER_DATA = {
 class FakeDatagramTransport(asyncio.DatagramTransport):
     GHOST_PORT = 8888
 
-    def __init__(self, dp, port, do_not_reply_count, unsupported=False):
+    def __init__(self, dp, port, do_not_reply_count, unsupported=False) -> None:
         self.dp = dp
         self.port = port
         self.do_not_reply_count = do_not_reply_count
@@ -503,7 +518,9 @@ class FakeDatagramTransport(asyncio.DatagramTransport):
 
 @pytest.mark.parametrize("port", [9999, 20002])
 @pytest.mark.parametrize("do_not_reply_count", [0, 1, 2, 3, 4])
-async def test_do_discover_drop_packets(mocker, port, do_not_reply_count):
+async def test_do_discover_drop_packets(
+    mocker: MockerFixture, port: int, do_not_reply_count: int
+) -> None:
     """Make sure that _DiscoverProtocol handles authenticating devices correctly."""
     host = "127.0.0.1"
     discovery_timeout = 0
@@ -529,7 +546,9 @@ async def test_do_discover_drop_packets(mocker, port, do_not_reply_count):
     [(FakeDatagramTransport.GHOST_PORT, True), (20002, False)],
     ids=["unknownport", "unsupporteddevice"],
 )
-async def test_do_discover_invalid(mocker, port, will_timeout):
+async def test_do_discover_invalid(
+    mocker: MockerFixture, port: int, will_timeout: bool
+) -> None:
     """Make sure that _DiscoverProtocol handles invalid devices correctly."""
     host = "127.0.0.1"
     discovery_timeout = 0
@@ -548,7 +567,7 @@ async def test_do_discover_invalid(mocker, port, will_timeout):
     assert dp.discover_task.cancelled() != will_timeout
 
 
-async def test_discover_propogates_task_exceptions(discovery_mock):
+async def test_discover_propogates_task_exceptions(discovery_mock) -> None:
     """Make sure that discover propogates callback exceptions."""
     discovery_timeout = 0
 
@@ -561,7 +580,7 @@ async def test_discover_propogates_task_exceptions(discovery_mock):
         )
 
 
-async def test_do_discover_no_connection(mocker):
+async def test_do_discover_no_connection(mocker: MockerFixture) -> None:
     """Make sure that if the datagram connection doesnt start a TimeoutError is raised."""
     host = "127.0.0.1"
     discovery_timeout = 0
@@ -579,7 +598,7 @@ async def test_do_discover_no_connection(mocker):
         await dp.wait_for_discovery_to_complete()
 
 
-async def test_do_discover_external_cancel(mocker):
+async def test_do_discover_external_cancel(mocker: MockerFixture) -> None:
     """Make sure that a cancel other than when target is discovered propogates."""
     host = "127.0.0.1"
     discovery_timeout = 1
@@ -599,7 +618,9 @@ async def test_do_discover_external_cancel(mocker):
 
 
 @pytest.mark.xdist_group(name="caplog")
-async def test_discovery_redaction(discovery_mock, caplog: pytest.LogCaptureFixture):
+async def test_discovery_redaction(
+    discovery_mock, caplog: pytest.LogCaptureFixture
+) -> None:
     """Test query sensitive info redaction."""
     mac = "12:34:56:78:9A:BC"
 
@@ -634,7 +655,7 @@ async def test_discovery_redaction(discovery_mock, caplog: pytest.LogCaptureFixt
     assert "12:34:56:00:00:00" in caplog.text
 
 
-async def test_discovery_decryption():
+async def test_discovery_decryption() -> None:
     """Test discovery decryption."""
     key = b"8\x89\x02\xfa\xf5Xs\x1c\xa1 H\x9a\x82\xc7\xd9\t"
     iv = b"9=\xf8\x1bS\xcd0\xb5\x89i\xba\xfd^9\x9f\xfa"
@@ -667,7 +688,7 @@ async def test_discovery_decryption():
     assert dr.decrypted_data == data_dict
 
 
-async def test_discover_try_connect_all(discovery_mock, mocker):
+async def test_discover_try_connect_all(discovery_mock, mocker: MockerFixture) -> None:
     """Test that device update is called on main."""
     if "result" in discovery_mock.discovery_data:
         dev_class = get_device_class_from_family(
@@ -701,7 +722,7 @@ async def test_discover_try_connect_all(discovery_mock, mocker):
             return discovery_mock.query_data
         raise KasaException("Unable to execute query")
 
-    async def _update(self, *args, **kwargs):
+    async def _update(self, *args, **kwargs) -> None:
         if (
             self.protocol.__class__ is protocol_class
             and self.protocol._transport.__class__ is transport_class
@@ -727,7 +748,7 @@ async def test_discover_try_connect_all(discovery_mock, mocker):
         assert dev.protocol._transport._http_client.client == session
 
 
-async def test_discovery_device_repr(discovery_mock, mocker):
+async def test_discovery_device_repr(discovery_mock, mocker: MockerFixture) -> None:
     """Test that repr works when only discovery data is available."""
     host = "foobar"
     ip = "127.0.0.1"

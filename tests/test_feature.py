@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from pytest_mock import MockerFixture
 
-from kasa import Device, Feature, KasaException
+from kasa import Device, Feature, KasaException, Module
 from kasa.iot import IotStrip
 
 _LOGGER = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ def dummy_feature() -> Feature:
     return feat
 
 
-def test_feature_api(dummy_feature: Feature):
+def test_feature_api(dummy_feature: Feature) -> None:
     """Test all properties of a dummy feature."""
     assert dummy_feature.device is not None
     assert dummy_feature.name == "dummy_feature"
@@ -47,7 +47,7 @@ def test_feature_api(dummy_feature: Feature):
 @pytest.mark.parametrize(
     "read_only_type", [Feature.Type.Sensor, Feature.Type.BinarySensor]
 )
-def test_feature_setter_on_sensor(read_only_type):
+def test_feature_setter_on_sensor(read_only_type: Feature.Type) -> None:
     """Test that creating a sensor feature with a setter causes an error."""
     with pytest.raises(ValueError, match="Invalid type for configurable feature"):
         Feature(
@@ -60,14 +60,14 @@ def test_feature_setter_on_sensor(read_only_type):
         )
 
 
-def test_feature_value(dummy_feature: Feature):
+def test_feature_value(dummy_feature: Feature) -> None:
     """Verify that property gets accessed on *value* access."""
     dummy_feature.attribute_getter = "test_prop"
     dummy_feature.device.test_prop = "dummy"  # type: ignore[attr-defined]
     assert dummy_feature.value == "dummy"
 
 
-def test_feature_value_container(mocker, dummy_feature: Feature):
+def test_feature_value_container(mocker: MockerFixture, dummy_feature: Feature) -> None:
     """Test that container's attribute is accessed when expected."""
 
     class DummyContainer:
@@ -86,13 +86,15 @@ def test_feature_value_container(mocker, dummy_feature: Feature):
     mock_dev_prop.assert_not_called()
 
 
-def test_feature_value_callable(dev, dummy_feature: Feature):
+def test_feature_value_callable(dev: Device, dummy_feature: Feature) -> None:
     """Verify that callables work as *attribute_getter*."""
     dummy_feature.attribute_getter = lambda x: "dummy value"
     assert dummy_feature.value == "dummy value"
 
 
-async def test_feature_setter(dev, mocker, dummy_feature: Feature):
+async def test_feature_setter(
+    dev: Device, mocker: MockerFixture, dummy_feature: Feature
+) -> None:
     """Verify that *set_value* calls the defined method."""
     mock_set_dummy = mocker.patch.object(
         dummy_feature.device, "set_dummy", create=True, new_callable=AsyncMock
@@ -102,14 +104,14 @@ async def test_feature_setter(dev, mocker, dummy_feature: Feature):
     mock_set_dummy.assert_called_with("dummy value")
 
 
-async def test_feature_setter_read_only(dummy_feature):
+async def test_feature_setter_read_only(dummy_feature: Feature) -> None:
     """Verify that read-only feature raises an exception when trying to change it."""
     dummy_feature.attribute_setter = None
     with pytest.raises(ValueError, match="Tried to set read-only feature"):
         await dummy_feature.set_value("value for read only feature")
 
 
-async def test_feature_action(mocker):
+async def test_feature_action(mocker: MockerFixture) -> None:
     """Test that setting value on button calls the setter."""
     feat = Feature(
         device=DummyDevice(),  # type: ignore[arg-type]
@@ -129,7 +131,9 @@ async def test_feature_action(mocker):
 
 
 @pytest.mark.xdist_group(name="caplog")
-async def test_feature_choice_list(dummy_feature, caplog, mocker: MockerFixture):
+async def test_feature_choice_list(
+    dummy_feature: Feature, caplog: pytest.LogCaptureFixture, mocker: MockerFixture
+) -> None:
     """Test the choice feature type."""
     dummy_feature.type = Feature.Type.Choice
     dummy_feature.choices_getter = lambda: ["first", "second"]
@@ -152,7 +156,7 @@ async def test_feature_choice_list(dummy_feature, caplog, mocker: MockerFixture)
 
 
 @pytest.mark.parametrize("precision_hint", [1, 2, 3])
-async def test_precision_hint(dummy_feature, precision_hint):
+async def test_precision_hint(dummy_feature: Feature, precision_hint: int) -> None:
     """Test that precision hint works as expected."""
     dummy_value = 3.141593
     dummy_feature.type = Feature.Type.Sensor
@@ -168,7 +172,7 @@ async def test_feature_setters(dev: Device, mocker: MockerFixture):
     # setters that do not call set on the device itself.
     internal_setters = {"pan_step", "tilt_step"}
 
-    async def _test_feature(feat, query_mock):
+    async def _test_feature(feat, query_mock) -> None:
         if feat.attribute_setter is None:
             return
 
@@ -194,11 +198,16 @@ async def test_feature_setters(dev: Device, mocker: MockerFixture):
         if expecting_call:
             query_mock.assert_called()
 
-    async def _test_features(dev):
+    async def _test_features(dev: Device):
         exceptions = []
         for feat in dev.features.values():
             try:
-                patch_dev = feat.container._device if feat.container else feat.device
+                if isinstance(feat.container, Module):
+                    patch_dev = feat.container._device
+                elif feat.container is not None:
+                    patch_dev = feat.container
+                else:
+                    patch_dev = feat.device
                 with (
                     patch.object(patch_dev.protocol, "query", name=feat.id) as query,
                     # patch update in case feature setter does an update

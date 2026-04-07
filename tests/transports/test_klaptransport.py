@@ -411,7 +411,6 @@ async def test_handshake(
 
     config = DeviceConfig("127.0.0.1", credentials=client_credentials)
     protocol = IotProtocol(transport=transport_class(config=config))
-    protocol._transport.http_client = aiohttp.ClientSession()
 
     response_status = 200
     await protocol._transport.perform_handshake()
