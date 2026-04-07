@@ -20,7 +20,7 @@ not_child_camera_smartcam = parametrize(
 
 
 @device_smartcam
-async def test_state(dev: Device):
+async def test_state(dev: Device) -> None:
     if dev.device_type is DeviceType.Hub:
         pytest.skip("Hubs cannot be switched on and off")
 
@@ -31,7 +31,7 @@ async def test_state(dev: Device):
 
 
 @not_child_camera_smartcam
-async def test_stream_rtsp_url(dev: Device):
+async def test_stream_rtsp_url(dev: Device) -> None:
     camera_module = dev.modules.get(Module.Camera)
     assert camera_module
 
@@ -91,7 +91,7 @@ async def test_stream_rtsp_url(dev: Device):
 
 
 @not_child_camera_smartcam
-async def test_onvif_url(dev: Device):
+async def test_onvif_url(dev: Device) -> None:
     """Test the onvif url."""
     camera_module = dev.modules.get(Module.Camera)
     assert camera_module
