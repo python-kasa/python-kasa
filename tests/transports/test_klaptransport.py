@@ -1,12 +1,17 @@
+from __future__ import annotations
+
 import json
 import logging
 import re
 import secrets
 import time
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 from contextlib import nullcontext as does_not_raise
 
 import aiohttp
 import pytest
+from pytest_mock import MockerFixture
 from yarl import URL
 
 from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
@@ -63,8 +68,13 @@ class _mock_response:
 @pytest.mark.parametrize("protocol_class", [IotProtocol, SmartProtocol])
 @pytest.mark.parametrize("retry_count", [1, 3, 5])
 async def test_protocol_retries_via_client_session(
-    mocker, retry_count, protocol_class, transport_class, error, retry_expectation
-):
+    mocker: MockerFixture,
+    retry_count: int,
+    protocol_class: type,
+    transport_class: type,
+    error: Exception,
+    retry_expectation: bool,
+) -> None:
     host = "127.0.0.1"
     conn = mocker.patch.object(aiohttp.ClientSession, "post", side_effect=error)
 
@@ -91,8 +101,13 @@ async def test_protocol_retries_via_client_session(
 @pytest.mark.parametrize("protocol_class", [IotProtocol, SmartProtocol])
 @pytest.mark.parametrize("retry_count", [1, 3, 5])
 async def test_protocol_retries_via_httpclient(
-    mocker, retry_count, protocol_class, transport_class, error, retry_expectation
-):
+    mocker: MockerFixture,
+    retry_count: int,
+    protocol_class: type,
+    transport_class: type,
+    error: Exception,
+    retry_expectation: bool,
+) -> None:
     host = "127.0.0.1"
     conn = mocker.patch.object(HttpClient, "post", side_effect=error)
     mocker.patch.object(protocol_class, "BACKOFF_SECONDS_AFTER_TIMEOUT", 0)
@@ -110,8 +125,8 @@ async def test_protocol_retries_via_httpclient(
 @pytest.mark.parametrize("transport_class", [AesTransport, KlapTransport])
 @pytest.mark.parametrize("protocol_class", [IotProtocol, SmartProtocol])
 async def test_protocol_no_retry_on_connection_error(
-    mocker, protocol_class, transport_class
-):
+    mocker: MockerFixture, protocol_class: type, transport_class: type
+) -> None:
     host = "127.0.0.1"
     conn = mocker.patch.object(
         aiohttp.ClientSession,
@@ -131,8 +146,8 @@ async def test_protocol_no_retry_on_connection_error(
 @pytest.mark.parametrize("transport_class", [AesTransport, KlapTransport])
 @pytest.mark.parametrize("protocol_class", [IotProtocol, SmartProtocol])
 async def test_protocol_retry_recoverable_error(
-    mocker, protocol_class, transport_class
-):
+    mocker: MockerFixture, protocol_class: type, transport_class: type
+) -> None:
     host = "127.0.0.1"
     conn = mocker.patch.object(
         aiohttp.ClientSession,
@@ -152,7 +167,9 @@ async def test_protocol_retry_recoverable_error(
 @pytest.mark.parametrize("transport_class", [AesTransport, KlapTransport])
 @pytest.mark.parametrize("protocol_class", [IotProtocol, SmartProtocol])
 @pytest.mark.parametrize("retry_count", [1, 3, 5])
-async def test_protocol_reconnect(mocker, retry_count, protocol_class, transport_class):
+async def test_protocol_reconnect(
+    mocker: MockerFixture, retry_count: int, protocol_class: type, transport_class: type
+) -> None:
     host = "127.0.0.1"
     remaining = retry_count
     mock_response = {"result": {"great": "success"}, "error_code": 0}
@@ -185,12 +202,13 @@ async def test_protocol_reconnect(mocker, retry_count, protocol_class, transport
 
 @pytest.mark.parametrize("log_level", [logging.WARNING, logging.DEBUG])
 @pytest.mark.xdist_group(name="caplog")
-async def test_protocol_logging(mocker, caplog, log_level):
+async def test_protocol_logging(
+    mocker: MockerFixture, caplog: pytest.LogCaptureFixture, log_level: int
+) -> None:
     caplog.set_level(log_level)
     logging.getLogger("kasa").setLevel(log_level)
 
     def _return_encrypted(*_, **__):
-        nonlocal encryption_session
         # Do the encrypt just before returning the value so the incrementing sequence number is correct
         encrypted, seq = encryption_session.encrypt('{"great":"success"}')
         return 200, encrypted
@@ -200,11 +218,12 @@ async def test_protocol_logging(mocker, caplog, log_level):
     encryption_session = KlapEncryptionSession(seed, seed, auth_hash)
 
     config = DeviceConfig("127.0.0.1")
-    protocol = IotProtocol(transport=KlapTransport(config=config))
+    transport = KlapTransport(config=config)
+    protocol = IotProtocol(transport=transport)
 
-    protocol._transport._handshake_done = True
-    protocol._transport._session_expire_at = time.time() + 86400
-    protocol._transport._encryption_session = encryption_session
+    transport._handshake_done = True
+    transport._session_expire_at = time.time() + 86400
+    transport._encryption_session = encryption_session
     mocker.patch.object(HttpClient, "post", side_effect=_return_encrypted)
 
     response = await protocol.query({})
@@ -215,7 +234,7 @@ async def test_protocol_logging(mocker, caplog, log_level):
         assert "success" not in caplog.text
 
 
-def test_encrypt():
+def test_encrypt() -> None:
     d = json.dumps({"foo": 1, "bar": 2})
 
     seed = secrets.token_bytes(16)
@@ -227,7 +246,7 @@ def test_encrypt():
     assert d == encryption_session.decrypt(encrypted)
 
 
-def test_encrypt_unicode():
+def test_encrypt_unicode() -> None:
     d = "{'snowman': '\u2603'}"
 
     seed = secrets.token_bytes(16)
@@ -241,7 +260,7 @@ def test_encrypt_unicode():
     assert d == decrypted
 
 
-async def test_transport_decrypt(mocker):
+async def test_transport_decrypt(mocker: MockerFixture) -> None:
     """Test transport decryption."""
     d = {"great": "success"}
 
@@ -255,6 +274,7 @@ async def test_transport_decrypt(mocker):
     transport._encryption_session = encryption_session
 
     async def _return_response(url: URL, params=None, data=None, *_, **__):
+        assert transport._encryption_session is not None
         encryption_session = KlapEncryptionSession(
             transport._encryption_session.local_seed,
             transport._encryption_session.remote_seed,
@@ -272,7 +292,9 @@ async def test_transport_decrypt(mocker):
     assert d == resp
 
 
-async def test_transport_decrypt_error(mocker, caplog):
+async def test_transport_decrypt_error(
+    mocker: MockerFixture, caplog: pytest.LogCaptureFixture
+) -> None:
     """Test that a decryption error raises a kasa exception."""
     d = {"great": "success"}
 
@@ -286,6 +308,7 @@ async def test_transport_decrypt_error(mocker, caplog):
     transport._encryption_session = encryption_session
 
     async def _return_response(url: URL, params=None, data=None, *_, **__):
+        assert transport._encryption_session is not None
         encryption_session = KlapEncryptionSession(
             secrets.token_bytes(16),
             transport._encryption_session.remote_seed,
@@ -330,10 +353,19 @@ async def test_transport_decrypt_error(mocker, caplog):
     ],
 )
 async def test_handshake1(
-    mocker, device_credentials, expectation, transport_class, seed_auth_hash_calc
-):
+    mocker: MockerFixture,
+    device_credentials: Credentials,
+    expectation: AbstractContextManager,
+    transport_class: type[KlapTransport],
+    seed_auth_hash_calc: Callable[..., bytes],
+) -> None:
+    client_seed = None
+    server_seed = secrets.token_bytes(16)
+    client_credentials = Credentials("foo", "bar")
+    device_auth_hash = transport_class.generate_auth_hash(device_credentials)
+
     async def _return_handshake1_response(url, params=None, data=None, *_, **__):
-        nonlocal client_seed, server_seed, device_auth_hash
+        nonlocal client_seed
 
         client_seed = data
         seed_auth_hash = _sha256(
@@ -341,24 +373,20 @@ async def test_handshake1(
         )
         return _mock_response(200, server_seed + seed_auth_hash)
 
-    client_seed = None
-    server_seed = secrets.token_bytes(16)
-    client_credentials = Credentials("foo", "bar")
-    device_auth_hash = transport_class.generate_auth_hash(device_credentials)
-
     mocker.patch.object(
         aiohttp.ClientSession, "post", side_effect=_return_handshake1_response
     )
 
     config = DeviceConfig("127.0.0.1", credentials=client_credentials)
-    protocol = IotProtocol(transport=transport_class(config=config))
+    transport = transport_class(config=config)
+    protocol = IotProtocol(transport=transport)
 
     with expectation:
         (
             local_seed,
             device_remote_seed,
             auth_hash,
-        ) = await protocol._transport.perform_handshake1()
+        ) = await transport.perform_handshake1()
 
         assert local_seed == client_seed
         assert device_remote_seed == server_seed
@@ -381,15 +409,18 @@ async def test_handshake1(
     ],
 )
 async def test_handshake(
-    mocker, transport_class, seed_auth_hash_calc1, seed_auth_hash_calc2
-):
+    mocker: MockerFixture,
+    transport_class: type[KlapTransport],
+    seed_auth_hash_calc1: Callable[..., bytes],
+    seed_auth_hash_calc2: Callable[..., bytes],
+) -> None:
     client_seed = None
     server_seed = secrets.token_bytes(16)
     client_credentials = Credentials("foo", "bar")
     device_auth_hash = transport_class.generate_auth_hash(client_credentials)
 
     async def _return_handshake_response(url: URL, params=None, data=None, *_, **__):
-        nonlocal client_seed, server_seed, device_auth_hash
+        nonlocal client_seed
 
         if url == URL("http://127.0.0.1:80/app/handshake1"):
             client_seed = data
@@ -410,21 +441,21 @@ async def test_handshake(
     )
 
     config = DeviceConfig("127.0.0.1", credentials=client_credentials)
-    protocol = IotProtocol(transport=transport_class(config=config))
-    protocol._transport.http_client = aiohttp.ClientSession()
+    transport = transport_class(config=config)
+    protocol = IotProtocol(transport=transport)
 
     response_status = 200
-    await protocol._transport.perform_handshake()
-    assert protocol._transport._handshake_done is True
+    await transport.perform_handshake()
+    assert transport._handshake_done is True
 
     response_status = 403
     with pytest.raises(KasaException):
-        await protocol._transport.perform_handshake()
-    assert protocol._transport._handshake_done is False
+        await transport.perform_handshake()
+    assert transport._handshake_done is False
     await protocol.close()
 
 
-async def test_query(mocker):
+async def test_query(mocker: MockerFixture) -> None:
     client_seed = None
     last_seq = None
     seq = None
@@ -433,7 +464,7 @@ async def test_query(mocker):
     device_auth_hash = KlapTransport.generate_auth_hash(client_credentials)
 
     async def _return_response(url: URL, params=None, data=None, *_, **__):
-        nonlocal client_seed, server_seed, device_auth_hash, seq
+        nonlocal client_seed, seq
 
         if url == URL("http://127.0.0.1:80/app/handshake1"):
             client_seed = data
@@ -443,10 +474,11 @@ async def test_query(mocker):
         elif url == URL("http://127.0.0.1:80/app/handshake2"):
             return _mock_response(200, b"")
         elif url == URL("http://127.0.0.1:80/app/request"):
+            assert transport._encryption_session is not None
             encryption_session = KlapEncryptionSession(
-                protocol._transport._encryption_session.local_seed,
-                protocol._transport._encryption_session.remote_seed,
-                protocol._transport._encryption_session.user_hash,
+                transport._encryption_session.local_seed,
+                transport._encryption_session.remote_seed,
+                transport._encryption_session.user_hash,
             )
             seq = params.get("seq")
             encryption_session._seq = seq - 1
@@ -457,7 +489,8 @@ async def test_query(mocker):
     mocker.patch.object(aiohttp.ClientSession, "post", side_effect=_return_response)
 
     config = DeviceConfig("127.0.0.1", credentials=client_credentials)
-    protocol = IotProtocol(transport=KlapTransport(config=config))
+    transport = KlapTransport(config=config)
+    protocol = IotProtocol(transport=transport)
 
     for _ in range(10):
         resp = await protocol.query({})
@@ -509,8 +542,11 @@ async def test_query(mocker):
     ],
 )
 async def test_authentication_failures(
-    mocker, response_status, credentials_match, expectation
-):
+    mocker: MockerFixture,
+    response_status: tuple[int, ...],
+    credentials_match: bool | bytes,
+    expectation: AbstractContextManager,
+) -> None:
     client_seed = None
 
     server_seed = secrets.token_bytes(16)
@@ -521,12 +557,7 @@ async def test_authentication_failures(
     device_auth_hash = KlapTransport.generate_auth_hash(device_credentials)
 
     async def _return_response(url: URL, params=None, data=None, *_, **__):
-        nonlocal \
-            client_seed, \
-            server_seed, \
-            device_auth_hash, \
-            response_status, \
-            credentials_match
+        nonlocal client_seed
 
         if url == URL("http://127.0.0.1:80/app/handshake1"):
             client_seed = data
@@ -554,7 +585,7 @@ async def test_authentication_failures(
         await protocol.query({})
 
 
-async def test_port_override():
+async def test_port_override() -> None:
     """Test that port override sets the app_url."""
     host = "127.0.0.1"
     config = DeviceConfig(

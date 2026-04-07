@@ -6,6 +6,7 @@ import logging
 import random
 import string
 import time
+from contextlib import AbstractContextManager
 from contextlib import nullcontext as does_not_raise
 from json import dumps as json_dumps
 from json import loads as json_loads
@@ -16,10 +17,11 @@ import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
 from freezegun.api import FrozenDateTimeFactory
+from pytest_mock import MockerFixture
 from yarl import URL
 
 from kasa.credentials import Credentials
-from kasa.deviceconfig import DeviceConfig
+from kasa.deviceconfig import DeviceConfig, KeyPairDict
 from kasa.exceptions import (
     AuthenticationError,
     KasaException,
@@ -42,7 +44,7 @@ iv = b"9=\xf8\x1bS\xcd0\xb5\x89i\xba\xfd^9\x9f\xfa"
 KEY_IV = key + iv
 
 
-def test_encrypt():
+def test_encrypt() -> None:
     encryption_session = AesEncyptionSession(KEY_IV[:16], KEY_IV[16:])
 
     d = json.dumps({"foo": 1, "bar": 2})
@@ -68,8 +70,12 @@ status_parameters = pytest.mark.parametrize(
 
 @status_parameters
 async def test_handshake(
-    mocker, status_code, error_code, inner_error_code, expectation
-):
+    mocker: MockerFixture,
+    status_code: int,
+    error_code: int,
+    inner_error_code: int,
+    expectation: AbstractContextManager,
+) -> None:
     host = "127.0.0.1"
     mock_aes_device = MockAesDevice(host, status_code, error_code, inner_error_code)
     mocker.patch.object(aiohttp.ClientSession, "post", side_effect=mock_aes_device.post)
@@ -86,12 +92,12 @@ async def test_handshake(
         assert transport._state is TransportState.LOGIN_REQUIRED
 
 
-async def test_handshake_with_keys(mocker):
+async def test_handshake_with_keys(mocker: MockerFixture) -> None:
     host = "127.0.0.1"
     mock_aes_device = MockAesDevice(host)
     mocker.patch.object(aiohttp.ClientSession, "post", side_effect=mock_aes_device.post)
 
-    test_keys = {
+    test_keys: KeyPairDict = {
         "private": "MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBAMo/JQpXIbP2M3bLOKyfEVCURFCxHIXv4HDME8J58AL4BwGDXf0oQycgj9nV+T/MzgEd/4iVysYuYfLuIEKXADP7Lby6AfA/dbcinZZ7bLUNMNa7TaylIvVKtSfR0LV8AmG0jdQYkr4cTzLAEd+AEs/wG3nMQNEcoQRVY+svLPDjAgMBAAECgYBCsDOch0KbvrEVmMklUoY5Fcq4+M249HIDf6d8VwznTbWxsAmL8nzCKCCG6eF4QiYjhCrAdPQaCS1PF2oXywbLhngid/9W9gz4CKKDJChs1X8KvLi+TLg1jgJUXvq9yVNh1CB+lS2ho4gdDDCbVmiVOZR5TDfEf0xeJ+Zz3zlUEQJBAPkhuNdc3yRue8huFZbrWwikURQPYBxLOYfVTDsfV9mZGSkGoWS1FPDsxrqSXugTmcTRuw+lrXKDabJ72kqywA8CQQDP0oaGh5r7F12Xzcwb7X9JkTvyr+rO8YgVtKNBaNVOPabAzysNwOlvH/sNCVQcRj8rn5LNXitgLx6T+Q5uqa3tAkA7J0elUzbkhps7ju/vYri9x448zh3K+g2R9BJio2GPmCuCM0HVEK4FOqNBH4oLXsQPGKFq6LLTUuKg74l4XRL/AkBHBO6r8pNn0yhMxCtIL/UbsuIFoVBgv/F9WWmg5K5gOnlN0n4oCRC8xPUKE3IG54qW4cVNIS05hWCxuJ7R+nJRAkByt/+kX1nQxis2wIXj90fztXG3oSmoVaieYxaXPxlWvX3/Q5kslFF5UsGy9gcK0v2PXhqjTbhud3/X0Er6YP4v",
         "public": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDKPyUKVyGz9jN2yzisnxFQlERQsRyF7+BwzBPCefAC+AcBg139KEMnII/Z1fk/zM4BHf+IlcrGLmHy7iBClwAz+y28ugHwP3W3Ip2We2y1DTDWu02spSL1SrUn0dC1fAJhtI3UGJK+HE8ywBHfgBLP8Bt5zEDRHKEEVWPrLyzw4wIDAQAB",
     }
@@ -105,12 +111,19 @@ async def test_handshake_with_keys(mocker):
     assert transport._state is TransportState.HANDSHAKE_REQUIRED
 
     await transport.perform_handshake()
+    assert transport._key_pair is not None
     assert transport._key_pair.private_key_der_b64 == test_keys["private"]
     assert transport._key_pair.public_key_der_b64 == test_keys["public"]
 
 
 @status_parameters
-async def test_login(mocker, status_code, error_code, inner_error_code, expectation):
+async def test_login(
+    mocker: MockerFixture,
+    status_code: int,
+    error_code: int,
+    inner_error_code: int,
+    expectation: AbstractContextManager,
+) -> None:
     host = "127.0.0.1"
     mock_aes_device = MockAesDevice(host, status_code, error_code, inner_error_code)
     mocker.patch.object(aiohttp.ClientSession, "post", side_effect=mock_aes_device.post)
@@ -156,7 +169,12 @@ async def test_login(mocker, status_code, error_code, inner_error_code, expectat
         "LOGIN_ERROR-SESSION_TIMEOUT_ERROR",
     ),
 )
-async def test_login_errors(mocker, inner_error_codes, expectation, call_count):
+async def test_login_errors(
+    mocker: MockerFixture,
+    inner_error_codes: list[int],
+    expectation: AbstractContextManager,
+    call_count: int,
+) -> None:
     host = "127.0.0.1"
     mock_aes_device = MockAesDevice(host, 200, 0, inner_error_codes)
     post_mock = mocker.patch.object(
@@ -189,7 +207,13 @@ async def test_login_errors(mocker, inner_error_codes, expectation, call_count):
 
 
 @status_parameters
-async def test_send(mocker, status_code, error_code, inner_error_code, expectation):
+async def test_send(
+    mocker: MockerFixture,
+    status_code: int,
+    error_code: int,
+    inner_error_code: int,
+    expectation: AbstractContextManager,
+) -> None:
     host = "127.0.0.1"
     mock_aes_device = MockAesDevice(host, status_code, error_code, inner_error_code)
     mocker.patch.object(aiohttp.ClientSession, "post", side_effect=mock_aes_device.post)
@@ -197,7 +221,7 @@ async def test_send(mocker, status_code, error_code, inner_error_code, expectati
     transport = AesTransport(
         config=DeviceConfig(host, credentials=Credentials("foo", "bar"))
     )
-    transport._handshake_done = True
+    transport._state = TransportState.ESTABLISHED
     transport._session_expire_at = time.time() + 86400
     transport._encryption_session = mock_aes_device.encryption_session
     transport._token_url = transport._app_url.with_query(
@@ -217,7 +241,9 @@ async def test_send(mocker, status_code, error_code, inner_error_code, expectati
 
 
 @pytest.mark.xdist_group(name="caplog")
-async def test_unencrypted_response(mocker, caplog):
+async def test_unencrypted_response(
+    mocker: MockerFixture, caplog: pytest.LogCaptureFixture
+) -> None:
     host = "127.0.0.1"
     mock_aes_device = MockAesDevice(host, 200, 0, 0, do_not_encrypt_response=True)
     mocker.patch.object(aiohttp.ClientSession, "post", side_effect=mock_aes_device.post)
@@ -248,7 +274,9 @@ async def test_unencrypted_response(mocker, caplog):
     )
 
 
-async def test_unencrypted_response_invalid_json(mocker, caplog):
+async def test_unencrypted_response_invalid_json(
+    mocker: MockerFixture, caplog: pytest.LogCaptureFixture
+) -> None:
     host = "127.0.0.1"
     mock_aes_device = MockAesDevice(
         host, 200, 0, 0, do_not_encrypt_response=True, send_response=b"Foobar"
@@ -282,14 +310,16 @@ ERRORS = [e for e in SmartErrorCode if e != 0]
 
 
 @pytest.mark.parametrize("error_code", ERRORS, ids=lambda e: e.name)
-async def test_passthrough_errors(mocker, error_code):
+async def test_passthrough_errors(
+    mocker: MockerFixture, error_code: SmartErrorCode
+) -> None:
     host = "127.0.0.1"
     mock_aes_device = MockAesDevice(host, 200, error_code, 0)
     mocker.patch.object(aiohttp.ClientSession, "post", side_effect=mock_aes_device.post)
 
     config = DeviceConfig(host, credentials=Credentials("foo", "bar"))
     transport = AesTransport(config=config)
-    transport._handshake_done = True
+    transport._state = TransportState.ESTABLISHED
     transport._session_expire_at = time.time() + 86400
     transport._encryption_session = mock_aes_device.encryption_session
     transport._token_url = transport._app_url.with_query(
@@ -308,14 +338,14 @@ async def test_passthrough_errors(mocker, error_code):
 
 
 @pytest.mark.parametrize("error_code", [-13333, 13333])
-async def test_unknown_errors(mocker, error_code):
+async def test_unknown_errors(mocker: MockerFixture, error_code: int) -> None:
     host = "127.0.0.1"
     mock_aes_device = MockAesDevice(host, 200, error_code, 0)
     mocker.patch.object(aiohttp.ClientSession, "post", side_effect=mock_aes_device.post)
 
     config = DeviceConfig(host, credentials=Credentials("foo", "bar"))
     transport = AesTransport(config=config)
-    transport._handshake_done = True
+    transport._state = TransportState.ESTABLISHED
     transport._session_expire_at = time.time() + 86400
     transport._encryption_session = mock_aes_device.encryption_session
     transport._token_url = transport._app_url.with_query(
@@ -334,7 +364,7 @@ async def test_unknown_errors(mocker, error_code):
         assert res is SmartErrorCode.INTERNAL_UNKNOWN_ERROR
 
 
-async def test_port_override():
+async def test_port_override() -> None:
     """Test that port override sets the app_url."""
     host = "127.0.0.1"
     config = DeviceConfig(
@@ -355,11 +385,11 @@ async def test_port_override():
     ],
 )
 async def test_device_closes_connection(
-    mocker,
+    mocker: MockerFixture,
     freezer: FrozenDateTimeFactory,
-    device_delay_required,
-    should_error,
-    should_succeed,
+    device_delay_required: float,
+    should_error: bool,
+    should_succeed: bool,
 ):
     """Test the delay logic in http client to deal with devices that close connections after each request.
 

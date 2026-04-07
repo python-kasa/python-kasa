@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import logging
 from base64 import b64encode
+from contextlib import AbstractContextManager
 from contextlib import nullcontext as does_not_raise
 from typing import Any
 
 import aiohttp
 import pytest
+from pytest_mock import MockerFixture
 from yarl import URL
 
 from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
@@ -122,13 +124,13 @@ _LOGGER = logging.getLogger(__name__)
     ],
 )
 async def test_login(
-    mocker,
-    status_code,
-    error_code,
-    username,
-    password,
-    expectation,
-):
+    mocker: MockerFixture,
+    status_code: int,
+    error_code: SmartErrorCode | list[SmartErrorCode],
+    username: str,
+    password: str,
+    expectation: AbstractContextManager,
+) -> None:
     host = "127.0.0.1"
     mock_ssl_aes_device = MockSslDevice(
         host,
@@ -151,7 +153,7 @@ async def test_login(
     await transport.close()
 
 
-async def test_credentials_hash(mocker):
+async def test_credentials_hash(mocker: MockerFixture) -> None:
     host = "127.0.0.1"
     mock_ssl_aes_device = MockSslDevice(host)
     mocker.patch.object(
@@ -174,7 +176,7 @@ async def test_credentials_hash(mocker):
     await transport.close()
 
 
-async def test_send(mocker):
+async def test_send(mocker: MockerFixture) -> None:
     host = "127.0.0.1"
     mock_ssl_aes_device = MockSslDevice(host, send_error_code=SmartErrorCode.SUCCESS)
     mocker.patch.object(
@@ -203,7 +205,7 @@ async def test_send(mocker):
     await transport.close()
 
 
-async def test_no_credentials(mocker):
+async def test_no_credentials(mocker: MockerFixture) -> None:
     """Test transport without credentials."""
     host = "127.0.0.1"
     mock_ssl_aes_device = MockSslDevice(
@@ -225,7 +227,7 @@ async def test_no_credentials(mocker):
     await transport.close()
 
 
-async def test_reset(mocker):
+async def test_reset(mocker: MockerFixture) -> None:
     """Test that transport state adjusts correctly for reset."""
     host = "127.0.0.1"
     mock_ssl_aes_device = MockSslDevice(host, send_error_code=SmartErrorCode.SUCCESS)
@@ -249,7 +251,7 @@ async def test_reset(mocker):
     assert str(transport._app_url) == "https://127.0.0.1:4433/app"
 
 
-async def test_port_override():
+async def test_port_override() -> None:
     """Test that port override sets the app_url."""
     host = "127.0.0.1"
     port_override = 12345
