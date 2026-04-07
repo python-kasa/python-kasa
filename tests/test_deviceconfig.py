@@ -2,6 +2,7 @@ import json
 from dataclasses import replace
 from json import dumps as json_dumps
 from json import loads as json_loads
+from typing import cast
 
 import aiohttp
 import pytest
@@ -32,7 +33,7 @@ CAMERA_AES_CONFIG = DeviceConfig(
 )
 
 
-async def test_serialization():
+async def test_serialization() -> None:
     """Test device config serialization."""
     config = DeviceConfig(host="Foo", http_client=aiohttp.ClientSession())
     config_dict = config.to_dict()
@@ -52,7 +53,7 @@ async def test_serialization():
     ],
     ids=lambda arg: arg.split("_")[-1] if isinstance(arg, str) else "",
 )
-async def test_deserialization(fixture_name: str, expected_value: DeviceConfig):
+async def test_deserialization(fixture_name: str, expected_value: DeviceConfig) -> None:
     """Test device config deserialization."""
     dict_val = json.loads(load_fixture("serialization", fixture_name))
     config = DeviceConfig.from_dict(dict_val)
@@ -60,17 +61,19 @@ async def test_deserialization(fixture_name: str, expected_value: DeviceConfig):
     assert expected_value.to_dict() == dict_val
 
 
-async def test_serialization_http_client():
+async def test_serialization_http_client() -> None:
     """Test that the http client does not try to serialize."""
     dict_val = json.loads(load_fixture("serialization", "deviceconfig_plug-klap.json"))
 
-    config = replace(PLUG_KLAP_CONFIG, http_client=object())
+    config = replace(
+        PLUG_KLAP_CONFIG, http_client=cast(aiohttp.ClientSession, object())
+    )
     assert config.http_client
 
     assert config.to_dict() == dict_val
 
 
-async def test_conn_param_no_https():
+async def test_conn_param_no_https() -> None:
     """Test no https in connection param defaults to False."""
     dict_val = {
         "device_family": "SMART.TAPOPLUG",
@@ -90,12 +93,12 @@ async def test_conn_param_no_https():
     ],
     ids=["invalid-dict", "not-dict"],
 )
-def test_deserialization_errors(input_value, expected_error):
+def test_deserialization_errors(input_value, expected_error: type[Exception]) -> None:
     with pytest.raises(expected_error):
         DeviceConfig.from_dict(input_value)
 
 
-async def test_credentials_hash():
+async def test_credentials_hash() -> None:
     config = DeviceConfig(
         host="Foo",
         http_client=aiohttp.ClientSession(),
@@ -109,7 +112,7 @@ async def test_credentials_hash():
     assert config2.credentials is None
 
 
-async def test_blank_credentials_hash():
+async def test_blank_credentials_hash() -> None:
     config = DeviceConfig(
         host="Foo",
         http_client=aiohttp.ClientSession(),
@@ -123,7 +126,7 @@ async def test_blank_credentials_hash():
     assert config2.credentials is None
 
 
-async def test_exclude_credentials():
+async def test_exclude_credentials() -> None:
     config = DeviceConfig(
         host="Foo",
         http_client=aiohttp.ClientSession(),

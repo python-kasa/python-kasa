@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import NamedTuple
 
 import pytest
+from pytest_mock import MockerFixture
 
 from kasa.device_type import DeviceType
 from kasa.iot import IotDevice
@@ -105,7 +106,7 @@ FIXTURE_DATA: list[FixtureInfo] = get_fixture_infos()
 
 
 def filter_fixtures(
-    desc,
+    desc: str,
     *,
     data_root_filter: str | None = None,
     protocol_filter: set[str] | None = None,
@@ -226,7 +227,7 @@ def filter_fixtures(
     params=filter_fixtures("all fixture infos"),
     ids=idgenerator,
 )
-def fixture_info(request, mocker):
+def fixture_info(request: pytest.FixtureRequest, mocker: MockerFixture):
     """Return raw discovery file contents as JSON. Used for discovery tests."""
     fixture_info = request.param
     fixture_data = copy.deepcopy(fixture_info.data)
