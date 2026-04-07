@@ -688,7 +688,7 @@ async def test_discovery_decryption() -> None:
     assert dr.decrypted_data == data_dict
 
 
-async def test_discover_try_connect_all(discovery_mock, mocker: MockerFixture):
+async def test_discover_try_connect_all(discovery_mock, mocker: MockerFixture) -> None:
     """Test that device update is called on main."""
     if "result" in discovery_mock.discovery_data:
         dev_class = get_device_class_from_family(

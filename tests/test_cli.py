@@ -804,23 +804,22 @@ async def test_credentials(
 
     dr = DiscoveryResult.from_dict(discovery_mock.discovery_data["result"])
     assert dr.mgt_encrypt_schm is not None
-    assert dr.mgt_encrypt_schm.encrypt_type is not None
+    cli_args: list[str] = [
+        "--host",
+        "127.0.0.123",
+        "--username",
+        "foo",
+        "--password",
+        "bar",
+        "--device-family",
+        dr.device_type,
+    ]
+    if dr.mgt_encrypt_schm.encrypt_type is not None:
+        cli_args += ["--encrypt-type", dr.mgt_encrypt_schm.encrypt_type]
+    cli_args += ["--login-version", str(dr.mgt_encrypt_schm.lv or 1)]
     res = await runner.invoke(
         cli,
-        [
-            "--host",
-            "127.0.0.123",
-            "--username",
-            "foo",
-            "--password",
-            "bar",
-            "--device-family",
-            dr.device_type,
-            "--encrypt-type",
-            dr.mgt_encrypt_schm.encrypt_type,
-            "--login-version",
-            str(dr.mgt_encrypt_schm.lv or 1),
-        ],
+        cli_args,
     )
     assert res.exit_code == 0
 
