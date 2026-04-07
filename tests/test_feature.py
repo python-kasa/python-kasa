@@ -67,7 +67,7 @@ def test_feature_value(dummy_feature: Feature) -> None:
     assert dummy_feature.value == "dummy"
 
 
-def test_feature_value_container(mocker: MockerFixture, dummy_feature: Feature):
+def test_feature_value_container(mocker: MockerFixture, dummy_feature: Feature) -> None:
     """Test that container's attribute is accessed when expected."""
 
     class DummyContainer:
