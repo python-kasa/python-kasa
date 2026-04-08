@@ -10,16 +10,47 @@ from kasa.exceptions import SmartErrorCode
 from kasa.interfaces.energy import Energy
 from kasa.smart import SmartDevice
 from kasa.smart.modules import Energy as SmartEnergyModule
-from tests.conftest import has_emeter_smart
+
+from ...device_fixtures import has_emeter_smart, parametrize
+
+s515d_smart = parametrize(
+    "s515d smart",
+    model_filter={"S515D(US)_1.6_1.0.4"},
+    protocol_filter={"SMART"},
+)
 
 
-@has_emeter_smart
-async def test_supported(dev: SmartDevice):
+def _get_energy_module(dev: SmartDevice) -> SmartEnergyModule:
     energy_module = dev.modules.get(Module.Energy)
     if not energy_module:
         pytest.skip(f"Energy module not supported for {dev}.")
 
     assert isinstance(energy_module, SmartEnergyModule)
+    return energy_module
+
+
+def _get_v2_energy_module(dev: SmartDevice) -> SmartEnergyModule:
+    energy_module = _get_energy_module(dev)
+    if energy_module.supported_version <= 1:
+        pytest.skip("Only applicable for energy v2+ fixtures.")
+
+    return energy_module
+
+
+def _energy_usage(current_power: int | None = None) -> dict[str, int]:
+    energy_usage = {
+        "month_energy": 0,
+        "today_energy": 0,
+    }
+    if current_power is not None:
+        energy_usage["current_power"] = current_power
+
+    return energy_usage
+
+
+@has_emeter_smart
+async def test_supported(dev: SmartDevice) -> None:
+    energy_module = _get_energy_module(dev)
     assert energy_module.supports(Energy.ModuleFeature.CONSUMPTION_TOTAL) is False
     assert energy_module.supports(Energy.ModuleFeature.PERIODIC_STATS) is False
     if energy_module.supported_version < 2:
@@ -31,14 +62,11 @@ async def test_supported(dev: SmartDevice):
 @has_emeter_smart
 async def test_get_energy_usage_error(
     dev: SmartDevice, caplog: pytest.LogCaptureFixture
-):
+) -> None:
     """Test errors on get_energy_usage."""
     caplog.set_level(logging.DEBUG)
 
-    energy_module = dev.modules.get(Module.Energy)
-    if not energy_module:
-        pytest.skip(f"Energy module not supported for {dev}.")
-
+    energy_module = _get_energy_module(dev)
     version = dev._components["energy_monitoring"]
 
     expected_raise = does_not_raise() if version > 1 else pytest.raises(DeviceError)
@@ -57,10 +85,8 @@ async def test_get_energy_usage_error(
     last_update = copy.deepcopy(dev._last_update)
     resp = copy.deepcopy(last_update)
 
-    if ed := resp.get("get_emeter_data"):
-        ed["power_mw"] = 2002
-    if (cp := resp.get("get_current_power")) and isinstance(cp, dict):
-        cp["current_power"] = 2.002
+    if version > 1:
+        resp["get_emeter_data"] = {"power_mw": 2002}
     resp["get_energy_usage"] = SmartErrorCode.JSON_DECODE_FAIL_ERROR
 
     # version 1 only has get_energy_usage so module should raise an error if
@@ -82,64 +108,86 @@ async def test_get_energy_usage_error(
     if version > 1:
         assert msg in caplog.text
 
-    # Now test with no get_emeter_data
-    # This may not be valid scenario but we have a fallback to get_current_power
-    # just in case that should be tested.
-    caplog.clear()
+
+@has_emeter_smart
+async def test_v2_current_power_source_precedence(dev: SmartDevice) -> None:
+    """Prefer higher precision current power sources for v2 devices."""
+    energy_module = _get_v2_energy_module(dev)
+    last_update = copy.deepcopy(dev._last_update)
+
     resp = copy.deepcopy(last_update)
+    resp["get_emeter_data"] = {"power_mw": 3003}
+    resp["get_energy_usage"] = _energy_usage(current_power=2002)
+    resp["get_current_power"] = {"current_power": 1.001}
 
-    if (cp := resp.get("get_current_power")) and isinstance(cp, dict):
-        cp["current_power"] = 2.002
-        expected_current_consumption = 2.002
-    else:
-        expected_current_consumption = None
-    resp["get_energy_usage"] = SmartErrorCode.JSON_DECODE_FAIL_ERROR
+    with patch.object(dev.protocol, "query", return_value=resp):
+        await dev.update()
 
-    # Remove get_emeter_data from the response and from the device which will
-    # remember it otherwise.
+    assert energy_module.current_consumption == 3.003
+    assert energy_module.status.power == 3.003
+
+    resp = copy.deepcopy(last_update)
     resp.pop("get_emeter_data", None)
     dev._last_update.pop("get_emeter_data", None)
+    resp["get_energy_usage"] = _energy_usage(current_power=2002)
+    resp["get_current_power"] = {"current_power": 1.001}
 
     with patch.object(dev.protocol, "query", return_value=resp):
         await dev.update()
 
-    with expected_raise:
-        assert "get_energy_usage" not in energy_module.data
-
-    assert energy_module.current_consumption == expected_current_consumption
-
-    # message should only be logged once
-    assert msg not in caplog.text
+    assert energy_module.current_consumption == 2.002
+    assert energy_module.status.power == 2.002
 
 
-@pytest.mark.xdist_group(name="caplog")
 @has_emeter_smart
-async def test_missing_get_current_power_for_v2_fixture(
+async def test_get_energy_usage_error_falls_back_to_get_current_power(
     dev: SmartDevice,
-    caplog: pytest.LogCaptureFixture,
-):
-    """Energy v2 devices should tolerate get_current_power query errors."""
-    caplog.set_level(logging.DEBUG)
-
-    energy_module = dev.modules.get(Module.Energy)
-    if not energy_module:
-        pytest.skip(f"Energy module not supported for {dev}.")
-
-    assert isinstance(energy_module, SmartEnergyModule)
-    if energy_module.supported_version <= 1:
-        pytest.skip("Only applicable for energy v2+ fixtures.")
+) -> None:
+    """Use get_current_power when it is the only remaining power source."""
+    energy_module = _get_v2_energy_module(dev)
 
     resp = copy.deepcopy(dev._last_update)
-    resp["get_current_power"] = SmartErrorCode.PARAMS_ERROR
+    resp.pop("get_emeter_data", None)
+    dev._last_update.pop("get_emeter_data", None)
+    resp["get_current_power"] = {"current_power": 2.002}
+    resp["get_energy_usage"] = SmartErrorCode.JSON_DECODE_FAIL_ERROR
 
     with patch.object(dev.protocol, "query", return_value=resp):
         await dev.update()
+
+    assert "get_energy_usage" not in energy_module.data
+    assert energy_module.current_consumption == 2.002
+    assert energy_module.status.power == 2.002
+
+
+@has_emeter_smart
+async def test_v2_get_status_falls_back_to_get_current_power(dev: SmartDevice) -> None:
+    """get_status should use the same fallback sources as the cached status."""
+    energy_module = _get_v2_energy_module(dev)
+
+    async def query(request: dict[str, dict | None]) -> dict[str, dict]:
+        method = next(iter(request))
+        if method == "get_emeter_data":
+            raise DeviceError(method, error_code=SmartErrorCode.PARAMS_ERROR)
+        if method == "get_energy_usage":
+            return {"get_energy_usage": _energy_usage()}
+        if method == "get_current_power":
+            return {"get_current_power": {"current_power": 2.002}}
+        raise AssertionError(f"Unexpected request: {request}")
+
+    with patch.object(dev.protocol, "query", side_effect=query):
+        status = await energy_module.get_status()
+
+    assert status.power == 2.002
+
+
+@s515d_smart
+async def test_s515d_missing_get_current_power_is_optional(dev: SmartDevice) -> None:
+    """S515D exposes current power without a working get_current_power query."""
+    energy_module = _get_v2_energy_module(dev)
 
     assert energy_module.disabled is False
     assert energy_module._last_update_error is None
     assert "get_current_power" not in energy_module.data
-
-    # Some fixtures may have already logged this key removal during initial update,
-    # so duplicate log messages can be suppressed.
-    if "Removed key get_current_power" in caplog.text:
-        assert "PARAMS_ERROR" in caplog.text
+    assert energy_module.current_consumption == 0.0
+    assert energy_module.status.power == 0.0
