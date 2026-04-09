@@ -45,7 +45,6 @@ from kasa.transports import (
     LinkieTransportV2,
     SslAesTransport,
     SslTransport,
-    TpapSmartCamTransport,
     TpapTransport,
     XorTransport,
 )
@@ -246,13 +245,13 @@ ET = DeviceEncryptionType
         pytest.param(
             CP(DF.SmartIpCamera, ET.Tpap, https=True),
             SmartCamProtocol,
-            TpapSmartCamTransport,
+            TpapTransport,
             id="smartcam-tpap",
         ),
         pytest.param(
             CP(DF.SmartTapoHub, ET.Tpap, https=True),
             SmartCamProtocol,
-            TpapSmartCamTransport,
+            TpapTransport,
             id="smartcam-hub-tpap",
         ),
         pytest.param(

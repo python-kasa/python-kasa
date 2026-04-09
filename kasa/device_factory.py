@@ -34,7 +34,6 @@ from .transports import (
     KlapTransportV2,
     LinkieTransportV2,
     SslTransport,
-    TpapSmartCamTransport,
     TpapTransport,
     XorTransport,
 )
@@ -206,7 +205,7 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
         }
         or (ctype.device_family is DeviceFamily.SmartTapoHub and ctype.https)
     ):
-        return SmartCamProtocol(transport=TpapSmartCamTransport(config=config))
+        return SmartCamProtocol(transport=TpapTransport(config=config))
 
     if ctype.device_family in {
         DeviceFamily.SmartIpCamera,
