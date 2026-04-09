@@ -18,6 +18,28 @@ class Energy(SmartModule, EnergyInterface):
     _energy: dict[str, Any]
     _current_consumption: float | None
 
+    def _get_current_power_mw(
+        self, data: dict[str, Any], energy: dict[str, Any] | None = None
+    ) -> float | None:
+        """Return the best available current power reading in milliwatts."""
+        energy = self._energy if energy is None else energy
+
+        if (power := data.get("get_emeter_data", {}).get("power_mw")) is not None:
+            return power
+
+        # Prefer the higher precision milliwatt readings from the energy usage
+        # payload. get_current_power is only a lower precision fallback used by
+        # devices such as P304M whose get_energy_usage omits current_power.
+        if (power := energy.get("current_power")) is not None:
+            return power
+
+        if (
+            power := data.get("get_current_power", {}).get("current_power")
+        ) is not None:
+            return power * 1_000
+
+        return None
+
     async def _post_update_hook(self) -> None:
         try:
             data = self.data
@@ -34,17 +56,8 @@ class Energy(SmartModule, EnergyInterface):
                 self._supported | EnergyInterface.ModuleFeature.VOLTAGE_CURRENT
             )
 
-        if (power := self._energy.get("current_power")) is not None or (
-            power := data.get("get_emeter_data", {}).get("power_mw")
-        ) is not None:
+        if (power := self._get_current_power_mw(data)) is not None:
             self._current_consumption = power / 1_000
-        # Fallback if get_energy_usage does not provide current_power,
-        # which can happen on some newer devices (e.g. P304M).
-        # This may not be valid scenario as it pre-dates trying get_emeter_data
-        elif (
-            power := self.data.get("get_current_power", {}).get("current_power")
-        ) is not None:
-            self._current_consumption = power
         else:
             self._current_consumption = None
 
@@ -63,7 +76,7 @@ class Energy(SmartModule, EnergyInterface):
     def optional_response_keys(self) -> list[str]:
         """Return optional response keys for the module."""
         if self.supported_version > 1:
-            return ["get_energy_usage"]
+            return ["get_energy_usage", "get_current_power"]
         return []
 
     @property
@@ -76,10 +89,14 @@ class Energy(SmartModule, EnergyInterface):
         """Return get_energy_usage results."""
         return self._energy
 
-    def _get_status_from_energy(self, energy: dict) -> EmeterStatus:
+    def _get_status_from_energy(
+        self, energy: dict[str, Any], power_mw: float | None = None
+    ) -> EmeterStatus:
         return EmeterStatus(
             {
-                "power_mw": energy.get("current_power", 0),
+                "power_mw": (
+                    power_mw if power_mw is not None else energy.get("current_power")
+                ),
                 "total": energy.get("today_energy", 0) / 1_000,
             }
         )
@@ -88,19 +105,48 @@ class Energy(SmartModule, EnergyInterface):
     @raise_if_update_error
     def status(self) -> EmeterStatus:
         """Get the emeter status."""
-        if "get_emeter_data" in self.data:
-            return EmeterStatus(self.data["get_emeter_data"])
-        else:
-            return self._get_status_from_energy(self.energy)
+        data = self.data
+        if "get_emeter_data" in data:
+            return EmeterStatus(data["get_emeter_data"])
+
+        return self._get_status_from_energy(
+            self.energy, self._get_current_power_mw(data)
+        )
 
     async def get_status(self) -> EmeterStatus:
         """Return real-time statistics."""
-        if "get_emeter_data" in self.data:
-            res = await self.call("get_emeter_data")
-            return EmeterStatus(res["get_emeter_data"])
-        else:
+        if self.supported_version > 1:
+            try:
+                res = await self.call("get_emeter_data")
+            except DeviceError:
+                pass
+            else:
+                return EmeterStatus(res["get_emeter_data"])
+
+        energy: dict[str, Any] = {}
+        try:
             res = await self.call("get_energy_usage")
-            return self._get_status_from_energy(res["get_energy_usage"])
+        except DeviceError:
+            if self.supported_version <= 1:
+                raise
+        else:
+            energy = res["get_energy_usage"]
+            if energy.get("current_power") is not None:
+                return self._get_status_from_energy(energy)
+
+        current_power: dict[str, Any] = {}
+        if self.supported_version > 1:
+            try:
+                res = await self.call("get_current_power")
+            except DeviceError:
+                pass
+            else:
+                current_power = res["get_current_power"]
+
+        return self._get_status_from_energy(
+            energy,
+            self._get_current_power_mw({"get_current_power": current_power}, energy),
+        )
 
     @property
     def consumption_this_month(self) -> float | None:
