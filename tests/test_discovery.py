@@ -335,6 +335,31 @@ async def test_discover_datagram_received(mocker, discovery_data):
     assert dev.host == addr
 
 
+async def test_discover_datagram_received_prefers_legacy_iot_response():
+    """Prefer legacy XOR discovery when the same IOT device replies on both ports."""
+    host = "127.0.0.1"
+    proto = _DiscoverProtocol(target=host)
+
+    legacy_datagram = XorEncryption.encrypt(json_dumps(LEGACY_DISCOVER_DATA))[4:]
+    new_discovery_datagram = (
+        b"\x02\x00\x00\x01\x01[\x00\x00\x00\x00\x00\x00W\xcev\xf8"
+        + json_dumps(AUTHENTICATION_DATA_KLAP).encode()
+    )
+
+    proto.datagram_received(new_discovery_datagram, (host, 20002))
+
+    assert host not in proto.seen_hosts
+    assert host in proto.discovered_devices
+    assert proto.discovered_devices[host].config.uses_http is True
+
+    proto.datagram_received(legacy_datagram, (host, 9999))
+
+    assert host in proto.seen_hosts
+    assert proto.target_discovered is True
+    assert proto.discovered_devices[host].config.uses_http is False
+    assert isinstance(proto.discovered_devices[host].protocol._transport, XorTransport)
+
+
 @pytest.mark.parametrize(("msg", "data"), INVALIDS)
 async def test_discover_invalid_responses(msg, data, mocker):
     """Verify that we don't crash whole discovery if some devices in the network are sending unexpected data."""
@@ -519,17 +544,20 @@ async def test_do_discover_drop_packets(mocker, port, do_not_reply_count):
     await dp.wait_for_discovery_to_complete()
 
     await asyncio.sleep(0)
-    assert ft.send_count == do_not_reply_count + 1
+    expected_send_count = (
+        do_not_reply_count + 1 if port == 9999 else dp.discovery_packets
+    )
+    assert ft.send_count == expected_send_count
     assert dp.discover_task.done()
-    assert dp.discover_task.cancelled()
+    assert dp.discover_task.cancelled() is (port == 9999)
 
 
 @pytest.mark.parametrize(
-    ("port", "will_timeout"),
-    [(FakeDatagramTransport.GHOST_PORT, True), (20002, False)],
+    "port",
+    [FakeDatagramTransport.GHOST_PORT, 20002],
     ids=["unknownport", "unsupporteddevice"],
 )
-async def test_do_discover_invalid(mocker, port, will_timeout):
+async def test_do_discover_invalid(mocker, port):
     """Make sure that _DiscoverProtocol handles invalid devices correctly."""
     host = "127.0.0.1"
     discovery_timeout = 0
@@ -545,7 +573,7 @@ async def test_do_discover_invalid(mocker, port, will_timeout):
     await dp.wait_for_discovery_to_complete()
     await asyncio.sleep(0)
     assert dp.discover_task.done()
-    assert dp.discover_task.cancelled() != will_timeout
+    assert dp.discover_task.cancelled() is False
 
 
 async def test_discover_propogates_task_exceptions(discovery_mock):
