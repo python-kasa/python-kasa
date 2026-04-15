@@ -275,6 +275,8 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.timeout = timeout
         self.discovery_timeout = discovery_timeout
         self.seen_hosts: set[str] = set()
+        self.seen_responses: set[tuple[str, int]] = set()
+        self.discovered_device_ports: dict[str, int] = {}
         self.discover_task: asyncio.Task | None = None
         self.callback_tasks: list[asyncio.Task] = []
         self.target_discovered: bool = False
@@ -330,7 +332,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 
         aes_discovery_query = _AesDiscoveryQuery.generate_query()
         for _ in range(self.discovery_packets):
-            if self.target in self.seen_hosts:  # Stop sending for discover_single
+            if self.target_discovered:  # Stop sending for discover_single
                 break
             self.transport.sendto(encrypted_req[4:], self.target_1)  # type: ignore
             self.transport.sendto(aes_discovery_query, self.target_2)  # type: ignore
@@ -347,10 +349,11 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             assert _AesDiscoveryQuery.keypair
 
         ip, port = addr
-        # Prevent multiple entries due multiple broadcasts
-        if ip in self.seen_hosts:
+        response_key = (ip, port)
+        # Prevent duplicate entries from repeated broadcasts on the same port.
+        if response_key in self.seen_responses:
             return
-        self.seen_hosts.add(ip)
+        self.seen_responses.add(response_key)
 
         device: Device | None = None
 
@@ -379,27 +382,83 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             device = device_func(info, config)
         except UnsupportedDeviceError as udex:
             _LOGGER.debug("Unsupported device found at %s << %s", ip, udex)
-            self.unsupported_device_exceptions[ip] = udex
+            if ip not in self.discovered_devices:
+                self.unsupported_device_exceptions[ip] = udex
             if self.on_unsupported is not None:
                 self._run_callback_task(self.on_unsupported(udex))
-            self._handle_discovered_event()
+            self._handle_discovered_event(ip, port, None)
             return
         except KasaException as ex:
             _LOGGER.debug("[DISCOVERY] Unable to find device type for %s: %s", ip, ex)
-            self.invalid_device_exceptions[ip] = ex
-            self._handle_discovered_event()
+            if ip not in self.discovered_devices:
+                self.invalid_device_exceptions[ip] = ex
+            self._handle_discovered_event(ip, port, None)
             return
 
-        self.discovered_devices[ip] = device
+        existing = self.discovered_devices.get(ip)
+        existing_port = self.discovered_device_ports.get(ip)
+        if existing is None or self._should_replace_discovered_device(
+            existing, existing_port, device, port
+        ):
+            self.discovered_devices[ip] = device
+            self.discovered_device_ports[ip] = port
+            self.unsupported_device_exceptions.pop(ip, None)
+            self.invalid_device_exceptions.pop(ip, None)
 
-        if self.on_discovered is not None:
+        if self.on_discovered is not None and self.discovered_devices.get(ip) is device:
             self._run_callback_task(self.on_discovered(device))
 
-        self._handle_discovered_event()
+        self._handle_discovered_event(ip, port, self.discovered_devices.get(ip))
 
-    def _handle_discovered_event(self) -> None:
-        """If target is in seen_hosts cancel discover_task."""
-        if self.target in self.seen_hosts:
+    @staticmethod
+    def _is_iot_device(device: Device | None) -> bool:
+        """Return true if the discovered device uses the legacy IOT family."""
+        if device is None:
+            return False
+        return device.config.connection_type.device_family.value.startswith("IOT.")
+
+    def _device_preference(self, device: Device, port: int | None) -> int:
+        """Return preference ordering for discovered devices on the same host."""
+        if (
+            port == self.discovery_port
+            and self._is_iot_device(device)
+            and device.config.connection_type.encryption_type
+            is DeviceEncryptionType.Xor
+        ):
+            return 1
+        return 0
+
+    def _should_replace_discovered_device(
+        self,
+        current: Device,
+        current_port: int | None,
+        candidate: Device,
+        candidate_port: int,
+    ) -> bool:
+        """Return true if a new discovery response should replace an existing one."""
+        return self._device_preference(candidate, candidate_port) > (
+            self._device_preference(current, current_port)
+        )
+
+    def _handle_discovered_event(
+        self,
+        ip: str | None = None,
+        port: int | None = None,
+        device: Device | None = None,
+    ) -> None:
+        """Cancel single-host discovery once the target has an unambiguous result."""
+        if ip is None:
+            ip = self.target
+        if port is None:
+            port = self.discovery_port
+
+        if self.target != ip:
+            return
+
+        if port == self.discovery_port or (
+            device is not None and not self._is_iot_device(device)
+        ):
+            self.seen_hosts.add(ip)
             self.target_discovered = True
             if self.discover_task:
                 self.discover_task.cancel()
