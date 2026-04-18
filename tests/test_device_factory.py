@@ -37,6 +37,7 @@ from kasa.deviceconfig import (
     DeviceFamily,
 )
 from kasa.discover import DiscoveryResult
+from kasa.iot import IotPlug, IotStrip
 from kasa.transports import (
     AesTransport,
     BaseTransport,
@@ -260,6 +261,12 @@ ET = DeviceEncryptionType
             id="iot-klap",
         ),
         pytest.param(
+            CP(DF.IotSmartPlugSwitch, ET.Klap, login_version=2, https=False),
+            IotProtocol,
+            KlapTransportV2,
+            id="iot-klap-lv2",
+        ),
+        pytest.param(
             CP(DF.IotSmartPlugSwitch, ET.Xor, https=False),
             IotProtocol,
             XorTransport,
@@ -295,3 +302,41 @@ async def test_get_protocol(
     protocol = get_protocol(config)
     assert isinstance(protocol, expected_protocol)
     assert isinstance(protocol._transport, expected_transport)
+
+
+async def test_connect_iot_klap_uses_sysinfo_for_device_class(mocker):
+    """IOT KLAP devices should derive class from sysinfo (e.g. strip vs plug)."""
+    host = DISCOVERY_MOCK_IP
+    config = DeviceConfig(
+        host=host,
+        credentials=Credentials("user@example.com", "password"),
+        connection_type=CP(
+            DF.IotSmartPlugSwitch,
+            ET.Klap,
+            login_version=2,
+            https=False,
+            http_port=80,
+        ),
+    )
+    query_mock = mocker.patch.object(
+        IotProtocol,
+        "query",
+        return_value={
+            "system": {
+                "get_sysinfo": {
+                    "type": "IOT.SMARTPLUGSWITCH",
+                    "model": "HS300(US)",
+                    "children": [],
+                }
+            }
+        },
+    )
+    strip_update = mocker.patch.object(IotStrip, "update")
+    plug_update = mocker.patch.object(IotPlug, "update")
+
+    dev = await connect(config=config)
+
+    assert isinstance(dev, IotStrip)
+    assert query_mock.await_count == 1
+    assert strip_update.await_count == 1
+    assert plug_update.await_count == 0
