@@ -67,6 +67,10 @@ async def test_light_effect_brightness(
     if effect_active:  # Set the rule L1 active for testing
         light_effect.data["current_rule_id"] = "L1"
 
+    # Force device_on so the asserted payload is deterministic across fixtures
+    # (some fixtures' get_device_info has device_on: false).
+    dev._info["device_on"] = True
+
     await light_module.set_brightness(10)
 
     if effect_active:
