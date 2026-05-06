@@ -73,9 +73,14 @@ class Brightness(SmartModule):
         ) is not None and light_effect.is_active:
             return await light_effect.set_brightness(brightness)
 
-        return await self.call(
-            "set_device_info", {"brightness": brightness, "device_on": True}
-        )
+        # Only re-assert device_on when the device is already on. This fixes a
+        # "zombie state" on some devices (e.g. Tapo L900-5) where set_device_info
+        # silently no-ops the LEDs without an explicit power state, while still
+        # allowing brightness to be changed on an off device without turning it on.
+        params: dict = {"brightness": brightness}
+        if self._device.is_on:
+            params["device_on"] = True
+        return await self.call("set_device_info", params)
 
     async def _check_supported(self) -> bool:
         """Additional check to see if the module is supported by the device."""
