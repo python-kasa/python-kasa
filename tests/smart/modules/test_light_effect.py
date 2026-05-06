@@ -67,9 +67,14 @@ async def test_light_effect_brightness(
     if effect_active:  # Set the rule L1 active for testing
         light_effect.data["current_rule_id"] = "L1"
 
-    # Force device_on so the asserted payload is deterministic across fixtures
+    # Force is_on=True so the asserted payload is deterministic across fixtures
     # (some fixtures' get_device_info has device_on: false).
-    dev._info["device_on"] = True
+    mocker.patch.object(
+        type(dev),
+        "is_on",
+        new_callable=mocker.PropertyMock,
+        return_value=True,
+    )
 
     await light_module.set_brightness(10)
 
