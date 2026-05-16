@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Annotated
+from typing import Annotated, Any
 
 from mashumaro import DataClassDictMixin
 from mashumaro.types import Alias
@@ -19,6 +19,7 @@ class LogEntry(DataClassDictMixin):
     event_id: Annotated[str, Alias("eventId")]
     timestamp: int
     event: str
+    params: dict[str, Any] | None = None
 
 
 class TriggerLogs(SmartModule):
