@@ -296,6 +296,7 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
   - Hardware: 1.0 (US) / Firmware: 1.1.3
 - **L930-5**
   - Hardware: 1.0 (EU) / Firmware: 1.2.5
+  - Hardware: 1.0 (EU) / Firmware: 1.4.3
   - Hardware: 1.0 (US) / Firmware: 1.1.2
 
 ### Cameras
