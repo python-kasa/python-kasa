@@ -189,3 +189,101 @@ async def test_segment_custom_effects_skip_non_dict(
         return_value=["not-a-dict", {"segment_effect": injected}],
     )
     assert segment._custom_effects() == {"Injected": injected}
+
+
+@segment_effect
+async def test_segment_effect_clamps_and_normalizes(
+    dev: Device, mocker: MockerFixture
+) -> None:
+    """Custom rules clamp brightness/speed and pad colours to 4 ints."""
+    segment = dev.modules.get(Module.SegmentEffect)
+    assert isinstance(segment, SegmentEffect)
+
+    call = mocker.patch.object(segment, "call")
+    await segment.set_custom_effect(
+        {
+            "type": "breathe",
+            "name": "T",
+            "brightness": 500,  # over max -> 100
+            "speed": 99,  # over max -> 10
+            "segments": [50],
+            "states": [[40, 100, 100], [40, 100, 100], [60, 100, 100]],
+        }
+    )
+    method, payload = call.call_args[0]
+    assert method == "apply_segment_effect_rule"
+    assert payload["brightness"] == 100
+    assert payload["speed"] == 10
+    # 3-int colours are padded to the device's 4-int [h, s, v, w] form.
+    assert all(len(c) == 4 for c in payload["states"])
+    # display_colors is the deduped palette, not the per-segment list.
+    assert payload["display_colors"] == [[40, 100, 100, 0], [60, 100, 100, 0]]
+
+
+@segment_effect
+async def test_segment_effect_none_allows_speed_zero(
+    dev: Device, mocker: MockerFixture
+) -> None:
+    """The static 'none' paint permits speed 0; animated types clamp to >=1."""
+    segment = dev.modules.get(Module.SegmentEffect)
+    assert isinstance(segment, SegmentEffect)
+
+    call = mocker.patch.object(segment, "call")
+    await segment.set_custom_effect(
+        {
+            "type": "none",
+            "name": "S",
+            "speed": 0,
+            "segments": [0],
+            "states": [[0, 100, 100]],
+        }
+    )
+    assert call.call_args[0][1]["speed"] == 0
+
+    await segment.set_custom_effect(
+        {
+            "type": "breathe",
+            "name": "A",
+            "speed": 0,
+            "segments": [50],
+            "states": [[0, 100, 100]],
+        }
+    )
+    assert call.call_args[0][1]["speed"] == 1
+
+
+@segment_effect
+async def test_segment_effect_invalid_type(dev: Device) -> None:
+    """An unknown effect type raises."""
+    segment = dev.modules.get(Module.SegmentEffect)
+    assert isinstance(segment, SegmentEffect)
+
+    with pytest.raises(ValueError, match="Invalid segment effect type"):
+        await segment.set_custom_effect({"type": "wobble", "states": []})
+
+
+@segment_effect
+async def test_segment_effect_preview(dev: Device, mocker: MockerFixture) -> None:
+    """test()/stop_test() drive the churn-free start/stop test methods."""
+    segment = dev.modules.get(Module.SegmentEffect)
+    assert isinstance(segment, SegmentEffect)
+
+    call = mocker.patch.object(segment, "call")
+    await segment.test(
+        {
+            "type": "stacking",
+            "name": "P",
+            "segments": [50],
+            "states": [[40, 100, 100], [60, 100, 100]],
+            "speed": 5,
+            "carousel": 1,
+        }
+    )
+    method, payload = call.call_args[0]
+    assert method == "start_segment_effect_test"
+    assert all(len(c) == 4 for c in payload["states"])
+
+    await segment.stop_test()
+    method, payload = call.call_args[0]
+    assert method == "stop_segment_effect_test"
+    assert payload == {}
