@@ -1,0 +1,627 @@
+{
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 2
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "wireless",
+                "ver_code": 1
+            },
+            {
+                "id": "account",
+                "ver_code": 1
+            },
+            {
+                "id": "synchronize",
+                "ver_code": 1
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "led",
+                "ver_code": 1
+            },
+            {
+                "id": "cloud_connect",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "child_device",
+                "ver_code": 1
+            },
+            {
+                "id": "child_quick_setup",
+                "ver_code": 1
+            },
+            {
+                "id": "child_inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "control_child",
+                "ver_code": 1
+            },
+            {
+                "id": "alarm",
+                "ver_code": 1
+            },
+            {
+                "id": "device_load",
+                "ver_code": 1
+            },
+            {
+                "id": "device_local_time",
+                "ver_code": 1
+            },
+            {
+                "id": "alarm_logs",
+                "ver_code": 1
+            },
+            {
+                "id": "localSmart",
+                "ver_code": 2
+            },
+            {
+                "id": "matter",
+                "ver_code": 3
+            },
+            {
+                "id": "chime",
+                "ver_code": 1
+            },
+            {
+                "id": "ir_remote",
+                "ver_code": 1
+            },
+            {
+                "id": "ir_customise_icon",
+                "ver_code": 1
+            },
+            {
+                "id": "tpap",
+                "ver_code": 1
+            },
+            {
+                "id": "noc",
+                "ver_code": 1
+            }
+        ]
+    },
+    "discovery_result": {
+        "error_code": 0,
+        "result": {
+            "device_id": "00000000000000000000000000000000",
+            "device_model": "H110(EU)",
+            "device_type": "SMART.TAPOHUB",
+            "factory_default": false,
+            "ip": "127.0.0.123",
+            "is_support_iot_cloud": true,
+            "mac": "18-69-45-00-00-00",
+            "mgt_encrypt_schm": {
+                "encrypt_type": "KLAP",
+                "http_port": 80,
+                "is_support_https": false,
+                "lv": 2
+            },
+            "obd_src": "tss",
+            "owner": "00000000000000000000000000000000",
+            "protocol_version": 1,
+            "tpap_preferred": false
+        }
+    },
+    "get_alarm_configure": {
+        "duration": 300,
+        "type": "Doorbell Ring 1",
+        "volume": "high"
+    },
+    "get_auto_update_info": {
+        "enable": true,
+        "random_range": 120,
+        "time": 180
+    },
+    "get_child_device_component_list": {
+        "child_component_list": [
+            {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "localSmart",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    }
+                ],
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_1"
+            },
+            {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "localSmart",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    }
+                ],
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_2"
+            }
+        ],
+        "start_index": 0,
+        "sum": 2
+    },
+    "get_child_device_list": {
+        "child_device_list": [
+            {
+                "ac_status": "P0_M0_T26_S0_D0",
+                "avatar": "",
+                "bind_count": 0,
+                "category": "ir.remote",
+                "copy_device_id": "",
+                "customize_key_sum": 6,
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_1",
+                "downloaded_key_sum": 0,
+                "fw_ver": "",
+                "hw_id": "",
+                "hw_ver": "",
+                "isThirdPartySub": true,
+                "key_list": [
+                    {
+                        "ac_status": "P0_M0_T26_S0_D0",
+                        "display_name": "MQ==",
+                        "icon": "One",
+                        "id": -1,
+                        "name": "wOv27U1J",
+                        "order": 1,
+                        "pwm": 26,
+                        "type": ""
+                    },
+                    {
+                        "ac_status": "P0_M0_T26_S0_D0",
+                        "display_name": "UFM1",
+                        "icon": "Two",
+                        "id": -1,
+                        "name": "g71S4gmF",
+                        "order": 2,
+                        "pwm": 26,
+                        "type": ""
+                    },
+                    {
+                        "ac_status": "P0_M0_T26_S0_D0",
+                        "display_name": "WEJPWA==",
+                        "icon": "Three",
+                        "id": -1,
+                        "name": "VXxI8MNJ",
+                        "order": 3,
+                        "pwm": 26,
+                        "type": ""
+                    },
+                    {
+                        "ac_status": "P0_M0_T26_S0_D0",
+                        "display_name": "U3dpdGNoIDI=",
+                        "icon": "Four",
+                        "id": -1,
+                        "name": "SB4d4472",
+                        "order": 4,
+                        "pwm": 26,
+                        "type": ""
+                    },
+                    {
+                        "ac_status": "P0_M0_T26_S0_D0",
+                        "display_name": "TGVmdA==",
+                        "icon": "Left",
+                        "id": -1,
+                        "name": "o683Rwp1",
+                        "order": 5,
+                        "pwm": 26,
+                        "type": ""
+                    },
+                    {
+                        "ac_status": "P0_M0_T26_S0_D0",
+                        "display_name": "UmlnaHQ=",
+                        "icon": "Right",
+                        "id": -1,
+                        "name": "1Vhx78hX",
+                        "order": 6,
+                        "pwm": 26,
+                        "type": ""
+                    }
+                ],
+                "key_sum": 6,
+                "lastOnboardingTimestamp": 1780178567,
+                "mac": "982203000000",
+                "model": "Custom",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oemId": "",
+                "parent_device_id": "0000000000000000000000000000000000000000",
+                "remote_id": 0,
+                "remote_type": 1,
+                "type": "SMART.TAPOREMOTE"
+            },
+            {
+                "ac_mode": 0,
+                "ac_status": "P1_M0_T22_S0_D1",
+                "avatar": "",
+                "bind_count": 0,
+                "category": "ir.remote",
+                "copy_device_id": "",
+                "current_temp": 22,
+                "customize_key_sum": 0,
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_2",
+                "downloaded_key_sum": 0,
+                "fw_ver": "",
+                "hexData": "B031030FE10FE100E10F0000E1011E00060ED802000000001600160016003F01000400AD00AD000403FF00CB00064DB2FD0200FF084C090602D60329040705F8090702D60329040705F80D0800AD015202AF0350044505BA0D1B00AD015202AF0350045505AA0D1F00AD015202AF035004C5053A0D2200AD015202AF035004A5055A00A206096300062428002C300F062428082C30070624280C2C3003062428042C300B062428062C30090624280E2C30010624280A2C3005062428022C300D062428032C300C0624280B2C3004062428092C3006062428012C300E062428052C300A0624280D2C30020F1C010000000000000800000000000015000000000015220000000000001007160100010001161150151A00060ED801000000001600160016003F01000400AD00AD000000163200120ED801000000001600160016003F01000400AD00AD00180905001600CB00AD00AD090B001600CB00AD00AD03FF00CB001622075F003C03429006073F003C03429006082700153F051627041B35001F3F00227F000B1C061518051D2002061518011D2006061518021D2005061518041D20030A2F062224002A2C03062224032A2C000C2224012A2C021518001D2007062228272A30180C2224022A2C011518001D2007170F0216003F001605003F000516003F00934A0103090A1604030201110D800200DE0300210400070500F80182010504032100150F8100060001020304054DB2F00F07F8018201050C02A500010008001B001F00220E01000402030405028009DE2107F80803E20001050008FF0503610801900A8080C008800B038002010504000106011C80814000820006824210814602810301824010824201814802854701010510800407C005070105038185080105470507004103800502010105050361090190138080C009800B0380020181400081030F0203870504000104011C808240018340108302018246038203018300078342108248030247020105288003840281400081060404033F8240018203018208070447028240018203028208050447020500FF07004103800500FE01050105030301A10508120006060F8180060C0D0E0F1011060708090A0B0F8100060001020304054DB207F8C03F0105",
+                "hw_id": "",
+                "hw_ver": "",
+                "isThirdPartySub": true,
+                "key_list": [],
+                "key_sum": 0,
+                "lastOnboardingTimestamp": 1780174903,
+                "mac": "982203000000",
+                "model": "AC",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oemId": "",
+                "on": 1,
+                "parent_device_id": "0000000000000000000000000000000000000000",
+                "remote_id": 7579,
+                "remote_type": 2,
+                "type": "SMART.TAPOREMOTE"
+            }
+        ],
+        "start_index": 0,
+        "sum": 2
+    },
+    "get_connect_cloud_state": {
+        "status": 0
+    },
+    "get_device_info": {
+        "avatar": "hub_h110",
+        "device_id": "0000000000000000000000000000000000000000",
+        "fw_id": "00000000000000000000000000000000",
+        "fw_ver": "1.4.4 Build 251031 Rel.111523",
+        "has_set_location_info": false,
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.0",
+        "in_alarm": false,
+        "in_alarm_source": "",
+        "ip": "127.0.0.123",
+        "lang": "en_US",
+        "latitude": 0,
+        "longitude": 0,
+        "mac": "18-69-45-00-00-00",
+        "model": "H110",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
+        "oem_id": "00000000000000000000000000000000",
+        "overheated": false,
+        "region": "Europe/Berlin",
+        "rssi": -19,
+        "signal_level": 3,
+        "specs": "EU",
+        "ssid": "I01BU0tFRF9TU0lEIw==",
+        "subg_phyid": "f863p35",
+        "time_diff": 60,
+        "type": "SMART.TAPOHUB"
+    },
+    "get_device_load_info": {
+        "cur_load_num": 2,
+        "load_level": "light",
+        "max_load_num": 64,
+        "total_memory": 4352,
+        "used_memory": 1733
+    },
+    "get_device_time": {
+        "region": "Europe/Berlin",
+        "time_diff": 60,
+        "timestamp": 1780218150
+    },
+    "get_device_usage": {},
+    "get_fw_download_state": {
+        "auto_upgrade": false,
+        "download_progress": 0,
+        "reboot_time": 5,
+        "status": 0,
+        "upgrade_time": 5
+    },
+    "get_inherit_info": {
+        "inherit_status": false
+    },
+    "get_latest_fw": {
+        "fw_size": 0,
+        "fw_ver": "1.4.4 Build 251031 Rel.111523",
+        "hw_id": "",
+        "need_to_upgrade": false,
+        "oem_id": "",
+        "release_date": "",
+        "release_note": "",
+        "type": 0
+    },
+    "get_led_info": {
+        "led_rule": "night_mode",
+        "led_status": true,
+        "night_mode": {
+            "end_time": 420,
+            "night_mode_type": "custom",
+            "start_time": 1320
+        }
+    },
+    "get_matter_setup_info": {
+        "setup_code": "00000000000",
+        "setup_payload": "00:-0-0000000000000000"
+    },
+    "get_support_alarm_type_list": {
+        "alarm_type_list": [
+            "Doorbell Ring 1",
+            "Doorbell Ring 2",
+            "Doorbell Ring 3",
+            "Doorbell Ring 4",
+            "Doorbell Ring 5",
+            "Doorbell Ring 6",
+            "Doorbell Ring 7",
+            "Doorbell Ring 8",
+            "Doorbell Ring 9",
+            "Doorbell Ring 10",
+            "Phone Ring",
+            "Alarm 1",
+            "Alarm 2",
+            "Alarm 3",
+            "Alarm 4",
+            "Dripping Tap",
+            "Alarm 5",
+            "Connection 1",
+            "Connection 2"
+        ]
+    },
+    "get_support_child_device_category": {
+        "device_category_list": [
+            {
+                "category": "subg.trv"
+            },
+            {
+                "category": "subg.trigger"
+            },
+            {
+                "category": "subg.plugswitch"
+            },
+            {
+                "category": "ir.remote"
+            }
+        ]
+    },
+    "get_wireless_scan_info": {
+        "ap_list": [
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa3_sae",
+                "signal_level": 3,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 3,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 2,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 2,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 2,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 2,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            }
+        ],
+        "start_index": 0,
+        "sum": 20,
+        "wep_supported": false
+    },
+    "qs_component_nego": {
+        "component_list": [
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            },
+            {
+                "id": "matter",
+                "ver_code": 3
+            },
+            {
+                "id": "ble_whole_setup",
+                "ver_code": 1
+            }
+        ],
+        "extra_info": {
+            "device_model": "H110",
+            "device_type": "SMART.TAPOHUB",
+            "is_klap": true
+        }
+    }
+}

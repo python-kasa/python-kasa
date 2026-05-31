@@ -1,0 +1,104 @@
+{
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 2
+            },
+            {
+                "id": "localSmart",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            }
+        ]
+    },
+    "get_device_info": {
+        "ac_status": "P0_M0_T26_S0_D0",
+        "avatar": "",
+        "brand": "",
+        "category": "ir.remote",
+        "combine": "",
+        "copy_device_id": "",
+        "customize_key_sum": 6,
+        "device_id": "SCRUBBED_CHILD_DEVICE_ID_1",
+        "downloaded_key_sum": 0,
+        "frequency": 38000,
+        "fw_ver": "",
+        "hw_ver": "",
+        "key_list": [
+            {
+                "ac_status": "P0_M0_T26_S0_D0",
+                "display_name": "MQ==",
+                "icon": "One",
+                "id": -1,
+                "name": "wOv27U1J",
+                "order": 1,
+                "pwm": 26,
+                "type": ""
+            },
+            {
+                "ac_status": "P0_M0_T26_S0_D0",
+                "display_name": "UFM1",
+                "icon": "Two",
+                "id": -1,
+                "name": "g71S4gmF",
+                "order": 2,
+                "pwm": 26,
+                "type": ""
+            },
+            {
+                "ac_status": "P0_M0_T26_S0_D0",
+                "display_name": "WEJPWA==",
+                "icon": "Three",
+                "id": -1,
+                "name": "VXxI8MNJ",
+                "order": 3,
+                "pwm": 26,
+                "type": ""
+            },
+            {
+                "ac_status": "P0_M0_T26_S0_D0",
+                "display_name": "U3dpdGNoIDI=",
+                "icon": "Four",
+                "id": -1,
+                "name": "SB4d4472",
+                "order": 4,
+                "pwm": 26,
+                "type": ""
+            },
+            {
+                "ac_status": "P0_M0_T26_S0_D0",
+                "display_name": "TGVmdA==",
+                "icon": "Left",
+                "id": -1,
+                "name": "o683Rwp1",
+                "order": 5,
+                "pwm": 26,
+                "type": ""
+            },
+            {
+                "ac_status": "P0_M0_T26_S0_D0",
+                "display_name": "UmlnaHQ=",
+                "icon": "Right",
+                "id": -1,
+                "name": "1Vhx78hX",
+                "order": 6,
+                "pwm": 26,
+                "type": ""
+            }
+        ],
+        "key_sum": 6,
+        "lastOnboardingTimestamp": 1780178567,
+        "mac": "982203000000",
+        "model": "Custom",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
+        "parent_device_id": "0000000000000000000000000000000000000000",
+        "remote_id": 0,
+        "remote_type": 1,
+        "service_provider": "",
+        "type": "SMART.TAPOREMOTE"
+    }
+}
