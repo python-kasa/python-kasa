@@ -1,30 +1,16 @@
-# Compiled python modules.
+# Secrets / credentials — never commit
+secure.env
+*.env
+.env*
+
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
 
-# Setuptools distribution folder.
-/dist/
-
-# Python egg metadata, regenerated from source files by setuptools.
-/*.egg-info
-/*.egg
-
-# Coverage
-.coverage
-
-# Tox
-.tox
-.cache
-
-# IntelliJ
-.idea
-
-# vscode
-.vscode
-
-# VirtualEnvs
-venv
-.venv
-
-/build
-docs/build
+# Tooling caches
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/

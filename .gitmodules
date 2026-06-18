@@ -1,0 +1,6 @@
+[submodule "python-kasa"]
+	path = external/python-kasa
+	url = https://github.com/python-kasa/python-kasa.git
+[submodule "CommonClaude"]
+	path = external/CommonClaude
+	url = https://github.com/coport-uni/CommonClaude.git
