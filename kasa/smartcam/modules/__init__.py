@@ -22,6 +22,7 @@ from .petdetection import PetDetection
 from .tamperdetection import TamperDetection
 from .time import Time
 from .vehicledetection import VehicleDetection
+from .whitelamp import WhiteLamp
 
 __all__ = [
     "Alarm",
@@ -46,4 +47,5 @@ __all__ = [
     "LensMask",
     "TamperDetection",
     "VehicleDetection",
+    "WhiteLamp",
 ]

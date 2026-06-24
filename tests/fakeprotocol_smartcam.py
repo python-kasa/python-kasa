@@ -356,6 +356,12 @@ class FakeSmartCamTransport(BaseTransport):
                 return {"error_code": -1}
         elif method == "removeChildDeviceList":
             return self._hub_remove_device(info, request_dict["params"]["childControl"])
+        elif method == "reverseWhitelampStatus":
+            if "getWhitelampStatus" in info:
+                info["getWhitelampStatus"]["status"] = (
+                    0 if info["getWhitelampStatus"]["status"] == 1 else 1
+                )
+            return {"result": {}, "error_code": 0}
         # actions
         elif method in [
             "addScanChildDeviceList",
