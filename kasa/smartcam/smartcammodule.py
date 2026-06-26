@@ -58,7 +58,7 @@ class SmartCamModule(SmartModule):
         "devicemodule"
     )
 
-    SmartCamWhiteLamp: Final[ModuleName[modules.WhiteLamp]] = ModuleName("whiteLamp")
+    SmartCamWhiteLamp: Final[ModuleName[modules.WhiteLamp]] = ModuleName("WhiteLamp")
 
     #: Module name to be queried
     QUERY_MODULE_NAME: str

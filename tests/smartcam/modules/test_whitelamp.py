@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from kasa import Device, Module
+from kasa.smartcam.smartcammodule import SmartCamModule
 
 from ...device_fixtures import parametrize
 
@@ -18,6 +19,7 @@ async def test_whitelamp_is_on(dev: Device):
     """Test white lamp on/off state reflects fixture data."""
     whitelamp = dev.modules.get(Module.WhiteLamp)
     assert whitelamp is not None
+    assert dev.modules.get(SmartCamModule.SmartCamWhiteLamp) is whitelamp
 
     assert isinstance(whitelamp.is_on, bool)
 
@@ -81,6 +83,20 @@ async def test_whitelamp_brightness(dev: Device):
     finally:
         await whitelamp.set_brightness(original_brightness)
         await dev.update()
+
+
+@whitelamp_smartcam
+async def test_whitelamp_no_brightness(dev: Device):
+    """Test that brightness feature is absent when device does not support it."""
+    whitelamp = dev.modules.get(Module.WhiteLamp)
+    assert whitelamp is not None
+
+    config = whitelamp.data["getWhitelampConfig"]["image"]["switch"]
+    if "wtl_intensity_level" not in config:
+        assert not whitelamp.has_feature("brightness")
+        assert "white_lamp_brightness" not in dev.features
+    else:
+        pytest.skip("Device supports brightness, skipping no-brightness test")
 
 
 @whitelamp_smartcam
