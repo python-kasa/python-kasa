@@ -1300,6 +1300,7 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
             SmartErrorCode.SESSION_EXPIRED,
             SmartErrorCode.INVALID_NONCE,
             SmartErrorCode.TRANSPORT_NOT_AVAILABLE_ERROR,
+            SmartErrorCode.STAT_ACCESS_ERROR,
         }
 
     async def get_ssl_context(self) -> ssl.SSLContext | bool:
