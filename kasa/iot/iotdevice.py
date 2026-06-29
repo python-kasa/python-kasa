@@ -703,6 +703,13 @@ class IotDevice(Device):
     @property
     def max_device_response_size(self) -> int:
         """Returns the maximum response size the device can safely construct."""
+        # KLAP IoT devices (e.g. HS110 with SHIP 2.0 firmware) only support
+        # one small KLAP request per session. Force individual module queries
+        # by returning 0 so _modular_update never batches them together.
+        from kasa.transports.klaptransport import KlapTransport
+        transport = getattr(getattr(self, 'protocol', None), '_transport', None)
+        if isinstance(transport, KlapTransport):
+            return 0
         return 16 * 1024
 
     @property

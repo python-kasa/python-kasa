@@ -357,13 +357,23 @@ class KlapTransport(BaseTransport):
         if self._encryption_session is not None:
             payload, seq = self._encryption_session.encrypt(request.encode())
 
-        response_status, response_data = await self._http_client.post(
-            self._request_url,
-            params={"seq": seq},
-            data=payload,
-            cookies_dict=self._session_cookie,
-            ssl=await self._get_ssl_context(),
-        )
+        try:
+            response_status, response_data = await self._http_client.post(
+                self._request_url,
+                params={"seq": seq},
+                data=payload,
+                cookies_dict=self._session_cookie,
+                ssl=await self._get_ssl_context(),
+            )
+        except KasaException as ex:
+            # Some IoT devices (e.g. HS110 with SHIP 2.0 firmware) only support
+            # one KLAP request per session. After the first request the session is
+            # invalidated and subsequent POSTs return a raw non-HTTP response.
+            # Reset the handshake so the next retry starts a fresh session.
+            self._handshake_done = False
+            raise _RetryableError(
+                f"Device {self._host} request failed after handshake: {ex}"
+            ) from ex
 
         msg = (
             f"Host is {self._host}, "
@@ -392,8 +402,12 @@ class KlapTransport(BaseTransport):
             try:
                 decrypted_response = self._encryption_session.decrypt(response_data)
             except Exception as ex:
-                raise KasaException(
-                    f"Error trying to decrypt device {self._host} response: {ex}"
+                # Decrypt failure likely means the session was invalidated after
+                # the first request (one-request-per-session IoT firmware behaviour).
+                # Reset handshake so the next retry starts a fresh session.
+                self._handshake_done = False
+                raise _RetryableError(
+                    f"Device {self._host} decrypt failed, will retry with new handshake: {ex}"
                 ) from ex
 
             json_payload = json_loads(decrypted_response)
