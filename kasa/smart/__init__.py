@@ -2,5 +2,6 @@
 
 from .smartchilddevice import SmartChildDevice
 from .smartdevice import SmartDevice
+from .smartirac import SmartIrAC
 
-__all__ = ["SmartDevice", "SmartChildDevice"]
+__all__ = ["SmartDevice", "SmartChildDevice", "SmartIrAC"]

@@ -89,6 +89,15 @@ class SmartDevice(Device):
     async def _try_create_child(
         self, info: dict, child_components: dict
     ) -> SmartDevice | None:
+        if info.get("category") == "ir.remote" and info.get("model") == "AC":
+            from .smartirac import SmartIrAC
+
+            return await SmartIrAC.create(
+                parent=self,
+                child_info=info,
+                child_components_raw=child_components,
+            )
+
         from .smartchilddevice import SmartChildDevice
 
         return await SmartChildDevice.create(
