@@ -16,7 +16,7 @@ from ...conftest import hub_smartcam
 
 
 @hub_smartcam
-async def test_alarm(dev: Device):
+async def test_alarm(dev: Device) -> None:
     """Test device alarm."""
     alarm = dev.modules.get(Module.Alarm)
     assert alarm
@@ -83,7 +83,7 @@ async def test_alarm(dev: Device):
 
 
 @hub_smartcam
-async def test_alarm_invalid_setters(dev: Device):
+async def test_alarm_invalid_setters(dev: Device) -> None:
     """Test device alarm invalid setter values."""
     alarm = dev.modules.get(Module.Alarm)
     assert alarm
@@ -105,7 +105,7 @@ async def test_alarm_invalid_setters(dev: Device):
 
 
 @hub_smartcam
-async def test_alarm_features(dev: Device):
+async def test_alarm_features(dev: Device) -> None:
     """Test device alarm features."""
     alarm = dev.modules.get(Module.Alarm)
     assert alarm
