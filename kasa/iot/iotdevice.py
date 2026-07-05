@@ -92,7 +92,7 @@ class IotDevice(Device):
     * :class:`IotDimmer`
     * :class:`IotLightStrip`
 
-    To initialize, you have to await :func:`update()` at least once.
+    To initialize, you have to await :meth:`update()` at least once.
     This will allow accessing the properties using the exposed properties.
 
     All changes to the device are done using awaitable methods,
