@@ -4,10 +4,10 @@ from unittest.mock import Mock
 from kasa.iot.modules import Usage
 
 
-def test_usage_convert_stat_data():
-    usage = Usage(None, module="usage")
+def test_usage_convert_stat_data() -> None:
+    usage = Usage(Mock(), module="usage")
 
-    test_data = []
+    test_data: list[dict[str, int]] = []
     assert usage._convert_stat_data(test_data, "day") == {}
 
     test_data = [
@@ -24,13 +24,13 @@ def test_usage_convert_stat_data():
     assert v == 30
 
 
-def test_usage_today():
+def test_usage_today() -> None:
     """Test fetching the usage for today.
 
     This test uses inline data since the fixtures
     will not have data for the current day.
     """
-    emeter_data = {
+    emeter_data: dict = {
         "get_daystat": {
             "day_list": [],
             "err_code": 0,
@@ -55,13 +55,13 @@ def test_usage_today():
     assert usage.usage_today == 500
 
 
-def test_usage_this_month():
+def test_usage_this_month() -> None:
     """Test fetching the usage for this month.
 
     This test uses inline data since the fixtures
     will not have data for the current month.
     """
-    emeter_data = {
+    emeter_data: dict = {
         "get_monthstat": {
             "month_list": [],
             "err_code": 0,

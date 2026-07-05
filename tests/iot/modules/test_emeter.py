@@ -12,7 +12,7 @@ from voluptuous import (
 
 from kasa import Device, DeviceType, EmeterStatus, Module
 from kasa.interfaces.energy import Energy
-from kasa.iot import IotStrip
+from kasa.iot import IotDevice, IotStrip
 from kasa.iot.modules.emeter import Emeter
 from tests.conftest import has_emeter_iot, no_emeter_iot
 
@@ -37,22 +37,22 @@ CURRENT_CONSUMPTION_SCHEMA = Schema(
 
 
 @no_emeter_iot
-async def test_no_emeter(dev):
+async def test_no_emeter(dev: IotDevice) -> None:
     assert not dev.has_emeter
 
     with pytest.raises(AttributeError):
-        await dev.get_emeter_realtime()
+        await dev.get_emeter_realtime()  # type: ignore[attr-defined]
 
     with pytest.raises(AttributeError):
-        await dev.get_emeter_daily()
+        await dev.get_emeter_daily()  # type: ignore[attr-defined]
     with pytest.raises(AttributeError):
-        await dev.get_emeter_monthly()
+        await dev.get_emeter_monthly()  # type: ignore[attr-defined]
     with pytest.raises(AttributeError):
-        await dev.erase_emeter_stats()
+        await dev.erase_emeter_stats()  # type: ignore[attr-defined]
 
 
 @has_emeter_iot
-async def test_get_emeter_realtime(dev):
+async def test_get_emeter_realtime(dev: IotDevice) -> None:
     emeter = dev.modules[Module.Energy]
 
     current_emeter = await emeter.get_status()
@@ -65,7 +65,7 @@ async def test_get_emeter_realtime(dev):
 
 @has_emeter_iot
 @pytest.mark.requires_dummy
-async def test_get_emeter_daily(dev):
+async def test_get_emeter_daily(dev: IotDevice) -> None:
     emeter = dev.modules[Module.Energy]
 
     assert await emeter.get_daily_stats(year=1900, month=1) == {}
@@ -85,7 +85,7 @@ async def test_get_emeter_daily(dev):
 
 @has_emeter_iot
 @pytest.mark.requires_dummy
-async def test_get_emeter_monthly(dev):
+async def test_get_emeter_monthly(dev: IotDevice) -> None:
     emeter = dev.modules[Module.Energy]
 
     assert await emeter.get_monthly_stats(year=1900) == {}
@@ -104,7 +104,7 @@ async def test_get_emeter_monthly(dev):
 
 
 @has_emeter_iot
-async def test_emeter_status(dev):
+async def test_emeter_status(dev: IotDevice) -> None:
     emeter = dev.modules[Module.Energy]
 
     d = await emeter.get_status()
@@ -126,21 +126,21 @@ async def test_emeter_status(dev):
 
 @pytest.mark.skip("not clearing your stats..")
 @has_emeter_iot
-async def test_erase_emeter_stats(dev):
+async def test_erase_emeter_stats(dev: IotDevice) -> None:
     emeter = dev.modules[Module.Energy]
 
     await emeter.erase_emeter()
 
 
 @has_emeter_iot
-async def test_current_consumption(dev):
+async def test_current_consumption(dev: IotDevice) -> None:
     emeter = dev.modules[Module.Energy]
     x = emeter.current_consumption
     assert isinstance(x, float)
     assert x >= 0.0
 
 
-async def test_emeterstatus_missing_current():
+async def test_emeterstatus_missing_current() -> None:
     """KL125 does not report 'current' for emeter."""
     regular = EmeterStatus(
         {"err_code": 0, "power_mw": 0, "total_wh": 13, "current_ma": 123}
@@ -154,13 +154,13 @@ async def test_emeterstatus_missing_current():
     assert missing_current["current"] is None
 
 
-async def test_emeter_daily():
+async def test_emeter_daily() -> None:
     """Test fetching the emeter for today.
 
     This test uses inline data since the fixtures
     will not have data for the current day.
     """
-    emeter_data = {
+    emeter_data: dict = {
         "get_daystat": {
             "day_list": [{"day": 1, "energy_wh": 8, "month": 1, "year": 2023}],
             "err_code": 0,
@@ -181,7 +181,7 @@ async def test_emeter_daily():
 
 
 @has_emeter_iot
-async def test_supported(dev: Device):
+async def test_supported(dev: Device) -> None:
     energy_module = dev.modules.get(Module.Energy)
     assert energy_module
 
