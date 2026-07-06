@@ -19,9 +19,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-env:
-  UV_VERSION: 0.9.16
-
 jobs:
   lint:
     name: Perform Lint Checks
@@ -40,7 +37,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache-pre-commit: true
-          uv-version: ${{ env.UV_VERSION }}
           uv-install-options: --all-extras
 
       - name: Run pre-commit Checks
@@ -73,7 +69,6 @@ jobs:
         uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
-          uv-version: ${{ env.UV_VERSION }}
           uv-install-options: ${{ matrix.extras == true && '--all-extras' || '' }}
 
       - name: Run PyTests with Code Coverage
