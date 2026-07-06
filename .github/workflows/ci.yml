@@ -75,7 +75,11 @@ jobs:
         id: run-pytests-with-code-coverage
         shell: bash
         run: |
-          uv run pytest -n auto --cov kasa --cov-report xml
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            uv run pytest -n0 --cov kasa --cov-report xml
+          else
+            uv run pytest -n auto --cov kasa --cov-report xml
+          fi
 
       - name: Upload Code Coverage to Codecov
         id: upload-code-coverage-to-codecov
