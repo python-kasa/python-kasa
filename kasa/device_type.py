@@ -21,6 +21,7 @@ class DeviceType(Enum):
     Hub = "hub"
     Fan = "fan"
     Thermostat = "thermostat"
+    Climate = "climate"
     Vacuum = "vacuum"
     Chime = "chime"
     Doorbell = "doorbell"
