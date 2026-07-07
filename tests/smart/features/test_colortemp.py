@@ -6,7 +6,7 @@ from ...conftest import variable_temp_smart
 
 
 @variable_temp_smart
-async def test_colortemp_component(dev: SmartDevice):
+async def test_colortemp_component(dev: SmartDevice) -> None:
     """Test brightness feature."""
     assert isinstance(dev, SmartDevice)
     assert "color_temperature" in dev._components

@@ -25,7 +25,9 @@ clean = parametrize("clean module", component_filter="clean", protocol_filter={"
         ("battery_level", "battery", int),
     ],
 )
-async def test_features(dev: SmartDevice, feature: str, prop_name: str, type: type):
+async def test_features(
+    dev: SmartDevice, feature: str, prop_name: str, type: type
+) -> None:
     """Test that features are registered and work as expected."""
     clean = next(get_parent_and_child_modules(dev, Module.Clean))
     assert clean is not None
@@ -94,7 +96,7 @@ async def test_actions(
     value: str | int,
     method: str,
     params: dict,
-):
+) -> None:
     """Test the clean actions."""
     clean = next(get_parent_and_child_modules(dev, Module.Clean))
     call = mocker.spy(clean, "call")
@@ -130,7 +132,7 @@ async def test_post_update_hook(
     error: ErrorCode,
     warning_msg: str | None,
     caplog: pytest.LogCaptureFixture,
-):
+) -> None:
     """Test that post update hook sets error states correctly."""
     clean = next(get_parent_and_child_modules(dev, Module.Clean))
     assert clean
@@ -160,7 +162,7 @@ async def test_post_update_hook(
 
 
 @clean
-async def test_resume(dev: SmartDevice, mocker: MockerFixture):
+async def test_resume(dev: SmartDevice, mocker: MockerFixture) -> None:
     """Test that start calls resume if the state is paused."""
     clean = next(get_parent_and_child_modules(dev, Module.Clean))
 
@@ -182,7 +184,7 @@ async def test_resume(dev: SmartDevice, mocker: MockerFixture):
 @clean
 async def test_unknown_status(
     dev: SmartDevice, mocker: MockerFixture, caplog: pytest.LogCaptureFixture
-):
+) -> None:
     """Test that unknown status is logged."""
     clean = next(get_parent_and_child_modules(dev, Module.Clean))
 
@@ -227,7 +229,7 @@ async def test_invalid_settings(
     value: str,
     exc: type[Exception],
     exc_message: str,
-):
+) -> None:
     """Test invalid settings."""
     clean = next(get_parent_and_child_modules(dev, Module.Clean))
 

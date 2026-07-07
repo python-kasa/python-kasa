@@ -22,7 +22,9 @@ dustbin = parametrize(
         ("dustbin_mode", "mode", str),
     ],
 )
-async def test_features(dev: SmartDevice, feature: str, prop_name: str, type: type):
+async def test_features(
+    dev: SmartDevice, feature: str, prop_name: str, type: type
+) -> None:
     """Test that features are registered and work as expected."""
     dustbin = next(get_parent_and_child_modules(dev, Module.Dustbin))
     assert dustbin is not None
@@ -36,7 +38,7 @@ async def test_features(dev: SmartDevice, feature: str, prop_name: str, type: ty
 
 
 @dustbin
-async def test_dustbin_mode(dev: SmartDevice, mocker: MockerFixture):
+async def test_dustbin_mode(dev: SmartDevice, mocker: MockerFixture) -> None:
     """Test dust mode."""
     dustbin = next(get_parent_and_child_modules(dev, Module.Dustbin))
     call = mocker.spy(dustbin, "call")
@@ -61,7 +63,7 @@ async def test_dustbin_mode(dev: SmartDevice, mocker: MockerFixture):
 
 
 @dustbin
-async def test_dustbin_mode_off(dev: SmartDevice, mocker: MockerFixture):
+async def test_dustbin_mode_off(dev: SmartDevice, mocker: MockerFixture) -> None:
     """Test dustbin_mode == Off."""
     dustbin = next(get_parent_and_child_modules(dev, Module.Dustbin))
     call = mocker.spy(dustbin, "call")
@@ -80,7 +82,7 @@ async def test_dustbin_mode_off(dev: SmartDevice, mocker: MockerFixture):
 
 
 @dustbin
-async def test_autocollection(dev: SmartDevice, mocker: MockerFixture):
+async def test_autocollection(dev: SmartDevice, mocker: MockerFixture) -> None:
     """Test autocollection switch."""
     dustbin = next(get_parent_and_child_modules(dev, Module.Dustbin))
     call = mocker.spy(dustbin, "call")
@@ -101,7 +103,7 @@ async def test_autocollection(dev: SmartDevice, mocker: MockerFixture):
 
 
 @dustbin
-async def test_empty_dustbin(dev: SmartDevice, mocker: MockerFixture):
+async def test_empty_dustbin(dev: SmartDevice, mocker: MockerFixture) -> None:
     """Test the empty dustbin feature."""
     dustbin = next(get_parent_and_child_modules(dev, Module.Dustbin))
     call = mocker.spy(dustbin, "call")

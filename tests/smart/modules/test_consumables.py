@@ -21,7 +21,7 @@ consumables = parametrize(
     "consumable_name", [consumable.id for consumable in CONSUMABLE_METAS]
 )
 @pytest.mark.parametrize("postfix", ["used", "remaining"])
-async def test_features(dev: SmartDevice, consumable_name: str, postfix: str):
+async def test_features(dev: SmartDevice, consumable_name: str, postfix: str) -> None:
     """Test that features are registered and work as expected."""
     consumables = next(get_parent_and_child_modules(dev, Module.Consumables))
     assert consumables is not None
@@ -39,7 +39,7 @@ async def test_features(dev: SmartDevice, consumable_name: str, postfix: str):
 )
 async def test_erase(
     dev: SmartDevice, mocker: MockerFixture, consumable_name: str, data_key: str
-):
+) -> None:
     """Test autocollection switch."""
     consumables = next(get_parent_and_child_modules(dev, Module.Consumables))
     call = mocker.spy(consumables, "call")

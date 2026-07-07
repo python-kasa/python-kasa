@@ -9,7 +9,7 @@ matter = parametrize(
 
 
 @matter
-async def test_info(dev: SmartDevice):
+async def test_info(dev: SmartDevice) -> None:
     """Test matter info."""
     matter = dev.modules.get(Module.Matter)
     assert matter
