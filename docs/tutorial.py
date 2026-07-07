@@ -6,8 +6,8 @@
 
 >>> devices = await Discover.discover(username="user@example.com", password="great_password")
 >>> for dev in devices.values():
->>>     await dev.update()
->>>     print(dev.host)
+...     await dev.update()
+...     print(dev.host)
 127.0.0.1
 127.0.0.2
 127.0.0.3
@@ -56,20 +56,23 @@ True
 >>> light.has_feature("hsv")
 True
 >>> if light.has_feature("hsv"):
->>>     print(light.hsv)
+...     print(light.hsv)
 HSV(hue=0, saturation=100, value=50)
 
 You can test if a module is supported by using `get` to access it.
 
 >>> if effect := dev.modules.get(Module.LightEffect):
->>>     print(effect.effect)
->>>     print(effect.effect_list)
->>> if effect := dev.modules.get(Module.LightEffect):
->>>     await effect.set_effect("Party")
->>>     await dev.update()
->>>     print(effect.effect)
+...     print(effect.effect)
+...     print(effect.effect_list)
 Off
 ['Off', 'Party', 'Relax']
+
+You can then interact with the module:
+
+>>> if effect := dev.modules.get(Module.LightEffect):
+...     _ = await effect.set_effect("Party")
+...     await dev.update()
+...     print(effect.effect)
 Party
 
 Individual pieces of functionality are also exposed via features which you can access via :attr:`~kasa.Device.features` and will only be present if they are supported.
@@ -83,14 +86,14 @@ The advantage of features is that they have a simple common interface of `id`, `
 They are useful if you want write code that dynamically adapts as new features are added to the API.
 
 >>> if auto_update := dev.features.get("auto_update_enabled"):
->>>     print(auto_update.value)
+...     print(auto_update.value)
 False
 >>> if auto_update:
->>>     await auto_update.set_value(True)
->>>     await dev.update()
->>>     print(auto_update.value)
+...     _ = await auto_update.set_value(True)
+...     await dev.update()
+...     print(auto_update.value)
 True
 >>> for feat in dev.features.values():
->>>     print(f"{feat.name}: {feat.value}")
+...     print(f"{feat.name}: {feat.value}")
 Device ID: 0000000000000000000000000000000000000000\nState: True\nSignal Level: 2\nRSSI: -52\nSSID: #MASKED_SSID#\nReboot: <Action>\nDevice time: 2024-02-23 02:40:15+01:00\nBrightness: 50\nCloud connection: True\nHSV: HSV(hue=0, saturation=100, value=50)\nColor temperature: 2700\nAuto update enabled: True\nUpdate available: None\nCurrent firmware version: 1.1.6 Build 240130 Rel.173828\nAvailable firmware version: None\nCheck latest firmware: <Action>\nLight effect: Party\nLight preset: Light preset 1\nSmooth transition on: 2\nSmooth transition off: 2\nOverheated: False
 """
