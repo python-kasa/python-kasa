@@ -267,6 +267,7 @@ class FakeSmartTransport(BaseTransport):
         def try_get_child_fixture_info(child_dev_info: dict, protocol: str):
             hw_version = child_dev_info["hw_ver"]
             sw_version = child_dev_info.get("sw_ver", child_dev_info.get("fw_ver"))
+            assert isinstance(sw_version, str)
             sw_version = sw_version.split(" ")[0]
             model = child_dev_info.get("device_model", child_dev_info.get("model"))
             assert sw_version
