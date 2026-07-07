@@ -3,10 +3,10 @@
 >>> from kasa import Discover
 >>>
 >>> dev = await Discover.discover_single(
->>>     "127.0.0.1",
->>>     username="user@example.com",
->>>     password="great_password"
->>> )
+...     "127.0.0.1",
+...     username="user@example.com",
+...     password="great_password"
+... )
 >>> await dev.update()
 >>> print(dev.alias)
 Bedroom Power Strip
@@ -14,7 +14,7 @@ Bedroom Power Strip
 All methods act on the whole strip:
 
 >>> for plug in dev.children:
->>>    print(f"{plug.alias}: {plug.is_on}")
+...    print(f"{plug.alias}: {plug.is_on}")
 Plug 1: True
 Plug 2: False
 Plug 3: False
@@ -28,7 +28,7 @@ Accessing individual plugs can be done using the `children` property:
 >>> len(dev.children)
 3
 >>> for plug in dev.children:
->>>    print(f"{plug.alias}: {plug.is_on}")
+...    print(f"{plug.alias}: {plug.is_on}")
 Plug 1: False
 Plug 2: False
 Plug 3: False

@@ -53,14 +53,14 @@ class IotStrip(IotDevice):
 
     A strip consists of the parent device and its children.
     All methods of the parent act on all children, while the child devices
-    share the common API with the :class:`SmartPlug` class.
+    share the common API with the :class:`IotPlug` class.
 
-    To initialize, you have to await :func:`update()` at least once.
+    To initialize, you have to await :meth:`update()` at least once.
     This will allow accessing the properties using the exposed properties.
 
     All changes to the device are done using awaitable methods,
     which will not change the cached values,
-    but you must await :func:`update()` separately.
+    but you must await :meth:`update()` separately.
 
     Errors reported by the device are raised as :class:`KasaException`\s,
     and should be handled by the user of the library.
@@ -75,7 +75,7 @@ class IotStrip(IotDevice):
         All methods act on the whole strip:
 
         >>> for plug in strip.children:
-        >>>    print(f"{plug.alias}: {plug.is_on}")
+        ...    print(f"{plug.alias}: {plug.is_on}")
         Plug 1: True
         Plug 2: False
         Plug 3: False
@@ -89,7 +89,7 @@ class IotStrip(IotDevice):
         >>> len(strip.children)
         3
         >>> for plug in strip.children:
-        >>>    print(f"{plug.alias}: {plug.is_on}")
+        ...    print(f"{plug.alias}: {plug.is_on}")
         Plug 1: False
         Plug 2: False
         Plug 3: False

@@ -41,14 +41,14 @@ class IotDimmer(IotPlug):
     r"""Representation of a TP-Link Smart Dimmer.
 
     Dimmers work similarly to plugs, but provide also support for
-    adjusting the brightness. This class extends :class:`SmartPlug` interface.
+    adjusting the brightness. This class extends :class:`IotPlug` interface.
 
-    To initialize, you have to await :func:`update()` at least once.
+    To initialize, you have to await :meth:`update()` at least once.
     This will allow accessing the properties using the exposed properties.
 
     All changes to the device are done using awaitable methods,
     which will not change the cached values,
-    but you must await :func:`update()` separately.
+    but you must await :meth:`update()` separately.
 
     Errors reported by the device are raised as :class:`KasaException`\s,
     and should be handled by the user of the library.
@@ -65,7 +65,7 @@ class IotDimmer(IotPlug):
     >>> dimmer.brightness
     50
 
-    Refer to :class:`SmartPlug` for the full API.
+    Refer to :class:`IotPlug` for the full API.
     """
 
     DIMMER_SERVICE = "smartlife.iot.dimmer"

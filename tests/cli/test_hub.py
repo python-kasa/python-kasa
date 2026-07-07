@@ -1,14 +1,20 @@
 import pytest
+from asyncclick.testing import CliRunner
 from pytest_mock import MockerFixture
 
-from kasa import DeviceType, Module
+from kasa import Device, DeviceType, Module
 from kasa.cli.hub import hub
 
 from ..device_fixtures import hubs, plug_iot
 
 
 @hubs
-async def test_hub_pair(dev, mocker: MockerFixture, runner, caplog):
+async def test_hub_pair(
+    dev: Device,
+    mocker: MockerFixture,
+    runner: CliRunner,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """Test that pair calls the expected methods."""
     cs = dev.modules.get(Module.ChildSetup)
     # Patch if the device supports the module
@@ -26,7 +32,9 @@ async def test_hub_pair(dev, mocker: MockerFixture, runner, caplog):
 
 
 @hubs
-async def test_hub_unpair(dev, mocker: MockerFixture, runner):
+async def test_hub_unpair(
+    dev: Device, mocker: MockerFixture, runner: CliRunner
+) -> None:
     """Test that unpair calls the expected method."""
     if not dev.children:
         pytest.skip("Cannot test without child devices")
@@ -44,7 +52,7 @@ async def test_hub_unpair(dev, mocker: MockerFixture, runner):
 
 
 @plug_iot
-async def test_non_hub(dev, mocker: MockerFixture, runner):
+async def test_non_hub(dev: Device, mocker: MockerFixture, runner: CliRunner) -> None:
     """Test that hub commands return an error if executed on a non-hub."""
     assert dev.device_type is not DeviceType.Hub
     res = await runner.invoke(

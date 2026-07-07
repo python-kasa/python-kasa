@@ -4,7 +4,7 @@ from ...device_fixtures import device_iot
 
 
 @device_iot
-def test_cloud(dev: Device):
+def test_cloud(dev: Device) -> None:
     cloud = dev.modules.get(Module.IotCloud)
     assert cloud
     info = cloud.info

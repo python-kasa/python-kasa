@@ -8,7 +8,7 @@ from ...device_fixtures import device_iot
 
 @device_iot
 @pytest.mark.xdist_group(name="caplog")
-def test_schedule(dev: Device, caplog: pytest.LogCaptureFixture):
+def test_schedule(dev: Device, caplog: pytest.LogCaptureFixture) -> None:
     schedule = dev.modules.get(Module.IotSchedule)
     assert schedule
     if rules := schedule.rules:
