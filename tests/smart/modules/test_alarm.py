@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TypedDict
 
 import pytest
 from pytest_mock import MockerFixture
@@ -8,10 +8,23 @@ from pytest_mock import MockerFixture
 from kasa import Module
 from kasa.smart import SmartDevice
 from kasa.smart.modules import Alarm
+from kasa.smart.modules.alarm import AlarmVolume
 
 from ...device_fixtures import get_parent_and_child_modules, parametrize
 
 alarm = parametrize("has alarm", component_filter="alarm", protocol_filter={"SMART"})
+
+
+class PlayAlarmKwargs(TypedDict, total=False):
+    duration: int
+    volume: AlarmVolume | int
+    sound: str
+
+
+class PlayAlarmRequestParams(TypedDict, total=False):
+    alarm_duration: int
+    alarm_volume: AlarmVolume
+    alarm_type: str
 
 
 @alarm
@@ -70,8 +83,8 @@ async def test_volume_feature(dev: SmartDevice) -> None:
 )
 async def test_play(
     dev: SmartDevice,
-    kwargs: dict[str, Any],
-    request_params: dict[str, str | int],
+    kwargs: PlayAlarmKwargs,
+    request_params: PlayAlarmRequestParams,
     mocker: MockerFixture,
 ) -> None:
     """Test that play parameters are handled correctly."""
