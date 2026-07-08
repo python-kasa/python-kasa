@@ -469,6 +469,35 @@ async def test_list_response_without_list_field() -> None:
     assert resp == response
 
 
+async def test_list_response_without_list_field_sum_warns(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Warn when sum claims items exist but no list field is present."""
+    caplog.set_level(logging.WARNING)
+    response = {
+        "getChildDeviceComponentList": {
+            "start_index": 0,
+            "sum": 3,
+        },
+    }
+    request = {
+        "getChildDeviceComponentList": {"childControl": {"start_index": 0}},
+    }
+
+    ft = FakeSmartCamTransport(
+        response,
+        "foobar",
+        components_not_included=True,
+        get_child_fixtures=False,
+    )
+    protocol = SmartCamProtocol(transport=ft)
+    resp = await protocol.query(request)
+    assert resp == response
+    assert "returned sum=3 for method getChildDeviceComponentList but no list field" in (
+        caplog.text
+    )
+
+
 async def test_incomplete_list(
     mocker: MockerFixture, caplog: pytest.LogCaptureFixture
 ) -> None:

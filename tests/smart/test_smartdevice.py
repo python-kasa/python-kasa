@@ -776,6 +776,24 @@ async def test_smartmodule_query():
     assert mod.query() == {}
 
 
+async def test_create_delete_children_tolerates_missing_list_fields() -> None:
+    """Hub list responses may omit or mistype child list fields."""
+    dev = await get_device_for_fixture_protocol("H500(US)_1.0_1.3.18.json", "SMARTCAM")
+    assert isinstance(dev, SmartCamDevice)
+
+    changed = await dev._create_delete_children(
+        {"start_index": 0, "sum": 0},
+        {"start_index": 0, "sum": 0, "child_component_list": "bad"},
+    )
+    assert changed is False
+
+    changed = await dev._create_delete_children(
+        {"child_device_list": "bad", "start_index": 0, "sum": 0},
+        {"child_component_list": ["not-a-dict"]},
+    )
+    assert changed is False
+
+
 @hub_all
 @pytest.mark.xdist_group(name="caplog")
 @pytest.mark.requires_dummy
