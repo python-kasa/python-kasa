@@ -538,6 +538,17 @@ async def test_update_credentials_with_no_credentials(dev: SmartCamDevice):
 
 
 @device_smartcam
+async def test_update_credentials_with_no_password_candidates(dev: SmartCamDevice):
+    with (
+        patch.object(dev, "_password_candidates", return_value=[]),
+        pytest.raises(
+            KasaException, match="Unable to determine current admin password."
+        ),
+    ):
+        await dev.update_credentials("new-user@example.com", "new-password")
+
+
+@device_smartcam
 async def test_update_credentials_current_password_equals_default(
     dev: SmartCamDevice,
 ):
