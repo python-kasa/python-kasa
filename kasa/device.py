@@ -6,10 +6,10 @@ Once you have a device via :ref:`Discovery <discover_target>` or
 >>> from kasa import Discover
 >>>
 >>> dev = await Discover.discover_single(
->>>     "127.0.0.2",
->>>     username="user@example.com",
->>>     password="great_password"
->>> )
+...     "127.0.0.2",
+...     username="user@example.com",
+...     password="great_password"
+... )
 >>>
 
 Most devices can be turned on and off
@@ -46,7 +46,7 @@ Devices support different functionality that are exposed via
 :ref:`modules <module_target>` that you can access via :attr:`~kasa.Device.modules`:
 
 >>> for module_name in dev.modules:
->>>     print(module_name)
+...     print(module_name)
 homekit
 Energy
 schedule
@@ -81,7 +81,7 @@ They are useful if you want write code that dynamically adapts as new features a
 added to the API.
 
 >>> for feature_name in dev.features:
->>>     print(feature_name)
+...     print(feature_name)
 state
 rssi
 on_since

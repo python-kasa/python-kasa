@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 
 import pytest
+from pytest_mock import MockerFixture
 from voluptuous import (
     All,
     Boolean,
@@ -27,7 +28,7 @@ from tests.iot.test_iotdevice import SYSINFO_SCHEMA
 
 
 @bulb_iot
-async def test_bulb_sysinfo(dev: Device):
+async def test_bulb_sysinfo(dev: Device) -> None:
     assert dev.sys_info is not None
     SYSINFO_SCHEMA_BULB(dev.sys_info)
 
@@ -35,19 +36,21 @@ async def test_bulb_sysinfo(dev: Device):
 
 
 @bulb_iot
-async def test_light_state_without_update(dev: IotBulb, monkeypatch):
+async def test_light_state_without_update(
+    dev: IotBulb, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setitem(dev._last_update["system"]["get_sysinfo"], "light_state", None)
     with pytest.raises(KasaException):
         print(dev.light_state)
 
 
 @bulb_iot
-async def test_get_light_state(dev: IotBulb):
+async def test_get_light_state(dev: IotBulb) -> None:
     LIGHT_STATE_SCHEMA(await dev.get_light_state())
 
 
 @color_bulb_iot
-async def test_set_hsv_transition(dev: IotBulb, mocker):
+async def test_set_hsv_transition(dev: IotBulb, mocker: MockerFixture) -> None:
     set_light_state = mocker.patch("kasa.iot.IotBulb._set_light_state")
     light = dev.modules.get(Module.Light)
     assert light
@@ -60,7 +63,7 @@ async def test_set_hsv_transition(dev: IotBulb, mocker):
 
 
 @bulb_iot
-async def test_light_set_state(dev: IotBulb, mocker):
+async def test_light_set_state(dev: IotBulb, mocker: MockerFixture) -> None:
     """Testing setting LightState on the light module."""
     light = dev.modules.get(Module.Light)
     assert light
@@ -76,7 +79,7 @@ async def test_light_set_state(dev: IotBulb, mocker):
 
 
 @variable_temp_iot
-async def test_set_color_temp_transition(dev: IotBulb, mocker):
+async def test_set_color_temp_transition(dev: IotBulb, mocker: MockerFixture) -> None:
     set_light_state = mocker.patch("kasa.iot.IotBulb._set_light_state")
     light = dev.modules.get(Module.Light)
     assert light
@@ -87,7 +90,9 @@ async def test_set_color_temp_transition(dev: IotBulb, mocker):
 
 @variable_temp_iot
 @pytest.mark.xdist_group(name="caplog")
-async def test_unknown_temp_range(dev: IotBulb, monkeypatch, caplog):
+async def test_unknown_temp_range(
+    dev: IotBulb, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
     monkeypatch.setitem(dev._sys_info, "model", "unknown bulb")
     light = dev.modules.get(Module.Light)
     assert light
@@ -99,7 +104,7 @@ async def test_unknown_temp_range(dev: IotBulb, monkeypatch, caplog):
 
 @dimmable_iot
 @turn_on
-async def test_dimmable_brightness(dev: IotBulb, turn_on):
+async def test_dimmable_brightness(dev: IotBulb, turn_on: bool) -> None:
     assert isinstance(dev, IotBulb | IotDimmer)
     light = dev.modules.get(Module.Light)
     assert light
@@ -119,7 +124,7 @@ async def test_dimmable_brightness(dev: IotBulb, turn_on):
 
 
 @bulb_iot
-async def test_turn_on_transition(dev: IotBulb, mocker):
+async def test_turn_on_transition(dev: IotBulb, mocker: MockerFixture) -> None:
     set_light_state = mocker.patch("kasa.iot.IotBulb._set_light_state")
     await dev.turn_on(transition=1000)
 
@@ -131,7 +136,9 @@ async def test_turn_on_transition(dev: IotBulb, mocker):
 
 
 @bulb_iot
-async def test_dimmable_brightness_transition(dev: IotBulb, mocker):
+async def test_dimmable_brightness_transition(
+    dev: IotBulb, mocker: MockerFixture
+) -> None:
     set_light_state = mocker.patch("kasa.iot.IotBulb._set_light_state")
     light = dev.modules.get(Module.Light)
     assert light
@@ -141,7 +148,7 @@ async def test_dimmable_brightness_transition(dev: IotBulb, mocker):
 
 
 @dimmable_iot
-async def test_invalid_brightness(dev: IotBulb):
+async def test_invalid_brightness(dev: IotBulb) -> None:
     assert dev._is_dimmable
     light = dev.modules.get(Module.Light)
     assert light
@@ -159,7 +166,7 @@ async def test_invalid_brightness(dev: IotBulb):
 
 
 @non_dimmable_iot
-async def test_non_dimmable(dev: IotBulb):
+async def test_non_dimmable(dev: IotBulb) -> None:
     assert not dev._is_dimmable
     light = dev.modules.get(Module.Light)
     assert light
@@ -171,8 +178,8 @@ async def test_non_dimmable(dev: IotBulb):
 
 @bulb_iot
 async def test_ignore_default_not_set_without_color_mode_change_turn_on(
-    dev: IotBulb, mocker
-):
+    dev: IotBulb, mocker: MockerFixture
+) -> None:
     query_helper = mocker.patch("kasa.iot.IotBulb._query_helper")
     # When turning back without settings, ignore default to restore the state
     await dev.turn_on()
@@ -185,7 +192,7 @@ async def test_ignore_default_not_set_without_color_mode_change_turn_on(
 
 
 @bulb_iot
-async def test_list_presets(dev: IotBulb):
+async def test_list_presets(dev: IotBulb) -> None:
     light_preset = dev.modules.get(Module.LightPreset)
     assert light_preset
     assert isinstance(light_preset, IotLightPresetModule)
@@ -206,7 +213,7 @@ async def test_list_presets(dev: IotBulb):
 
 
 @bulb_iot
-async def test_modify_preset(dev: IotBulb, mocker):
+async def test_modify_preset(dev: IotBulb, mocker: MockerFixture) -> None:
     """Verify that modifying preset calls the and exceptions are raised properly."""
     if (
         not (light_preset := dev.modules.get(Module.LightPreset))
@@ -254,7 +261,9 @@ async def test_modify_preset(dev: IotBulb, mocker):
         ),
     ],
 )
-async def test_modify_preset_payloads(dev: IotBulb, preset, payload, mocker):
+async def test_modify_preset_payloads(
+    dev: IotBulb, preset, payload, mocker: MockerFixture
+) -> None:
     """Test that modify preset payloads ignore none values."""
     if (
         not (light_preset := dev.modules.get(Module.LightPreset))
@@ -318,6 +327,6 @@ SYSINFO_SCHEMA_BULB = SYSINFO_SCHEMA.extend(
 
 
 @bulb_iot
-async def test_turn_on_behaviours(dev: IotBulb):
+async def test_turn_on_behaviours(dev: IotBulb) -> None:
     behavior = await dev.get_turn_on_behavior()
     assert behavior

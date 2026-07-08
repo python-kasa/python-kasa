@@ -3,10 +3,10 @@
 >>> from kasa import Discover, Module
 >>>
 >>> dev = await Discover.discover_single(
->>>     "127.0.0.3",
->>>     username="user@example.com",
->>>     password="great_password"
->>> )
+...     "127.0.0.3",
+...     username="user@example.com",
+...     password="great_password"
+... )
 >>> await dev.update()
 >>> print(dev.alias)
 Living Room Bulb
@@ -44,7 +44,7 @@ All known bulbs support changing the brightness:
 Bulbs supporting color temperature can be queried for the supported range:
 
 >>> if color_temp_feature := light.get_feature("color_temp"):
->>>     print(f"{color_temp_feature.minimum_value}, {color_temp_feature.maximum_value}")
+...     print(f"{color_temp_feature.minimum_value}, {color_temp_feature.maximum_value}")
 2500, 6500
 >>> await light.set_color_temp(3000)
 >>> await dev.update()

@@ -1,11 +1,15 @@
 from unittest.mock import AsyncMock
 
+from pytest_mock import MockerFixture
+
 from kasa import Module
+from kasa.iot import IotStrip
+from kasa.iot.iotstrip import IotStripPlug
 from tests.conftest import strip_emeter_iot, strip_iot
 
 
 @strip_iot
-async def test_strip_update_and_child_update_behaviors(dev):
+async def test_strip_update_and_child_update_behaviors(dev: IotStrip) -> None:
     await dev.update()
     await dev.update(update_children=False)
 
@@ -18,9 +22,10 @@ async def test_strip_update_and_child_update_behaviors(dev):
 
 
 @strip_iot
-async def test_strip_child_delegated_properties(dev):
+async def test_strip_child_delegated_properties(dev: IotStrip) -> None:
     await dev.update()
     child = dev.children[0]
+    assert isinstance(child, IotStripPlug)
 
     assert child.led is False
     assert child.time == dev.time
@@ -32,7 +37,7 @@ async def test_strip_child_delegated_properties(dev):
 
 
 @strip_emeter_iot
-async def test_strip_emeter_erase_stats(dev, mocker):
+async def test_strip_emeter_erase_stats(dev: IotStrip, mocker: MockerFixture) -> None:
     await dev.update()
 
     for child in dev.children:

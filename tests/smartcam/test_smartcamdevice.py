@@ -17,7 +17,7 @@ from ..conftest import device_smartcam, hub_smartcam
 
 
 @device_smartcam
-async def test_state(dev: Device):
+async def test_state(dev: Device) -> None:
     if dev.device_type is DeviceType.Hub:
         pytest.skip("Hubs cannot be switched on and off")
 
@@ -38,7 +38,7 @@ async def test_state(dev: Device):
 
 
 @device_smartcam
-async def test_alias(dev: Device):
+async def test_alias(dev: Device) -> None:
     test_alias = "TEST1234"
     original = dev.alias
 
@@ -53,7 +53,7 @@ async def test_alias(dev: Device):
 
 
 @hub_smartcam
-async def test_hub(dev: Device):
+async def test_hub(dev: Device) -> None:
     assert dev.children
     for child in dev.children:
         assert child.modules
@@ -65,7 +65,7 @@ async def test_hub(dev: Device):
 
 
 @device_smartcam
-async def test_wifi_scan(dev: SmartCamDevice):
+async def test_wifi_scan(dev: SmartCamDevice) -> None:
     fake_scan_data = {
         "scanApList": {
             "onboarding": {
@@ -97,7 +97,7 @@ async def test_wifi_scan(dev: SmartCamDevice):
 
 
 @device_smartcam
-async def test_wifi_join_success_and_errors(dev: SmartCamDevice):
+async def test_wifi_join_success_and_errors(dev: SmartCamDevice) -> None:
     dev._networks = [
         type(
             "WifiNetwork",
@@ -154,7 +154,7 @@ async def test_wifi_join_success_and_errors(dev: SmartCamDevice):
 
 
 @device_smartcam
-async def test_device_time(dev: Device, freezer: FrozenDateTimeFactory):
+async def test_device_time(dev: Device, freezer: FrozenDateTimeFactory) -> None:
     """Test a child device gets the time from it's parent module."""
     fallback_time = datetime.now(UTC).astimezone().replace(microsecond=0)
     assert dev.time != fallback_time
@@ -165,7 +165,7 @@ async def test_device_time(dev: Device, freezer: FrozenDateTimeFactory):
 
 
 @device_smartcam
-async def test_wifi_join_typeerror_on_non_rsa_key(dev: SmartCamDevice):
+async def test_wifi_join_typeerror_on_non_rsa_key(dev: SmartCamDevice) -> None:
     dev._networks = [
         type(
             "WifiNetwork",
