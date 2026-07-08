@@ -493,8 +493,9 @@ async def test_list_response_without_list_field_sum_warns(
     protocol = SmartCamProtocol(transport=ft)
     resp = await protocol.query(request)
     assert resp == response
-    assert "returned sum=3 for method getChildDeviceComponentList but no list field" in (
-        caplog.text
+    assert (
+        "returned sum=3 for method getChildDeviceComponentList but no list field"
+        in (caplog.text)
     )
 
 
