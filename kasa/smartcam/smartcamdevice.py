@@ -399,49 +399,54 @@ class SmartCamDevice(SmartDevice):
     async def update_credentials(self, username: str, password: str) -> dict:
         """Update smart camera credentials."""
         login_version = self.config.connection_type.login_version
-        default_old_password = get_default_credentials(
-            DEFAULT_CREDENTIALS["TAPOCAMERA_LV3"]
-            if login_version == 3
-            else DEFAULT_CREDENTIALS["TAPOCAMERA"]
-        ).password
-
-        old_password_candidates: list[str] = [default_old_password]
-        if self.credentials and self.credentials.password:
-            current_password = self.credentials.password
-            if current_password not in old_password_candidates:
-                old_password_candidates.append(current_password)
-
-        new_password_hash = self._hash_password(password, login_version)
-
         last_error: DeviceError | None = None
-        for old_password_candidate in old_password_candidates:
-            old_password_hash = self._hash_password(
-                old_password_candidate, login_version
-            )
-
-            change_admin_password_payload: dict[str, str] = {
-                "secname": "root",
-                "username": "admin",
-                "old_passwd": old_password_hash,
-                "passwd": new_password_hash,
-                "ciphertext": self._encrypt_password(new_password_hash),
-            }
-            if login_version == 3:
-                change_admin_password_payload["encrypt_type"] = "3"
-
-            payload = {
-                "user_management": {
-                    "change_admin_password": change_admin_password_payload
-                }
-            }
+        for old_password_candidate in self._password_candidates(login_version):
             try:
-                return await self.protocol.query({"changeAdminPassword": payload})
+                return await self._try_change_password(
+                    old_password_candidate, password, login_version
+                )
             except DeviceError as ex:
                 last_error = ex
 
         if last_error is not None:
             raise last_error
         raise KasaException("Unable to determine current admin password.")
+
+    def _password_candidates(self, login_version: int | None) -> list[str]:
+        default_key = "TAPOCAMERA_LV3" if login_version == 3 else "TAPOCAMERA"
+        fallback_default_key = "TAPOCAMERA" if login_version == 3 else "TAPOCAMERA_LV3"
+
+        password_candidates = [
+            get_default_credentials(DEFAULT_CREDENTIALS[default_key]).password
+        ]
+        if self.credentials and self.credentials.password:
+            password_candidates.append(self.credentials.password)
+        password_candidates.append(
+            get_default_credentials(DEFAULT_CREDENTIALS[fallback_default_key]).password
+        )
+
+        return list(dict.fromkeys(password_candidates))
+
+    async def _try_change_password(
+        self, old_password: str, new_password: str, login_version: int | None
+    ) -> dict:
+        new_password_hash = self._hash_password(new_password, login_version)
+        old_password_hash = self._hash_password(old_password, login_version)
+
+        change_admin_password_payload: dict[str, str] = {
+            "secname": "root",
+            "username": "admin",
+            "old_passwd": old_password_hash,
+            "passwd": new_password_hash,
+            "ciphertext": self._encrypt_password(new_password_hash),
+        }
+        if login_version == 3:
+            change_admin_password_payload["encrypt_type"] = "3"
+
+        payload = {
+            "user_management": {"change_admin_password": change_admin_password_payload}
+        }
+        return await self.protocol.query({"changeAdminPassword": payload})
 
     @staticmethod
     def _hash_password(password: str, login_version: int | None) -> str:

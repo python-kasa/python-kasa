@@ -452,9 +452,19 @@ async def test_update_credentials_returns_last_error_after_candidates_fail(
         hashlib.md5(default_old_password.encode()).hexdigest().upper()  # noqa: S324
     )
     expected_current_old_hash = hashlib.md5(b"old-password").hexdigest().upper()  # noqa: S324
+    fallback_default_password = get_default_credentials(
+        DEFAULT_CREDENTIALS["TAPOCAMERA_LV3"]
+    ).password
+    expected_fallback_old_hash = (
+        hashlib.md5(fallback_default_password.encode()).hexdigest().upper()  # noqa: S324
+    )
 
     query_mock = AsyncMock(
-        side_effect=[DeviceError("bad default"), DeviceError("bad current")]
+        side_effect=[
+            DeviceError("bad default"),
+            DeviceError("bad current"),
+            DeviceError("bad fallback"),
+        ]
     )
     with (
         patch.object(type(dev), "credentials", new_callable=PropertyMock) as cred_mock,
@@ -462,12 +472,13 @@ async def test_update_credentials_returns_last_error_after_candidates_fail(
         patch.object(dev, "_encrypt_password", return_value="encrypted-ciphertext"),
     ):
         cred_mock.return_value = Credentials(username="admin", password="old-password")  # noqa: S106
-        with pytest.raises(DeviceError, match="bad current"):
+        with pytest.raises(DeviceError, match="bad fallback"):
             await dev.update_credentials("new-user@example.com", "new-password")
 
-    assert query_mock.await_count == 2
+    assert query_mock.await_count == 3
     first_payload = query_mock.await_args_list[0].args[0]
     second_payload = query_mock.await_args_list[1].args[0]
+    third_payload = query_mock.await_args_list[2].args[0]
 
     assert (
         first_payload["changeAdminPassword"]["user_management"][
@@ -480,6 +491,12 @@ async def test_update_credentials_returns_last_error_after_candidates_fail(
             "change_admin_password"
         ]["old_passwd"]
         == expected_current_old_hash
+    )
+    assert (
+        third_payload["changeAdminPassword"]["user_management"][
+            "change_admin_password"
+        ]["old_passwd"]
+        == expected_fallback_old_hash
     )
 
 
@@ -511,7 +528,7 @@ async def test_update_credentials_with_no_credentials(dev: SmartCamDevice):
         result = await dev.update_credentials("new-user@example.com", "new-password")
 
     assert result == {}
-    # Only the default candidate is used and it succeeds on the first query (1 attempt)
+    # The matching default succeeds before any fallback candidate is attempted.
     assert query_mock.await_count == 1
     payload = query_mock.await_args_list[0].args[0]
     assert (
@@ -541,5 +558,5 @@ async def test_update_credentials_current_password_equals_default(
         result = await dev.update_credentials("new-user@example.com", "new-password")
 
     assert result == {}
-    # Only default + None (current == default so not duplicated); default succeeds
+    # The matching default succeeds before the fallback default is attempted.
     assert query_mock.await_count == 1
