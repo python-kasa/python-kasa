@@ -9,7 +9,7 @@ homekit = parametrize(
 
 
 @homekit
-async def test_info(dev: SmartDevice):
+async def test_info(dev: SmartDevice) -> None:
     """Test homekit info."""
     homekit = dev.modules.get(Module.HomeKit)
     assert homekit

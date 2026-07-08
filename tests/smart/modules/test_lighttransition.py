@@ -23,7 +23,7 @@ light_transition_gt_v1 = parametrize(
 
 
 @light_transition_v1
-async def test_module_v1(dev: SmartDevice, mocker: MockerFixture):
+async def test_module_v1(dev: SmartDevice, mocker: MockerFixture) -> None:
     """Test light transition module."""
     assert isinstance(dev, SmartDevice)
     light_transition = next(get_parent_and_child_modules(dev, Module.LightTransition))
@@ -42,7 +42,7 @@ async def test_module_v1(dev: SmartDevice, mocker: MockerFixture):
 
 
 @light_transition_gt_v1
-async def test_module_gt_v1(dev: SmartDevice, mocker: MockerFixture):
+async def test_module_gt_v1(dev: SmartDevice, mocker: MockerFixture) -> None:
     """Test light transition module."""
     assert isinstance(dev, SmartDevice)
     light_transition = next(get_parent_and_child_modules(dev, Module.LightTransition))

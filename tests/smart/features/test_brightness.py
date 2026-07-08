@@ -9,7 +9,7 @@ brightness = parametrize("brightness smart", component_filter="brightness")
 
 
 @brightness
-async def test_brightness_component(dev: SmartDevice):
+async def test_brightness_component(dev: SmartDevice) -> None:
     """Test brightness feature."""
     brightness = next(get_parent_and_child_modules(dev, "Brightness"))
     assert brightness
@@ -35,7 +35,7 @@ async def test_brightness_component(dev: SmartDevice):
 
 
 @dimmable_iot
-async def test_brightness_dimmable(dev: IotDevice):
+async def test_brightness_dimmable(dev: IotDevice) -> None:
     """Test brightness feature."""
     assert isinstance(dev, IotDevice)
     assert "brightness" in dev.sys_info or bool(dev.sys_info["is_dimmable"])
