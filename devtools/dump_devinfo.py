@@ -1033,8 +1033,19 @@ async def get_smart_fixtures(
         device_request = device_requests.setdefault(success.child_device_id, [])
         device_request.append(success)
 
+    hub_requests = device_requests.get("", [])
+    if not hub_requests:
+        click.echo(
+            click.style(
+                "No successful hub queries; cannot build fixture. "
+                "Device may be wedged — power-cycle and retry.",
+                fg="red",
+            )
+        )
+        return []
+
     final = await _make_final_calls(
-        protocol, device_requests[""], "All successes", batch_size, child_device_id=""
+        protocol, hub_requests, "All successes", batch_size, child_device_id=""
     )
     fixture_results = []
 

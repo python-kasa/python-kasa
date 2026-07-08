@@ -440,6 +440,35 @@ async def test_smartcam_protocol_list_request(
     assert resp == response
 
 
+async def test_list_response_without_list_field() -> None:
+    """Hubs may return start_index/sum with no list key (e.g. H500 component list)."""
+    response = {
+        "getChildDeviceList": {
+            "child_device_list": [],
+            "start_index": 0,
+            "sum": 0,
+        },
+        "getChildDeviceComponentList": {
+            "start_index": 0,
+            "sum": 0,
+        },
+    }
+    request = {
+        "getChildDeviceList": {"childControl": {"start_index": 0}},
+        "getChildDeviceComponentList": {"childControl": {"start_index": 0}},
+    }
+
+    ft = FakeSmartCamTransport(
+        response,
+        "foobar",
+        components_not_included=True,
+        get_child_fixtures=False,
+    )
+    protocol = SmartCamProtocol(transport=ft)
+    resp = await protocol.query(request)
+    assert resp == response
+
+
 async def test_incomplete_list(
     mocker: MockerFixture, caplog: pytest.LogCaptureFixture
 ) -> None:
