@@ -11,12 +11,8 @@ build:
   tools:
     python: "3"
   jobs:
+    install:
+      - pip install --upgrade pip
+      - pip install --group 'docs'
     pre_build:
       - python -m sphinx -b linkcheck docs/source/ $READTHEDOCS_OUTPUT/linkcheck
-
-python:
-  install:
-    - method: pip
-      path: .
-      extra_requirements:
-        - docs

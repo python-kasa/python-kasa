@@ -25,7 +25,7 @@ from warnings import warn
 from ..device import Device, DeviceInfo, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..exceptions import KasaException
+from ..exceptions import KasaException, UnsupportedDeviceError
 from ..feature import Feature
 from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
@@ -92,7 +92,7 @@ class IotDevice(Device):
     * :class:`IotDimmer`
     * :class:`IotLightStrip`
 
-    To initialize, you have to await :func:`update()` at least once.
+    To initialize, you have to await :meth:`update()` at least once.
     This will allow accessing the properties using the exposed properties.
 
     All changes to the device are done using awaitable methods,
@@ -763,6 +763,9 @@ class IotDevice(Device):
 
         # Get other info
         device_family = sys_info.get("type", sys_info.get("mic_type"))
+        if device_family is None:
+            raise UnsupportedDeviceError("type nor mic_type found in sysinfo response")
+
         device_type = IotDevice._get_device_type_from_sys_info(info)
         fw_version_full = sys_info["sw_ver"]
         if " " in fw_version_full:

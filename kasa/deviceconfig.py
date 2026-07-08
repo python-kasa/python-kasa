@@ -7,10 +7,10 @@ Discovery returns a list of discovered devices:
 
 >>> from kasa import Discover, Device
 >>> device = await Discover.discover_single(
->>>     "127.0.0.3",
->>>     username="user@example.com",
->>>     password="great_password",
->>> )
+...     "127.0.0.3",
+...     username="user@example.com",
+...     password="great_password",
+... )
 >>> print(device.alias)  # Alias is None because update() has not been called
 None
 

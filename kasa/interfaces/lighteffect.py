@@ -3,10 +3,10 @@
 >>> from kasa import Discover, Module, LightState
 >>>
 >>> dev = await Discover.discover_single(
->>>     "127.0.0.3",
->>>     username="user@example.com",
->>>     password="great_password"
->>> )
+...     "127.0.0.3",
+...     username="user@example.com",
+...     password="great_password"
+... )
 >>> await dev.update()
 >>> print(dev.alias)
 Living Room Bulb
@@ -32,8 +32,8 @@ Party
 If the device supports it you can set custom effects:
 
 >>> if light_effect.has_custom_effects:
->>>     effect_list = { "brightness", 50 }
->>>     await light_effect.set_custom_effect(effect_list)
+...     effect_list = {"brightness": 50}
+...     await light_effect.set_custom_effect(effect_list)
 >>> light_effect.has_custom_effects  # The device in this examples does not support \
 custom effects
 False

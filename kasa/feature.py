@@ -6,10 +6,10 @@ state, time, firmware.
 >>> from kasa import Discover, Module
 >>>
 >>> dev = await Discover.discover_single(
->>>     "127.0.0.3",
->>>     username="user@example.com",
->>>     password="great_password"
->>> )
+...     "127.0.0.3",
+...     username="user@example.com",
+...     password="great_password"
+... )
 >>> await dev.update()
 >>> print(dev.alias)
 Living Room Bulb
@@ -18,7 +18,7 @@ Features allow for instrospection and can be interacted with as new features are
 to the API:
 
 >>> for feature_id, feature in dev.features.items():
->>>     print(f"{feature.name} ({feature_id}): {feature.value}")
+...     print(f"{feature.name} ({feature_id}): {feature.value}")
 Device ID (device_id): 0000000000000000000000000000000000000000
 State (state): True
 Signal Level (signal_level): 2
@@ -44,7 +44,7 @@ Overheated (overheated): False
 To see whether a device supports a feature, check for the existence of it:
 
 >>> if feature := dev.features.get("brightness"):
->>>     print(feature.value)
+...     print(feature.value)
 100
 
 You can update the value of a feature
