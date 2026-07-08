@@ -380,9 +380,7 @@ class SmartProtocol(BaseProtocol):
             return
 
         list_keys = [
-            key
-            for key in response_result
-            if isinstance(response_result[key], list)
+            key for key in response_result if isinstance(response_result[key], list)
         ]
         if not list_keys:
             # H500-style hubs: start_index/sum without a list field (e.g.
