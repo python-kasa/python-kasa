@@ -5,7 +5,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 
-def test_expected_dst_behavior_for_index_cases():
+def test_expected_dst_behavior_for_index_cases() -> None:
     """Exercise _expected_dst_behavior_for_index for several representative indices."""
     from kasa.iot.iottimezone import _expected_dst_behavior_for_index
 
@@ -20,7 +20,7 @@ def test_expected_dst_behavior_for_index_cases():
         _expected_dst_behavior_for_index(999)
 
 
-async def test_guess_timezone_by_offset_fixed_fallback_unit():
+async def test_guess_timezone_by_offset_fixed_fallback_unit() -> None:
     """When no ZoneInfo matches, return a fixed-offset tzinfo."""
     import kasa.iot.iottimezone as tzmod
 
@@ -31,7 +31,7 @@ async def test_guess_timezone_by_offset_fixed_fallback_unit():
     assert tz.utcoffset(when) == offset
 
 
-async def test_guess_timezone_by_offset_candidates_unit():
+async def test_guess_timezone_by_offset_candidates_unit() -> None:
     """Cover naive when_utc branch and candidate selection path (non-empty candidates)."""
     import kasa.iot.iottimezone as tzmod
 
@@ -47,7 +47,7 @@ async def test_guess_timezone_by_offset_candidates_unit():
 
 async def test_guess_timezone_by_offset_dst_expected_true_filters(
     mocker: MockerFixture,
-):
+) -> None:
     """dst_expected=True should prefer a DST-observing zone when possible."""
     import kasa.iot.iottimezone as tzmod
 
@@ -62,7 +62,7 @@ async def test_guess_timezone_by_offset_dst_expected_true_filters(
         assert jan != jul  # observes DST
 
 
-async def test_guess_timezone_by_offset_dst_expected_false_prefers_non_dst():
+async def test_guess_timezone_by_offset_dst_expected_false_prefers_non_dst() -> None:
     """dst_expected=False should prefer a non-DST zone and skip DST candidates (covers False branch)."""
     import kasa.iot.iottimezone as tzmod
 
@@ -79,7 +79,7 @@ async def test_guess_timezone_by_offset_dst_expected_false_prefers_non_dst():
 
 async def test_guess_timezone_by_offset_handles_missing_zoneinfo_unit(
     mocker: MockerFixture,
-):
+) -> None:
     """Cover the ZoneInfoNotFoundError continue path within guess_timezone_by_offset."""
     from zoneinfo import ZoneInfoNotFoundError as ZNF
 
@@ -101,7 +101,7 @@ async def test_guess_timezone_by_offset_handles_missing_zoneinfo_unit(
     assert tz.utcoffset(when) == timedelta(0)
 
 
-async def test_get_timezone_index_direct_match():
+async def test_get_timezone_index_direct_match() -> None:
     """If ZoneInfo key is in TIMEZONE_INDEX, return index directly."""
     import kasa.iot.iottimezone as tzmod
 
@@ -109,7 +109,7 @@ async def test_get_timezone_index_direct_match():
     assert idx == 39  # "GB" is mapped to index 39
 
 
-async def test_get_timezone_index_non_zoneinfo_unit():
+async def test_get_timezone_index_non_zoneinfo_unit() -> None:
     """Exercise get_timezone_index path when input tzinfo is not a ZoneInfo instance."""
     import kasa.iot.iottimezone as tzmod
 
@@ -119,7 +119,7 @@ async def test_get_timezone_index_non_zoneinfo_unit():
     assert 0 <= idx <= 109
 
 
-async def test_get_timezone_index_skips_missing_unit(mocker: MockerFixture):
+async def test_get_timezone_index_skips_missing_unit(mocker: MockerFixture) -> None:
     """Cover ZoneInfoNotFoundError path in get_timezone_index loop and successful match."""
     from zoneinfo import ZoneInfoNotFoundError as ZNF
 
@@ -141,7 +141,7 @@ async def test_get_timezone_index_skips_missing_unit(mocker: MockerFixture):
     assert idx >= 5
 
 
-async def test_get_timezone_index_raises_for_unmatched_unit():
+async def test_get_timezone_index_raises_for_unmatched_unit() -> None:
     """Ensure get_timezone_index completes loop and raises when no match exists (covers raise branch)."""
     import kasa.iot.iottimezone as tzmod
 
@@ -150,7 +150,7 @@ async def test_get_timezone_index_raises_for_unmatched_unit():
         await tzmod.get_timezone_index(timezone(timedelta(minutes=2)))
 
 
-async def test_get_matching_timezones_branches_unit(mocker: MockerFixture):
+async def test_get_matching_timezones_branches_unit(mocker: MockerFixture) -> None:
     """Cover initial append, except path, and duplicate suppression in get_matching_timezones."""
     from zoneinfo import ZoneInfoNotFoundError as ZNF
 
@@ -172,7 +172,7 @@ async def test_get_matching_timezones_branches_unit(mocker: MockerFixture):
     # Loop should find GB again but not duplicate it
 
 
-async def test_get_matching_timezones_non_zoneinfo_unit():
+async def test_get_matching_timezones_non_zoneinfo_unit() -> None:
     """Exercise get_matching_timezones when input tzinfo is not a ZoneInfo (skips initial append)."""
     import kasa.iot.iottimezone as tzmod
 
@@ -181,7 +181,7 @@ async def test_get_matching_timezones_non_zoneinfo_unit():
     assert len(matches) > 0
 
 
-async def test_get_timezone_out_of_range_defaults_to_utc():
+async def test_get_timezone_out_of_range_defaults_to_utc() -> None:
     """Out-of-range index should log and default to UTC."""
     import kasa.iot.iottimezone as tzmod
 

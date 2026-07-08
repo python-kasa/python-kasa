@@ -1,4 +1,5 @@
 import pytest
+from pytest_mock import MockerFixture
 
 from kasa import DeviceType, Module
 from kasa.iot import IotLightStrip
@@ -7,13 +8,13 @@ from tests.conftest import lightstrip_iot
 
 
 @lightstrip_iot
-async def test_lightstrip_length(dev: IotLightStrip):
+async def test_lightstrip_length(dev: IotLightStrip) -> None:
     assert dev.device_type == DeviceType.LightStrip
     assert dev.length == dev.sys_info["length"]
 
 
 @lightstrip_iot
-async def test_lightstrip_effect(dev: IotLightStrip):
+async def test_lightstrip_effect(dev: IotLightStrip) -> None:
     le: LightEffect = dev.modules[Module.LightEffect]
     assert isinstance(le._deprecated_effect, dict)
     for k in ["brightness", "custom", "enable", "id", "name"]:
@@ -21,7 +22,7 @@ async def test_lightstrip_effect(dev: IotLightStrip):
 
 
 @lightstrip_iot
-async def test_effects_lightstrip_set_effect(dev: IotLightStrip):
+async def test_effects_lightstrip_set_effect(dev: IotLightStrip) -> None:
     le: LightEffect = dev.modules[Module.LightEffect]
     with pytest.raises(
         ValueError, match="The effect Not real is not a built in effect"
@@ -36,8 +37,8 @@ async def test_effects_lightstrip_set_effect(dev: IotLightStrip):
 @lightstrip_iot
 @pytest.mark.parametrize("brightness", [100, 50])
 async def test_effects_lightstrip_set_effect_brightness(
-    dev: IotLightStrip, brightness, mocker
-):
+    dev: IotLightStrip, brightness: int, mocker: MockerFixture
+) -> None:
     query_helper = mocker.patch("kasa.iot.IotLightStrip._query_helper")
     le: LightEffect = dev.modules[Module.LightEffect]
 
@@ -55,8 +56,8 @@ async def test_effects_lightstrip_set_effect_brightness(
 @lightstrip_iot
 @pytest.mark.parametrize("transition", [500, 1000])
 async def test_effects_lightstrip_set_effect_transition(
-    dev: IotLightStrip, transition, mocker
-):
+    dev: IotLightStrip, transition: int, mocker: MockerFixture
+) -> None:
     query_helper = mocker.patch("kasa.iot.IotLightStrip._query_helper")
     le: LightEffect = dev.modules[Module.LightEffect]
 
@@ -72,12 +73,12 @@ async def test_effects_lightstrip_set_effect_transition(
 
 
 @lightstrip_iot
-async def test_effects_lightstrip_has_effects(dev: IotLightStrip):
+async def test_effects_lightstrip_has_effects(dev: IotLightStrip) -> None:
     le: LightEffect = dev.modules[Module.LightEffect]
     assert le is not None
     assert le.effect_list
 
 
 @lightstrip_iot
-def test_device_type_lightstrip(dev):
+def test_device_type_lightstrip(dev: IotLightStrip) -> None:
     assert dev.device_type == DeviceType.LightStrip

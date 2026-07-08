@@ -14,7 +14,7 @@ from tests.conftest import has_emeter_smart
 
 
 @has_emeter_smart
-async def test_supported(dev: SmartDevice):
+async def test_supported(dev: SmartDevice) -> None:
     energy_module = dev.modules.get(Module.Energy)
     if not energy_module:
         pytest.skip(f"Energy module not supported for {dev}.")
@@ -31,7 +31,7 @@ async def test_supported(dev: SmartDevice):
 @has_emeter_smart
 async def test_get_energy_usage_error(
     dev: SmartDevice, caplog: pytest.LogCaptureFixture
-):
+) -> None:
     """Test errors on get_energy_usage."""
     caplog.set_level(logging.DEBUG)
 

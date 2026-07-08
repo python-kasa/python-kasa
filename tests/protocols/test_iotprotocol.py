@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import errno
 import importlib
@@ -12,6 +14,7 @@ from typing import cast
 from unittest.mock import AsyncMock
 
 import pytest
+from pytest_mock import MockerFixture
 
 from kasa.credentials import Credentials
 from kasa.device import Device
@@ -42,8 +45,13 @@ from ..fakeprotocol_iot import FakeIotTransport
     ids=("_deprecated_TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
 )
 @pytest.mark.parametrize("retry_count", [1, 3, 5])
-async def test_protocol_retries(mocker, retry_count, protocol_class, transport_class):
-    def aio_mock_writer(_, __):
+async def test_protocol_retries(
+    mocker: MockerFixture,
+    retry_count: int,
+    protocol_class: type[BaseProtocol],
+    transport_class: type[XorTransport],
+) -> None:
+    def aio_mock_writer(_: object, __: object):
         reader = mocker.patch("asyncio.StreamReader")
         writer = mocker.patch("asyncio.StreamWriter")
 
@@ -72,8 +80,10 @@ async def test_protocol_retries(mocker, retry_count, protocol_class, transport_c
     ids=("_deprecated_TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
 )
 async def test_protocol_no_retry_on_unreachable(
-    mocker, protocol_class, transport_class
-):
+    mocker: MockerFixture,
+    protocol_class: type[BaseProtocol],
+    transport_class: type[XorTransport],
+) -> None:
     conn = mocker.patch(
         "asyncio.open_connection",
         side_effect=OSError(errno.EHOSTUNREACH, "No route to host"),
@@ -96,8 +106,10 @@ async def test_protocol_no_retry_on_unreachable(
     ids=("_deprecated_TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
 )
 async def test_protocol_no_retry_connection_refused(
-    mocker, protocol_class, transport_class
-):
+    mocker: MockerFixture,
+    protocol_class: type[BaseProtocol],
+    transport_class: type[XorTransport],
+) -> None:
     conn = mocker.patch(
         "asyncio.open_connection",
         side_effect=ConnectionRefusedError,
@@ -120,8 +132,10 @@ async def test_protocol_no_retry_connection_refused(
     ids=("_deprecated_TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
 )
 async def test_protocol_retry_recoverable_error(
-    mocker, protocol_class, transport_class
-):
+    mocker: MockerFixture,
+    protocol_class: type[BaseProtocol],
+    transport_class: type[XorTransport],
+) -> None:
     conn = mocker.patch(
         "asyncio.open_connection",
         side_effect=OSError(errno.ECONNRESET, "Connection reset by peer"),
@@ -149,20 +163,24 @@ async def test_protocol_retry_recoverable_error(
 )
 @pytest.mark.parametrize("retry_count", [1, 3, 5])
 async def test_protocol_reconnect(
-    mocker, retry_count, protocol_class, transport_class, encryption_class
-):
+    mocker: MockerFixture,
+    retry_count: int,
+    protocol_class: type[BaseProtocol],
+    transport_class: type[XorTransport],
+    encryption_class,
+) -> None:
     remaining = retry_count
     encrypted = encryption_class.encrypt('{"great":"success"}')[
         transport_class.BLOCK_SIZE :
     ]
 
-    def _fail_one_less_than_retry_count(*_):
+    def _fail_one_less_than_retry_count(*_) -> None:
         nonlocal remaining
         remaining -= 1
         if remaining:
             raise Exception("Simulated write failure")
 
-    async def _mock_read(byte_count):
+    async def _mock_read(byte_count: int):
         nonlocal encrypted
         if byte_count == transport_class.BLOCK_SIZE:
             return struct.pack(">I", len(encrypted))
@@ -171,7 +189,7 @@ async def test_protocol_reconnect(
 
         raise ValueError(f"No mock for {byte_count}")
 
-    def aio_mock_writer(_, __):
+    def aio_mock_writer(_: object, __: object):
         reader = mocker.patch("asyncio.StreamReader")
         writer = mocker.patch("asyncio.StreamWriter")
         mocker.patch.object(writer, "write", _fail_one_less_than_retry_count)
@@ -199,20 +217,23 @@ async def test_protocol_reconnect(
     ids=("_deprecated_TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
 )
 async def test_protocol_handles_cancellation_during_write(
-    mocker, protocol_class, transport_class, encryption_class
-):
+    mocker: MockerFixture,
+    protocol_class,
+    transport_class: type[XorTransport],
+    encryption_class,
+) -> None:
     attempts = 0
     encrypted = encryption_class.encrypt('{"great":"success"}')[
         transport_class.BLOCK_SIZE :
     ]
 
-    def _cancel_first_attempt(*_):
+    def _cancel_first_attempt(*_) -> None:
         nonlocal attempts
         attempts += 1
         if attempts == 1:
             raise asyncio.CancelledError("Simulated task cancel")
 
-    async def _mock_read(byte_count):
+    async def _mock_read(byte_count: int):
         nonlocal encrypted
         if byte_count == transport_class.BLOCK_SIZE:
             return struct.pack(">I", len(encrypted))
@@ -221,7 +242,7 @@ async def test_protocol_handles_cancellation_during_write(
 
         raise ValueError(f"No mock for {byte_count}")
 
-    def aio_mock_writer(_, __):
+    def aio_mock_writer(_: object, __: object):
         reader = mocker.patch("asyncio.StreamReader")
         writer = mocker.patch("asyncio.StreamWriter")
         mocker.patch.object(writer, "write", _cancel_first_attempt)
@@ -254,14 +275,17 @@ async def test_protocol_handles_cancellation_during_write(
     ids=("_deprecated_TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
 )
 async def test_protocol_handles_cancellation_during_connection(
-    mocker, protocol_class, transport_class, encryption_class
-):
+    mocker: MockerFixture,
+    protocol_class,
+    transport_class: type[XorTransport],
+    encryption_class,
+) -> None:
     attempts = 0
     encrypted = encryption_class.encrypt('{"great":"success"}')[
         transport_class.BLOCK_SIZE :
     ]
 
-    async def _mock_read(byte_count):
+    async def _mock_read(byte_count: int):
         nonlocal encrypted
         if byte_count == transport_class.BLOCK_SIZE:
             return struct.pack(">I", len(encrypted))
@@ -270,7 +294,7 @@ async def test_protocol_handles_cancellation_during_connection(
 
         raise ValueError(f"No mock for {byte_count}")
 
-    def aio_mock_writer(_, __):
+    def aio_mock_writer(_: object, __: object):
         nonlocal attempts
         attempts += 1
         if attempts == 1:
@@ -307,20 +331,23 @@ async def test_protocol_handles_cancellation_during_connection(
     ids=("_deprecated_TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
 )
 async def test_protocol_handles_timeout_during_write(
-    mocker, protocol_class, transport_class, encryption_class
-):
+    mocker: MockerFixture,
+    protocol_class,
+    transport_class: type[XorTransport],
+    encryption_class,
+) -> None:
     attempts = 0
     encrypted = encryption_class.encrypt('{"great":"success"}')[
         transport_class.BLOCK_SIZE :
     ]
 
-    def _timeout_first_attempt(*_):
+    def _timeout_first_attempt(*_) -> None:
         nonlocal attempts
         attempts += 1
         if attempts == 1:
             raise TimeoutError("Simulated timeout")
 
-    async def _mock_read(byte_count):
+    async def _mock_read(byte_count: int):
         nonlocal encrypted
         if byte_count == transport_class.BLOCK_SIZE:
             return struct.pack(">I", len(encrypted))
@@ -329,7 +356,7 @@ async def test_protocol_handles_timeout_during_write(
 
         raise ValueError(f"No mock for {byte_count}")
 
-    def aio_mock_writer(_, __):
+    def aio_mock_writer(_: object, __: object):
         reader = mocker.patch("asyncio.StreamReader")
         writer = mocker.patch("asyncio.StreamWriter")
         mocker.patch.object(writer, "write", _timeout_first_attempt)
@@ -360,14 +387,17 @@ async def test_protocol_handles_timeout_during_write(
     ids=("_deprecated_TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
 )
 async def test_protocol_handles_timeout_during_connection(
-    mocker, protocol_class, transport_class, encryption_class
-):
+    mocker: MockerFixture,
+    protocol_class,
+    transport_class: type[XorTransport],
+    encryption_class,
+) -> None:
     attempts = 0
     encrypted = encryption_class.encrypt('{"great":"success"}')[
         transport_class.BLOCK_SIZE :
     ]
 
-    async def _mock_read(byte_count):
+    async def _mock_read(byte_count: int):
         nonlocal encrypted
         if byte_count == transport_class.BLOCK_SIZE:
             return struct.pack(">I", len(encrypted))
@@ -376,7 +406,7 @@ async def test_protocol_handles_timeout_during_connection(
 
         raise ValueError(f"No mock for {byte_count}")
 
-    def aio_mock_writer(_, __):
+    def aio_mock_writer(_: object, __: object):
         nonlocal attempts
         attempts += 1
         if attempts == 1:
@@ -414,16 +444,19 @@ async def test_protocol_handles_timeout_during_connection(
     ids=("_deprecated_TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
 )
 async def test_protocol_handles_timeout_failure_during_write(
-    mocker, protocol_class, transport_class, encryption_class
-):
+    mocker: MockerFixture,
+    protocol_class,
+    transport_class: type[XorTransport],
+    encryption_class,
+) -> None:
     encrypted = encryption_class.encrypt('{"great":"success"}')[
         transport_class.BLOCK_SIZE :
     ]
 
-    def _timeout_all_attempts(*_):
+    def _timeout_all_attempts(*_) -> None:
         raise TimeoutError("Simulated timeout")
 
-    async def _mock_read(byte_count):
+    async def _mock_read(byte_count: int):
         nonlocal encrypted
         if byte_count == transport_class.BLOCK_SIZE:
             return struct.pack(">I", len(encrypted))
@@ -432,7 +465,7 @@ async def test_protocol_handles_timeout_failure_during_write(
 
         raise ValueError(f"No mock for {byte_count}")
 
-    def aio_mock_writer(_, __):
+    def aio_mock_writer(_: object, __: object):
         reader = mocker.patch("asyncio.StreamReader")
         writer = mocker.patch("asyncio.StreamWriter")
         mocker.patch.object(writer, "write", _timeout_all_attempts)
@@ -465,13 +498,16 @@ async def test_protocol_handles_timeout_failure_during_write(
     ids=("_deprecated_TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
 )
 async def test_protocol_handles_timeout_failure_during_connection(
-    mocker, protocol_class, transport_class, encryption_class
-):
+    mocker: MockerFixture,
+    protocol_class,
+    transport_class: type[XorTransport],
+    encryption_class,
+) -> None:
     encrypted = encryption_class.encrypt('{"great":"success"}')[
         transport_class.BLOCK_SIZE :
     ]
 
-    async def _mock_read(byte_count):
+    async def _mock_read(byte_count: int):
         nonlocal encrypted
         if byte_count == transport_class.BLOCK_SIZE:
             return struct.pack(">I", len(encrypted))
@@ -480,7 +516,7 @@ async def test_protocol_handles_timeout_failure_during_connection(
 
         raise ValueError(f"No mock for {byte_count}")
 
-    def aio_mock_writer(_, __):
+    def aio_mock_writer(_: object, __: object):
         raise TimeoutError("Simulated timeout")
 
     config = DeviceConfig("127.0.0.1")
@@ -513,15 +549,20 @@ async def test_protocol_handles_timeout_failure_during_connection(
 @pytest.mark.parametrize("log_level", [logging.WARNING, logging.DEBUG])
 @pytest.mark.xdist_group(name="caplog")
 async def test_protocol_logging(
-    mocker, caplog, log_level, protocol_class, transport_class, encryption_class
-):
+    mocker: MockerFixture,
+    caplog: pytest.LogCaptureFixture,
+    log_level: int,
+    protocol_class: type[BaseProtocol],
+    transport_class: type[XorTransport],
+    encryption_class,
+) -> None:
     caplog.set_level(log_level)
     logging.getLogger("kasa").setLevel(log_level)
     encrypted = encryption_class.encrypt('{"great":"success"}')[
         transport_class.BLOCK_SIZE :
     ]
 
-    async def _mock_read(byte_count):
+    async def _mock_read(byte_count: int):
         nonlocal encrypted
         if byte_count == transport_class.BLOCK_SIZE:
             return struct.pack(">I", len(encrypted))
@@ -529,7 +570,7 @@ async def test_protocol_logging(
             return encrypted
         raise ValueError(f"No mock for {byte_count}")
 
-    def aio_mock_writer(_, __):
+    def aio_mock_writer(_: object, __: object):
         reader = mocker.patch("asyncio.StreamReader")
         writer = mocker.patch("asyncio.StreamWriter")
         mocker.patch.object(reader, "readexactly", _mock_read)
@@ -561,13 +602,17 @@ async def test_protocol_logging(
 )
 @pytest.mark.parametrize("custom_port", [123, None])
 async def test_protocol_custom_port(
-    mocker, custom_port, protocol_class, transport_class, encryption_class
-):
+    mocker: MockerFixture,
+    custom_port: int | None,
+    protocol_class: type[BaseProtocol],
+    transport_class: type[XorTransport],
+    encryption_class,
+) -> None:
     encrypted = encryption_class.encrypt('{"great":"success"}')[
         transport_class.BLOCK_SIZE :
     ]
 
-    async def _mock_read(byte_count):
+    async def _mock_read(byte_count: int):
         nonlocal encrypted
         if byte_count == transport_class.BLOCK_SIZE:
             return struct.pack(">I", len(encrypted))
@@ -575,7 +620,7 @@ async def test_protocol_custom_port(
             return encrypted
         raise ValueError(f"No mock for {byte_count}")
 
-    def aio_mock_writer(_, port):
+    def aio_mock_writer(_: object, port: int):
         reader = mocker.patch("asyncio.StreamReader")
         writer = mocker.patch("asyncio.StreamWriter")
         if custom_port is None:
@@ -601,7 +646,7 @@ async def test_protocol_custom_port(
     "decrypt_class",
     [_deprecated_TPLinkSmartHomeProtocol, XorEncryption],
 )
-def test_encrypt(encrypt_class, decrypt_class):
+def test_encrypt(encrypt_class, decrypt_class) -> None:
     d = json.dumps({"foo": 1, "bar": 2})
     encrypted = encrypt_class.encrypt(d)
     # encrypt adds a 4 byte header
@@ -613,7 +658,7 @@ def test_encrypt(encrypt_class, decrypt_class):
     "encrypt_class",
     [_deprecated_TPLinkSmartHomeProtocol, XorEncryption],
 )
-def test_encrypt_unicode(encrypt_class):
+def test_encrypt_unicode(encrypt_class) -> None:
     d = "{'snowman': '\u2603'}"
 
     e = bytes(
@@ -650,7 +695,7 @@ def test_encrypt_unicode(encrypt_class):
     "decrypt_class",
     [_deprecated_TPLinkSmartHomeProtocol, XorEncryption],
 )
-def test_decrypt_unicode(decrypt_class):
+def test_decrypt_unicode(decrypt_class) -> None:
     e = bytes(
         [
             208,
@@ -679,7 +724,7 @@ def test_decrypt_unicode(decrypt_class):
     assert d == decrypt_class.decrypt(e)
 
 
-def _get_subclasses(of_class):
+def _get_subclasses(of_class: type):
     package = sys.modules["kasa"]
     subclasses = set()
     for _, modname, _ in pkgutil.iter_modules(package.__path__):
@@ -698,11 +743,13 @@ def _get_subclasses(of_class):
 @pytest.mark.parametrize(
     "class_name_obj", _get_subclasses(BaseProtocol), ids=lambda t: t[0]
 )
-def test_protocol_init_signature(class_name_obj):
+def test_protocol_init_signature(class_name_obj: tuple[str, type]) -> None:
     if class_name_obj[0].startswith("_"):
         pytest.skip("Skipping internal protocols")
         return
-    params = list(inspect.signature(class_name_obj[1].__init__).parameters.values())
+    params = list(
+        inspect.signature(class_name_obj[1].__init__).parameters.values()  # type: ignore[misc]
+    )
 
     assert len(params) == 2
     assert params[0].name == "self"
@@ -714,8 +761,10 @@ def test_protocol_init_signature(class_name_obj):
 @pytest.mark.parametrize(
     "class_name_obj", _get_subclasses(BaseTransport), ids=lambda t: t[0]
 )
-def test_transport_init_signature(class_name_obj):
-    params = list(inspect.signature(class_name_obj[1].__init__).parameters.values())
+def test_transport_init_signature(class_name_obj: tuple[str, type]) -> None:
+    params = list(
+        inspect.signature(class_name_obj[1].__init__).parameters.values()  # type: ignore[misc]
+    )
 
     assert len(params) == 2
     assert params[0].name == "self"
@@ -765,8 +814,13 @@ def test_transport_init_signature(class_name_obj):
     ],
 )
 async def test_transport_credentials_hash(
-    mocker, transport_class, login_version, expected_hash, credentials, expected_blank
-):
+    mocker: MockerFixture,
+    transport_class: type[BaseTransport],
+    login_version: int | None,
+    expected_hash: str | None,
+    credentials: Credentials | None,
+    expected_blank: bool,
+) -> None:
     """Test that the actual hashing doesn't break and empty credential returns an empty hash."""
     host = "127.0.0.1"
 
@@ -788,7 +842,9 @@ async def test_transport_credentials_hash(
     "transport_class",
     [AesTransport, KlapTransport, KlapTransportV2, XorTransport],
 )
-async def test_transport_credentials_hash_from_config(mocker, transport_class):
+async def test_transport_credentials_hash_from_config(
+    mocker: MockerFixture, transport_class: type[BaseTransport]
+) -> None:
     """Test that credentials_hash provided via config sets correctly."""
     host = "127.0.0.1"
 
@@ -828,8 +884,12 @@ async def test_transport_credentials_hash_from_config(mocker, transport_class):
     ids=("_deprecated_TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
 )
 async def test_protocol_will_retry_on_connect(
-    mocker, protocol_class, transport_class, error, retry_expectation
-):
+    mocker: MockerFixture,
+    protocol_class: type[BaseProtocol],
+    transport_class: type[XorTransport],
+    error: Exception,
+    retry_expectation: bool,
+) -> None:
     retry_count = 2
     conn = mocker.patch("asyncio.open_connection", side_effect=error)
     config = DeviceConfig("127.0.0.1")
@@ -860,13 +920,17 @@ async def test_protocol_will_retry_on_connect(
     ids=("_deprecated_TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
 )
 async def test_protocol_will_retry_on_write(
-    mocker, protocol_class, transport_class, error, retry_expectation
-):
+    mocker: MockerFixture,
+    protocol_class: type[BaseProtocol],
+    transport_class: type[XorTransport],
+    error: Exception,
+    retry_expectation: bool,
+) -> None:
     retry_count = 2
     writer = mocker.patch("asyncio.StreamWriter")
     write_mock = mocker.patch.object(writer, "write", side_effect=error)
 
-    def aio_mock_writer(_, __):
+    def aio_mock_writer(_: object, __: object):
         nonlocal writer
         reader = mocker.patch("asyncio.StreamReader")
 
@@ -885,9 +949,9 @@ async def test_protocol_will_retry_on_write(
     assert write_mock.call_count == expected_call_count
 
 
-def test_deprecated_protocol():
+def test_deprecated_protocol() -> None:
     with pytest.deprecated_call():
-        from kasa import TPLinkSmartHomeProtocol
+        from kasa import TPLinkSmartHomeProtocol  # type: ignore[attr-defined]
 
         with pytest.raises(KasaException, match="host or transport must be supplied"):
             proto = TPLinkSmartHomeProtocol()
@@ -898,7 +962,9 @@ def test_deprecated_protocol():
 
 @device_iot
 @pytest.mark.xdist_group(name="caplog")
-async def test_iot_queries_redaction(dev: IotDevice, caplog: pytest.LogCaptureFixture):
+async def test_iot_queries_redaction(
+    dev: IotDevice, caplog: pytest.LogCaptureFixture
+) -> None:
     """Test query sensitive info redaction."""
     if isinstance(dev.protocol._transport, FakeIotTransport):
         device_id = "123456789ABCDEF"
@@ -932,7 +998,7 @@ async def test_iot_queries_redaction(dev: IotDevice, caplog: pytest.LogCaptureFi
     assert "REDACTED_" + device_id[9::] in caplog.text
 
 
-async def test_redact_data():
+async def test_redact_data() -> None:
     """Test redact data function."""
     data = {
         "device_id": "123456789ABCDEF",
