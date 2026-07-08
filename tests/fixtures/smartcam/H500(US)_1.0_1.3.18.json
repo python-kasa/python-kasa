@@ -226,9 +226,9 @@
         }
     },
     "getChildDeviceComponentList": {
+        "child_component_list": [],
         "start_index": 0,
-        "sum": 0,
-        "child_component_list": []
+        "sum": 0
     },
     "getChildDeviceList": {
         "child_device_list": [],
