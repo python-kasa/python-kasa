@@ -43,6 +43,7 @@ from kasa.cli.time import time
 from kasa.cli.usage import energy
 from kasa.cli.wifi import wifi
 from kasa.device_factory import get_device_class_from_sys_info
+from kasa.deviceconfig import DeviceEncryptionType
 from kasa.discover import Discover, DiscoveryResult, redact_data
 from kasa.iot import IotDevice
 from kasa.json import dumps as json_dumps
@@ -794,6 +795,9 @@ async def test_credentials(discovery_mock, mocker, runner):
     mocker.patch("kasa.cli.device.state", new=_state)
 
     dr = DiscoveryResult.from_dict(discovery_mock.discovery_data["result"])
+    encrypt_type = dr.mgt_encrypt_schm.encrypt_type
+    if dr.mgt_encrypt_schm.new_klap:
+        encrypt_type = DeviceEncryptionType.Klapv2.value
     res = await runner.invoke(
         cli,
         [
@@ -806,7 +810,7 @@ async def test_credentials(discovery_mock, mocker, runner):
             "--device-family",
             dr.device_type,
             "--encrypt-type",
-            dr.mgt_encrypt_schm.encrypt_type,
+            encrypt_type,
             "--login-version",
             dr.mgt_encrypt_schm.lv or 1,
         ],
@@ -1462,7 +1466,12 @@ async def test_discover_config(dev: Device, mocker, runner):
     )
     assert res.exit_code == 0
     cparam = dev.config.connection_type
-    expected = f"--device-family {cparam.device_family.value} --encrypt-type {cparam.encryption_type.value} {'--https' if cparam.https else '--no-https'}"
+    encrypt_type = (
+        DeviceEncryptionType.Klapv2.value
+        if cparam.new_klap
+        else cparam.encryption_type.value
+    )
+    expected = f"--device-family {cparam.device_family.value} --encrypt-type {encrypt_type} {'--https' if cparam.https else '--no-https'}"
     assert expected in res.output
     normalized = " ".join(res.output.split())
     attempt_segs = normalized.split(f"Attempt to connect to {host} with")[1:]

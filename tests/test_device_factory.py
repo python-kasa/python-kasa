@@ -7,10 +7,11 @@ the testing fake protocols.
 """
 
 import logging
-from typing import cast
+from typing import Any, cast
 
 import aiohttp
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
+from pytest_mock import MockerFixture
 
 from kasa import (
     BaseProtocol,
@@ -22,6 +23,7 @@ from kasa import (
     SmartProtocol,
 )
 from kasa.device_factory import (
+    GET_SYSINFO_QUERY,
     Device,
     IotDevice,
     SmartCamDevice,
@@ -58,7 +60,10 @@ from .conftest import DISCOVERY_MOCK_IP
 pytestmark = [pytest.mark.requires_dummy]
 
 
-def _get_connection_type_device_class(discovery_info):
+def _get_connection_type_device_class(
+    discovery_info: dict[str, Any],
+) -> tuple[DeviceConnectionParameters, type[Device]]:
+    device_class: type[Device]
     if "result" in discovery_info:
         dr = DiscoveryResult.from_dict(discovery_info["result"])
         connection_type = Discover._get_connection_parameters(dr)
@@ -83,8 +88,8 @@ def _get_connection_type_device_class(discovery_info):
 
 async def test_connect(
     discovery_mock,
-    mocker,
-):
+    mocker: MockerFixture,
+) -> None:
     """Test that if the protocol is passed in it gets set correctly."""
     host = DISCOVERY_MOCK_IP
     ctype, device_class = _get_connection_type_device_class(
@@ -306,7 +311,7 @@ async def test_get_protocol(
     conn_params: DeviceConnectionParameters,
     expected_protocol: type[BaseProtocol],
     expected_transport: type[BaseTransport],
-):
+) -> None:
     """Test get_protocol returns the right protocol."""
     config = DeviceConfig("127.0.0.1", connection_type=conn_params)
     protocol = get_protocol(config)
@@ -349,7 +354,7 @@ async def test__connect_iot_ipcamera_unsupported_family():
         await connect(config=cfg)
 
 
-def test_get_protocol_returns_none_for_unsupported_combo():
+def test_get_protocol_returns_none_for_unsupported_combo() -> None:
     """Cover protocol_transport_key miss returning None."""
     p = DeviceConnectionParameters(
         device_family=DeviceFamily.SmartTapoPlug,
@@ -359,7 +364,7 @@ def test_get_protocol_returns_none_for_unsupported_combo():
     assert proto is None
 
 
-def test_get_protocol_strict_encryption_mismatch():
+def test_get_protocol_strict_encryption_mismatch() -> None:
     """Cover strict=True mismatch branch for camera."""
     p = DeviceConnectionParameters(
         device_family=DeviceFamily.SmartIpCamera,
@@ -369,15 +374,43 @@ def test_get_protocol_strict_encryption_mismatch():
     assert proto is None
 
 
-def test_get_device_class_from_sys_info_mapping():
+def test_get_device_class_from_sys_info_mapping() -> None:
     """Cover get_device_class_from_sys_info mapping."""
     info = {"system": {"get_sysinfo": {"type": "IOT.SMARTBULB"}}}
     cls = get_device_class_from_sys_info(info)
     assert cls is IotBulb
 
 
-async def test_connect_with_host_only_branch_raises_unsupported(mocker):
+async def test_connect_with_host_only_branch_raises_unsupported(
+    mocker: MockerFixture,
+) -> None:
     """Exercise connect(host=..., config=None) to hit 'if host:' branch."""
     mocker.patch("kasa.device_factory.get_protocol", return_value=None)
     with pytest.raises(UnsupportedDeviceError):
-        await connect(host="127.0.0.66", config=None)
+        await connect(host="127.0.0.66", config=None)  # type: ignore[arg-type]
+
+
+async def test_connect_iot_family_resolves_subclass_from_sysinfo(
+    mocker: MockerFixture,
+) -> None:
+    """IoT discovery families are narrowed to the concrete subclass via sysinfo."""
+    query_mock = mocker.patch(
+        "kasa.IotProtocol.query",
+        new_callable=mocker.AsyncMock,
+        return_value={"system": {"get_sysinfo": {"type": "IOT.SMARTBULB"}}},
+    )
+    update_mock = mocker.patch.object(IotBulb, "update", new_callable=mocker.AsyncMock)
+    config = DeviceConfig(
+        host="127.0.0.1",
+        connection_type=DeviceConnectionParameters(
+            DeviceFamily.IotSmartPlugSwitch,
+            DeviceEncryptionType.Klap,
+            new_klap=True,
+        ),
+    )
+
+    dev = await connect(config=config)
+
+    assert isinstance(dev, IotBulb)
+    query_mock.assert_awaited_once_with(GET_SYSINFO_QUERY)
+    update_mock.assert_awaited_once()

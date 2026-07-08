@@ -8,12 +8,14 @@ import logging
 import re
 import socket
 from asyncio import timeout as asyncio_timeout
+from typing import NotRequired, TypedDict
 from unittest.mock import MagicMock
 
 import aiohttp
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
+from pytest_mock import MockerFixture
 
 from kasa import (
     Credentials,
@@ -56,7 +58,74 @@ from .conftest import (
 # A physical device has to respond to discovery for the tests to work.
 pytestmark = [pytest.mark.requires_dummy]
 
-UNSUPPORTED = {
+
+class DiscoveryEncryptionScheme(TypedDict, total=False):
+    is_support_https: bool
+    encrypt_type: str
+    http_port: int
+    lv: int
+    new_klap: int
+
+
+class DiscoveryEncryptInfo(TypedDict):
+    sym_schm: str
+    key: str
+    data: str
+
+
+class DiscoveryResponseResult(TypedDict, total=False):
+    device_id: str
+    owner: str
+    device_type: str
+    device_model: str
+    ip: str
+    mac: str
+    is_support_iot_cloud: bool
+    obd_src: str
+    factory_default: bool
+    mgt_encrypt_schm: DiscoveryEncryptionScheme
+    encrypt_info: DiscoveryEncryptInfo
+    encrypt_type: list[str]
+
+
+class DiscoveryResponseInfo(TypedDict):
+    result: DiscoveryResponseResult
+    error_code: NotRequired[int]
+
+
+class LegacySysInfo(TypedDict, total=False):
+    alias: str
+    dev_name: str
+    deviceId: str
+    err_code: int
+    hwId: str
+    hw_ver: str
+    mac: str
+    mic_type: str
+    model: str
+    sw_ver: str
+    type: str
+    updating: int
+
+
+class LegacySystem(TypedDict):
+    get_sysinfo: LegacySysInfo
+
+
+class LegacyDiscoveryInfo(TypedDict):
+    system: LegacySystem
+
+
+class NewKlapCheckResult(TypedDict):
+    device_type: str
+    mgt_encrypt_schm: DiscoveryEncryptionScheme
+
+
+class NewKlapCheckInfo(TypedDict):
+    result: NewKlapCheckResult
+
+
+UNSUPPORTED: DiscoveryResponseInfo = {
     "result": {
         "device_id": "xx",
         "owner": "xx",
@@ -77,7 +146,7 @@ UNSUPPORTED = {
     "error_code": 0,
 }
 
-NEW_KLAP_INFO = {
+NEW_KLAP_INFO: DiscoveryResponseInfo = {
     "result": {
         "device_type": "IOT.SMARTPLUGSWITCH",
         "device_model": "HS100(UK)",
@@ -96,7 +165,7 @@ NEW_KLAP_INFO = {
     }
 }
 
-IPCAMERA_INFO = {
+IPCAMERA_INFO: DiscoveryResponseInfo = {
     "result": {
         "device_type": "SMART.IPCAMERA",
         "device_model": "C100(US)",
@@ -389,7 +458,7 @@ async def test_discover_invalid_responses(msg, data, mocker):
     assert len(proto.discovered_devices) == 0
 
 
-AUTHENTICATION_DATA_KLAP = {
+AUTHENTICATION_DATA_KLAP: DiscoveryResponseInfo = {
     "result": {
         "device_id": "xx",
         "owner": "xx",
@@ -488,7 +557,7 @@ async def test_http_client_passthrough(discovery_mock, mocker, entrypoint):
         await http_client.close()
 
 
-LEGACY_DISCOVER_DATA = {
+LEGACY_DISCOVER_DATA: LegacyDiscoveryInfo = {
     "system": {
         "get_sysinfo": {
             "alias": "#MASKED_NAME#",
@@ -692,12 +761,15 @@ async def test_discovery_decryption():
     data = json.dumps(data_dict)
     encypted_data = encryption_session.encrypt(data.encode())
 
-    encrypt_info = {
+    encrypt_info: DiscoveryEncryptInfo = {
         "data": encypted_data.decode(),
         "key": encrypted_key_iv_b4.decode(),
         "sym_schm": "AES",
     }
-    info = {**UNSUPPORTED["result"], "encrypt_info": encrypt_info}
+    info: DiscoveryResponseResult = {
+        **UNSUPPORTED["result"],
+        "encrypt_info": encrypt_info,
+    }
     dr = DiscoveryResult.from_dict(info)
     Discover._decrypt_discovery_data(dr)
     assert dr.decrypted_data == data_dict
@@ -800,16 +872,21 @@ async def test_discovery_device_repr(discovery_mock, mocker):
     ],
     ids=["new_klap_unsupported", "non_iot_unsupported"],
 )
-async def test_get_device_instance_unsupported_logs(mocker, caplog, info, host):
+async def test_get_device_instance_unsupported_logs(
+    mocker: MockerFixture,
+    caplog: pytest.LogCaptureFixture,
+    info: DiscoveryResponseInfo,
+    host: str,
+) -> None:
     """_get_device_instance raises UnsupportedDeviceError and logs when device class cannot be resolved."""
     # Also validates the debug log is emitted.
     caplog.set_level(logging.DEBUG)
 
     class DummyProt:
-        def __init__(self):
+        def __init__(self) -> None:
             self._transport = MagicMock()
 
-        async def close(self):
+        async def close(self) -> None:
             return None
 
     mocker.patch("kasa.discover.get_protocol", return_value=DummyProt())
@@ -822,7 +899,9 @@ async def test_get_device_instance_unsupported_logs(mocker, caplog, info, host):
     assert "Got unsupported device type" in caplog.text
 
 
-def test_datagram_received_logs_for_exceptions(caplog, mocker):
+def test_datagram_received_logs_for_exceptions(
+    caplog: pytest.LogCaptureFixture, mocker: MockerFixture
+) -> None:
     proto = _DiscoverProtocol()
     caplog.set_level(logging.DEBUG)
 
@@ -847,7 +926,7 @@ def test_datagram_received_logs_for_exceptions(caplog, mocker):
     assert f"[DISCOVERY] Unable to find device type for {ip2}: bad" in caplog.text
 
 
-def test_handle_discovered_event_without_discover_task():
+def test_handle_discovered_event_without_discover_task() -> None:
     proto = _DiscoverProtocol(target="10.0.0.5")
     proto.seen_hosts.add("10.0.0.5")
     assert proto.discover_task is None
@@ -856,15 +935,15 @@ def test_handle_discovered_event_without_discover_task():
     assert proto.discover_task is None
 
 
-def test_error_received_logs(caplog):
+def test_error_received_logs(caplog: pytest.LogCaptureFixture) -> None:
     caplog.set_level(logging.ERROR)
     proto = _DiscoverProtocol()
     proto.error_received(RuntimeError("boom"))
     assert "Got error: boom" in caplog.text
 
 
-def test_get_device_class_unknown_result_type():
-    info = {
+def test_get_device_class_unknown_result_type() -> None:
+    info: DiscoveryResponseInfo = {
         "result": {
             "device_type": "FOO.BAR",
             "device_model": "X100(US)",
@@ -878,7 +957,7 @@ def test_get_device_class_unknown_result_type():
     assert "Unknown device type: FOO.BAR" in str(ex.value)
 
 
-def test_get_discovery_json_legacy_error(monkeypatch):
+def test_get_discovery_json_legacy_error(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         XorEncryption, "decrypt", lambda _: (_ for _ in ()).throw(ValueError("bad"))
     )
@@ -887,9 +966,11 @@ def test_get_discovery_json_legacy_error(monkeypatch):
     assert "Unable to read response from device: 127.0.0.2" in str(ex.value)
 
 
-def test_get_device_instance_legacy_no_debug_logging(caplog):
+def test_get_device_instance_legacy_no_debug_logging(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     caplog.set_level(logging.INFO)
-    info = {
+    info: LegacyDiscoveryInfo = {
         "system": {
             "get_sysinfo": {
                 "alias": "Plug",
@@ -906,7 +987,9 @@ def test_get_device_instance_legacy_no_debug_logging(caplog):
     assert "[DISCOVERY]" not in caplog.text
 
 
-def test_get_discovery_json_error(caplog, monkeypatch):
+def test_get_discovery_json_error(
+    caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
     caplog.set_level(logging.DEBUG)
     monkeypatch.setattr(
         "kasa.discover.json_loads",
@@ -918,8 +1001,10 @@ def test_get_discovery_json_error(caplog, monkeypatch):
     assert "Got invalid response from device 127.0.0.9" in caplog.text
 
 
-def test_get_discovery_json_legacy_success(monkeypatch):
-    sample = {"system": {"get_sysinfo": {"type": "IOT.SMARTPLUGSWITCH"}}}
+def test_get_discovery_json_legacy_success(monkeypatch: pytest.MonkeyPatch) -> None:
+    sample: LegacyDiscoveryInfo = {
+        "system": {"get_sysinfo": {"type": "IOT.SMARTPLUGSWITCH"}}
+    }
     monkeypatch.setattr(
         XorEncryption,
         "decrypt",
@@ -929,9 +1014,9 @@ def test_get_discovery_json_legacy_success(monkeypatch):
     assert info == sample
 
 
-def test_is_new_klap_iot_true():
+def test_is_new_klap_iot_true() -> None:
     """IOT device with new_klap=1 should return True."""
-    info = {
+    info: NewKlapCheckInfo = {
         "result": {
             "device_type": "IOT.SMARTPLUGSWITCH",
             "mgt_encrypt_schm": {"new_klap": 1},
@@ -940,9 +1025,9 @@ def test_is_new_klap_iot_true():
     assert _DiscoverProtocol._is_new_klap_iot(info) is True
 
 
-def test_is_new_klap_iot_false_not_iot():
+def test_is_new_klap_iot_false_not_iot() -> None:
     """Non-IOT device with new_klap should return False."""
-    info = {
+    info: NewKlapCheckInfo = {
         "result": {
             "device_type": "SMART.TAPOPLUG",
             "mgt_encrypt_schm": {"new_klap": 1},
@@ -951,9 +1036,9 @@ def test_is_new_klap_iot_false_not_iot():
     assert _DiscoverProtocol._is_new_klap_iot(info) is False
 
 
-def test_is_new_klap_iot_false_no_flag():
+def test_is_new_klap_iot_false_no_flag() -> None:
     """IOT device without the new_klap flag should return False."""
-    info = {
+    info: NewKlapCheckInfo = {
         "result": {
             "device_type": "IOT.SMARTPLUGSWITCH",
             "mgt_encrypt_schm": {"encrypt_type": "KLAP"},
@@ -962,7 +1047,9 @@ def test_is_new_klap_iot_false_no_flag():
     assert _DiscoverProtocol._is_new_klap_iot(info) is False
 
 
-async def test_process_new_klap_device_protocol_none(mocker):
+async def test_process_new_klap_device_protocol_none(
+    mocker: MockerFixture,
+) -> None:
     """UnsupportedDeviceError is stored when get_protocol returns None."""
     proto = _DiscoverProtocol()
     mocker.patch("kasa.discover.get_protocol", return_value=None)
@@ -973,7 +1060,9 @@ async def test_process_new_klap_device_protocol_none(mocker):
     assert "127.0.0.1" not in proto.discovered_devices
 
 
-async def test_process_new_klap_device_on_unsupported_callback(mocker):
+async def test_process_new_klap_device_on_unsupported_callback(
+    mocker: MockerFixture,
+) -> None:
     """on_unsupported callback is awaited in the UnsupportedDeviceError path."""
     on_unsupported = mocker.AsyncMock()
     proto = _DiscoverProtocol(on_unsupported=on_unsupported)
@@ -985,7 +1074,9 @@ async def test_process_new_klap_device_on_unsupported_callback(mocker):
     on_unsupported.assert_awaited_once()
 
 
-async def test_process_new_klap_device_kasa_exception(mocker):
+async def test_process_new_klap_device_kasa_exception(
+    mocker: MockerFixture,
+) -> None:
     """KasaException from sysinfo query is stored in invalid_device_exceptions."""
     proto = _DiscoverProtocol()
     mock_protocol = MagicMock()
@@ -998,13 +1089,15 @@ async def test_process_new_klap_device_kasa_exception(mocker):
     assert "127.0.0.1" not in proto.discovered_devices
 
 
-async def test_process_new_klap_device_success_with_on_discovered(mocker):
+async def test_process_new_klap_device_success_with_on_discovered(
+    mocker: MockerFixture,
+) -> None:
     """Success path fires on_discovered and adds device to discovered_devices."""
     on_discovered = mocker.AsyncMock()
     proto = _DiscoverProtocol(on_discovered=on_discovered)
     mock_protocol = MagicMock()
     mock_protocol.query = mocker.AsyncMock(
-        return_value={"system": {"get_sysinfo": {"type": "IOT.SMARTPLUGSWITCH"}}}
+        return_value={"system": {"get_sysinfo": {"type": "IOT.SMARTPLUGSWITCH"}}},
     )
     mocker.patch("kasa.discover.get_protocol", return_value=mock_protocol)
 
@@ -1015,13 +1108,15 @@ async def test_process_new_klap_device_success_with_on_discovered(mocker):
 
 
 @pytest.mark.xdist_group(name="caplog")
-async def test_process_new_klap_device_debug_logging(mocker, caplog):
+async def test_process_new_klap_device_debug_logging(
+    mocker: MockerFixture, caplog: pytest.LogCaptureFixture
+) -> None:
     """Debug logging branch in _process_new_klap_device emits [DISCOVERY]."""
     caplog.set_level(logging.DEBUG)
     proto = _DiscoverProtocol()
     mock_protocol = MagicMock()
     mock_protocol.query = mocker.AsyncMock(
-        return_value={"system": {"get_sysinfo": {"type": "IOT.SMARTPLUGSWITCH"}}}
+        return_value={"system": {"get_sysinfo": {"type": "IOT.SMARTPLUGSWITCH"}}},
     )
     mocker.patch("kasa.discover.get_protocol", return_value=mock_protocol)
 
