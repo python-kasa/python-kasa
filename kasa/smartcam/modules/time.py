@@ -8,6 +8,7 @@ from typing import cast
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from ...cachedzoneinfo import CachedZoneInfo
+from ...exceptions import KasaException
 from ...feature import Feature
 from ...interfaces import Time as TimeInterface
 from ...smart.smartmodule import allow_update_after
@@ -79,19 +80,23 @@ class Time(SmartCamModule, TimeInterface):
 
     @allow_update_after
     async def set_time(self, dt: datetime) -> dict:
-        """Set device time."""
+        """Set device timezone derived from the datetime."""
         _LOGGER.warning(
             "SmartCam devices do not support setting clock time directly; "
-            "only timezone settings are updated."
+            "only timezone settings will be updated."
         )
-        if not dt.tzinfo:
-            utc_offset = cast(timedelta | None, self.timezone.utcoffset(dt))
-        else:
-            utc_offset = cast(timedelta | None, dt.utcoffset())
+        timezone = dt.tzinfo or self.timezone
+        if not isinstance(timezone, ZoneInfo):
+            raise KasaException(
+                "SmartCam devices can only update timezone using zoneinfo "
+                "timezones; setting clock time is not supported."
+            )
 
-        params: dict[str, str] = {"timezone": self._format_utc_offset(utc_offset)}
-        if (zinfo := dt.tzinfo) and isinstance(zinfo, ZoneInfo):
-            params["zone_id"] = zinfo.key
+        utc_offset = cast(timedelta | None, timezone.utcoffset(dt))
+        params: dict[str, str] = {
+            "timezone": self._format_utc_offset(utc_offset),
+            "zone_id": timezone.key,
+        }
 
         return await self.call("setTimezone", {"system": {"basic": params}})
 

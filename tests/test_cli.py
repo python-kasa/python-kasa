@@ -481,24 +481,19 @@ async def test_time_sync(dev, mocker, runner):
     assert "New time: " in res.output
 
 
+@parametrize_combine([device_smart, device_iot])
 async def test_time_set(dev: Device, mocker, runner):
     """Test time set command."""
     time_mod = dev.modules[Module.Time]
     set_time_mock = mocker.spy(time_mod, "set_time")
     dt = datetime(2024, 10, 15, 8, 15)
-    initial_timezone = time_mod.timezone
     res = await runner.invoke(
         time,
         ["set", str(dt.year), str(dt.month), str(dt.day), str(dt.hour), str(dt.minute)],
         obj=dev,
     )
     set_time_mock.assert_called()
-    if isinstance(dev, SmartCamDevice):
-        assert time_mod.timezone.utcoffset(time_mod.time) == initial_timezone.utcoffset(
-            time_mod.time
-        )
-    else:
-        assert time_mod.time == dt.replace(tzinfo=time_mod.timezone)
+    assert time_mod.time == dt.replace(tzinfo=time_mod.timezone)
 
     assert res.exit_code == 0
     assert "Old time: " in res.output
@@ -522,11 +517,7 @@ async def test_time_set(dev: Device, mocker, runner):
         obj=dev,
     )
 
-    if isinstance(dev, SmartCamDevice):
-        assert isinstance(time_mod.timezone, ZoneInfo)
-        assert time_mod.timezone.key == zone.key
-    else:
-        assert time_mod.time == dt
+    assert time_mod.time == dt
 
     assert res.exit_code == 0
     assert "Old time: " in res.output
