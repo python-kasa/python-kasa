@@ -6,10 +6,10 @@ hubs.
 >>> from kasa import Discover, Module, LightState
 >>>
 >>> dev = await Discover.discover_single(
->>>     "127.0.0.6",
->>>     username="user@example.com",
->>>     password="great_password"
->>> )
+...     "127.0.0.6",
+...     username="user@example.com",
+...     password="great_password"
+... )
 >>> await dev.update()
 >>> print(dev.alias)
 Tapo Hub
@@ -27,7 +27,7 @@ The hub will pair with all supported devices in pairing mode:
 'device_model': 'S200B', 'name': 'I01BU0tFRF9OQU1FIw===='}]
 
 >>> for child in dev.children:
->>>     print(f"{child.device_id} - {child.model}")
+...     print(f"{child.device_id} - {child.model}")
 SCRUBBED_CHILD_DEVICE_ID_1 - T310
 SCRUBBED_CHILD_DEVICE_ID_2 - T315
 SCRUBBED_CHILD_DEVICE_ID_3 - T110
@@ -38,7 +38,7 @@ Unpair with the child `device_id`:
 
 >>> await childsetup.unpair("SCRUBBED_CHILD_DEVICE_ID_4")
 >>> for child in dev.children:
->>>     print(f"{child.device_id} - {child.model}")
+...     print(f"{child.device_id} - {child.model}")
 SCRUBBED_CHILD_DEVICE_ID_1 - T310
 SCRUBBED_CHILD_DEVICE_ID_2 - T315
 SCRUBBED_CHILD_DEVICE_ID_3 - T110

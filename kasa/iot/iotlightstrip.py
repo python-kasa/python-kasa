@@ -16,7 +16,7 @@ class IotLightStrip(IotBulb):
 
     Light strips work similarly to bulbs, but use a different service for controlling,
     and expose some extra information (such as length and active effect).
-    This class extends :class:`SmartBulb` interface.
+    This class extends :class:`IotBulb` interface.
 
     Examples:
         >>> import asyncio
@@ -41,7 +41,7 @@ class IotLightStrip(IotBulb):
         feel free to find out how to control them and create a PR!
 
 
-    See :class:`SmartBulb` for more examples.
+    See :class:`IotBulb` for more examples.
     """
 
     LIGHT_SERVICE = "smartlife.iot.lightStrip"

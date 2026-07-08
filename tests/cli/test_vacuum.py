@@ -1,6 +1,7 @@
+from asyncclick.testing import CliRunner
 from pytest_mock import MockerFixture
 
-from kasa import DeviceType, Module
+from kasa import Device, DeviceType, Module
 from kasa.cli.vacuum import vacuum
 
 from ..device_fixtures import plug_iot
@@ -8,7 +9,9 @@ from ..device_fixtures import vacuum as vacuum_devices
 
 
 @vacuum_devices
-async def test_vacuum_records_group(dev, mocker: MockerFixture, runner):
+async def test_vacuum_records_group(
+    dev: Device, mocker: MockerFixture, runner: CliRunner
+) -> None:
     """Test that vacuum records calls the expected methods."""
     rec = dev.modules.get(Module.CleanRecords)
     assert rec
@@ -26,7 +29,9 @@ async def test_vacuum_records_group(dev, mocker: MockerFixture, runner):
 
 
 @vacuum_devices
-async def test_vacuum_records_list(dev, mocker: MockerFixture, runner):
+async def test_vacuum_records_list(
+    dev: Device, mocker: MockerFixture, runner: CliRunner
+) -> None:
     """Test that vacuum records list calls the expected methods."""
     rec = dev.modules.get(Module.CleanRecords)
     assert rec
@@ -46,7 +51,7 @@ async def test_vacuum_records_list(dev, mocker: MockerFixture, runner):
 
 
 @vacuum_devices
-async def test_vacuum_consumables(dev, runner):
+async def test_vacuum_consumables(dev: Device, runner: CliRunner) -> None:
     """Test that vacuum consumables calls the expected methods."""
     cons = dev.modules.get(Module.Consumables)
     assert cons
@@ -62,7 +67,9 @@ async def test_vacuum_consumables(dev, runner):
 
 
 @vacuum_devices
-async def test_vacuum_consumables_reset(dev, mocker: MockerFixture, runner):
+async def test_vacuum_consumables_reset(
+    dev: Device, mocker: MockerFixture, runner: CliRunner
+) -> None:
     """Test that vacuum consumables reset calls the expected methods."""
     cons = dev.modules.get(Module.Consumables)
     assert cons
@@ -89,7 +96,9 @@ async def test_vacuum_consumables_reset(dev, mocker: MockerFixture, runner):
 
 
 @plug_iot
-async def test_non_vacuum(dev, mocker: MockerFixture, runner):
+async def test_non_vacuum(
+    dev: Device, mocker: MockerFixture, runner: CliRunner
+) -> None:
     """Test that vacuum commands return an error if executed on a non-vacuum."""
     assert dev.device_type is not DeviceType.Vacuum
 

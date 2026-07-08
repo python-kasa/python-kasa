@@ -25,8 +25,8 @@ class Detection(NamedTuple):
 def parametrize_detection(
     *,
     model_filter=None,
-    protocol_filter=None,
-    fixture_name="dev",
+    protocol_filter: set[str] | None = None,
+    fixture_name: str = "dev",
     extra_params_names: list[str],
     extra_params_values: list[Detection],
 ):
@@ -139,7 +139,7 @@ params_detections = parametrize_detection(
 @params_detections
 async def test_detections(
     dev: Device, module: ModuleName[DetectionModule], feature_name: str
-):
+) -> None:
     detection = dev.modules.get(module)
     assert detection
 

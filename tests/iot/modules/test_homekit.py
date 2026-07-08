@@ -10,7 +10,7 @@ from ...device_fixtures import device_iot
 
 
 @device_iot
-def test_homekit_getters(dev: IotDevice):
+def test_homekit_getters(dev: IotDevice) -> None:
     # HomeKit can be present on any IOT device
     if Module.IotHomeKit not in dev.modules:
         pytest.skip("HomeKit module not present on this device")
@@ -31,7 +31,7 @@ def test_homekit_getters(dev: IotDevice):
 
 
 @device_iot
-def test_homekit_feature(dev: IotDevice):
+def test_homekit_feature(dev: IotDevice) -> None:
     if Module.IotHomeKit not in dev.modules:
         pytest.skip("HomeKit module not present on this device")
     homekit: HomeKit = dev.modules[Module.IotHomeKit]
@@ -45,7 +45,7 @@ def test_homekit_feature(dev: IotDevice):
 
 
 @device_iot
-def test_initialize_features_skips_when_no_data(dev: IotDevice):
+def test_initialize_features_skips_when_no_data(dev: IotDevice) -> None:
     if Module.IotHomeKit not in dev.modules:
         pytest.skip("HomeKit module not present on this device")
     homekit: HomeKit = dev.modules[Module.IotHomeKit]

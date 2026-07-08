@@ -17,7 +17,7 @@ battery_smartcam = parametrize(
 
 
 @battery_smartcam
-async def test_battery(dev: Device):
+async def test_battery(dev: Device) -> None:
     """Test device battery."""
     battery = dev.modules.get(SmartCamModule.SmartCamBattery)
     assert battery
@@ -46,7 +46,9 @@ async def test_battery(dev: Device):
         ("12.3", 12.3),  # sanity: happy path
     ],
 )
-async def test_battery_temperature_edge_cases(dev: Device, raw, expected):
+async def test_battery_temperature_edge_cases(
+    dev: Device, raw: str | None, expected: float | None
+) -> None:
     battery = dev.modules.get(SmartCamModule.SmartCamBattery)
     assert battery
 
@@ -63,7 +65,9 @@ async def test_battery_temperature_edge_cases(dev: Device, raw, expected):
         ("12000", 12.0),  # sanity: parses string -> float(...) / 1000
     ],
 )
-async def test_battery_voltage_edge_cases(dev: Device, voltage_raw, expected_v):
+async def test_battery_voltage_edge_cases(
+    dev: Device, voltage_raw: str | None, expected_v: float | None
+) -> None:
     battery = dev.modules.get(SmartCamModule.SmartCamBattery)
     assert battery
 
@@ -82,7 +86,9 @@ async def test_battery_voltage_edge_cases(dev: Device, voltage_raw, expected_v):
         ("NO", False),  # sanity: string normalization path
     ],
 )
-async def test_battery_charging_edge_cases(dev: Device, charging_raw, expected):
+async def test_battery_charging_edge_cases(
+    dev: Device, charging_raw: bool | str | None, expected: bool
+) -> None:
     battery = dev.modules.get(SmartCamModule.SmartCamBattery)
     assert battery
 

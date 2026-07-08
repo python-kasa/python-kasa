@@ -18,7 +18,7 @@ light_strip_effect = parametrize(
 
 
 @light_strip_effect
-async def test_light_strip_effect(dev: Device, mocker: MockerFixture):
+async def test_light_strip_effect(dev: Device, mocker: MockerFixture) -> None:
     """Test light strip effect."""
     light_effect = dev.modules.get(Module.LightEffect)
 
@@ -63,7 +63,7 @@ async def test_light_strip_effect(dev: Device, mocker: MockerFixture):
 @pytest.mark.parametrize("effect_active", [True, False])
 async def test_light_effect_brightness(
     dev: Device, effect_active: bool, mocker: MockerFixture
-):
+) -> None:
     """Test that light module uses light_effect for brightness when active."""
     light_module = dev.modules[Module.Light]
 

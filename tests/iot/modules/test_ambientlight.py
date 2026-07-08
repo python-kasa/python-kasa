@@ -8,7 +8,7 @@ from ...device_fixtures import dimmer_iot
 
 
 @dimmer_iot
-def test_ambientlight_getters(dev: IotDimmer):
+def test_ambientlight_getters(dev: IotDimmer) -> None:
     assert Module.IotAmbientLight in dev.modules
     ambientlight: AmbientLight = dev.modules[Module.IotAmbientLight]
 
@@ -22,7 +22,7 @@ def test_ambientlight_getters(dev: IotDimmer):
 
 
 @dimmer_iot
-async def test_ambientlight_setters(dev: IotDimmer, mocker: MockerFixture):
+async def test_ambientlight_setters(dev: IotDimmer, mocker: MockerFixture) -> None:
     ambientlight: AmbientLight = dev.modules[Module.IotAmbientLight]
     query_helper = mocker.patch("kasa.iot.IotDimmer._query_helper")
 
@@ -36,7 +36,7 @@ async def test_ambientlight_setters(dev: IotDimmer, mocker: MockerFixture):
 
 
 @dimmer_iot
-def test_ambientlight_feature(dev: IotDimmer):
+def test_ambientlight_feature(dev: IotDimmer) -> None:
     assert Module.IotAmbientLight in dev.modules
     ambientlight: AmbientLight = dev.modules[Module.IotAmbientLight]
 

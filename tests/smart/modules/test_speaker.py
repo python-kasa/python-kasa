@@ -20,7 +20,9 @@ speaker = parametrize(
         ("volume", "volume", int),
     ],
 )
-async def test_features(dev: SmartDevice, feature: str, prop_name: str, type: type):
+async def test_features(
+    dev: SmartDevice, feature: str, prop_name: str, type: type
+) -> None:
     """Test that features are registered and work as expected."""
     speaker = next(get_parent_and_child_modules(dev, Module.Speaker))
     assert speaker is not None
@@ -34,7 +36,7 @@ async def test_features(dev: SmartDevice, feature: str, prop_name: str, type: ty
 
 
 @speaker
-async def test_set_volume(dev: SmartDevice, mocker: MockerFixture):
+async def test_set_volume(dev: SmartDevice, mocker: MockerFixture) -> None:
     """Test speaker settings."""
     speaker = next(get_parent_and_child_modules(dev, Module.Speaker))
     assert speaker is not None
@@ -61,7 +63,7 @@ async def test_set_volume(dev: SmartDevice, mocker: MockerFixture):
 
 
 @speaker
-async def test_locate(dev: SmartDevice, mocker: MockerFixture):
+async def test_locate(dev: SmartDevice, mocker: MockerFixture) -> None:
     """Test the locate method."""
     speaker = next(get_parent_and_child_modules(dev, Module.Speaker))
     call = mocker.spy(speaker, "call")

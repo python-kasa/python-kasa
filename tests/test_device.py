@@ -217,6 +217,13 @@ deprecated_is_device_type = {
     "is_strip": DeviceType.Strip,
     "is_strip_socket": DeviceType.StripSocket,
 }
+deprecated_warns_before_attribute_error = {
+    "has_effects",
+    "is_color",
+    "is_dimmable",
+    "is_variable_color_temp",
+    "valid_temperature_range",
+}
 deprecated_is_light_function_smart_module = {
     "is_color": "Color",
     "is_dimmable": "Brightness",
@@ -244,20 +251,23 @@ def test_deprecated_device_type_attributes(dev: SmartDevice):
 async def _test_attribute(
     dev: Device, attribute_name, is_expected, module_name, *args, will_raise=False
 ):
-    if is_expected and will_raise:
+    will_warn = is_expected or attribute_name in deprecated_warns_before_attribute_error
+
+    if will_raise:
         ctx: AbstractContextManager | nullcontext = pytest.raises(will_raise)
-        dep_context: pytest.WarningsRecorder | nullcontext = pytest.deprecated_call(
-            match=(f"{attribute_name} is deprecated, use:")
-        )
+        dep_context: pytest.WarningsRecorder | nullcontext
     elif is_expected:
         ctx = nullcontext()
-        dep_context = pytest.deprecated_call(
-            match=(f"{attribute_name} is deprecated, use:")
-        )
     else:
         ctx = pytest.raises(
             AttributeError, match=f"Device has no attribute '{attribute_name}'"
         )
+
+    if will_warn:
+        dep_context = pytest.deprecated_call(
+            match=(f"{attribute_name} is deprecated, use:")
+        )
+    else:
         dep_context = nullcontext()
 
     with dep_context, ctx:

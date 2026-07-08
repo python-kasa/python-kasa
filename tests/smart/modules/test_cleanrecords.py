@@ -27,7 +27,9 @@ cleanrecords = parametrize(
         ("last_clean_timestamp", "last_clean_timestamp", datetime),
     ],
 )
-async def test_features(dev: SmartDevice, feature: str, prop_name: str, type: type):
+async def test_features(
+    dev: SmartDevice, feature: str, prop_name: str, type: type
+) -> None:
     """Test that features are registered and work as expected."""
     records = next(get_parent_and_child_modules(dev, Module.CleanRecords))
     assert records is not None
@@ -41,7 +43,7 @@ async def test_features(dev: SmartDevice, feature: str, prop_name: str, type: ty
 
 
 @cleanrecords
-async def test_timezone(dev: SmartDevice):
+async def test_timezone(dev: SmartDevice) -> None:
     """Test that timezone is added to timestamps."""
     clean_records = next(get_parent_and_child_modules(dev, Module.CleanRecords))
     assert clean_records is not None
