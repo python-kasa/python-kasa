@@ -782,14 +782,20 @@ async def test_create_delete_children_tolerates_missing_list_fields() -> None:
     assert isinstance(dev, SmartCamDevice)
 
     changed = await dev._create_delete_children(
-        {"start_index": 0, "sum": 0},
-        {"start_index": 0, "sum": 0, "child_component_list": "bad"},
+        cast(dict[str, list], {"start_index": 0, "sum": 0}),
+        cast(
+            dict[str, list],
+            {"start_index": 0, "sum": 0, "child_component_list": "bad"},
+        ),
     )
     assert changed is False
 
     changed = await dev._create_delete_children(
-        {"child_device_list": "bad", "start_index": 0, "sum": 0},
-        {"child_component_list": ["not-a-dict"]},
+        cast(
+            dict[str, list],
+            {"child_device_list": "bad", "start_index": 0, "sum": 0},
+        ),
+        cast(dict[str, list], {"child_component_list": ["not-a-dict"]}),
     )
     assert changed is False
 
