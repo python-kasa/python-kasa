@@ -8,6 +8,7 @@ Guides of how to perform common actions using the library.
 guides/discover
 guides/connect
 guides/device
+guides/hub
 guides/module
 guides/feature
 guides/light
