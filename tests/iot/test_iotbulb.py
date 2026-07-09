@@ -20,6 +20,7 @@ from tests.conftest import (
     color_bulb_iot,
     dimmable_iot,
     handle_turn_on,
+    kl400l5_variable_temp_iot,
     non_dimmable_iot,
     turn_on,
     variable_temp_iot,
@@ -100,6 +101,20 @@ async def test_unknown_temp_range(
     assert color_temp_feat
     assert color_temp_feat.range == (2700, 5000)
     assert "Unknown color temperature range, fallback to 2700-5000" in caplog.text
+
+
+@kl400l5_variable_temp_iot
+@pytest.mark.xdist_group(name="caplog")
+async def test_kl400l5_temp_range(
+    dev: IotBulb, caplog: pytest.LogCaptureFixture
+) -> None:
+    caplog.clear()
+    light = dev.modules.get(Module.Light)
+    assert light
+    color_temp_feat = light.get_feature("color_temp")
+    assert color_temp_feat
+    assert color_temp_feat.range == (2500, 9500)
+    assert "Unknown color temperature range" not in caplog.text
 
 
 @dimmable_iot
