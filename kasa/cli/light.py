@@ -40,9 +40,7 @@ async def brightness(dev: Device, brightness: int, transition: int):
 
 
 @light.command()
-@click.argument(
-    "temperature", type=click.IntRange(2500, 9000), default=None, required=False
-)
+@click.argument("temperature", type=int, default=None, required=False)
 @click.option("--transition", type=int, required=False)
 @pass_dev_or_child
 async def temperature(dev: Device, temperature: int, transition: int):

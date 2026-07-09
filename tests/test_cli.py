@@ -625,15 +625,12 @@ async def test_color_temperature(dev: Device, runner):
     assert res.exit_code == 0
 
     invalid_max = valid_range.max + 100
-    # Lights that support the maximum range will not get past the click cli range check
-    # So can't be tested for the internal range check.
-    if invalid_max < 9000:
-        res = await runner.invoke(temperature, [str(invalid_max)], obj=dev)
-        assert res.exit_code == 1
-        assert isinstance(res.exception, ValueError)
+    res = await runner.invoke(temperature, [str(invalid_max)], obj=dev)
+    assert res.exit_code == 1
+    assert isinstance(res.exception, ValueError)
 
-    res = await runner.invoke(temperature, [str(9100)], obj=dev)
-    assert res.exit_code == 2
+    res = await runner.invoke(temperature, [str(valid_range.max)], obj=dev)
+    assert res.exit_code == 0
 
 
 async def test_color_hsv(dev: Device, runner: CliRunner):
