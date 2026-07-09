@@ -104,6 +104,11 @@ class TpapEncryptionSession:
         return device_family in self._transport.CAMERA_AUTH_DEVICE_FAMILIES
 
     @property
+    def _uses_robot_tpap_auth(self) -> bool:
+        device_family = self._transport._config.connection_type.device_family
+        return device_family in self._transport.ROBOT_TPAP_DEVICE_FAMILIES
+
+    @property
     def tls_mode(self) -> int | None:
         """The discovered TLS mode."""
         return self._tpap_tls
@@ -325,7 +330,7 @@ class TpapEncryptionSession:
                     register_result, credentials_string
                 )
                 if self._use_dac_certification():
-                    self._dac_nonce_base64 = self._base64(secrets.token_bytes(16))
+                    self._dac_nonce_base64 = self._base64(secrets.token_bytes(32))
                     share_params["dac_nonce"] = self._dac_nonce_base64
 
                 share_result = await self._login(share_params, step_name="pake_share")
@@ -629,14 +634,36 @@ class TpapEncryptionSession:
         )
 
     def _get_passcode_type(self) -> str | None:
-        pake = self._tpap_pake
-        if 0 in pake:
-            return "default_userpw"
-        if 3 in pake:
-            return "shared_token"
-        if 1 in pake or 2 in pake or 5 in pake:
-            return "userpw"
-        return None if self._uses_camera_auth else "default_userpw"
+        passcode_type_order: tuple[tuple[tuple[int, ...], str], ...]
+        default_passcode_type: str | None
+
+        if self._uses_camera_auth:
+            passcode_type_order = (
+                ((2, 1), "userpw"),
+                ((0,), "default_userpw"),
+                ((3,), "shared_token"),
+            )
+            default_passcode_type = None
+        elif self._uses_robot_tpap_auth:
+            passcode_type_order = (
+                ((0,), "default_userpw"),
+                ((2,), "userpw"),
+                ((3,), "shared_token"),
+            )
+            default_passcode_type = "default_userpw"
+        else:
+            passcode_type_order = (
+                ((0,), "default_userpw"),
+                ((2, 5), "userpw"),
+                ((3,), "shared_token"),
+            )
+            default_passcode_type = "default_userpw"
+
+        pake = set(self._tpap_pake)
+        for pake_values, passcode_type in passcode_type_order:
+            if pake.intersection(pake_values):
+                return passcode_type
+        return default_passcode_type
 
     def _get_candidate_secrets(self, passcode_type: str | None = None) -> list[str]:
         passcode_type = passcode_type or self._get_passcode_type()
@@ -1098,6 +1125,7 @@ class TpapTransport(BaseTransport):
         DeviceFamily.SmartTapoDoorbell,
         DeviceFamily.SmartTapoHub,
     )
+    ROBOT_TPAP_DEVICE_FAMILIES = {DeviceFamily.SmartTapoRobovac}
     CIPHERS = ":".join(
         [
             "ECDHE-ECDSA-AES256-GCM-SHA384",

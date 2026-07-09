@@ -376,6 +376,7 @@ async def test_session_camera_auth_uses_device_family() -> None:
     assert camera_transport._encryption_session._uses_camera_auth is True
     assert hub_transport._encryption_session._uses_camera_auth is True
     assert robot_transport._encryption_session._uses_camera_auth is False
+    assert robot_transport._encryption_session._uses_robot_tpap_auth is True
     assert iot_transport._encryption_session._uses_camera_auth is False
 
 
@@ -594,12 +595,15 @@ async def test_smartcam_session_propagates_retryable_error(
 
 
 @pytest.mark.asyncio
-async def test_smartcam_session_adds_dac_nonce_when_required(
+async def test_iot_session_adds_dac_nonce_when_required(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    transport = _make_camera_tpap_transport()
+    transport = _make_tpap_transport(
+        family=DeviceFamily.SmartTapoPlug,
+        credentials=Credentials("user", "pass"),
+    )
     session = transport._encryption_session
-    session._tpap_pake = [2]
+    session._tpap_pake = [5]
     session._tpap_tls = 0
     session._tpap_dac = True
     captured_share_params: dict[str, Any] | None = None
@@ -634,7 +638,28 @@ async def test_smartcam_session_adds_dac_nonce_when_required(
 
     assert captured_share_params is not None
     assert captured_share_params["dac_nonce"]
+    assert len(base64.b64decode(captured_share_params["dac_nonce"])) == 32
     assert session._session_id == "DAC-SID"
+
+
+@pytest.mark.parametrize(
+    ("tls", "dac", "pake", "expected"),
+    [
+        pytest.param(0, True, [2], True, id="plain-tpap-dac"),
+        pytest.param(0, False, [2], False, id="plain-tpap-no-dac"),
+        pytest.param(1, True, [2], False, id="tls-tpap-dac"),
+    ],
+)
+async def test_use_dac_certification_uses_discovered_dac_support(
+    tls: int, dac: bool, pake: list[int], expected: bool
+) -> None:
+    transport = _make_tpap_transport("tpap-host")
+    session = transport._encryption_session
+    session._tpap_pake = pake
+    session._tpap_tls = tls
+    session._tpap_dac = dac
+
+    assert session._use_dac_certification() is expected
 
 
 @pytest.mark.parametrize(
@@ -646,8 +671,29 @@ async def test_smartcam_session_adds_dac_nonce_when_required(
             "userpw",
             id="camera-setup-code",
         ),
+        pytest.param(
+            DeviceFamily.SmartIpCamera,
+            [0, 2],
+            "userpw",
+            id="camera-pake-two-before-zero",
+        ),
         pytest.param(None, [0], "default_userpw", id="default-pake-zero"),
+        pytest.param(None, [1], "default_userpw", id="iot-pake-one"),
         pytest.param(None, [5], "userpw", id="iot-pake-five"),
+        pytest.param(None, [2, 3], "userpw", id="iot-userpw-before-shared-token"),
+        pytest.param(
+            DeviceFamily.SmartTapoRobovac,
+            [2, 3],
+            "userpw",
+            id="robot-userpw-before-shared-token",
+        ),
+        pytest.param(
+            DeviceFamily.SmartTapoRobovac,
+            [5],
+            "default_userpw",
+            id="robot-pake-five-default",
+        ),
+        pytest.param(DeviceFamily.SmartTapoBulb, [5], "userpw", id="bulb-pake-five"),
         pytest.param(
             DeviceFamily.SmartTapoRobovac,
             [9],
