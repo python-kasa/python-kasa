@@ -10,7 +10,7 @@ triggerlogs = parametrize(
 
 
 @triggerlogs
-async def test_trigger_logs(dev: Device):
+async def test_trigger_logs(dev: Device) -> None:
     """Test that features are registered and work as expected."""
     triggerlogs = dev.modules.get(Module.TriggerLogs)
     assert triggerlogs is not None

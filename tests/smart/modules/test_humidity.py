@@ -1,6 +1,7 @@
 import pytest
 
-from kasa.smart.modules import HumiditySensor
+from kasa import Module
+from kasa.smart import SmartDevice
 
 from ...device_fixtures import parametrize
 
@@ -17,9 +18,9 @@ humidity = parametrize(
         ("humidity_warning", bool),
     ],
 )
-async def test_humidity_features(dev, feature, type):
+async def test_humidity_features(dev: SmartDevice, feature: str, type: type) -> None:
     """Test that features are registered and work as expected."""
-    humidity: HumiditySensor = dev.modules["HumiditySensor"]
+    humidity = dev.modules[Module.HumiditySensor]
 
     prop = getattr(humidity, feature)
     assert isinstance(prop, type)

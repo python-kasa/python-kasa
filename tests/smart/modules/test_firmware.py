@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from contextlib import nullcontext
+from contextlib import AbstractContextManager, nullcontext
 from datetime import date
 from typing import TypedDict
 
@@ -31,9 +31,14 @@ firmware = parametrize(
     ],
 )
 async def test_firmware_features(
-    dev: SmartDevice, feature, prop_name, type, required_version, mocker: MockerFixture
-):
-    """Test light effect."""
+    dev: SmartDevice,
+    feature: str,
+    prop_name: str,
+    type: type,
+    required_version: int,
+    mocker: MockerFixture,
+) -> None:
+    """Test firmware features."""
     fw = dev.modules.get(Module.Firmware)
     assert fw
     assert fw.firmware_update_info is None
@@ -54,7 +59,7 @@ async def test_firmware_features(
 
 
 @firmware
-async def test_firmware_update_info(dev: SmartDevice):
+async def test_firmware_update_info(dev: SmartDevice) -> None:
     """Test that the firmware UpdateInfo object deserializes correctly."""
     fw = dev.modules.get(Module.Firmware)
     assert fw
@@ -68,7 +73,7 @@ async def test_firmware_update_info(dev: SmartDevice):
 
 
 @firmware
-async def test_update_available_without_cloud(dev: SmartDevice):
+async def test_update_available_without_cloud(dev: SmartDevice) -> None:
     """Test that update_available returns None when disconnected."""
     fw = dev.modules.get(Module.Firmware)
     assert fw
@@ -95,9 +100,9 @@ async def test_firmware_update(
     dev: SmartDevice,
     mocker: MockerFixture,
     caplog: pytest.LogCaptureFixture,
-    update_available,
-    expected_result,
-):
+    update_available: bool,
+    expected_result: AbstractContextManager,
+) -> None:
     """Test updating firmware."""
     caplog.set_level(logging.INFO)
 
