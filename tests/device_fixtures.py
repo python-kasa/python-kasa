@@ -300,11 +300,6 @@ variable_temp_iot = parametrize(
     model_filter=BULBS_IOT_VARIABLE_TEMP,
     protocol_filter={"IOT"},
 )
-kl400l5_variable_temp_iot = parametrize(
-    "KL400L5 variable color temp iot",
-    model_filter={"KL400L5(US)_1.0_1.0.11"},
-    protocol_filter={"IOT"},
-)
 variable_temp_smart = parametrize(
     "variable color temp smart",
     model_filter=BULBS_SMART_VARIABLE_TEMP,
