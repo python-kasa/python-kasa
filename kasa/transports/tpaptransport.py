@@ -1123,7 +1123,6 @@ class TpapTransport(BaseTransport):
     CAMERA_AUTH_DEVICE_FAMILIES = (
         DeviceFamily.SmartIpCamera,
         DeviceFamily.SmartTapoDoorbell,
-        DeviceFamily.SmartTapoHub,
     )
     ROBOT_TPAP_DEVICE_FAMILIES = {DeviceFamily.SmartTapoRobovac}
     CIPHERS = ":".join(

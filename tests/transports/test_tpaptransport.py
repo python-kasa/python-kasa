@@ -308,6 +308,16 @@ async def test_session_encrypt_and_decrypt_roundtrip() -> None:
             id="generic-http",
         ),
         pytest.param(
+            DeviceFamily.SmartTapoHub,
+            _discover_response(tls=0, port=80, pake=[2], user_hash_type=0, dac=True),
+            tp.TpapEncryptionSession._md5_hex("admin"),
+            "userpw",
+            0,
+            "http",
+            80,
+            id="tapo-hub-http-userpw",
+        ),
+        pytest.param(
             DeviceFamily.SmartIpCamera,
             _discover_response(pake=[2], user_hash_type=0),
             tp.TpapEncryptionSession._md5_hex("admin"),
@@ -374,7 +384,7 @@ async def test_session_camera_auth_uses_device_family() -> None:
     iot_transport = _make_tpap_transport()
 
     assert camera_transport._encryption_session._uses_camera_auth is True
-    assert hub_transport._encryption_session._uses_camera_auth is True
+    assert hub_transport._encryption_session._uses_camera_auth is False
     assert robot_transport._encryption_session._uses_camera_auth is False
     assert robot_transport._encryption_session._uses_robot_tpap_auth is True
     assert iot_transport._encryption_session._uses_camera_auth is False
@@ -681,6 +691,7 @@ async def test_use_dac_certification_uses_discovered_dac_support(
         pytest.param(None, [1], "default_userpw", id="iot-pake-one"),
         pytest.param(None, [5], "userpw", id="iot-pake-five"),
         pytest.param(None, [2, 3], "userpw", id="iot-userpw-before-shared-token"),
+        pytest.param(DeviceFamily.SmartTapoHub, [2], "userpw", id="hub-userpw"),
         pytest.param(
             DeviceFamily.SmartTapoRobovac,
             [2, 3],
