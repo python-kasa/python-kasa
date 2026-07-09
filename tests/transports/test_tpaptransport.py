@@ -1260,6 +1260,10 @@ async def test_private_handle_response_error_code_covers_invalid_retry_auth_and_
         session._handle_response_error_code(
             {"error_code": SmartErrorCode.SESSION_EXPIRED.value}, "retry"
         )
+    with pytest.raises(_RetryableError):
+        session._handle_response_error_code(
+            {"error_code": SmartErrorCode.STAT_ACCESS_ERROR.value}, "retry"
+        )
 
     with pytest.raises(AuthenticationError):
         session._handle_response_error_code(
@@ -1887,6 +1891,11 @@ async def test_transport_ignores_malformed_credentials_hash() -> None:
             _RetryableError("x", error_code=SmartErrorCode.LOGIN_ERROR),
             False,
             id="retryable-non-session-error",
+        ),
+        pytest.param(
+            _RetryableError("x", error_code=SmartErrorCode.STAT_ACCESS_ERROR),
+            True,
+            id="stat-access-error",
         ),
     ],
 )
