@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import json
 import logging
 import ssl
 import struct
@@ -1820,6 +1821,52 @@ async def test_transport_properties_and_initial_url_helpers() -> None:
     https_transport._config.connection_type.https = True
     assert https_transport.default_port == tp.TpapTransport.DEFAULT_HTTPS_PORT
     await https_transport.close()
+
+
+@pytest.mark.asyncio
+async def test_transport_credentials_hash_encodes_live_credentials() -> None:
+    transport = tp.TpapTransport(
+        config=DeviceConfig("tpap-host", credentials=Credentials("user", "pass"))
+    )
+
+    credentials_hash = transport.credentials_hash
+
+    assert credentials_hash is not None
+    decoded_hash = json.loads(base64.b64decode(credentials_hash.encode()).decode())
+    assert decoded_hash == {"un": "user", "pwd": "pass"}
+    await transport.close()
+
+
+@pytest.mark.asyncio
+async def test_transport_decodes_credentials_hash_for_tpap_handshake() -> None:
+    seed_transport = tp.TpapTransport(
+        config=DeviceConfig("tpap-host", credentials=Credentials("user", "pass"))
+    )
+    credentials_hash = seed_transport.credentials_hash
+    assert credentials_hash is not None
+
+    config = DeviceConfig("tpap-host", credentials_hash=credentials_hash)
+    transport = tp.TpapTransport(config=config)
+    session = transport._encryption_session
+    session._tpap_pake = [2]
+
+    assert transport._credentials == Credentials("user", "pass")
+    assert config.credentials == transport._credentials
+    assert session._get_candidate_secrets() == ["pass"]
+    await seed_transport.close()
+    await transport.close()
+
+
+@pytest.mark.asyncio
+async def test_transport_ignores_malformed_credentials_hash() -> None:
+    transport = tp.TpapTransport(
+        config=DeviceConfig("tpap-host", credentials_hash="not-valid-base64-json")
+    )
+
+    assert transport._credentials is None
+    assert transport._config.credentials is None
+    assert transport.credentials_hash == "not-valid-base64-json"
+    await transport.close()
 
 
 @pytest.mark.parametrize(
