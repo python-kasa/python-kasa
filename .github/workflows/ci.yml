@@ -73,8 +73,8 @@ jobs:
           fi
           shard_count=$(( (test_count + shard_size - 1) / shard_size ))
           include='[]'
-          for python_version in 3.11 3.12 3.13 3.14; do
-            for ((shard_index = 0; shard_index < shard_count; shard_index++)); do
+          for ((shard_index = 0; shard_index < shard_count; shard_index++)); do
+            for python_version in 3.11 3.12 3.13 3.14; do
               include=$(jq -c \
                 --arg python_version "$python_version" \
                 --argjson shard_index "$shard_index" \
@@ -126,7 +126,6 @@ jobs:
     runs-on: windows-latest
     strategy:
       fail-fast: false
-      max-parallel: 6
       matrix: ${{ fromJSON(needs.windows-shards.outputs.matrix) }}
     steps:
       - name: Checkout Source Files
@@ -154,6 +153,7 @@ jobs:
           name: windows-coverage-py${{ matrix.python-version }}-shard${{ matrix.shard_index }}
           path: .coverage.windows-py${{ matrix.python-version }}-shard${{ matrix.shard_index }}
           if-no-files-found: error
+          include-hidden-files: true
 
   windows-coverage:
     name: Combine Windows Code Coverage
