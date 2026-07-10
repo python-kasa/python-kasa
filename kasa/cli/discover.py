@@ -94,6 +94,8 @@ async def detail(ctx: click.Context) -> DeviceDict:
         async with sem:
             try:
                 await dev.update()
+            except UnsupportedAuthenticationError as ex:
+                await print_unsupported(ex)
             except AuthenticationError:
                 if TYPE_CHECKING:
                     assert dev._discovery_info
@@ -166,6 +168,8 @@ async def list(ctx: click.Context) -> DeviceDict:
         async with sem:
             try:
                 await dev.update()
+            except UnsupportedAuthenticationError as ex:
+                await print_unsupported(ex)
             except AuthenticationError:
                 echo(f"{infostr} - Authentication failed")
             except TimeoutError:

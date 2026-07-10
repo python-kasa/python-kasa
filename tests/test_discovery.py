@@ -418,22 +418,59 @@ async def test_device_update_from_new_discovery_info(discovery_mock):
             assert device.modules
 
 
-def test_unsupported_authentication_exception_for_tss():
-    """Test that unknown obd_src raises UnsupportedAuthenticationError."""
-    from kasa.discover import Discover, DiscoveryResult
+async def test_unsupported_authentication_exception_for_tss(mocker):
+    """Test that unknown obd_src raises UnsupportedAuthenticationError after auth fails."""
+    from kasa.discover import (
+        Discover,
+        DiscoveryResult,
+        EncryptionScheme,
+        _DiscoverProtocol,
+    )
     from kasa.exceptions import UnsupportedAuthenticationError
 
+    # tss devices have valid connection params but unknown credentials
     dr = DiscoveryResult(
-        device_type="SomeType",
-        device_model="SomeModel",
+        device_type="SMART.TAPOPLUG",
+        device_model="P316M(US)",
         device_id="SomeID",
         ip="127.0.0.2",
         mac="00:11:22:33:44:55",
         obd_src="tss",
+        mgt_encrypt_schm=EncryptionScheme(
+            encrypt_type="KLAP", lv=2, is_support_https=False
+        ),
     )
-    with pytest.raises(UnsupportedAuthenticationError) as excinfo:
-        Discover._get_connection_parameters(dr)
-    assert "unsupported onboarding 'tss'" in str(excinfo.value)
+
+    # Connection parameters succeed — no short-circuit on obd_src
+    assert Discover._get_connection_parameters(dr) is not None
+
+    # When on_discovered propagates UnsupportedAuthenticationError (raised by update()),
+    # the wrapper routes it to on_unsupported
+    unsupported_calls = []
+
+    async def on_discovered(dev):
+        raise UnsupportedAuthenticationError(
+            "Device at 127.0.0.2 uses unsupported onboarding 'tss'.",
+            discovery_result=dr.to_dict(),
+            host="127.0.0.2",
+        )
+
+    async def on_unsupported(ex):
+        unsupported_calls.append(ex)
+
+    protocol = _DiscoverProtocol(
+        target="127.0.0.2",
+        on_discovered=on_discovered,
+        on_unsupported=on_unsupported,
+    )
+    device = mocker.MagicMock()
+    device.host = "127.0.0.2"
+
+    await protocol._on_discovered_wrapper(device)
+
+    assert len(unsupported_calls) == 1
+    assert isinstance(unsupported_calls[0], UnsupportedAuthenticationError)
+    assert "unsupported onboarding 'tss'" in str(unsupported_calls[0])
 
 
 async def test_discover_single_http_client(discovery_mock, mocker):

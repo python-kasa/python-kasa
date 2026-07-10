@@ -202,6 +202,11 @@ SMART_AUTHENTICATION_ERRORS = [
 ]
 
 
+#: Onboarding sources we can authenticate with. Devices provisioned via other
+#: sources have valid encryption but use credentials we cannot access.
+SUPPORTED_OBD_SRCS = {"tplink", "matter", "apple"}
+
+
 class UnsupportedAuthenticationError(UnsupportedDeviceError, AuthenticationError):
     """Raised when authentication fails with unsupported provisioning method.
 

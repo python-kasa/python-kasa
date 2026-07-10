@@ -285,6 +285,16 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         task: asyncio.Task = asyncio.create_task(coro)
         self.callback_tasks.append(task)
 
+    async def _on_discovered_wrapper(self, device: Device) -> None:
+        """Wrap on_discovered to handle UnsupportedAuthenticationError."""
+        assert self.on_discovered is not None  # noqa: S101
+        try:
+            await self.on_discovered(device)
+        except UnsupportedAuthenticationError as ex:
+            self.unsupported_device_exceptions[device.host] = ex
+            if self.on_unsupported is not None:
+                await self.on_unsupported(ex)
+
     async def wait_for_discovery_to_complete(self) -> None:
         """Wait for the discovery task to complete."""
         # Give some time for connection_made event to be received
@@ -394,7 +404,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.discovered_devices[ip] = device
 
         if self.on_discovered is not None:
-            self._run_callback_task(self.on_discovered(device))
+            self._run_callback_task(self._on_discovered_wrapper(device))
 
         self._handle_discovered_event()
 
@@ -811,17 +821,6 @@ class Discover:
         discovery_result: DiscoveryResult,
     ) -> DeviceConnectionParameters:
         """Get connection parameters from the discovery result."""
-        # Raise a specific exception for unknown onboarding sources, which have
-        # valid encryption schemes but use credentials we cannot obtain.
-        _KNOWN_OBD_SRCS = {"tplink", "matter", "apple"}
-        obd_src = discovery_result.obd_src
-        if obd_src and obd_src not in _KNOWN_OBD_SRCS:
-            raise UnsupportedAuthenticationError(
-                f"Device at {discovery_result.ip} uses unsupported onboarding"
-                f" '{obd_src}'.",
-                discovery_result=discovery_result.to_dict(),
-                host=discovery_result.ip,
-            )
         type_ = discovery_result.device_type
         if (encrypt_schm := discovery_result.mgt_encrypt_schm) is None:
             raise UnsupportedDeviceError(
@@ -902,7 +901,7 @@ class Discover:
             conn_params = Discover._get_connection_parameters(discovery_result)
             config.connection_type = conn_params
         except KasaException as ex:
-            if isinstance(ex, UnsupportedDeviceError | UnsupportedAuthenticationError):
+            if isinstance(ex, UnsupportedDeviceError):
                 raise
             raise UnsupportedDeviceError(
                 f"Unsupported device {config.host} of type {type_} "
