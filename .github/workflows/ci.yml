@@ -45,45 +45,6 @@ jobs:
         run: |
           uv run pre-commit run --all-files --verbose
 
-  windows-shards:
-    name: Calculate Windows Test Shards
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.calculate_windows_shards.outputs.matrix }}
-    steps:
-      - name: Checkout Source Files
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-
-      - name: Setup Environment
-        uses: ./.github/actions/setup
-        with:
-          python-version: 3.14
-          uv-install-options: --all-extras
-
-      - name: Calculate Windows Test Shards
-        id: calculate_windows_shards
-        shell: bash
-        run: |
-          shard_size=3800
-          collection=$(uv run pytest --collect-only -q)
-          test_count=$(grep -oE '[0-9]+ tests? collected' <<< "$collection" | tail -1 | cut -d' ' -f1)
-          if [[ -z "$test_count" ]]; then
-            echo "Unable to determine the collected test count" >&2
-            exit 1
-          fi
-          shard_count=$(( (test_count + shard_size - 1) / shard_size ))
-          include='[]'
-          for ((shard_index = 0; shard_index < shard_count; shard_index++)); do
-            for python_version in 3.11 3.12 3.13 3.14; do
-              include=$(jq -c \
-                --arg python_version "$python_version" \
-                --argjson shard_index "$shard_index" \
-                '. + [{"python-version": $python_version, "shard_index": $shard_index}]' \
-                <<< "$include")
-            done
-          done
-          echo "matrix={\"include\":$include}" >> "$GITHUB_OUTPUT"
-
   tests:
     name: Python ${{ matrix.python-version}} on ${{ matrix.os }}${{ fromJSON('[" (extras)", ""]')[matrix.extras == ''] }}
     needs: lint
@@ -121,12 +82,13 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
   windows-tests:
-    name: Python ${{ matrix.python-version }} on windows-latest (shard ${{ matrix.shard_index }})
-    needs: [lint, windows-shards]
+    name: Python ${{ matrix.python-version }} on windows-latest
+    needs: lint
     runs-on: windows-latest
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.windows-shards.outputs.matrix) }}
+      matrix:
+        python-version: [3.11, 3.12, 3.13, 3.14]
     steps:
       - name: Checkout Source Files
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -136,52 +98,33 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Run PyTest Shard with Code Coverage
+      - name: Run PyTests with Code Coverage
         shell: bash
         run: |
-          uv run pytest \
-            -n auto \
-            --shard-index ${{ matrix.shard_index }} \
-            --shard-size 3800 \
-            --cov kasa \
-            --cov-report=
-          mv .coverage ".coverage.windows-py${{ matrix.python-version }}-shard${{ matrix.shard_index }}"
-
-      - name: Upload Code Coverage Data
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: windows-coverage-py${{ matrix.python-version }}-shard${{ matrix.shard_index }}
-          path: .coverage.windows-py${{ matrix.python-version }}-shard${{ matrix.shard_index }}
-          if-no-files-found: error
-          include-hidden-files: true
-
-  windows-coverage:
-    name: Combine Windows Code Coverage
-    needs: windows-tests
-    runs-on: windows-latest
-    steps:
-      - name: Checkout Source Files
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-
-      - name: Setup Environment
-        uses: ./.github/actions/setup
-        with:
-          python-version: 3.14
-
-      - name: Download Code Coverage Data
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          pattern: windows-coverage-*
-          path: coverage-data
-          merge-multiple: true
-
-      - name: Combine Code Coverage
-        shell: bash
-        run: |
-          uv run coverage combine coverage-data
+          shard_size=3800
+          collection=$(uv run pytest --collect-only -q)
+          test_count=$(grep -oE '[0-9]+ tests? collected' <<< "$collection" | tail -1 | cut -d' ' -f1)
+          if [[ -z "$test_count" ]]; then
+            echo "Unable to determine the collected test count" >&2
+            exit 1
+          fi
+          shard_count=$(( (test_count + shard_size - 1) / shard_size ))
+          uv run coverage erase
+          for ((shard_index = 0; shard_index < shard_count; shard_index++)); do
+            echo "::group::Shard $((shard_index + 1)) of $shard_count"
+            uv run pytest \
+              -n auto \
+              --shard-index "$shard_index" \
+              --shard-size "$shard_size" \
+              --cov kasa \
+              --cov-append \
+              --cov-report=
+            echo "::endgroup::"
+          done
           uv run coverage xml
 
       - name: Upload Code Coverage to Codecov
+        id: upload-code-coverage-to-codecov
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
