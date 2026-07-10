@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import logging
 import secrets
+from contextlib import AbstractContextManager
 from contextlib import nullcontext as does_not_raise
 from json import dumps as json_dumps
 from json import loads as json_loads
@@ -10,6 +11,7 @@ from typing import Any
 
 import aiohttp
 import pytest
+from pytest_mock import MockerFixture
 from yarl import URL
 
 from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
@@ -107,14 +109,14 @@ MOCK_UNENCRYPTED_PASSTHROUGH_STOK = "32charLowerCaseHexStok"
     ],
 )
 async def test_handshake(
-    mocker,
-    status_code,
-    username,
-    password,
-    wants_default_user,
-    digest_password_fail,
-    expectation,
-):
+    mocker: MockerFixture,
+    status_code: int,
+    username: str,
+    password: str,
+    wants_default_user: bool,
+    digest_password_fail: bool,
+    expectation: AbstractContextManager,
+) -> None:
     host = "127.0.0.1"
     mock_ssl_aes_device = MockSslAesDevice(
         host,
@@ -142,7 +144,9 @@ async def test_handshake(
     ("wants_default_user"),
     [pytest.param(False, id="username"), pytest.param(True, id="default")],
 )
-async def test_credentials_hash(mocker, wants_default_user):
+async def test_credentials_hash(
+    mocker: MockerFixture, wants_default_user: bool
+) -> None:
     host = "127.0.0.1"
     mock_ssl_aes_device = MockSslAesDevice(
         host, want_default_username=wants_default_user
@@ -167,7 +171,7 @@ async def test_credentials_hash(mocker, wants_default_user):
     assert transport.credentials_hash == creds_hash
 
 
-async def test_send(mocker):
+async def test_send(mocker: MockerFixture) -> None:
     host = "127.0.0.1"
     mock_ssl_aes_device = MockSslAesDevice(host, want_default_username=False)
     mocker.patch.object(
@@ -187,7 +191,9 @@ async def test_send(mocker):
 
 
 @pytest.mark.xdist_group(name="caplog")
-async def test_unencrypted_response(mocker, caplog):
+async def test_unencrypted_response(
+    mocker: MockerFixture, caplog: pytest.LogCaptureFixture
+) -> None:
     host = "127.0.0.1"
     mock_ssl_aes_device = MockSslAesDevice(host, do_not_encrypt_response=True)
     mocker.patch.object(
@@ -213,7 +219,9 @@ async def test_unencrypted_response(mocker, caplog):
 
 @pytest.mark.parametrize(("want_default"), [True, False])
 @pytest.mark.xdist_group(name="caplog")
-async def test_unencrypted_passthrough(mocker, caplog, want_default):
+async def test_unencrypted_passthrough(
+    mocker: MockerFixture, caplog: pytest.LogCaptureFixture, want_default: bool
+) -> None:
     host = "127.0.0.1"
     mock_ssl_aes_device = MockSslAesDevice(
         host, unencrypted_passthrough=True, want_default_username=want_default
@@ -240,7 +248,9 @@ async def test_unencrypted_passthrough(mocker, caplog, want_default):
 
 @pytest.mark.parametrize(("want_default"), [True, False])
 @pytest.mark.xdist_group(name="caplog")
-async def test_unencrypted_passthrough_errors(mocker, caplog, want_default):
+async def test_unencrypted_passthrough_errors(
+    mocker: MockerFixture, caplog: pytest.LogCaptureFixture, want_default: bool
+) -> None:
     host = "127.0.0.1"
     request = {
         "method": "getDeviceInfo",
@@ -329,7 +339,7 @@ async def test_unencrypted_passthrough_errors(mocker, caplog, want_default):
         await transport.send(json_dumps(request))
 
 
-async def test_device_blocked_response(mocker):
+async def test_device_blocked_response(mocker: MockerFixture) -> None:
     host = "127.0.0.1"
     mock_ssl_aes_device = MockSslAesDevice(host, device_blocked=True)
     mocker.patch.object(
@@ -360,7 +370,9 @@ async def test_device_blocked_response(mocker):
         ),
     ],
 )
-async def test_device_500_error(mocker, response, expected_msg):
+async def test_device_500_error(
+    mocker: MockerFixture, response: dict | bytes, expected_msg: str
+) -> None:
     """Test 500 error raises retryable exception."""
     host = "127.0.0.1"
     mock_ssl_aes_device = MockSslAesDevice(host)
@@ -387,7 +399,7 @@ async def test_device_500_error(mocker, response, expected_msg):
         await transport.send(json_dumps(request))
 
 
-async def test_port_override():
+async def test_port_override() -> None:
     """Test that port override sets the app_url."""
     host = "127.0.0.1"
     port_override = 12345
@@ -420,8 +432,8 @@ async def test_port_override():
     ],
 )
 async def test_login_version_default_credentials(
-    mocker, login_version, expected_password_b64
-):
+    mocker: MockerFixture, login_version: int | None, expected_password_b64: str
+) -> None:
     """Test that login_version=3 uses TAPOCAMERA_LV3 credentials while other versions use TAPOCAMERA."""
     host = "127.0.0.1"
     tapo_family = DeviceFamily.SmartIpCamera
