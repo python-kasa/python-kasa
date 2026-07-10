@@ -79,7 +79,11 @@ async def detail(ctx: click.Context) -> DeviceDict:
                 _echo_discovery_info(unsupported_exception.discovery_result)
                 echo()
                 if isinstance(unsupported_exception, UnsupportedAuthenticationError):
-                    echo("\t[red bold]Provisioned using unsupported 'tss'.[/red bold]")
+                    obd_src = unsupported_exception.discovery_result.get("obd_src")
+                    echo(
+                        f"\t[red bold]Provisioned using unsupported"
+                        f" '{obd_src}'.[/red bold]"
+                    )
                     echo("\tTo fix, reset and provision manually.")
 
     from .device import state

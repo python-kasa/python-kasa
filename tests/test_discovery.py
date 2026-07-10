@@ -418,6 +418,24 @@ async def test_device_update_from_new_discovery_info(discovery_mock):
             assert device.modules
 
 
+def test_unsupported_authentication_exception_for_tss():
+    """Test that unknown obd_src raises UnsupportedAuthenticationError."""
+    from kasa.discover import Discover, DiscoveryResult
+    from kasa.exceptions import UnsupportedAuthenticationError
+
+    dr = DiscoveryResult(
+        device_type="SomeType",
+        device_model="SomeModel",
+        device_id="SomeID",
+        ip="127.0.0.2",
+        mac="00:11:22:33:44:55",
+        obd_src="tss",
+    )
+    with pytest.raises(UnsupportedAuthenticationError) as excinfo:
+        Discover._get_connection_parameters(dr)
+    assert "unsupported onboarding 'tss'" in str(excinfo.value)
+
+
 async def test_discover_single_http_client(discovery_mock, mocker):
     """Make sure that discover_single returns an initialized SmartDevice instance."""
     host = "127.0.0.1"

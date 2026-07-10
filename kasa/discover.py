@@ -811,10 +811,14 @@ class Discover:
         discovery_result: DiscoveryResult,
     ) -> DeviceConnectionParameters:
         """Get connection parameters from the discovery result."""
-        # Raise specific exception for unsupported authentication source
-        if getattr(discovery_result, "obd_src", None) == "tss":
+        # Raise a specific exception for unknown onboarding sources, which have
+        # valid encryption schemes but use credentials we cannot obtain.
+        _KNOWN_OBD_SRCS = {"tplink", "matter", "apple"}
+        obd_src = discovery_result.obd_src
+        if obd_src and obd_src not in _KNOWN_OBD_SRCS:
             raise UnsupportedAuthenticationError(
-                f"Device at {discovery_result.ip} uses unsupported onboarding 'tss'.",
+                f"Device at {discovery_result.ip} uses unsupported onboarding"
+                f" '{obd_src}'.",
                 discovery_result=discovery_result.to_dict(),
                 host=discovery_result.ip,
             )
