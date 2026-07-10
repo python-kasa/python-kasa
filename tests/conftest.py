@@ -138,9 +138,46 @@ def pytest_addoption(parser):
     parser.addoption(
         "--password", action="store", default=None, help="authentication password"
     )
+    parser.addoption(
+        "--shard-index",
+        action="store",
+        type=int,
+        default=None,
+        help="zero-based pytest shard index",
+    )
+    parser.addoption(
+        "--shard-size",
+        action="store",
+        type=int,
+        default=None,
+        help="maximum number of tests in a pytest shard",
+    )
 
 
 def pytest_collection_modifyitems(config, items):
+    shard_index = config.getoption("--shard-index")
+    shard_size = config.getoption("--shard-size")
+    if (shard_index is None) != (shard_size is None):
+        raise pytest.UsageError(
+            "--shard-index and --shard-size must be provided together"
+        )
+    if shard_index is not None and shard_size is not None:
+        if shard_size < 1 or shard_index < 0:
+            raise pytest.UsageError(
+                "--shard-index must be non-negative and --shard-size positive"
+            )
+
+        start = shard_index * shard_size
+        if start >= len(items):
+            raise pytest.UsageError(
+                f"shard {shard_index} starts beyond {len(items)} collected tests"
+            )
+        end = min(start + shard_size, len(items))
+        deselected = items[:start] + items[end:]
+        if deselected:
+            config.hook.pytest_deselected(items=deselected)
+        items[:] = items[start:end]
+
     if not config.getoption("--ip"):
         print("Testing against fixtures.")
         # pytest_socket doesn't work properly in windows with asyncio
