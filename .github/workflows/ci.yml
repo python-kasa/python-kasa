@@ -45,6 +45,53 @@ jobs:
         run: |
           uv run pre-commit run --all-files --verbose
 
+  windows-shards:
+    name: Calculate Windows Test Shard Batches
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.calculate_windows_shards.outputs.matrix }}
+    steps:
+      - name: Checkout Source Files
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        with:
+          python-version: 3.14
+          uv-install-options: --all-extras
+
+      - name: Calculate Windows Test Shard Batches
+        id: calculate_windows_shards
+        shell: bash
+        run: |
+          shard_size=3500
+          shards_per_job=4
+          collection=$(uv run pytest --collect-only -q)
+          test_count=$(grep -oE '[0-9]+ tests? collected' <<< "$collection" | tail -1 | cut -d' ' -f1)
+          if [[ -z "$test_count" ]]; then
+            echo "Unable to determine the collected test count" >&2
+            exit 1
+          fi
+          shard_count=$(( (test_count + shard_size - 1) / shard_size ))
+          include='[]'
+          for ((shard_start = 0; shard_start < shard_count; shard_start += shards_per_job)); do
+            shard_end=$(( shard_start + shards_per_job ))
+            if (( shard_end > shard_count )); then
+              shard_end=$shard_count
+            fi
+            shard_group="$((shard_start + 1))-$shard_end"
+            for python_version in 3.11 3.12 3.13 3.14; do
+              include=$(jq -c \
+                --arg python_version "$python_version" \
+                --argjson shard_start "$shard_start" \
+                --argjson shard_end "$shard_end" \
+                --arg shard_group "$shard_group" \
+                '. + [{"python-version": $python_version, "shard_start": $shard_start, "shard_end": $shard_end, "shard_group": $shard_group}]' \
+                <<< "$include")
+            done
+          done
+          echo "matrix={\"include\":$include}" >> "$GITHUB_OUTPUT"
+
   tests:
     name: Python ${{ matrix.python-version}} on ${{ matrix.os }}${{ fromJSON('[" (extras)", ""]')[matrix.extras == ''] }}
     needs: lint
@@ -82,13 +129,12 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
   windows-tests:
-    name: Python ${{ matrix.python-version }} on windows-latest
-    needs: lint
+    name: Python ${{ matrix.python-version }} on windows-latest (shards ${{ matrix.shard_group }})
+    needs: [lint, windows-shards]
     runs-on: windows-latest
     strategy:
       fail-fast: false
-      matrix:
-        python-version: [3.11, 3.12, 3.13, 3.14]
+      matrix: ${{ fromJSON(needs.windows-shards.outputs.matrix) }}
     steps:
       - name: Checkout Source Files
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -102,18 +148,11 @@ jobs:
         shell: bash
         run: |
           shard_size=3500
-          collection=$(uv run pytest --collect-only -q)
-          test_count=$(grep -oE '[0-9]+ tests? collected' <<< "$collection" | tail -1 | cut -d' ' -f1)
-          if [[ -z "$test_count" ]]; then
-            echo "Unable to determine the collected test count" >&2
-            exit 1
-          fi
-          shard_count=$(( (test_count + shard_size - 1) / shard_size ))
           uv run coverage erase
-          for ((shard_index = 0; shard_index < shard_count; shard_index++)); do
+          for ((shard_index = ${{ matrix.shard_start }}; shard_index < ${{ matrix.shard_end }}; shard_index++)); do
             shard_temp="$RUNNER_TEMP/pytest-temp-$shard_index"
             shard_cache="$RUNNER_TEMP/pytest-cache-$shard_index"
-            echo "::group::Shard $((shard_index + 1)) of $shard_count"
+            echo "::group::Shard $((shard_index + 1))"
             COVERAGE_FILE=".coverage.shard-$shard_index" uv run pytest \
               -n auto \
               --shard-index "$shard_index" \
