@@ -45,39 +45,8 @@ jobs:
         run: |
           uv run pre-commit run --all-files --verbose
 
-  tests:
-    name: Python ${{ matrix.python-version }} on ${{ matrix.os }}
-    needs: lint
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        python-version: [3.11, 3.12, 3.13, 3.14]
-    steps:
-      - name: Checkout Source Files
-        id: checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-
-      - name: Setup Environment
-        id: setup-environment
-        uses: ./.github/actions/setup
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Run PyTests with Code Coverage
-        id: run-pytests-with-code-coverage
-        shell: bash
-        run: |
-          uv run pytest --fixture-set representative -n auto --cov kasa --cov-report xml
-
-      - name: Upload Code Coverage to Codecov
-        id: upload-code-coverage-to-codecov
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-
   full-fixture-tests:
-    name: Full Fixture Test Suite on Python 3.14 (all extras)
+    name: Preform Full Test Suite (3.14)
     needs: lint
     runs-on: ubuntu-latest
     steps:
@@ -104,22 +73,32 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
-  windows-tests:
-    name: Python ${{ matrix.python-version }} on windows-latest
-    needs: lint
-    runs-on: windows-latest
+  tests:
+    name: Python ${{ matrix.python-version }} on ${{ matrix.os }}${{ fromJSON('[" (extras)", ""]')[matrix.extras == ''] }}
+    needs: full-fixture-tests
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        extras: [false, true]
         python-version: [3.11, 3.12, 3.13, 3.14]
+        exclude:
+          - os: macos-latest
+            extras: true
+          - os: windows-latest
+            extras: true
     steps:
       - name: Checkout Source Files
+        id: checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Setup Environment
+        id: setup-environment
         uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
+          uv-install-options: ${{ matrix.extras == true && '--all-extras' || '' }}
 
       - name: Run PyTests with Code Coverage
         id: run-pytests-with-code-coverage
