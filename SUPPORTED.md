@@ -346,6 +346,7 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 
 - **RV20 Max Plus**
   - Hardware: 1.0 (EU) / Firmware: 1.0.7
+  - Hardware: 1.0 (EU) / Firmware: 1.3.0
 - **RV30 Max**
   - Hardware: 1.0 (US) / Firmware: 1.2.0
 
