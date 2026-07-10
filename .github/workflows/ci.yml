@@ -51,9 +51,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [3.11, 3.12, 3.13, 3.14]
         os: [ubuntu-latest, macos-latest]
         extras: [false, true]
+        python-version: [3.11, 3.12, 3.13, 3.14]
         exclude:
           - os: macos-latest
             extras: true
