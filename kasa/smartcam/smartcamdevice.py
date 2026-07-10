@@ -103,7 +103,13 @@ class SmartCamDevice(SmartDevice):
         self._info = self._map_info(info)
 
     async def _update_children_info(self) -> bool:
-        """Update the internal child device info from the parent info.
+        """Update child devices from ``getChildDeviceList``.
+
+        Only ``child_device_list`` (and ``sum``) drive
+        :attr:`~kasa.Device.children`. ``getDeviceInfo.child_num`` is not used
+        here and can disagree on some hubs (e.g. H500 reports paired children in
+        device info but returns an empty list over LAN). See
+        :ref:`topics-hub-children`.
 
         Return true if children added or deleted.
         """
@@ -111,11 +117,38 @@ class SmartCamDevice(SmartDevice):
         if child_info := self._try_get_response(
             self._last_update, "getChildDeviceList", {}
         ):
+            child_components_info = self._try_get_response(
+                self._last_update, "getChildDeviceComponentList", {}
+            )
             changed = await self._create_delete_children(
-                child_info, self._last_update["getChildDeviceComponentList"]
+                child_info, child_components_info
             )
 
-            for info in child_info["child_device_list"]:
+            child_device_list = child_info.get("child_device_list")
+            if not isinstance(child_device_list, list):
+                _LOGGER.warning(
+                    "Missing child_device_list for hub %s (device keys: %s)",
+                    self.host,
+                    list(child_info.keys()),
+                )
+                child_device_list = []
+
+            child_num = self._info.get("child_num") if self._info else None
+            if (
+                self.device_type is DeviceType.Hub
+                and child_num
+                and not child_device_list
+            ):
+                _LOGGER.warning(
+                    "Hub %s getDeviceInfo reports child_num=%s but "
+                    "getChildDeviceList is empty (sum=%s); children are not "
+                    "enumerable over LAN — see topics-hub-children in the docs",
+                    self.host,
+                    child_num,
+                    child_info.get("sum"),
+                )
+
+            for info in child_device_list:
                 child_id = info.get("device_id")
                 if child_id not in self._children:
                     # _create_delete_children has already logged a message

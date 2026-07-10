@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import logging
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, PropertyMock, patch
 
@@ -13,7 +14,7 @@ from kasa import Device, DeviceType, Module
 from kasa.exceptions import AuthenticationError, DeviceError, KasaException
 from kasa.smartcam import SmartCamDevice
 
-from ..conftest import device_smartcam, hub_smartcam
+from ..conftest import device_smartcam, get_device_for_fixture_protocol, hub_smartcam
 
 
 @device_smartcam
@@ -52,9 +53,40 @@ async def test_alias(dev: Device) -> None:
     assert dev.alias == original
 
 
+@pytest.mark.xdist_group(name="caplog")
+async def test_h500_hub_child_enumeration_warnings(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """H500 reports child_num but returns an empty child list over LAN."""
+    caplog.set_level(logging.WARNING)
+    dev = await get_device_for_fixture_protocol("H500(US)_1.0_1.3.18.json", "SMARTCAM")
+    assert dev.device_type is DeviceType.Hub
+
+    await dev._update_children_info()
+
+    assert "children are not enumerable over LAN" in caplog.text
+
+
+@pytest.mark.xdist_group(name="caplog")
+async def test_h500_missing_child_device_list_warning(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Warn when getChildDeviceList omits child_device_list entirely."""
+    caplog.set_level(logging.WARNING)
+    dev = await get_device_for_fixture_protocol("H500(US)_1.0_1.3.18.json", "SMARTCAM")
+    dev._last_update["getChildDeviceList"] = {"start_index": 0, "sum": 0}
+
+    await dev._update_children_info()
+
+    assert "Missing child_device_list for hub" in caplog.text
+
+
 @hub_smartcam
 async def test_hub(dev: Device) -> None:
-    assert dev.children
+    # H500 (and similar) advertise child_num but can return getChildDeviceList
+    # with only start_index/sum and no child_device_list over LAN.
+    if not dev.children:
+        pytest.skip("Hub fixture has no child devices")
     for child in dev.children:
         assert child.modules
         assert child.device_info

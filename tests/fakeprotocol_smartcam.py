@@ -208,11 +208,14 @@ class FakeSmartCamTransport(BaseTransport):
     def _hub_remove_device(self, info, params):
         """Remove hub device."""
         items_to_remove = [dev["device_id"] for dev in params["child_device_list"]]
-        children = info["getChildDeviceList"]["child_device_list"]
+        child_info = info.setdefault("getChildDeviceList", {})
+        children = child_info.get("child_device_list")
+        if not isinstance(children, list):
+            children = []
         new_children = [
             dev for dev in children if dev["device_id"] not in items_to_remove
         ]
-        info["getChildDeviceList"]["child_device_list"] = new_children
+        child_info["child_device_list"] = new_children
 
         return {"result": {}, "error_code": 0}
 
@@ -231,9 +234,11 @@ class FakeSmartCamTransport(BaseTransport):
     def _get_method_from_info(self, method, params):
         result = copy.deepcopy(self.info[method])
         if "start_index" in result and "sum" in result:
-            list_key = next(
-                iter([key for key in result if isinstance(result[key], list)])
-            )
+            list_keys = [key for key in result if isinstance(result[key], list)]
+            if not list_keys:
+                # H500-style: start_index/sum present but no list field.
+                return {"result": result, "error_code": 0}
+            list_key = list_keys[0]
             assert isinstance(params, dict)
             module_name = next(iter(params))
 

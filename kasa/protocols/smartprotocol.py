@@ -379,15 +379,22 @@ class SmartProtocol(BaseProtocol):
         ):
             return
 
-        response_list_name = next(
-            iter(
-                [
-                    key
-                    for key in response_result
-                    if isinstance(response_result[key], list)
-                ]
-            )
-        )
+        list_keys = [
+            key for key in response_result if isinstance(response_result[key], list)
+        ]
+        if not list_keys:
+            # H500-style hubs: start_index/sum without a list field (e.g.
+            # getChildDeviceComponentList over LAN).
+            if list_sum:
+                _LOGGER.warning(
+                    "Device %s returned sum=%s for method %s but no list field",
+                    self._host,
+                    list_sum,
+                    method,
+                )
+            return
+
+        response_list_name = list_keys[0]
         while (list_length := len(response_result[response_list_name])) < list_sum:
             request = self._get_list_request(method, params, list_length)
             response = await self._execute_query(

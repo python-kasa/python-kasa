@@ -612,6 +612,51 @@ async def _make_requests_or_exit(
         await protocol_to_close.close()
 
 
+async def _smartcam_hub_child_num(protocol: SmartProtocol) -> int | None:
+    """Return getDeviceInfo.child_num when queryable (hub mismatch diagnostics)."""
+    try:
+        di_resp = await protocol.query(
+            {"getDeviceInfo": {"device_info": {"name": ["basic_info"]}}}
+        )
+        child_num = (
+            di_resp.get("getDeviceInfo", {})
+            .get("device_info", {})
+            .get("basic_info", {})
+            .get("child_num")
+        )
+        return child_num if child_num else None
+    except Exception:
+        return None
+
+
+def _echo_empty_hub_child_list_warning(
+    *,
+    child_result: dict,
+    child_list: list | None,
+    child_num: int | None,
+) -> None:
+    """Warn when getChildDeviceList is empty; point to hub enumeration docs."""
+    doc_url = "https://python-kasa.readthedocs.io/en/latest/guides/hub.html"
+    if not isinstance(child_list, list):
+        mismatch = f" (getDeviceInfo child_num={child_num})" if child_num else ""
+        click.echo(
+            click.style(
+                "getChildDeviceList returned no child_device_list "
+                f"(keys: {list(child_result.keys())}){mismatch}; "
+                f"continuing without child fixtures. See {doc_url}",
+                fg="yellow",
+            )
+        )
+    elif not child_list and child_num:
+        click.echo(
+            click.style(
+                "getChildDeviceList is empty but getDeviceInfo reports "
+                f"child_num={child_num}; hub-only fixture. See {doc_url}",
+                fg="yellow",
+            )
+        )
+
+
 async def get_smart_camera_test_calls(protocol: SmartProtocol):
     """Get the list of test calls to make."""
     test_calls: list[SmartCall] = []
@@ -652,7 +697,26 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
                 supports_multiple=True,
             )
         )
-        child_list = child_response["getChildDeviceList"]["child_device_list"]
+        # H500 (and similar) can succeed with only start_index/sum and omit
+        # child_device_list entirely; treat that as "no children" for dump.
+        child_result = child_response.get("getChildDeviceList") or {}
+        child_list = child_result.get("child_device_list")
+        child_num = None
+        if not isinstance(child_list, list) or not child_list:
+            child_num = await _smartcam_hub_child_num(protocol)
+        if not isinstance(child_list, list):
+            _echo_empty_hub_child_list_warning(
+                child_result=child_result,
+                child_list=child_list,
+                child_num=child_num,
+            )
+            child_list = []
+        else:
+            _echo_empty_hub_child_list_warning(
+                child_result=child_result,
+                child_list=child_list,
+                child_num=child_num,
+            )
         for child in child_list:
             child_id = child.get("device_id") or child.get("dev_id")
             if not child_id:
@@ -890,10 +954,12 @@ def scrub_child_device_ids(
 
     # Scrub the device ids in the parent for the smart camera protocol
     if gc := main_response.get("getChildDeviceComponentList"):
-        for child in gc["child_component_list"]:
+        for child in gc.get("child_component_list") or []:
             device_id = child["device_id"]
             child["device_id"] = scrubbed_child_id_map[device_id]
-        for child in main_response["getChildDeviceList"]["child_device_list"]:
+        for child in (main_response.get("getChildDeviceList") or {}).get(
+            "child_device_list"
+        ) or []:
             if device_id := child.get("device_id"):
                 child["device_id"] = scrubbed_child_id_map[device_id]
                 continue
@@ -931,10 +997,10 @@ async def get_smart_fixtures(
                 cp = child_wrapper(test_call.child_device_id, protocol)
                 response = await cp.query(test_call.request)
         except AuthenticationError as ex:
-            _echo_error(
-                f"Unable to query the device due to an authentication error: {ex}",
-            )
-            exit(1)
+            # H500 and similar can return encrypted garbage for unsupported
+            # methods and temporarily break the session; close/reopen and
+            # continue probing rather than aborting the whole dump.
+            click.echo(click.style(f"FAIL {ex}", fg="red"))
         except Exception as ex:
             if (
                 not test_call.should_succeed
@@ -967,8 +1033,19 @@ async def get_smart_fixtures(
         device_request = device_requests.setdefault(success.child_device_id, [])
         device_request.append(success)
 
+    hub_requests = device_requests.get("", [])
+    if not hub_requests:
+        click.echo(
+            click.style(
+                "No successful hub queries; cannot build fixture. "
+                "Device may be wedged — power-cycle and retry.",
+                fg="red",
+            )
+        )
+        return []
+
     final = await _make_final_calls(
-        protocol, device_requests[""], "All successes", batch_size, child_device_id=""
+        protocol, hub_requests, "All successes", batch_size, child_device_id=""
     )
     fixture_results = []
 
@@ -997,10 +1074,15 @@ async def get_smart_fixtures(
     # smart cam child devices provide more information in getChildDeviceList on the
     # parent than they return when queried directly for getDeviceInfo so we will store
     # it in the child fixture.
+    child_infos_on_parent: dict[str, dict] = {}
     if smart_cam_child_list := final.get("getChildDeviceList"):
+        # Normalize H500-style responses that omit child_device_list entirely.
+        if not isinstance(smart_cam_child_list.get("child_device_list"), list):
+            smart_cam_child_list["child_device_list"] = []
         child_infos_on_parent = {
             info["device_id"]: info
             for info in smart_cam_child_list["child_device_list"]
+            if isinstance(info, dict) and "device_id" in info
         }
 
     for child_id, response in child_responses.items():
