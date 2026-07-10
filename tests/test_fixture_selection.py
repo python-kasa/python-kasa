@@ -19,7 +19,7 @@ def _fixture(
     keys: tuple[str, ...] = (),
     components: tuple[tuple[str, int], ...] = (),
 ) -> FixtureInfo:
-    data = {key: {} for key in keys}
+    data: dict[str, object] = {key: {} for key in keys}
     if components:
         data["component_nego"] = {
             "component_list": [
