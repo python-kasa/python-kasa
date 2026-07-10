@@ -101,7 +101,7 @@ jobs:
       - name: Run PyTests with Code Coverage
         shell: bash
         run: |
-          shard_size=3800
+          shard_size=3500
           collection=$(uv run pytest --collect-only -q)
           test_count=$(grep -oE '[0-9]+ tests? collected' <<< "$collection" | tail -1 | cut -d' ' -f1)
           if [[ -z "$test_count" ]]; then
@@ -111,16 +111,26 @@ jobs:
           shard_count=$(( (test_count + shard_size - 1) / shard_size ))
           uv run coverage erase
           for ((shard_index = 0; shard_index < shard_count; shard_index++)); do
+            shard_temp="$RUNNER_TEMP/pytest-temp-$shard_index"
+            shard_cache="$RUNNER_TEMP/pytest-cache-$shard_index"
             echo "::group::Shard $((shard_index + 1)) of $shard_count"
-            uv run pytest \
+            COVERAGE_FILE=".coverage.shard-$shard_index" uv run pytest \
               -n auto \
               --shard-index "$shard_index" \
               --shard-size "$shard_size" \
+              --basetemp "$shard_temp" \
+              -o cache_dir="$shard_cache" \
               --cov kasa \
-              --cov-append \
               --cov-report=
+            for cleanup_path in "$shard_temp" "$shard_cache"; do
+              case "$cleanup_path" in
+                "$RUNNER_TEMP"/*) rm -rf -- "$cleanup_path" ;;
+                *) echo "Refusing to clean path outside RUNNER_TEMP: $cleanup_path" >&2; exit 1 ;;
+              esac
+            done
             echo "::endgroup::"
           done
+          uv run coverage combine
           uv run coverage xml
 
       - name: Upload Code Coverage to Codecov
