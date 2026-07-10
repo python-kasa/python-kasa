@@ -202,14 +202,13 @@ SMART_AUTHENTICATION_ERRORS = [
 ]
 
 
-#: Onboarding sources we can authenticate with. Devices provisioned via other
-#: sources have valid encryption but use credentials we cannot access.
+#: Onboarding sources that are known to work
 SUPPORTED_OBD_SRCS = {"tplink", "matter", "apple"}
 
 
 class UnsupportedAuthenticationError(UnsupportedDeviceError, AuthenticationError):
     """Raised when authentication fails with unsupported provisioning method.
 
-    This can be used to display a more helpful message to the user when their devices
-    have been provisioned using the tplink simple setup (tss).
+    This can be used to display a more helpful message in when we know it is
+    not necessarily an issue with the inputted credentials.
     """

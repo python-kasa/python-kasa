@@ -441,11 +441,8 @@ async def test_unsupported_authentication_exception_for_tss(mocker):
         ),
     )
 
-    # Connection parameters succeed — no short-circuit on obd_src
     assert Discover._get_connection_parameters(dr) is not None
 
-    # When on_discovered propagates UnsupportedAuthenticationError (raised by update()),
-    # the wrapper routes it to on_unsupported
     unsupported_calls = []
 
     async def on_discovered(dev):
