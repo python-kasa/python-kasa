@@ -74,13 +74,13 @@ jobs:
           fi
           shard_count=$(( (test_count + shard_size - 1) / shard_size ))
           include='[]'
-          for ((shard_start = 0; shard_start < shard_count; shard_start += shards_per_job)); do
-            shard_end=$(( shard_start + shards_per_job ))
-            if (( shard_end > shard_count )); then
-              shard_end=$shard_count
-            fi
-            shard_group="$((shard_start + 1))-$shard_end"
-            for python_version in 3.11 3.12 3.13 3.14; do
+          for python_version in 3.11 3.12 3.13 3.14; do
+            for ((shard_start = 0; shard_start < shard_count; shard_start += shards_per_job)); do
+              shard_end=$(( shard_start + shards_per_job ))
+              if (( shard_end > shard_count )); then
+                shard_end=$shard_count
+              fi
+              shard_group=$(( shard_start / shards_per_job + 1 ))
               include=$(jq -c \
                 --arg python_version "$python_version" \
                 --argjson shard_start "$shard_start" \
@@ -129,7 +129,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
   windows-tests:
-    name: Python ${{ matrix.python-version }} on windows-latest (shards ${{ matrix.shard_group }})
+    name: Python ${{ matrix.python-version }} on windows-latest (shard group ${{ matrix.shard_group }})
     needs: [lint, windows-shards]
     runs-on: windows-latest
     strategy:
