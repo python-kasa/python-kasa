@@ -1,7 +1,7 @@
 from kasa.device_type import DeviceType
 
 
-async def test_device_type_from_value():
+async def test_device_type_from_value() -> None:
     """Make sure that every device type can be created from its value."""
     for name in DeviceType:
         assert DeviceType.from_value(name.value) is not None
