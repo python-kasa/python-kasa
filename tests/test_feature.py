@@ -1,5 +1,5 @@
 import logging
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pytest_mock import MockerFixture
@@ -167,66 +167,73 @@ async def test_precision_hint(dummy_feature: Feature, precision_hint: int) -> No
     assert f"{round(dummy_value, precision_hint)} dummyunit" in repr(dummy_feature)
 
 
-async def test_feature_setters(dev: Device, mocker: MockerFixture):
-    """Test that all feature setters query something."""
+async def _test_feature_setter(
+    dev: Device, feat: Feature, query_mock: MagicMock
+) -> None:
+    """Exercise one configurable feature setter."""
     # setters that do not call set on the device itself.
     internal_setters = {"pan_step", "tilt_step"}
 
-    async def _test_feature(feat, query_mock) -> None:
-        if feat.attribute_setter is None:
-            return
+    if feat.attribute_setter is None:
+        return
 
-        # IotStrip makes calls via it's children
-        expecting_call = feat.id not in internal_setters and not isinstance(
-            dev, IotStrip
-        )
+    # IotStrip makes calls via its children.
+    expecting_call = feat.id not in internal_setters and not isinstance(dev, IotStrip)
 
-        if feat.type == Feature.Type.Number:
-            await feat.set_value(feat.minimum_value)
-        elif feat.type == Feature.Type.Switch:
-            await feat.set_value(True)
-        elif feat.type == Feature.Type.Action:
-            await feat.set_value("dummyvalue")
-        elif feat.type == Feature.Type.Choice:
-            await feat.set_value(feat.choices[0])
-        elif feat.type == Feature.Type.Unknown:
-            _LOGGER.warning("Feature '%s' has no type, cannot test the setter", feat)
-            expecting_call = False
-        else:
-            raise NotImplementedError(f"set_value not implemented for {feat.type}")
+    if feat.type == Feature.Type.Number:
+        await feat.set_value(feat.minimum_value)
+    elif feat.type == Feature.Type.Switch:
+        await feat.set_value(True)
+    elif feat.type == Feature.Type.Action:
+        await feat.set_value("dummyvalue")
+    elif feat.type == Feature.Type.Choice:
+        choices = feat.choices
+        if choices is None:
+            raise AssertionError(f"Choice feature {feat.id} has no choices")
+        await feat.set_value(choices[0])
+    elif feat.type == Feature.Type.Unknown:
+        _LOGGER.warning("Feature '%s' has no type, cannot test the setter", feat)
+        expecting_call = False
+    else:
+        raise NotImplementedError(f"set_value not implemented for {feat.type}")
 
-        if expecting_call:
-            query_mock.assert_called()
+    if expecting_call:
+        query_mock.assert_called()
 
-    async def _test_features(dev: Device):
-        exceptions = []
-        for feat in dev.features.values():
-            try:
-                if isinstance(feat.container, Module):
-                    patch_dev = feat.container._device
-                elif feat.container is not None:
-                    patch_dev = feat.container
-                else:
-                    patch_dev = feat.device
-                with (
-                    patch.object(patch_dev.protocol, "query", name=feat.id) as query,
-                    # patch update in case feature setter does an update
-                    patch.object(patch_dev, "update"),
-                ):
-                    await _test_feature(feat, query)
-            # we allow our own exceptions to avoid mocking valid responses
-            except KasaException:
-                pass
-            except Exception as ex:
-                ex.add_note(f"Exception when trying to set {feat} on {dev}")
-                exceptions.append(ex)
 
-        return exceptions
+async def _test_device_feature_setters(dev: Device) -> list[Exception]:
+    """Exercise all configurable feature setters and collect unexpected errors."""
+    exceptions: list[Exception] = []
+    for feat in dev.features.values():
+        try:
+            if isinstance(feat.container, Module):
+                patch_dev = feat.container._device
+            elif feat.container is not None:
+                patch_dev = feat.container
+            else:
+                patch_dev = feat.device
+            with (
+                patch.object(patch_dev.protocol, "query", name=feat.id) as query,
+                # Patch update in case the feature setter invokes it.
+                patch.object(patch_dev, "update"),
+            ):
+                await _test_feature_setter(dev, feat, query)
+        # Allow library exceptions to avoid mocking valid device responses.
+        except KasaException:
+            pass
+        except Exception as ex:
+            ex.add_note(f"Exception when trying to set {feat} on {dev}")
+            exceptions.append(ex)
 
-    exceptions = await _test_features(dev)
+    return exceptions
+
+
+async def test_feature_setters(dev: Device) -> None:
+    """Test that all feature setters query something."""
+    exceptions = await _test_device_feature_setters(dev)
 
     for child in dev.children:
-        exceptions.extend(await _test_features(child))
+        exceptions.extend(await _test_device_feature_setters(child))
 
     if exceptions:
         raise ExceptionGroup(

@@ -486,7 +486,9 @@ async def get_device_for_fixture(
             fixture_data.data, fixture_data.name, verbatim=verbatim
         )
     else:
-        d.protocol = FakeIotProtocol(fixture_data.data, verbatim=verbatim)
+        d.protocol = FakeIotProtocol(
+            fixture_data.data, fixture_data.name, verbatim=verbatim
+        )
 
     discovery_data = None
     if "discovery_result" in fixture_data.data:

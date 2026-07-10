@@ -3,6 +3,7 @@ import inspect
 import pkgutil
 import sys
 from datetime import UTC, datetime, timedelta, timezone
+from types import ModuleType
 from unittest.mock import AsyncMock
 from zoneinfo import ZoneInfo
 
@@ -74,9 +75,9 @@ temp_control_smart = parametrize(
 interfaces = pytest.mark.parametrize("interface", kasa.interfaces.__all__)
 
 
-def _get_subclasses(of_class: type, package):
+def _get_subclasses(of_class: type, package: ModuleType) -> set[type]:
     """Get all the subclasses of a given class."""
-    subclasses = set()
+    subclasses: set[type] = set()
     # iter_modules returns ModuleInfo: (module_finder, name, ispkg)
     for _, modname, ispkg in pkgutil.iter_modules(package.__path__):
         importlib.import_module("." + modname, package=package.__name__)

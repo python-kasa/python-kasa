@@ -1,5 +1,6 @@
 import copy
 import logging
+from typing import Any
 
 from kasa.deviceconfig import DeviceConfig
 from kasa.protocols import IotProtocol
@@ -224,7 +225,7 @@ DEFAULT_BEHAVIOR = {
 
 class FakeIotProtocol(IotProtocol):
     def __init__(
-        self, info: dict, fixture_name: str | None = None, *, verbatim: bool = False
+        self, info: dict[str, Any], fixture_name: str, *, verbatim: bool = False
     ) -> None:
         super().__init__(
             transport=FakeIotTransport(info, fixture_name, verbatim=verbatim),
@@ -238,7 +239,7 @@ class FakeIotProtocol(IotProtocol):
 
 class FakeIotTransport(BaseTransport):
     def __init__(
-        self, info: dict, fixture_name: str | None = None, *, verbatim: bool = False
+        self, info: dict[str, Any], fixture_name: str, *, verbatim: bool = False
     ) -> None:
         super().__init__(config=DeviceConfig("127.0.0.123"))
         info = copy.deepcopy(info)
