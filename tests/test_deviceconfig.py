@@ -2,7 +2,7 @@ import json
 from dataclasses import replace
 from json import dumps as json_dumps
 from json import loads as json_loads
-from typing import cast
+from unittest.mock import MagicMock
 
 import aiohttp
 import pytest
@@ -62,11 +62,11 @@ async def test_deserialization(fixture_name: str, expected_value: DeviceConfig) 
 
 
 async def test_serialization_http_client() -> None:
-    """Test that the http client does not try to serialize."""
+    """Test that an HTTP client is excluded from serialization."""
     dict_val = json.loads(load_fixture("serialization", "deviceconfig_plug-klap.json"))
 
     config = replace(
-        PLUG_KLAP_CONFIG, http_client=cast(aiohttp.ClientSession, object())
+        PLUG_KLAP_CONFIG, http_client=MagicMock(spec=aiohttp.ClientSession)
     )
     assert config.http_client
 

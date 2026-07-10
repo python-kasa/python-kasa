@@ -67,6 +67,8 @@ async def _close_transport_and_http_sessions(monkeypatch):
     for session in aiohttp_sessions:
         if not session.closed:
             await session.close()
+
+
 def load_fixture(foldername: str, filename: str) -> str:
     """Load a fixture."""
     path = Path(Path(__file__).parent / "fixtures" / foldername / filename)
@@ -178,7 +180,7 @@ def asyncio_sleep_fixture(request: pytest.FixtureRequest):  # noqa: PT004
 
 
 @pytest.fixture(autouse=True, scope="session")
-def mock_datagram_endpoint(request: pytest.FixtureRequest):  # noqa: PT004
+def mock_datagram_endpoint(request: pytest.FixtureRequest):
     """Mock create_datagram_endpoint so it doesn't perform io."""
 
     async def _create_datagram_endpoint(protocol_factory, *_, **__):
