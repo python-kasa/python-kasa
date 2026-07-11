@@ -354,14 +354,20 @@ async def test_update_credentials_non_lv3_request(dev: SmartCamDevice):
 async def test_update_credentials_lv3_request(dev: SmartCamDevice):
     dev.config.connection_type.login_version = 3
     default_old_password = get_default_credentials(
+        DEFAULT_CREDENTIALS["TAPOCAMERA"]
+    ).password
+    expected_default_old_hash = (
+        hashlib.sha256(default_old_password.encode()).hexdigest().upper()
+    )  # noqa: S324
+    default_old_password = get_default_credentials(
         DEFAULT_CREDENTIALS["TAPOCAMERA_LV3"]
     ).password
-    expected_old_hash = (
+    expected_lv3_old_hash = (
         hashlib.sha256(default_old_password.encode()).hexdigest().upper()
     )  # noqa: S324
     expected_new_hash = hashlib.sha256(b"new-password").hexdigest().upper()  # noqa: S324
 
-    query_mock = AsyncMock(return_value={})
+    query_mock = AsyncMock(side_effect=[DeviceError("bad default"), {}])
     with (
         patch.object(type(dev), "credentials", new_callable=PropertyMock) as cred_mock,
         patch.object(dev.protocol, "query", query_mock),
@@ -373,23 +379,39 @@ async def test_update_credentials_lv3_request(dev: SmartCamDevice):
         result = await dev.update_credentials("new-user", "new-password")
 
     assert result == {}
-    encrypt_mock.assert_called_once_with(expected_new_hash)
-    query_mock.assert_awaited_once_with(
-        {
-            "changeAdminPassword": {
-                "user_management": {
-                    "change_admin_password": {
-                        "secname": "root",
-                        "username": "admin",
-                        "old_passwd": expected_old_hash,
-                        "passwd": expected_new_hash,
-                        "ciphertext": "encrypted-ciphertext",
-                        "encrypt_type": "3",
-                    }
+    assert encrypt_mock.call_count == 2
+    encrypt_mock.assert_called_with(expected_new_hash)
+    assert query_mock.await_count == 2
+    first_payload = query_mock.await_args_list[0].args[0]
+    second_payload = query_mock.await_args_list[1].args[0]
+    assert first_payload == {
+        "changeAdminPassword": {
+            "user_management": {
+                "change_admin_password": {
+                    "secname": "root",
+                    "username": "admin",
+                    "old_passwd": expected_default_old_hash,
+                    "passwd": expected_new_hash,
+                    "ciphertext": "encrypted-ciphertext",
+                    "encrypt_type": "3",
                 }
             }
         }
-    )
+    }
+    assert second_payload == {
+        "changeAdminPassword": {
+            "user_management": {
+                "change_admin_password": {
+                    "secname": "root",
+                    "username": "admin",
+                    "old_passwd": expected_lv3_old_hash,
+                    "passwd": expected_new_hash,
+                    "ciphertext": "encrypted-ciphertext",
+                    "encrypt_type": "3",
+                }
+            }
+        }
+    }
 
 
 @device_smartcam
@@ -403,10 +425,18 @@ async def test_update_credentials_falls_back_to_current_password_when_default_fa
     expected_default_old_hash = (
         hashlib.md5(default_old_password.encode()).hexdigest().upper()  # noqa: S324
     )
+    fallback_default_password = get_default_credentials(
+        DEFAULT_CREDENTIALS["TAPOCAMERA_LV3"]
+    ).password
+    expected_fallback_old_hash = (
+        hashlib.md5(fallback_default_password.encode()).hexdigest().upper()  # noqa: S324
+    )
     expected_current_old_hash = hashlib.md5(b"old-password").hexdigest().upper()  # noqa: S324
     expected_new_hash = hashlib.md5(b"new-password").hexdigest().upper()  # noqa: S324
 
-    query_mock = AsyncMock(side_effect=[DeviceError("bad old"), {}])
+    query_mock = AsyncMock(
+        side_effect=[DeviceError("bad default"), DeviceError("bad fallback"), {}]
+    )
     with (
         patch.object(type(dev), "credentials", new_callable=PropertyMock) as cred_mock,
         patch.object(dev.protocol, "query", query_mock),
@@ -416,9 +446,10 @@ async def test_update_credentials_falls_back_to_current_password_when_default_fa
         result = await dev.update_credentials("new-user@example.com", "new-password")
 
     assert result == {}
-    assert query_mock.await_count == 2
+    assert query_mock.await_count == 3
     first_payload = query_mock.await_args_list[0].args[0]
     second_payload = query_mock.await_args_list[1].args[0]
+    third_payload = query_mock.await_args_list[2].args[0]
 
     assert (
         first_payload["changeAdminPassword"]["user_management"][
@@ -430,10 +461,16 @@ async def test_update_credentials_falls_back_to_current_password_when_default_fa
         second_payload["changeAdminPassword"]["user_management"][
             "change_admin_password"
         ]["old_passwd"]
+        == expected_fallback_old_hash
+    )
+    assert (
+        third_payload["changeAdminPassword"]["user_management"][
+            "change_admin_password"
+        ]["old_passwd"]
         == expected_current_old_hash
     )
     assert (
-        second_payload["changeAdminPassword"]["user_management"][
+        third_payload["changeAdminPassword"]["user_management"][
             "change_admin_password"
         ]["passwd"]
         == expected_new_hash
@@ -462,8 +499,8 @@ async def test_update_credentials_returns_last_error_after_candidates_fail(
     query_mock = AsyncMock(
         side_effect=[
             DeviceError("bad default"),
-            DeviceError("bad current"),
             DeviceError("bad fallback"),
+            DeviceError("bad current"),
         ]
     )
     with (
@@ -472,7 +509,7 @@ async def test_update_credentials_returns_last_error_after_candidates_fail(
         patch.object(dev, "_encrypt_password", return_value="encrypted-ciphertext"),
     ):
         cred_mock.return_value = Credentials(username="admin", password="old-password")  # noqa: S106
-        with pytest.raises(DeviceError, match="bad fallback"):
+        with pytest.raises(DeviceError, match="bad current"):
             await dev.update_credentials("new-user@example.com", "new-password")
 
     assert query_mock.await_count == 3
@@ -490,13 +527,13 @@ async def test_update_credentials_returns_last_error_after_candidates_fail(
         second_payload["changeAdminPassword"]["user_management"][
             "change_admin_password"
         ]["old_passwd"]
-        == expected_current_old_hash
+        == expected_fallback_old_hash
     )
     assert (
         third_payload["changeAdminPassword"]["user_management"][
             "change_admin_password"
         ]["old_passwd"]
-        == expected_fallback_old_hash
+        == expected_current_old_hash
     )
 
 
@@ -513,6 +550,7 @@ async def test_update_credentials_all_candidates_fail(dev: SmartCamDevice):
         cred_mock.return_value = Credentials(username="admin", password="old-password")  # noqa: S106
         with pytest.raises(DeviceError):
             await dev.update_credentials("new-user@example.com", "new-password")
+    assert query_mock.await_count == 3
 
 
 @device_smartcam

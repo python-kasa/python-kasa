@@ -400,7 +400,7 @@ class SmartCamDevice(SmartDevice):
         """Update smart camera credentials."""
         login_version = self.config.connection_type.login_version
         last_error: DeviceError | None = None
-        for old_password_candidate in self._password_candidates(login_version):
+        for old_password_candidate in self._password_candidates():
             try:
                 return await self._try_change_password(
                     old_password_candidate, password, login_version
@@ -412,18 +412,14 @@ class SmartCamDevice(SmartDevice):
             raise last_error
         raise KasaException("Unable to determine current admin password.")
 
-    def _password_candidates(self, login_version: int | None) -> list[str]:
-        default_key = "TAPOCAMERA_LV3" if login_version == 3 else "TAPOCAMERA"
-        fallback_default_key = "TAPOCAMERA" if login_version == 3 else "TAPOCAMERA_LV3"
-
+    def _password_candidates(self) -> list[str]:
         password_candidates = [
-            get_default_credentials(DEFAULT_CREDENTIALS[default_key]).password
+            get_default_credentials(default_credentials).password
+            for key, default_credentials in DEFAULT_CREDENTIALS.items()
+            if key.startswith("TAPOCAMERA")
         ]
         if self.credentials and self.credentials.password:
             password_candidates.append(self.credentials.password)
-        password_candidates.append(
-            get_default_credentials(DEFAULT_CREDENTIALS[fallback_default_key]).password
-        )
 
         return list(dict.fromkeys(password_candidates))
 
