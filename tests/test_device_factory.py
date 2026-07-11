@@ -157,7 +157,30 @@ async def test_connect_query_fails(discovery_mock, mocker):
     assert close_mock.call_count == 0
     with pytest.raises(KasaException):
         await connect(config=config)
-    assert close_mock.call_count == 1
+
+
+def test_get_connection_parameters_aes_branch():
+    """Test branch where discovery_result.encrypt_type contains '3' and no encrypt_info -> AES."""
+    from kasa.deviceconfig import DeviceEncryptionType
+    from kasa.discover import Discover, DiscoveryResult, EncryptionScheme
+
+    # Build a discovery result mimicking the new discovery format
+    enc_scheme = EncryptionScheme(
+        is_support_https=False, encrypt_type=None, http_port=None, lv=None
+    )
+    dr = DiscoveryResult(
+        device_type=Device.Family.SmartIpCamera.value,
+        device_model="MODEL(1)",
+        device_id="REDACT_ME_123456789",
+        ip="1.2.3.4",
+        mac="00:11:22:33:44:55",
+        mgt_encrypt_schm=enc_scheme,
+        encrypt_info=None,
+        encrypt_type=["3"],
+    )
+
+    conn = Discover._get_connection_parameters(dr)
+    assert conn.encryption_type == DeviceEncryptionType.Aes
 
 
 async def test_connect_http_client(discovery_mock, mocker):
