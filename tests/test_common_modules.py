@@ -16,6 +16,8 @@ from kasa.module import _get_feature_attribute
 from .device_fixtures import (
     bulb_iot,
     bulb_smart,
+    device_iot,
+    device_smart,
     dimmable_iot,
     dimmer_iot,
     get_parent_and_child_modules,
@@ -63,6 +65,7 @@ light_preset_smart = parametrize(
 light_preset = parametrize_combine([light_preset_smart, bulb_iot])
 
 light = parametrize_combine([bulb_smart, bulb_iot, dimmable])
+time = parametrize_combine([device_smart, device_iot])
 
 temp_control_smart = parametrize(
     "has temp control smart",
@@ -422,6 +425,7 @@ async def test_thermostat(dev: Device, mocker: MockerFixture):
     assert therm_mod.temperature_unit == "fahrenheit"
 
 
+@time
 async def test_set_time(dev: Device):
     """Test setting the device time."""
     time_mod = dev.modules[Module.Time]

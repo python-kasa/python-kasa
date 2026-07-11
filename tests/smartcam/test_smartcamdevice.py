@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import base64
-from datetime import UTC, datetime
+import logging
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, PropertyMock, patch
+from zoneinfo import ZoneInfo
 
 import pytest
 from freezegun.api import FrozenDateTimeFactory
@@ -12,6 +14,7 @@ from freezegun.api import FrozenDateTimeFactory
 from kasa import Device, DeviceType, Module
 from kasa.exceptions import AuthenticationError, DeviceError, KasaException
 from kasa.smartcam import SmartCamDevice
+from kasa.smartcam.modules.time import Time
 
 from ..conftest import device_smartcam, hub_smartcam
 
@@ -156,12 +159,121 @@ async def test_wifi_join_success_and_errors(dev: SmartCamDevice) -> None:
 @device_smartcam
 async def test_device_time(dev: Device, freezer: FrozenDateTimeFactory) -> None:
     """Test a child device gets the time from it's parent module."""
-    fallback_time = datetime.now(UTC).astimezone().replace(microsecond=0)
-    assert dev.time != fallback_time
+    original_time = dev.time
+    fallback_time = datetime.now(UTC).replace(tzinfo=ZoneInfo("America/New_York"))
     module = dev.modules[Module.Time]
     await module.set_time(fallback_time)
     await dev.update()
-    assert dev.time == fallback_time
+    assert dev.timezone == fallback_time.tzinfo
+    # SmartCam set_time updates timezone only; device clock remains unchanged.
+    assert dev.time.timestamp() == original_time.timestamp()
+
+
+@device_smartcam
+async def test_set_time_updates_timezone_only(
+    dev: Device, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Test SmartCam set_time updates timezone without changing clock time."""
+    original_time = dev.time
+    set_time_value = datetime(2024, 1, 15, 12, 0, tzinfo=ZoneInfo("Europe/Berlin"))
+    module = dev.modules[Module.Time]
+
+    with caplog.at_level(logging.WARNING):
+        await module.set_time(set_time_value)
+    await dev.update()
+
+    assert (
+        "SmartCam devices do not support setting clock time directly; only timezone settings will be updated."
+        in caplog.text
+    )
+    assert dev.timezone == set_time_value.tzinfo
+    assert dev.time.timestamp() == original_time.timestamp()
+
+
+@device_smartcam
+async def test_set_time_uses_current_timezone_for_naive_datetime(dev: Device) -> None:
+    """Test SmartCam set_time uses the current timezone for naive datetimes."""
+    module = dev.modules[Module.Time]
+    set_time_value = datetime(2024, 1, 15, 12, 0)
+    expected_timezone = module.timezone
+    assert isinstance(expected_timezone, ZoneInfo)
+
+    with patch.object(module, "call", AsyncMock(return_value={})) as call_mock:
+        await module.set_time(set_time_value)
+
+    call_mock.assert_awaited_once()
+    call = call_mock.await_args_list[0]
+    params = call.args[1]["system"]["basic"]
+    assert params["timezone"] == Time._format_utc_offset(
+        expected_timezone.utcoffset(set_time_value)
+    )
+    assert params["zone_id"] == expected_timezone.key
+
+
+@pytest.mark.parametrize(
+    ("set_time_value", "expected_timezone", "expected_zone_id"),
+    [
+        pytest.param(
+            datetime(2024, 1, 15, 12, 0, tzinfo=ZoneInfo("UTC")),
+            "UTC+00:00",
+            "UTC",
+            id="utc",
+        ),
+        pytest.param(
+            datetime(2024, 1, 15, 12, 0, tzinfo=ZoneInfo("America/New_York")),
+            "UTC-05:00",
+            "America/New_York",
+            id="negative-offset",
+        ),
+        pytest.param(
+            datetime(2024, 1, 15, 12, 0, tzinfo=ZoneInfo("Asia/Kathmandu")),
+            "UTC+05:45",
+            "Asia/Kathmandu",
+            id="partial-hour-offset",
+        ),
+    ],
+)
+@device_smartcam
+async def test_set_time_formats_timezone_params(
+    dev: Device,
+    set_time_value: datetime,
+    expected_timezone: str,
+    expected_zone_id: str,
+) -> None:
+    """Test SmartCam set_time sends both offset and zone id."""
+    module = dev.modules[Module.Time]
+    with patch.object(module, "call", AsyncMock(return_value={})) as call_mock:
+        await module.set_time(set_time_value)
+
+    call_mock.assert_awaited_once()
+    call = call_mock.await_args_list[0]
+    assert call.args[0] == "setTimezone"
+    params = call.args[1]["system"]["basic"]
+    assert params["timezone"] == expected_timezone
+    assert params["zone_id"] == expected_zone_id
+
+
+@device_smartcam
+async def test_set_time_rejects_fixed_offset_timezone(dev: Device) -> None:
+    """Test SmartCam set_time rejects offsets that cannot update zone_id."""
+    module = dev.modules[Module.Time]
+
+    with pytest.raises(KasaException, match="zoneinfo timezones"):
+        await module.set_time(datetime(2024, 1, 15, 12, 0, tzinfo=UTC))
+
+
+@pytest.mark.parametrize(
+    ("offset", "expected"),
+    [
+        pytest.param(timedelta(0), "UTC+00:00", id="utc"),
+        pytest.param(timedelta(hours=-5), "UTC-05:00", id="negative"),
+        pytest.param(timedelta(hours=5, minutes=45), "UTC+05:45", id="partial-hour"),
+        pytest.param(None, "UTC+00:00", id="none"),
+    ],
+)
+def test_format_utc_offset(offset: timedelta | None, expected: str) -> None:
+    """Test SmartCam UTC offset formatting."""
+    assert Time._format_utc_offset(offset) == expected
 
 
 @device_smartcam
