@@ -5,9 +5,14 @@ from __future__ import annotations
 from typing import Any, NoReturn
 
 from ...emeterstatus import EmeterStatus
-from ...exceptions import DeviceError, KasaException
+from ...exceptions import DeviceError, KasaException, SmartErrorCode
 from ...interfaces.energy import Energy as EnergyInterface
 from ..smartmodule import SmartModule, raise_if_update_error
+
+_OPTIONAL_METHOD_ERRORS = {
+    SmartErrorCode.PARAMS_ERROR,
+    SmartErrorCode.UNKNOWN_METHOD_ERROR,
+}
 
 
 class Energy(SmartModule, EnergyInterface):
@@ -118,8 +123,9 @@ class Energy(SmartModule, EnergyInterface):
         if self.supported_version > 1:
             try:
                 res = await self.call("get_emeter_data")
-            except DeviceError:
-                pass
+            except DeviceError as ex:
+                if ex.error_code not in _OPTIONAL_METHOD_ERRORS:
+                    raise
             else:
                 return EmeterStatus(res["get_emeter_data"])
 
@@ -138,8 +144,9 @@ class Energy(SmartModule, EnergyInterface):
         if self.supported_version > 1:
             try:
                 res = await self.call("get_current_power")
-            except DeviceError:
-                pass
+            except DeviceError as ex:
+                if ex.error_code not in _OPTIONAL_METHOD_ERRORS:
+                    raise
             else:
                 current_power = res["get_current_power"]
 

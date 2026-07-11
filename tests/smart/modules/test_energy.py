@@ -263,6 +263,17 @@ async def test_v2_current_power_fallbacks(
         pytest.param(
             {
                 "get_emeter_data": _device_error(
+                    "get_emeter_data", SmartErrorCode.UNKNOWN_METHOD_ERROR
+                ),
+                "get_energy_usage": _energy_usage(current_power=2002),
+            },
+            ["get_emeter_data", "get_energy_usage"],
+            2.002,
+            id="falls_back_after_unknown_method",
+        ),
+        pytest.param(
+            {
+                "get_emeter_data": _device_error(
                     "get_emeter_data", SmartErrorCode.PARAMS_ERROR
                 ),
                 "get_energy_usage": _energy_usage(),
@@ -317,6 +328,55 @@ async def test_v2_get_status_current_power_sources(
 
     assert calls == expected_calls
     assert status.power == expected_power
+
+
+@has_emeter_smart
+@pytest.mark.parametrize(
+    ("responses", "expected_calls", "expected_match"),
+    [
+        pytest.param(
+            {
+                "get_emeter_data": _device_error(
+                    "get_emeter_data", SmartErrorCode.JSON_DECODE_FAIL_ERROR
+                ),
+            },
+            ["get_emeter_data"],
+            "get_emeter_data",
+            id="get_emeter_data",
+        ),
+        pytest.param(
+            {
+                "get_emeter_data": _device_error(
+                    "get_emeter_data", SmartErrorCode.PARAMS_ERROR
+                ),
+                "get_energy_usage": _energy_usage(),
+                "get_current_power": _device_error(
+                    "get_current_power", SmartErrorCode.JSON_DECODE_FAIL_ERROR
+                ),
+            },
+            ["get_emeter_data", "get_energy_usage", "get_current_power"],
+            "get_current_power",
+            id="get_current_power",
+        ),
+    ],
+)
+async def test_v2_get_status_raises_unexpected_optional_method_errors(
+    dev: SmartDevice,
+    responses: dict[str, object],
+    expected_calls: list[str],
+    expected_match: str,
+) -> None:
+    """Only unsupported optional method errors should fall back silently."""
+    energy_module = _get_v2_energy_module(dev)
+    calls: list[str] = []
+
+    with (
+        patch.object(dev.protocol, "query", side_effect=_mock_query(responses, calls)),
+        pytest.raises(DeviceError, match=expected_match),
+    ):
+        await energy_module.get_status()
+
+    assert calls == expected_calls
 
 
 @p110_v1_smart
