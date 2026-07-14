@@ -2,27 +2,27 @@
 
 The main entry point for this library is :meth:`Discover.discover()`,
 which returns a dictionary of the found devices. The key is the IP address
-of the device and the value contains ready-to-use, SmartDevice-derived
-device object.
+of the device and the value is a :class:`Device` instance initialized from
+the selected discovery response.
 
 :meth:`discover_single()` can be used to initialize a single device given its
 IP address. If the :class:`DeviceConfig` of the device is already known,
 you can initialize the corresponding device class directly without discovery.
 
-The protocol uses UDP broadcast datagrams on port 9999 and 20002 for discovery.
-Legacy devices support discovery on port 9999 and newer devices on 20002.
+Discovery queries UDP port 9999 and TDP ports 20002 and 20004. If a host
+responds through both UDP and TDP, the TDP response is used.
 
-Newer devices that respond on port 20002 will most likely require TP-Link cloud
-credentials to be passed if queries or updates are to be performed on the returned
-devices.
+Devices that respond to TDP discovery will most likely require TP-Link cloud
+credentials to be passed if queries or updates are to be performed on the
+returned devices.
 
 Discovery returns a dict of {ip: discovered devices}:
 
 >>> from kasa import Discover, Credentials
 >>>
 >>> found_devices = await Discover.discover()
->>> [dev.model for dev in found_devices.values()]
-['KP303', 'HS110', 'L530E', 'KL430', 'HS220', 'H200']
+>>> sorted(dev.model for dev in found_devices.values())
+['H200', 'HS110', 'HS220', 'KL430', 'KP303', 'L530E']
 
 You can pass username and password for devices requiring authentication
 
@@ -58,17 +58,21 @@ None
 >>> dev.alias
 'Living Room Bulb'
 
-It is also possible to pass a coroutine to be executed for each found device:
+It is also possible to pass a coroutine to be executed for each found device.
+Callbacks can complete in any order:
 
->>> async def print_dev_info(dev):
+>>> discovered = []
+>>> async def collect_dev_info(dev):
 ...     await dev.update()
-...     print(f"Discovered {dev.alias} (model: {dev.model})")
+...     discovered.append(f"Discovered {dev.alias} (model: {dev.model})")
 >>>
->>> devices = await Discover.discover(on_discovered=print_dev_info, credentials=creds)
-Discovered Bedroom Power Strip (model: KP303)
+>>> devices = await Discover.discover(on_discovered=collect_dev_info, credentials=creds)
+>>> for info in sorted(discovered):
+...     print(info)
 Discovered Bedroom Lamp Plug (model: HS110)
-Discovered Living Room Bulb (model: L530)
 Discovered Bedroom Lightstrip (model: KL430)
+Discovered Bedroom Power Strip (model: KP303)
+Discovered Living Room Bulb (model: L530)
 Discovered Living Room Dimmer Switch (model: HS220)
 Discovered Tapo Hub (model: H200)
 
@@ -85,6 +89,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import binascii
+import builtins
 import ipaddress
 import logging
 import secrets
@@ -93,13 +98,16 @@ import struct
 from asyncio import timeout as asyncio_timeout
 from asyncio.transports import DatagramTransport
 from collections.abc import Callable, Coroutine
-from dataclasses import dataclass
+from copy import deepcopy
+from dataclasses import dataclass, field
+from enum import Enum
 from pprint import pformat as pf
 from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
-    NamedTuple,
+    NotRequired,
+    Protocol,
     TypedDict,
     cast,
 )
@@ -111,21 +119,24 @@ from mashumaro.types import Alias
 from kasa import Device
 from kasa.credentials import Credentials
 from kasa.device_factory import (
-    get_device_class_from_family,
-    get_device_class_from_sys_info,
-    get_protocol,
+    OnConnectAttemptCallable,
+    create_device,
+    try_connect_all,
 )
 from kasa.deviceconfig import (
     DeviceConfig,
     DeviceConnectionParameters,
     DeviceEncryptionType,
+    DeviceFamily,
 )
 from kasa.exceptions import (
+    AuthenticationError,
+    DiscoveryAuthenticationError,
     KasaException,
     TimeoutError,
     UnsupportedDeviceError,
 )
-from kasa.iot.iotdevice import IotDevice, _extract_sys_info
+from kasa.iot.iotdevice import extract_sys_info
 from kasa.json import DataClassJSONMixin
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
@@ -136,29 +147,17 @@ from kasa.transports.xortransport import XorEncryption
 
 _LOGGER = logging.getLogger(__name__)
 
-if TYPE_CHECKING:
-    from kasa import BaseProtocol
-    from kasa.transports import BaseTransport
-
-
-class ConnectAttempt(NamedTuple):
-    """Try to connect attempt."""
-
-    protocol: type
-    transport: type
-    device: type
-    https: bool
-
 
 class DiscoveredMeta(TypedDict):
-    """Meta info about discovery response."""
+    """Identify the address and discovery method that produced a raw response."""
 
     ip: str
     port: int
+    source: NotRequired[str]
 
 
 class DiscoveredRaw(TypedDict):
-    """Try to connect attempt."""
+    """Decoded response supplied to a raw discovery callback."""
 
     meta: DiscoveredMeta
     discovery_response: dict
@@ -167,8 +166,206 @@ class DiscoveredRaw(TypedDict):
 OnDiscoveredCallable = Callable[[Device], Coroutine]
 OnDiscoveredRawCallable = Callable[[DiscoveredRaw], None]
 OnUnsupportedCallable = Callable[[UnsupportedDeviceError], Coroutine]
-OnConnectAttemptCallable = Callable[[ConnectAttempt, bool], None]
+OnAuthenticationErrorCallable = Callable[[DiscoveryAuthenticationError], Coroutine]
 DeviceDict = dict[str, Device]
+
+
+class _DiscoverySource(Enum):
+    """Discovery methods supported by the library."""
+
+    Udp = "udp"
+    Tdp = "tdp"
+
+
+def select_discovery_response(responses: list[DiscoveredRaw]) -> DiscoveredRaw:
+    """Prefer a TDP response, otherwise return the first decoded response."""
+    if not responses:
+        raise KasaException("No decoded discovery responses available")
+
+    def get_source(response: DiscoveredRaw) -> str:
+        meta = response["meta"]
+        if source := meta.get("source"):
+            return source
+        return (
+            _DiscoverySource.Tdp.value
+            if meta["port"] in (Discover.DISCOVERY_PORT_2, Discover.DISCOVERY_PORT_3)
+            else _DiscoverySource.Udp.value
+        )
+
+    tdp_responses = [
+        response
+        for response in responses
+        if get_source(response) == _DiscoverySource.Tdp.value
+    ]
+    if not tdp_responses:
+        return responses[0]
+
+    tdp_ports = {response["meta"]["port"] for response in tdp_responses}
+    if len(tdp_ports) > 1:
+        first = tdp_responses[0]
+        _LOGGER.warning(
+            "Host %s unexpectedly produced responses on multiple TDP ports; "
+            "preserving the first endpoint response",
+            first["meta"]["ip"],
+        )
+    return tdp_responses[0]
+
+
+@dataclass(frozen=True)
+class _DiscoveryConnection:
+    """Connection information advertised by a discovery response."""
+
+    device_family: str
+    encryption_type: str
+    login_version: int | None = None
+    klap_version: int | None = None
+    https: bool = False
+    http_port: int | None = None
+
+    @classmethod
+    def from_tdp_result(
+        cls,
+        discovery_result: DiscoveryResult,
+    ) -> _DiscoveryConnection:
+        """Extract normalized connection information from a TDP result."""
+        if (encrypt_scheme := discovery_result.mgt_encrypt_schm) is None:
+            raise UnsupportedDeviceError(
+                f"Unsupported device {discovery_result.ip} of type "
+                f"{discovery_result.device_type} with no mgt_encrypt_schm",
+                discovery_result=discovery_result.to_dict(),
+                host=discovery_result.ip,
+            )
+
+        encrypt_type = encrypt_scheme.encrypt_type
+        if not encrypt_type and (encrypt_info := discovery_result.encrypt_info):
+            encrypt_type = encrypt_info.sym_schm
+
+        login_version = encrypt_scheme.lv
+        if not login_version and (supported_types := discovery_result.encrypt_type):
+            try:
+                login_version = max(int(value) for value in supported_types)
+            except ValueError as ex:
+                raise UnsupportedDeviceError(
+                    f"Unsupported login versions for {discovery_result.ip}: "
+                    f"{supported_types}",
+                    discovery_result=discovery_result.to_dict(),
+                    host=discovery_result.ip,
+                ) from ex
+
+        if not encrypt_type:
+            raise UnsupportedDeviceError(
+                f"Unsupported device {discovery_result.ip} of type "
+                f"{discovery_result.device_type} with no encryption type",
+                discovery_result=discovery_result.to_dict(),
+                host=discovery_result.ip,
+            )
+
+        # new_klap selects an IOT KLAP handshake variant. It is independent
+        # from the advertised login version and is not used to select SMART
+        # KLAP, which already has its own family-specific route.
+        klap_version = (
+            encrypt_scheme.new_klap or None
+            if discovery_result.device_type.startswith("IOT.")
+            and encrypt_type == DeviceEncryptionType.Klap.value
+            else None
+        )
+
+        return cls(
+            device_family=discovery_result.device_type,
+            encryption_type=encrypt_type,
+            login_version=login_version,
+            klap_version=klap_version,
+            https=encrypt_scheme.is_support_https,
+            http_port=encrypt_scheme.http_port,
+        )
+
+    def to_connection_parameters(self) -> DeviceConnectionParameters:
+        """Create public connection parameters from advertised values."""
+        return DeviceConnectionParameters.from_values(
+            self.device_family,
+            self.encryption_type,
+            login_version=self.login_version,
+            klap_version=self.klap_version,
+            https=self.https,
+            http_port=self.http_port,
+        )
+
+
+@dataclass(frozen=True)
+class _DiscoveryCandidate:
+    """Normalized result returned by a discovery method."""
+
+    source: _DiscoverySource
+    source_port: int
+    ip: str
+    device_family: str
+    device_model: str | None
+    connection: _DiscoveryConnection
+    discovery_info: dict[str, Any]
+    device_info: dict[str, Any] | None = None
+    discovery_result: DiscoveryResult | None = None
+
+
+@dataclass(frozen=True)
+class _DiscoveryResponseError:
+    """Error produced while processing one discovery response."""
+
+    source: _DiscoverySource
+    source_port: int
+    error: KasaException
+
+
+@dataclass
+class _DiscoveryEndpointState:
+    """Response collection state for one host and discovery endpoint."""
+
+    deferred_datagrams: list[bytes] = field(default_factory=list)
+    response_errors: list[_DiscoveryResponseError] = field(default_factory=list)
+    first_decoded_response: dict[str, Any] | None = None
+    candidate: _DiscoveryCandidate | None = None
+    raw_emitted: bool = False
+
+
+class _DiscoveryMethod(Protocol):
+    """Internal contract implemented by one discovery endpoint."""
+
+    source: _DiscoverySource
+    port: int
+    defer_processing: bool
+    suppresses: frozenset[_DiscoverySource]
+
+    def create_query(self) -> bytes:
+        """Create the query sent to this endpoint."""
+
+    def parse_response(self, data: bytes, ip: str) -> dict[str, Any]:
+        """Decode a response from this endpoint."""
+
+    def create_candidate(
+        self,
+        info: dict[str, Any],
+        ip: str,
+        port: int,
+    ) -> _DiscoveryCandidate:
+        """Normalize a decoded response."""
+
+
+@dataclass
+class _DiscoveryHostState:
+    """Collection, resolution, and publication state for one host."""
+
+    endpoints: dict[int, _DiscoveryEndpointState] = field(default_factory=dict)
+    suppressed_sources: set[_DiscoverySource] = field(default_factory=set)
+    # Devices belong to one TDP endpoint population. This records that endpoint
+    # so an unexpected same-IP response on the other port cannot merge state.
+    tdp_port: int | None = None
+    ignored_tdp_ports: set[int] = field(default_factory=set)
+    processing_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    device: Device | None = None
+    unsupported_error: UnsupportedDeviceError | None = None
+    authentication_error: DiscoveryAuthenticationError | None = None
+    invalid_error: KasaException | None = None
+    outcome_finalized: bool = False
+
 
 DECRYPTED_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "connect_ssid": lambda x: "#MASKED_SSID#" if x else "",
@@ -176,7 +373,7 @@ DECRYPTED_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "owner": lambda x: "REDACTED_" + x[9::],
 }
 
-NEW_DISCOVERY_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
+TDP_DISCOVERY_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "device_id": lambda x: "REDACTED_" + x[9::],
     "device_name": lambda x: "#MASKED_NAME#" if x else "",
     "owner": lambda x: "REDACTED_" + x[9::],
@@ -189,17 +386,22 @@ NEW_DISCOVERY_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "decrypted_data": lambda x: redact_data(x, DECRYPTED_REDACTORS),
 }
 
+# Compatibility name used by devtools and external callers before the source
+# was explicitly named TDP discovery.
+NEW_DISCOVERY_REDACTORS = TDP_DISCOVERY_REDACTORS
+
 
 class _AesDiscoveryQuery:
-    keypair: KeyPair | None = None
+    """Create a TDP discovery query and retain its response keypair."""
 
-    @classmethod
-    def generate_query(cls) -> bytearray:
-        if not cls.keypair:
-            cls.keypair = KeyPair.create_key_pair(key_size=2048)
+    def __init__(self) -> None:
+        self.keypair = KeyPair.create_key_pair(key_size=2048)
+
+    def generate_query(self) -> bytearray:
+        """Generate a TDP discovery query for this discovery operation."""
         secret = secrets.token_bytes(4)
 
-        key_payload = {"params": {"rsa_key": cls.keypair.get_public_pem().decode()}}
+        key_payload = {"params": {"rsa_key": self.keypair.get_public_pem().decode()}}
 
         key_payload_bytes = json_dumps(key_payload).encode()
         # https://labs.withsecure.com/advisories/tp-link-ac1750-pwn2own-2019
@@ -250,8 +452,10 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         discovery_timeout: int = 5,
         interface: str | None = None,
         on_unsupported: OnUnsupportedCallable | None = None,
+        on_authentication_error: OnAuthenticationErrorCallable | None = None,
         port: int | None = None,
         credentials: Credentials | None = None,
+        credentials_hash: str | None = None,
         timeout: int | None = None,
     ) -> None:
         self.transport: DatagramTransport | None = None
@@ -261,45 +465,105 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 
         self.port = port
         self.discovery_port = port or Discover.DISCOVERY_PORT
+        if self.discovery_port in {
+            Discover.DISCOVERY_PORT_2,
+            Discover.DISCOVERY_PORT_3,
+        }:
+            raise KasaException(
+                f"UDP discovery port {self.discovery_port} is reserved for "
+                "TDP discovery"
+            )
         self.target = target
-        self.target_1 = (target, self.discovery_port)
-        self.target_2 = (target, Discover.DISCOVERY_PORT_2)
-        self.target_3 = (target, Discover.DISCOVERY_PORT_3)
+
+        self._discoveries: tuple[_DiscoveryMethod, ...] = (
+            _UdpDiscovery(self.discovery_port),
+            # These are independent endpoints for separate device populations.
+            _TdpDiscovery(Discover.DISCOVERY_PORT_2),
+            _TdpDiscovery(Discover.DISCOVERY_PORT_3),
+        )
+        self._discovery_by_port = {
+            discovery.port: discovery for discovery in self._discoveries
+        }
+        self._target_complete = asyncio.Event()
 
         self.discovered_devices = {}
-        self.unsupported_device_exceptions: dict = {}
-        self.invalid_device_exceptions: dict = {}
+        self.unsupported_device_exceptions: dict[str, UnsupportedDeviceError] = {}
+        self.authentication_exceptions: dict[str, DiscoveryAuthenticationError] = {}
+        self.invalid_device_exceptions: dict[str, KasaException] = {}
+        self._hosts: dict[str, _DiscoveryHostState] = {}
+        self._processing_tasks: list[asyncio.Task] = []
+        self._processed_task_count = 0
         self.on_unsupported = on_unsupported
+        self.on_authentication_error = on_authentication_error
         self.on_discovered_raw = on_discovered_raw
         self.credentials = credentials
+        self.credentials_hash = credentials_hash
         self.timeout = timeout
         self.discovery_timeout = discovery_timeout
-        self.seen_hosts: set[str] = set()
         self.discover_task: asyncio.Task | None = None
         self.callback_tasks: list[asyncio.Task] = []
-        self.target_discovered: bool = False
+        self._processed_callback_task_count = 0
         self._started_event = asyncio.Event()
+        self._accepting_responses = True
 
     def _run_callback_task(self, coro: Coroutine) -> None:
         task: asyncio.Task = asyncio.create_task(coro)
         self.callback_tasks.append(task)
+
+    def _run_processing_task(self, ip: str, port: int) -> None:
+        """Schedule processing for an accepted immediate candidate."""
+        task = asyncio.create_task(self._process_candidate(ip, port))
+        self._processing_tasks.append(task)
+
+    async def _wait_for_processing(self) -> None:
+        """Wait for all candidate-processing tasks scheduled so far."""
+        while self._processed_task_count < len(self._processing_tasks):
+            tasks = self._processing_tasks[self._processed_task_count :]
+            self._processed_task_count = len(self._processing_tasks)
+            await asyncio.gather(*tasks)
+
+    async def _wait_for_callbacks(self) -> None:
+        """Wait once for every callback task, including completed tasks."""
+        while self._processed_callback_task_count < len(self.callback_tasks):
+            tasks = self.callback_tasks[self._processed_callback_task_count :]
+            self._processed_callback_task_count = len(self.callback_tasks)
+            await asyncio.gather(*tasks)
+
+    async def cancel_pending_tasks(self) -> None:
+        """Cancel and await discovery-owned processing and callback tasks."""
+        tasks = [*self._processing_tasks, *self.callback_tasks]
+        if self.discover_task is not None and not self.discover_task.done():
+            tasks.append(self.discover_task)
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def close_discovered_devices(self) -> None:
+        """Close all device protocols owned by an aborted discovery call."""
+        await asyncio.gather(
+            *(device.protocol.close() for device in self.discovered_devices.values()),
+            return_exceptions=True,
+        )
 
     async def wait_for_discovery_to_complete(self) -> None:
         """Wait for the discovery task to complete."""
         # Give some time for connection_made event to be received
         async with asyncio_timeout(self.DISCOVERY_START_TIMEOUT):
             await self._started_event.wait()
-        try:
-            if TYPE_CHECKING:
-                assert isinstance(self.discover_task, asyncio.Task)
+        if TYPE_CHECKING:
+            assert isinstance(self.discover_task, asyncio.Task)
 
-            await self.discover_task
-        except asyncio.CancelledError:
-            # if target_discovered then cancel was called internally
-            if not self.target_discovered:
-                raise
-        # Wait for any pending callbacks to complete
-        await asyncio.gather(*self.callback_tasks)
+        await self.discover_task
+        # Freeze the receive set before awaiting any final device creation. A
+        # datagram arriving during finalization must not mutate the independent
+        # source results or race host-level authority selection.
+        self._accepting_responses = False
+        await self._finalize_discovery()
+        # A callback can synchronously invoke an error callback, so drain until
+        # no newly scheduled callback tasks remain.
+        await self._wait_for_callbacks()
 
     def connection_made(self, transport: DatagramTransport) -> None:  # type: ignore[override]
         """Set socket options for broadcasting."""
@@ -323,19 +587,35 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 
     async def do_discover(self) -> None:
         """Send number of discovery datagrams."""
-        req = json_dumps(Discover.DISCOVERY_QUERY)
-        _LOGGER.debug("[DISCOVERY] %s >> %s", self.target, Discover.DISCOVERY_QUERY)
-        encrypted_req = XorEncryption.encrypt(req)
         sleep_between_packets = self.discovery_timeout / self.discovery_packets
 
-        aes_discovery_query = _AesDiscoveryQuery.generate_query()
+        queries = [
+            (discovery, discovery.create_query()) for discovery in self._discoveries
+        ]
+        for discovery, _ in queries:
+            _LOGGER.debug(
+                "[DISCOVERY] %s >> %s/%s",
+                self.target,
+                discovery.source.value,
+                discovery.port,
+            )
         for _ in range(self.discovery_packets):
-            if self.target in self.seen_hosts:  # Stop sending for discover_single
-                break
-            self.transport.sendto(encrypted_req[4:], self.target_1)  # type: ignore
-            self.transport.sendto(aes_discovery_query, self.target_2)  # type: ignore
-            self.transport.sendto(aes_discovery_query, self.target_3)  # type: ignore
-            await asyncio.sleep(sleep_between_packets)
+            for discovery, query in queries:
+                self.transport.sendto(  # type: ignore[union-attr]
+                    query, (self.target, discovery.port)
+                )
+            # Let immediate TDP processing publish a verified target before
+            # another packet round begins, including when the timeout is zero.
+            await asyncio.sleep(0)
+            if self._target_complete.is_set():
+                return
+            try:
+                async with asyncio_timeout(sleep_between_packets):
+                    await self._target_complete.wait()
+            except builtins.TimeoutError:
+                pass
+            else:
+                return
 
     def datagram_received(
         self,
@@ -343,66 +623,457 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         addr: tuple[str, int],
     ) -> None:
         """Handle discovery responses."""
-        if TYPE_CHECKING:
-            assert _AesDiscoveryQuery.keypair
-
-        ip, port = addr
-        # Prevent multiple entries due multiple broadcasts
-        if ip in self.seen_hosts:
+        if not self._accepting_responses:
             return
-        self.seen_hosts.add(ip)
-
-        device: Device | None = None
-
-        config = DeviceConfig(host=ip, port_override=self.port)
-        if self.credentials:
-            config.credentials = self.credentials
-        if self.timeout:
-            config.timeout = self.timeout
+        source_ip, port = addr
+        if (discovery := self._discovery_by_port.get(port)) is None:
+            return
         try:
-            if port == self.discovery_port:
-                json_func = Discover._get_discovery_json_legacy
-                device_func = Discover._get_device_instance_legacy
-            elif port in (Discover.DISCOVERY_PORT_2, Discover.DISCOVERY_PORT_3):
-                json_func = Discover._get_discovery_json
-                device_func = Discover._get_device_instance
-            else:
+            ip = str(ipaddress.ip_address(source_ip))
+        except ValueError:
+            _LOGGER.debug(
+                "[DISCOVERY] Unable to normalize source address %s", source_ip
+            )
+            ip = source_ip
+        host_state = self._hosts.setdefault(ip, _DiscoveryHostState())
+
+        if discovery.source in host_state.suppressed_sources:
+            return
+
+        if discovery.suppresses:
+            host_state.suppressed_sources.update(discovery.suppresses)
+            for endpoint_port, endpoint_state in host_state.endpoints.items():
+                endpoint_method = self._discovery_by_port[endpoint_port]
+                if endpoint_method.source in discovery.suppresses:
+                    endpoint_state.deferred_datagrams.clear()
+
+        if discovery.source is _DiscoverySource.Tdp:
+            if host_state.tdp_port is None:
+                host_state.tdp_port = port
+            elif host_state.tdp_port != port:
+                if port not in host_state.ignored_tdp_ports:
+                    _LOGGER.warning(
+                        "Host %s unexpectedly responded on TDP ports %s and %s; "
+                        "ignoring the second endpoint response",
+                        ip,
+                        host_state.tdp_port,
+                        port,
+                    )
+                    host_state.ignored_tdp_ports.add(port)
                 return
-            info = json_func(data, ip)
-            if self.on_discovered_raw is not None:
-                self.on_discovered_raw(
-                    {
-                        "discovery_response": info,
-                        "meta": {"ip": ip, "port": port},
-                    }
+
+        if host_state.outcome_finalized:
+            return
+
+        endpoint_state = host_state.endpoints.setdefault(
+            port, _DiscoveryEndpointState()
+        )
+
+        if discovery.defer_processing:
+            # Deferred datagrams remain opaque until the receive window closes.
+            # An immediate method can suppress them without triggering parsing,
+            # normalization, callbacks, or device construction.
+            endpoint_state.deferred_datagrams.append(data)
+            return
+
+        self._process_datagram(data, ip, port, discovery)
+
+    def _process_datagram(
+        self,
+        data: bytes,
+        ip: str,
+        port: int,
+        discovery: _DiscoveryMethod,
+    ) -> None:
+        """Decode and normalize one discovery datagram."""
+        host_state = self._hosts[ip]
+        if host_state.outcome_finalized:
+            return
+        endpoint_state = host_state.endpoints.setdefault(
+            port, _DiscoveryEndpointState()
+        )
+        if endpoint_state.candidate is not None:
+            return
+        try:
+            info = discovery.parse_response(data, ip)
+        except KasaException as ex:
+            _LOGGER.debug(
+                "[DISCOVERY] Unable to parse response from %s on port %s "
+                "(%s bytes): %s",
+                ip,
+                port,
+                len(data),
+                ex,
+            )
+            endpoint_state.response_errors.append(
+                _DiscoveryResponseError(
+                    source=discovery.source,
+                    source_port=port,
+                    error=ex,
                 )
-            device = device_func(info, config)
-        except UnsupportedDeviceError as udex:
-            _LOGGER.debug("Unsupported device found at %s << %s", ip, udex)
-            self.unsupported_device_exceptions[ip] = udex
-            if self.on_unsupported is not None:
-                self._run_callback_task(self.on_unsupported(udex))
-            self._handle_discovered_event()
+            )
+            return
+
+        if endpoint_state.first_decoded_response is None:
+            endpoint_state.first_decoded_response = info
+
+        try:
+            candidate = discovery.create_candidate(info, ip, port)
+        except UnsupportedDeviceError as ex:
+            _LOGGER.debug(
+                "[DISCOVERY] Unsupported response from %s on port %s: %s",
+                ip,
+                port,
+                ex,
+            )
+            endpoint_state.response_errors.append(
+                _DiscoveryResponseError(
+                    source=discovery.source,
+                    source_port=port,
+                    error=ex,
+                )
+            )
             return
         except KasaException as ex:
-            _LOGGER.debug("[DISCOVERY] Unable to find device type for %s: %s", ip, ex)
-            self.invalid_device_exceptions[ip] = ex
-            self._handle_discovered_event()
+            _LOGGER.debug(
+                "[DISCOVERY] Unable to normalize response from %s on port %s: %s",
+                ip,
+                port,
+                ex,
+            )
+            endpoint_state.response_errors.append(
+                _DiscoveryResponseError(
+                    source=discovery.source,
+                    source_port=port,
+                    error=ex,
+                )
+            )
             return
 
+        endpoint_state.candidate = candidate
+        self._emit_raw_response(ip, discovery, endpoint_state, info)
+        if not discovery.defer_processing:
+            self._run_processing_task(ip, port)
+
+    def _emit_raw_response(
+        self,
+        ip: str,
+        discovery: _DiscoveryMethod,
+        endpoint_state: _DiscoveryEndpointState,
+        info: dict[str, Any],
+    ) -> None:
+        """Emit one representative decoded response for an endpoint."""
+        if self.on_discovered_raw is None or endpoint_state.raw_emitted:
+            return
+        endpoint_state.raw_emitted = True
+        self.on_discovered_raw(
+            {
+                "discovery_response": deepcopy(info),
+                "meta": {
+                    "ip": ip,
+                    "port": discovery.port,
+                    "source": discovery.source.value,
+                },
+            }
+        )
+
+    def _emit_diagnostic_raw_response(
+        self,
+        ip: str,
+        discovery: _DiscoveryMethod,
+        endpoint_state: _DiscoveryEndpointState,
+    ) -> None:
+        """Emit the first decoded response when an endpoint had no usable result."""
+        if endpoint_state.first_decoded_response is not None:
+            self._emit_raw_response(
+                ip,
+                discovery,
+                endpoint_state,
+                endpoint_state.first_decoded_response,
+            )
+
+    async def _finalize_discovery(self) -> None:
+        """Process unsuppressed UDP datagrams and finalize remaining hosts."""
+        self._accepting_responses = False
+        await self._wait_for_processing()
+        # Iterate a stable snapshot. datagram_received is disabled before this
+        # method is called, and processing tasks scheduled from accepted
+        # datagrams have been drained above.
+        for ip, host_state in list(self._hosts.items()):
+            if host_state.outcome_finalized:
+                continue
+
+            if host_state.tdp_port is not None:
+                port = host_state.tdp_port
+                discovery = self._discovery_by_port[port]
+                endpoint_state = host_state.endpoints[port]
+                if endpoint_state.candidate is not None:
+                    await self._process_candidate(ip, port)
+                else:
+                    self._emit_diagnostic_raw_response(ip, discovery, endpoint_state)
+                    if response_error := self._select_response_error(endpoint_state):
+                        self._record_response_error(ip, response_error.error)
+                    else:  # pragma: no cover - every datagram has an outcome
+                        self._record_invalid(
+                            ip,
+                            KasaException(
+                                f"No usable TDP discovery response received from {ip}"
+                            ),
+                        )
+                continue
+
+            for port, endpoint_state in host_state.endpoints.items():
+                discovery = self._discovery_by_port[port]
+                if discovery.source in host_state.suppressed_sources:
+                    endpoint_state.deferred_datagrams.clear()
+                    continue
+                for data in endpoint_state.deferred_datagrams:
+                    self._process_datagram(data, ip, port, discovery)
+                    if endpoint_state.candidate is not None:
+                        break
+                endpoint_state.deferred_datagrams.clear()
+
+                if endpoint_state.candidate is not None:
+                    await self._process_candidate(ip, port)
+                    break
+
+                self._emit_diagnostic_raw_response(ip, discovery, endpoint_state)
+                if response_error := self._select_response_error(endpoint_state):
+                    self._record_response_error(ip, response_error.error)
+                    break
+
+    async def _process_candidate(self, ip: str, port: int) -> None:
+        """Create a device from the accepted candidate for one endpoint."""
+        host_state = self._hosts[ip]
+        async with host_state.processing_lock:
+            if host_state.outcome_finalized:
+                return
+
+            candidate = host_state.endpoints[port].candidate
+            if candidate is None:
+                return
+
+            try:
+                device = await self._create_device(candidate)
+            except UnsupportedDeviceError as ex:
+                self._record_unsupported(ip, ex)
+            except AuthenticationError as ex:
+                self._record_authentication(
+                    ip, self._as_discovery_authentication_error(ip, ex, candidate)
+                )
+            except KasaException as ex:
+                self._record_invalid(ip, ex)
+            else:
+                self._record_device(ip, device)
+
+    @staticmethod
+    def _select_response_error(
+        endpoint_state: _DiscoveryEndpointState,
+    ) -> _DiscoveryResponseError | None:
+        """Return the most useful error from repeated endpoint responses."""
+        return next(
+            (
+                response_error
+                for response_error in endpoint_state.response_errors
+                if isinstance(response_error.error, UnsupportedDeviceError)
+            ),
+            endpoint_state.response_errors[0]
+            if endpoint_state.response_errors
+            else None,
+        )
+
+    def _record_response_error(self, ip: str, ex: KasaException) -> None:
+        """Classify an endpoint error after response collection completes."""
+        if isinstance(ex, UnsupportedDeviceError):
+            self._record_unsupported(ip, ex)
+        else:
+            self._record_invalid(ip, ex)
+
+    async def _on_discovered(self, device: Device) -> None:
+        """Run the device callback and classify supported callback failures."""
+        if TYPE_CHECKING:
+            assert self.on_discovered is not None
+        try:
+            await self.on_discovered(device)
+        except UnsupportedDeviceError as ex:
+            if ex.host is None:
+                ex.host = device.host
+            if ex.discovery_result is None:
+                ex.discovery_result = device._discovery_info
+            self._store_unsupported(device.host, ex, terminal=False)
+            if self.on_unsupported is None:
+                raise
+            await self.on_unsupported(ex)
+        except AuthenticationError as ex:
+            discovery_error = self._as_discovery_authentication_error(
+                device.host,
+                ex,
+                discovery_info=device._discovery_info,
+            )
+            self._store_authentication(device.host, discovery_error, terminal=False)
+            if self.on_authentication_error is None:
+                raise
+            await self.on_authentication_error(discovery_error)
+
+    @staticmethod
+    def _as_discovery_authentication_error(
+        ip: str,
+        ex: AuthenticationError,
+        candidate: _DiscoveryCandidate | None = None,
+        *,
+        discovery_info: dict[str, Any] | None = None,
+    ) -> DiscoveryAuthenticationError:
+        """Add discovery context to an authentication error."""
+        if isinstance(ex, DiscoveryAuthenticationError):
+            if ex.host is None:
+                ex.host = ip
+            if ex.discovery_result is None:
+                ex.discovery_result = discovery_info or (
+                    candidate.discovery_info if candidate is not None else None
+                )
+            return ex
+        if discovery_info is None and candidate is not None:
+            discovery_info = candidate.discovery_info
+        discovery_error = DiscoveryAuthenticationError(
+            *ex.args,
+            discovery_result=discovery_info,
+            host=ip,
+            error_code=ex.error_code,
+        )
+        discovery_error.__cause__ = ex
+        return discovery_error
+
+    def _record_device(self, ip: str, device: Device) -> None:
+        """Record and emit one supported device."""
+        host_state = self._hosts[ip]
+        if host_state.outcome_finalized:
+            return
+        host_state.outcome_finalized = True
+        host_state.device = device
         self.discovered_devices[ip] = device
-
         if self.on_discovered is not None:
-            self._run_callback_task(self.on_discovered(device))
+            self._run_callback_task(self._on_discovered(device))
+        if ip == self.target:
+            self._target_complete.set()
 
-        self._handle_discovered_event()
+    def _record_unsupported(self, ip: str, ex: UnsupportedDeviceError) -> None:
+        """Record and emit one authoritative unsupported response."""
+        if not self._store_unsupported(ip, ex, terminal=True):
+            return
+        if self.on_unsupported is not None:
+            self._run_callback_task(self.on_unsupported(ex))
 
-    def _handle_discovered_event(self) -> None:
-        """If target is in seen_hosts cancel discover_task."""
-        if self.target in self.seen_hosts:
-            self.target_discovered = True
-            if self.discover_task:
-                self.discover_task.cancel()
+    def _store_unsupported(
+        self,
+        ip: str,
+        ex: UnsupportedDeviceError,
+        *,
+        terminal: bool,
+    ) -> bool:
+        """Store an unsupported outcome and optionally finalize discovery."""
+        host_state = self._hosts[ip]
+        if host_state.unsupported_error is not None:
+            return False
+        if terminal and host_state.outcome_finalized:
+            return False
+        _LOGGER.debug("Unsupported device found at %s << %s", ip, ex)
+        host_state.unsupported_error = ex
+        host_state.outcome_finalized = host_state.outcome_finalized or terminal
+        self.unsupported_device_exceptions[ip] = ex
+        if terminal and ip == self.target:
+            self._target_complete.set()
+        return True
+
+    def _record_authentication(self, ip: str, ex: DiscoveryAuthenticationError) -> None:
+        """Record and emit an authentication-blocked discovery outcome."""
+        if not self._store_authentication(ip, ex, terminal=True):
+            return
+        if self.on_authentication_error is not None:
+            self._run_callback_task(self.on_authentication_error(ex))
+
+    def _store_authentication(
+        self,
+        ip: str,
+        ex: DiscoveryAuthenticationError,
+        *,
+        terminal: bool,
+    ) -> bool:
+        """Store an authentication outcome and optionally finalize discovery."""
+        host_state = self._hosts[ip]
+        if host_state.authentication_error is not None:
+            return False
+        if terminal and host_state.outcome_finalized:
+            return False
+        host_state.authentication_error = ex
+        host_state.outcome_finalized = host_state.outcome_finalized or terminal
+        self.authentication_exceptions[ip] = ex
+        if terminal and ip == self.target:
+            self._target_complete.set()
+        return True
+
+    def _record_invalid(self, ip: str, ex: KasaException) -> None:
+        """Record one response that cannot create a device."""
+        host_state = self._hosts[ip]
+        if host_state.outcome_finalized:
+            return
+        _LOGGER.debug("[DISCOVERY] Unable to create device for %s: %s", ip, ex)
+        host_state.outcome_finalized = True
+        host_state.invalid_error = ex
+        self.invalid_device_exceptions[ip] = ex
+        if ip == self.target:
+            self._target_complete.set()
+
+    async def _create_device(
+        self,
+        candidate: _DiscoveryCandidate,
+    ) -> Device:
+        """Create a device from the selected normalized discovery response."""
+        config = DeviceConfig(host=candidate.ip, port_override=self.port)
+        if self.credentials:
+            config.credentials = self.credentials
+        if self.credentials_hash:
+            config.credentials_hash = self.credentials_hash
+        if self.timeout:
+            config.timeout = self.timeout
+
+        try:
+            config.connection_type = candidate.connection.to_connection_parameters()
+        except KasaException as ex:
+            raise UnsupportedDeviceError(
+                f"Unsupported device {candidate.ip} of type "
+                f"{candidate.device_family} with connection parameters "
+                f"{candidate.connection}",
+                discovery_result=candidate.discovery_info,
+                host=candidate.ip,
+            ) from ex
+
+        if candidate.discovery_result is not None:
+            discovery_info = candidate.discovery_result.to_dict()
+            discovery_info["model"], _, _ = (
+                candidate.discovery_result.device_model.partition("(")
+            )
+        else:
+            discovery_info = candidate.discovery_info
+
+        device = await create_device(
+            config,
+            device_info=candidate.device_info,
+            discovery_info=discovery_info,
+        )
+
+        if _LOGGER.isEnabledFor(logging.DEBUG):
+            redactors = (
+                TDP_DISCOVERY_REDACTORS
+                if candidate.source is _DiscoverySource.Tdp
+                else IOT_REDACTORS
+            )
+            data = (
+                redact_data(candidate.discovery_info, redactors)
+                if Discover._redact_data
+                else candidate.discovery_info
+            )
+            _LOGGER.debug("[DISCOVERY] %s << %s", candidate.ip, pf(data))
+        return device
 
     def error_received(self, ex: Exception) -> None:
         """Handle asyncio.Protocol errors."""
@@ -439,7 +1110,9 @@ class Discover:
         discovery_packets: int = 3,
         interface: str | None = None,
         on_unsupported: OnUnsupportedCallable | None = None,
+        on_authentication_error: OnAuthenticationErrorCallable | None = None,
         credentials: Credentials | None = None,
+        credentials_hash: str | None = None,
         username: str | None = None,
         password: str | None = None,
         port: int | None = None,
@@ -447,10 +1120,9 @@ class Discover:
     ) -> DeviceDict:
         """Discover supported devices.
 
-        Sends discovery message to 255.255.255.255:9999 and
-        255.255.255.255:20002 in order
-        to detect available supported devices in the local network,
-        and waits for given timeout for answers from devices.
+        Sends discovery messages to UDP port 9999 and TDP ports 20002 and
+        20004, then waits for responses from supported devices. If a host
+        responds through both UDP and TDP, the TDP response is used.
         If you have multiple interfaces,
         you can use *target* parameter to specify the network for discovery.
 
@@ -459,23 +1131,30 @@ class Discover:
 
         The results of the discovery are returned as a dict of
         :class:`Device`-derived objects keyed with IP addresses.
-        The devices are already initialized and all but emeter-related properties
-        can be accessed directly.
+        The devices are initialized from discovery information. Call
+        :meth:`Device.update` before accessing information not included in the
+        discovery response.
 
         :param target: The target address where to send the broadcast discovery
          queries if multi-homing (e.g. 192.168.xxx.255).
         :param on_discovered: coroutine to execute on discovery
-        :param on_discovered_raw: Optional callback once discovered json is loaded
-            before any attempt to deserialize it and create devices
+        :param on_discovered_raw: Optional callback for decoded discovery responses.
+            At most one response is emitted for each host and endpoint. Callback
+            metadata identifies the ``udp`` or ``tdp`` source.
         :param discovery_timeout: Seconds to wait for responses, defaults to 5
         :param discovery_packets: Number of discovery packets to broadcast
         :param interface: Bind to specific interface
         :param on_unsupported: Optional callback when unsupported devices are discovered
+        :param on_authentication_error: Optional callback when authentication prevents
+            discovery from creating or updating a device
         :param credentials: Credentials for devices that require authentication.
             username and password are ignored if provided.
+        :param credentials_hash: Hashed credentials for devices that require
+            authentication. Explicit credentials take precedence when both are given.
         :param username: Username for devices that require authentication
         :param password: Password for devices that require authentication
-        :param port: Override the discovery port for devices listening on 9999
+        :param port: Override the UDP discovery and device connection port.
+            TDP discovery remains on ports 20002 and 20004.
         :param timeout: Query timeout in seconds for devices returned by discovery
         :return: dictionary with discovered devices
         """
@@ -489,8 +1168,10 @@ class Discover:
                 discovery_packets=discovery_packets,
                 interface=interface,
                 on_unsupported=on_unsupported,
+                on_authentication_error=on_authentication_error,
                 on_discovered_raw=on_discovered_raw,
                 credentials=credentials,
+                credentials_hash=credentials_hash,
                 timeout=timeout,
                 discovery_timeout=discovery_timeout,
                 port=port,
@@ -502,10 +1183,10 @@ class Discover:
         try:
             _LOGGER.debug("Waiting %s seconds for responses...", discovery_timeout)
             await protocol.wait_for_discovery_to_complete()
-        except (KasaException, asyncio.CancelledError) as ex:
-            for device in protocol.discovered_devices.values():
-                await device.protocol.close()
-            raise ex
+        except BaseException:
+            await protocol.cancel_pending_tasks()
+            await protocol.close_discovered_devices()
+            raise
         finally:
             transport.close()
 
@@ -521,10 +1202,13 @@ class Discover:
         port: int | None = None,
         timeout: int | None = None,
         credentials: Credentials | None = None,
+        credentials_hash: str | None = None,
         username: str | None = None,
         password: str | None = None,
+        on_discovered: OnDiscoveredCallable | None = None,
         on_discovered_raw: OnDiscoveredRawCallable | None = None,
         on_unsupported: OnUnsupportedCallable | None = None,
+        on_authentication_error: OnAuthenticationErrorCallable | None = None,
     ) -> Device | None:
         """Discover a single device by the given IP address.
 
@@ -535,16 +1219,23 @@ class Discover:
 
         :param host: Hostname of device to query
         :param discovery_timeout: Timeout in seconds for discovery
-        :param port: Optionally set a different port for legacy devices using port 9999
-        :param timeout: Timeout in seconds device for devices queries
+        :param port: Override the UDP discovery and device connection port.
+            TDP discovery remains on ports 20002 and 20004.
+        :param timeout: Query timeout in seconds for the constructed device
         :param credentials: Credentials for devices that require authentication.
             username and password are ignored if provided.
+        :param credentials_hash: Hashed credentials for devices that require
+            authentication. Explicit credentials take precedence when both are given.
         :param username: Username for devices that require authentication
         :param password: Password for devices that require authentication
-        :param on_discovered_raw: Optional callback once discovered json is loaded
-            before any attempt to deserialize it and create devices
+        :param on_discovered: Optional coroutine to execute for the discovered device
+        :param on_discovered_raw: Optional callback for decoded discovery responses.
+            At most one response is emitted for each host and endpoint. Callback
+            metadata identifies the ``udp`` or ``tdp`` source.
         :param on_unsupported: Optional callback when unsupported devices are discovered
-        :rtype: SmartDevice
+        :param on_authentication_error: Optional callback when authentication prevents
+            discovery from creating a device
+        :rtype: Device
         :return: Object for querying/controlling found device.
         """
         if not credentials and username and password:
@@ -578,8 +1269,12 @@ class Discover:
                 target=ip,
                 port=port,
                 credentials=credentials,
+                credentials_hash=credentials_hash,
                 timeout=timeout,
                 discovery_timeout=discovery_timeout,
+                on_discovered=on_discovered,
+                on_unsupported=on_unsupported,
+                on_authentication_error=on_authentication_error,
                 on_discovered_raw=on_discovered_raw,
             ),
             local_addr=("0.0.0.0", 0),  # noqa: S104
@@ -591,6 +1286,10 @@ class Discover:
                 "Waiting a total of %s seconds for responses...", discovery_timeout
             )
             await protocol.wait_for_discovery_to_complete()
+        except BaseException:
+            await protocol.cancel_pending_tasks()
+            await protocol.close_discovered_devices()
+            raise
         finally:
             transport.close()
 
@@ -600,10 +1299,13 @@ class Discover:
             return dev
         elif ip in protocol.unsupported_device_exceptions:
             if on_unsupported:
-                await on_unsupported(protocol.unsupported_device_exceptions[ip])
                 return None
             else:
                 raise protocol.unsupported_device_exceptions[ip]
+        elif ip in protocol.authentication_exceptions:
+            if on_authentication_error:
+                return None
+            raise protocol.authentication_exceptions[ip]
         elif ip in protocol.invalid_device_exceptions:
             raise protocol.invalid_device_exceptions[ip]
         else:
@@ -616,324 +1318,34 @@ class Discover:
         port: int | None = None,
         timeout: int | None = None,
         credentials: Credentials | None = None,
+        credentials_hash: str | None = None,
         http_client: ClientSession | None = None,
         on_attempt: OnConnectAttemptCallable | None = None,
     ) -> Device | None:
         """Try to connect directly to a device with all possible parameters.
 
-        This method can be used when udp is not working due to network issues.
-        After succesfully connecting use the device config and
+        This method can be used when broadcast discovery is unavailable.
+        After successfully connecting use the device config and
         :meth:`Device.connect()` for future connections.
 
         :param host: Hostname of device to query
-        :param port: Optionally set a different port for legacy devices using port 9999
-        :param timeout: Timeout in seconds device for devices queries
+        :param port: Optionally override the device's connection port
+        :param timeout: Query timeout in seconds for each connection attempt
         :param credentials: Credentials for devices that require authentication.
-        :param http_client: Optional client session for devices that use http.
-            username and password are ignored if provided.
+        :param credentials_hash: Hashed credentials for devices that require
+            authentication. Explicit credentials take precedence when both are given.
+        :param http_client: Optional client session for devices that use HTTP
+        :param on_attempt: Optional callback invoked after every attempted route
         """
-        from .device_factory import _connect
-
-        main_device_families = {
-            Device.Family.SmartTapoPlug,
-            Device.Family.IotSmartPlugSwitch,
-            Device.Family.SmartIpCamera,
-            Device.Family.SmartTapoRobovac,
-            Device.Family.IotIpCamera,
-        }
-        candidates: dict[
-            tuple[type[BaseProtocol], type[BaseTransport], type[Device], bool],
-            tuple[BaseProtocol, DeviceConfig],
-        ] = {
-            (type(protocol), type(protocol._transport), device_class, https): (
-                protocol,
-                config,
-            )
-            for encrypt in Device.EncryptionType
-            for device_family in main_device_families
-            for https in (True, False)
-            for login_version in (None, 2)
-            if (
-                conn_params := DeviceConnectionParameters(
-                    device_family=device_family,
-                    encryption_type=encrypt,
-                    login_version=login_version,
-                    https=https,
-                )
-            )
-            and (
-                config := DeviceConfig(
-                    host=host,
-                    connection_type=conn_params,
-                    timeout=timeout,
-                    port_override=port,
-                    credentials=credentials,
-                    http_client=http_client,
-                )
-            )
-            and (protocol := get_protocol(config, strict=True))
-            and (
-                device_class := get_device_class_from_family(
-                    device_family.value, https=https, require_exact=True
-                )
-            )
-        }
-        for key, val in candidates.items():
-            try:
-                prot, config = val
-                _LOGGER.debug("Trying to connect with %s", prot.__class__.__name__)
-                dev = await _connect(config, prot)
-            except Exception as ex:
-                _LOGGER.debug(
-                    "Unable to connect with %s: %s",
-                    prot.__class__.__name__,
-                    ex,
-                )
-                if on_attempt:
-                    ca = tuple.__new__(ConnectAttempt, key)
-                    on_attempt(ca, False)
-            else:
-                if on_attempt:
-                    ca = tuple.__new__(ConnectAttempt, key)
-                    on_attempt(ca, True)
-                _LOGGER.debug("Found working protocol %s", prot.__class__.__name__)
-                return dev
-            finally:
-                await prot.close()
-        return None
-
-    @staticmethod
-    def _get_device_class(info: dict) -> type[Device]:
-        """Find SmartDevice subclass for device described by passed data."""
-        if "result" in info:
-            discovery_result = DiscoveryResult.from_dict(info["result"])
-            https = (
-                discovery_result.mgt_encrypt_schm.is_support_https
-                if discovery_result.mgt_encrypt_schm
-                else False
-            )
-            dev_class = get_device_class_from_family(
-                discovery_result.device_type, https=https
-            )
-            if not dev_class:
-                raise UnsupportedDeviceError(
-                    f"Unknown device type: {discovery_result.device_type}",
-                    discovery_result=info,
-                )
-            return dev_class
-        else:
-            return get_device_class_from_sys_info(info)
-
-    @staticmethod
-    def _get_discovery_json_legacy(data: bytes, ip: str) -> dict:
-        """Get discovery json from legacy 9999 response."""
-        try:
-            info = json_loads(XorEncryption.decrypt(data))
-        except Exception as ex:
-            raise KasaException(
-                f"Unable to read response from device: {ip}: {ex}"
-            ) from ex
-        return info
-
-    @staticmethod
-    def _get_device_instance_legacy(info: dict, config: DeviceConfig) -> Device:
-        """Get IotDevice from legacy 9999 response."""
-        if _LOGGER.isEnabledFor(logging.DEBUG):
-            data = redact_data(info, IOT_REDACTORS) if Discover._redact_data else info
-            _LOGGER.debug("[DISCOVERY] %s << %s", config.host, pf(data))
-
-        device_class = cast(type[IotDevice], Discover._get_device_class(info))
-        device = device_class(config.host, config=config)
-        sys_info = _extract_sys_info(info)
-        device_type = sys_info.get("mic_type", sys_info.get("type"))
-        if device_type is None:
-            raise UnsupportedDeviceError("type nor mic_type found in sysinfo response")
-        login_version = (
-            sys_info.get("stream_version") if device_type == "IOT.IPCAMERA" else None
+        return await try_connect_all(
+            host,
+            port=port,
+            timeout=timeout,
+            credentials=credentials,
+            credentials_hash=credentials_hash,
+            http_client=http_client,
+            on_attempt=on_attempt,
         )
-        config.connection_type = DeviceConnectionParameters.from_values(
-            device_family=device_type,
-            encryption_type=DeviceEncryptionType.Xor.value,
-            https=device_type == "IOT.IPCAMERA",
-            login_version=login_version,
-        )
-        device.protocol = get_protocol(config)  # type: ignore[assignment]
-        device.update_from_discover_info(info)
-        return device
-
-    @staticmethod
-    def _decrypt_discovery_data(discovery_result: DiscoveryResult) -> None:
-        debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
-        if TYPE_CHECKING:
-            assert discovery_result.encrypt_info
-            assert _AesDiscoveryQuery.keypair
-        encryped_key = discovery_result.encrypt_info.key
-        encrypted_data = discovery_result.encrypt_info.data
-
-        key_and_iv = _AesDiscoveryQuery.keypair.decrypt_discovery_key(
-            base64.b64decode(encryped_key.encode())
-        )
-
-        key, iv = key_and_iv[:16], key_and_iv[16:]
-
-        session = AesEncyptionSession(key, iv)
-        decrypted_data = session.decrypt(encrypted_data)
-
-        result = json_loads(decrypted_data)
-        if debug_enabled:
-            data = (
-                redact_data(result, DECRYPTED_REDACTORS)
-                if Discover._redact_data
-                else result
-            )
-            _LOGGER.debug(
-                "Decrypted encrypt_info for %s: %s",
-                discovery_result.ip,
-                pf(data),
-            )
-        discovery_result.decrypted_data = result
-
-    @staticmethod
-    def _get_discovery_json(data: bytes, ip: str) -> dict:
-        """Get discovery json from the new 20002 response."""
-        try:
-            info = json_loads(data[16:])
-        except Exception as ex:
-            _LOGGER.debug("Got invalid response from device %s: %s", ip, data)
-            raise KasaException(
-                f"Unable to read response from device: {ip}: {ex}"
-            ) from ex
-        return info
-
-    @staticmethod
-    def _get_connection_parameters(
-        discovery_result: DiscoveryResult,
-    ) -> DeviceConnectionParameters:
-        """Get connection parameters from the discovery result."""
-        type_ = discovery_result.device_type
-        if (encrypt_schm := discovery_result.mgt_encrypt_schm) is None:
-            raise UnsupportedDeviceError(
-                f"Unsupported device {discovery_result.ip} of type {type_} "
-                "with no mgt_encrypt_schm",
-                discovery_result=discovery_result.to_dict(),
-                host=discovery_result.ip,
-            )
-
-        if not (encrypt_type := encrypt_schm.encrypt_type) and (
-            encrypt_info := discovery_result.encrypt_info
-        ):
-            encrypt_type = encrypt_info.sym_schm
-
-        if not (login_version := encrypt_schm.lv) and (
-            et := discovery_result.encrypt_type
-        ):
-            # Known encrypt types are ["1","2"] and ["3"]
-            # Reuse the login_version attribute to pass the max to transport
-            login_version = max([int(i) for i in et])
-
-        if not encrypt_type:
-            raise UnsupportedDeviceError(
-                f"Unsupported device {discovery_result.ip} of type {type_} "
-                + "with no encryption type",
-                discovery_result=discovery_result.to_dict(),
-                host=discovery_result.ip,
-            )
-        return DeviceConnectionParameters.from_values(
-            type_,
-            encrypt_type,
-            login_version=login_version,
-            https=encrypt_schm.is_support_https,
-            http_port=encrypt_schm.http_port,
-        )
-
-    @staticmethod
-    def _get_device_instance(
-        info: dict,
-        config: DeviceConfig,
-    ) -> Device:
-        """Get SmartDevice from the new 20002 response."""
-        debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
-
-        try:
-            discovery_result = DiscoveryResult.from_dict(info["result"])
-        except Exception as ex:
-            if debug_enabled:
-                data = (
-                    redact_data(info, NEW_DISCOVERY_REDACTORS)
-                    if Discover._redact_data
-                    else info
-                )
-                _LOGGER.debug(
-                    "Unable to parse discovery from device %s: %s",
-                    config.host,
-                    pf(data),
-                )
-            raise UnsupportedDeviceError(
-                f"Unable to parse discovery from device: {config.host}: {ex}",
-                host=config.host,
-            ) from ex
-
-        # Decrypt the data
-        if (
-            encrypt_info := discovery_result.encrypt_info
-        ) and encrypt_info.sym_schm == "AES":
-            try:
-                Discover._decrypt_discovery_data(discovery_result)
-            except Exception:
-                _LOGGER.exception(
-                    "Unable to decrypt discovery data %s: %s",
-                    config.host,
-                    redact_data(info, NEW_DISCOVERY_REDACTORS),
-                )
-        type_ = discovery_result.device_type
-        try:
-            conn_params = Discover._get_connection_parameters(discovery_result)
-            config.connection_type = conn_params
-        except KasaException as ex:
-            if isinstance(ex, UnsupportedDeviceError):
-                raise
-            raise UnsupportedDeviceError(
-                f"Unsupported device {config.host} of type {type_} "
-                + f"with encrypt_scheme {discovery_result.mgt_encrypt_schm}",
-                discovery_result=discovery_result.to_dict(),
-                host=config.host,
-            ) from ex
-
-        if (
-            device_class := get_device_class_from_family(type_, https=conn_params.https)
-        ) is None:
-            _LOGGER.debug("Got unsupported device type: %s", type_)
-            raise UnsupportedDeviceError(
-                f"Unsupported device {config.host} of type {type_}: {info}",
-                discovery_result=discovery_result.to_dict(),
-                host=config.host,
-            )
-
-        if (protocol := get_protocol(config)) is None:
-            _LOGGER.debug(
-                "Got unsupported connection type: %s", config.connection_type.to_dict()
-            )
-            raise UnsupportedDeviceError(
-                f"Unsupported encryption scheme {config.host} of "
-                + f"type {config.connection_type.to_dict()}: {info}",
-                discovery_result=discovery_result.to_dict(),
-                host=config.host,
-            )
-
-        if debug_enabled:
-            data = (
-                redact_data(info, NEW_DISCOVERY_REDACTORS)
-                if Discover._redact_data
-                else info
-            )
-            _LOGGER.debug("[DISCOVERY] %s << %s", config.host, pf(data))
-
-        device = device_class(config.host, protocol=protocol)
-
-        di = discovery_result.to_dict()
-        di["model"], _, _ = discovery_result.device_model.partition("(")
-        device.update_from_discover_info(di)
-        return device
 
 
 class _DiscoveryBaseMixin(DataClassJSONMixin):
@@ -949,17 +1361,18 @@ class _DiscoveryBaseMixin(DataClassJSONMixin):
 
 @dataclass
 class EncryptionScheme(_DiscoveryBaseMixin):
-    """Base model for encryption scheme of discovery result."""
+    """Connection encryption fields advertised by TDP discovery."""
 
     is_support_https: bool
     encrypt_type: str | None = None
     http_port: int | None = None
     lv: int | None = None
+    new_klap: int | None = None
 
 
 @dataclass
 class EncryptionInfo(_DiscoveryBaseMixin):
-    """Base model for encryption info of discovery result."""
+    """Encrypted supplemental information in a TDP discovery response."""
 
     sym_schm: str
     key: str
@@ -968,7 +1381,7 @@ class EncryptionInfo(_DiscoveryBaseMixin):
 
 @dataclass
 class DiscoveryResult(_DiscoveryBaseMixin):
-    """Base model for discovery result."""
+    """Decoded device information returned by TDP discovery."""
 
     device_type: str
     device_model: str
@@ -989,3 +1402,204 @@ class DiscoveryResult(_DiscoveryBaseMixin):
     is_support_iot_cloud: bool | None = None
     obd_src: str | None = None
     factory_default: bool | None = None
+
+    def to_connection_parameters(self) -> DeviceConnectionParameters:
+        """Convert the advertised TDP fields into connection parameters."""
+        return _DiscoveryConnection.from_tdp_result(self).to_connection_parameters()
+
+
+class _UdpDiscovery:
+    """XOR-encoded UDP discovery implementation for port 9999."""
+
+    source = _DiscoverySource.Udp
+    defer_processing = True
+    suppresses: frozenset[_DiscoverySource] = frozenset()
+
+    def __init__(self, port: int) -> None:
+        self.port = port
+
+    @staticmethod
+    def create_query() -> bytes:
+        """Create an XOR-encoded UDP discovery query."""
+        request = json_dumps(Discover.DISCOVERY_QUERY)
+        return XorEncryption.encrypt(request)[4:]
+
+    @staticmethod
+    def parse_response(data: bytes, ip: str) -> dict[str, Any]:
+        """Decode an XOR-encoded UDP discovery response."""
+        try:
+            response = json_loads(XorEncryption.decrypt(data))
+        except Exception as ex:
+            raise KasaException(
+                f"Unable to read UDP discovery response from device: {ip}: {ex}"
+            ) from ex
+        if not isinstance(response, dict):
+            raise KasaException(
+                f"UDP discovery response from {ip} did not contain a JSON object"
+            )
+        return response
+
+    def create_candidate(
+        self,
+        info: dict[str, Any],
+        ip: str,
+        port: int,
+    ) -> _DiscoveryCandidate:
+        """Normalize a decoded UDP discovery response."""
+        sys_info = extract_sys_info(info)
+        if not sys_info:
+            raise KasaException("No 'system' or 'get_sysinfo' in response")
+        device_family = sys_info.get("mic_type", sys_info.get("type"))
+        if device_family is None:
+            raise UnsupportedDeviceError(
+                "Unable to find the device type field",
+                discovery_result=info,
+                host=ip,
+            )
+        login_version = (
+            sys_info.get("stream_version")
+            if device_family == DeviceFamily.IotIpCamera.value
+            else None
+        )
+        connection = _DiscoveryConnection(
+            device_family=device_family,
+            encryption_type=DeviceEncryptionType.Xor.value,
+            login_version=login_version,
+            https=device_family == DeviceFamily.IotIpCamera.value,
+        )
+        return _DiscoveryCandidate(
+            source=self.source,
+            source_port=port,
+            ip=ip,
+            device_family=device_family,
+            device_model=sys_info.get("model"),
+            connection=connection,
+            discovery_info=info,
+            device_info=info,
+        )
+
+
+class _TdpDiscovery:
+    """TDP v2 discovery for one independently managed endpoint population."""
+
+    source = _DiscoverySource.Tdp
+    defer_processing = False
+    suppresses = frozenset({_DiscoverySource.Udp})
+
+    def __init__(self, port: int) -> None:
+        self.port = port
+        self._query = _AesDiscoveryQuery()
+
+    def create_query(self) -> bytes:
+        """Create a TDP discovery query for this discovery operation."""
+        return bytes(self._query.generate_query())
+
+    @staticmethod
+    def parse_response(data: bytes, ip: str) -> dict[str, Any]:
+        """Decode a TDP discovery response."""
+        try:
+            response = json_loads(data[16:])
+        except Exception as ex:
+            raise KasaException(
+                f"Unable to read TDP discovery response from device: {ip}: {ex}"
+            ) from ex
+        if not isinstance(response, dict):
+            raise KasaException(
+                f"TDP discovery response from {ip} did not contain a JSON object"
+            )
+        return response
+
+    @staticmethod
+    def decrypt_discovery_data(
+        discovery_result: DiscoveryResult,
+        *,
+        keypair: KeyPair,
+    ) -> None:
+        """Decrypt encrypted supplemental information in a TDP response."""
+        debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
+        if TYPE_CHECKING:
+            assert discovery_result.encrypt_info
+        encrypted_key = discovery_result.encrypt_info.key
+        encrypted_data = discovery_result.encrypt_info.data
+
+        key_and_iv = keypair.decrypt_discovery_key(
+            base64.b64decode(encrypted_key.encode())
+        )
+        key, iv = key_and_iv[:16], key_and_iv[16:]
+        session = AesEncyptionSession(key, iv)
+        decrypted_data = session.decrypt(encrypted_data)
+        result = json_loads(decrypted_data)
+        if not isinstance(result, dict):
+            raise KasaException(
+                f"Decrypted TDP discovery data from {discovery_result.ip} "
+                "did not contain a JSON object"
+            )
+        if debug_enabled:
+            redacted = (
+                redact_data(result, DECRYPTED_REDACTORS)
+                if Discover._redact_data
+                else result
+            )
+            _LOGGER.debug(
+                "Decrypted encrypt_info for %s: %s",
+                discovery_result.ip,
+                pf(redacted),
+            )
+        discovery_result.decrypted_data = result
+
+    def create_candidate(
+        self,
+        info: dict[str, Any],
+        ip: str,
+        port: int,
+    ) -> _DiscoveryCandidate:
+        """Normalize a decoded TDP discovery response."""
+        result = info.get("result")
+        if not isinstance(result, dict) or not {
+            "device_type",
+            "ip",
+        }.issubset(result):
+            raise KasaException(
+                f"Response from {ip} is not a recognizable TDP device result"
+            )
+        try:
+            discovery_result = DiscoveryResult.from_dict(result)
+        except Exception as ex:
+            raise KasaException(
+                f"Unable to parse discovery from device: {ip}: {ex}",
+            ) from ex
+
+        if discovery_result.ip != ip:
+            _LOGGER.debug(
+                "TDP response source address differs from its advertised address; "
+                "using source address %s",
+                ip,
+            )
+            discovery_result.ip = ip
+
+        if (
+            encrypt_info := discovery_result.encrypt_info
+        ) and encrypt_info.sym_schm == "AES":
+            try:
+                self.decrypt_discovery_data(
+                    discovery_result,
+                    keypair=self._query.keypair,
+                )
+            except Exception:
+                _LOGGER.exception(
+                    "Unable to decrypt discovery data %s: %s",
+                    ip,
+                    redact_data(info, TDP_DISCOVERY_REDACTORS),
+                )
+
+        connection = _DiscoveryConnection.from_tdp_result(discovery_result)
+        return _DiscoveryCandidate(
+            source=self.source,
+            source_port=port,
+            ip=ip,
+            device_family=discovery_result.device_type,
+            device_model=discovery_result.device_model,
+            connection=connection,
+            discovery_info=info,
+            discovery_result=discovery_result,
+        )

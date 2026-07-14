@@ -3,7 +3,8 @@
 This directory contains some simple scripts that can be useful for developers.
 
 ## dump_devinfo
-* Queries the device (if --host is given) or discover devices and creates fixture files that can be added to the test suite.
+* Queries one device with `--host`, or discovers devices with `--target`, and creates fixture files that can be added to the test suite.
+* Direct connection options are available for devices that cannot be discovered.
 
 ```shell
 Usage: python -m devtools.dump_devinfo [OPTIONS]
@@ -13,14 +14,40 @@ Usage: python -m devtools.dump_devinfo [OPTIONS]
   Use --host (for a single device) or --target (for a complete network).
 
 Options:
-  --host TEXT      Target host.
-  --target TEXT    Target network for discovery.
-  --username TEXT  Username/email address to authenticate to device.
-  --password TEXT  Password to use to authenticate to device.
-  --basedir TEXT   Base directory for the git repository
-  --autosave       Save without prompting
+  --host TEXT                     Target host.
+  --target TEXT                   Target network for discovery.
+  --username TEXT                 Username/email address to authenticate to
+                                  device.
+  --password TEXT                 Password to use to authenticate to device.
+  --credentials-hash TEXT         Hashed credentials used to authenticate to
+                                  the device.
+  --basedir TEXT                  Base directory for the git repository
+  --autosave                      Save without prompting
+  --batch-size INTEGER            Number of batched requests to send at once
   -d, --debug
-  --help           Show this message and exit.
+  -di, --discovery-info TEXT      Bypass discovery by passing an accurate
+                                  discovery result json escaped string. Do not
+                                  use this flag unless you are sure you know
+                                  what it means.
+  --discovery-timeout INTEGER     Timeout for discovery.  [default: 10]
+  -df, --device-family [iot.smartplugswitch|iot.smartbulb|iot.ipcamera|smart.kasaplug|smart.kasaswitch|smart.tapoplug|smart.tapobulb|smart.taposwitch|smart.tapohub|smart.kasahub|smart.ipcamera|smart.taporobovac|smart.tapochime|smart.tapodoorbell]
+                                  Exact device family for an advanced direct
+                                  connection.
+  -e, --encrypt-type [klap|aes|xor]
+                                  Encryption type for an advanced direct
+                                  connection.
+  -lv, --login-version INTEGER RANGE
+                                  Login version for an advanced direct
+                                  connection.  [x>=1]
+  -kv, --klap-version INTEGER RANGE
+                                  IOT KLAP handshake version for an advanced
+                                  direct connection.  [x>=1]
+  --https / --no-https            Whether an advanced direct connection uses
+                                  HTTPS.
+  --timeout INTEGER               Timeout for queries.
+  --port INTEGER RANGE            Connection and UDP discovery port override.
+                                  [1<=x<=65535]
+  --help                          Show this message and exit.
 ```
 
 ## create_module_fixtures

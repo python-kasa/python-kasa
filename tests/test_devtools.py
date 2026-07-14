@@ -5,10 +5,14 @@ import copy
 import pytest
 
 from devtools.dump_devinfo import (
-    _wrap_redactors,
-    get_legacy_fixture,
-    get_smart_fixtures,
+    cli as dump_devinfo_cli,
 )
+from devtools.dump_devinfo import (
+    get_iot_fixture,
+    get_smart_fixtures,
+    wrap_redactors,
+)
+from kasa.deviceconfig import DeviceConfig
 from kasa.iot import IotDevice
 from kasa.protocols import IotProtocol
 from kasa.protocols.protocol import redact_data
@@ -129,7 +133,7 @@ async def test_smartcam_fixtures(fixture_info: FixtureInfo):
         # Still check that the created child info from parent was redacted.
         # only smartcam children generate child_info_from_parent
         if created_cifp:
-            redacted_cifp = redact_data(created_cifp, _wrap_redactors(SMART_REDACTORS))
+            redacted_cifp = redact_data(created_cifp, wrap_redactors(SMART_REDACTORS))
             assert created_cifp == redacted_cifp
 
         assert saved_fixture_data == created_child_fixture.data
@@ -145,7 +149,7 @@ async def test_iot_fixtures(fixture_info: FixtureInfo):
     )
     assert isinstance(dev.protocol, IotProtocol)
 
-    fixture = await get_legacy_fixture(
+    fixture = await get_iot_fixture(
         dev.protocol, discovery_info=fixture_info.data.get("discovery_result")
     )
     fixture_result = fixture
@@ -157,3 +161,118 @@ async def test_iot_fixtures(fixture_info: FixtureInfo):
         key: val for key, val in fixture_info.data.items() if "err_code" not in val
     }
     assert saved_fixture == created_fixture
+
+
+async def test_dump_devinfo_exact_iot_klap_connection(mocker, runner):
+    """The devtool preserves independent login and IOT KLAP versions."""
+    captured_config: DeviceConfig | None = None
+    protocol = mocker.MagicMock()
+
+    def capture_protocol(config: DeviceConfig, *, strict: bool):
+        nonlocal captured_config
+        assert strict is True
+        captured_config = config
+        return protocol
+
+    mocker.patch("devtools.dump_devinfo.get_protocol", side_effect=capture_protocol)
+    handle_device = mocker.patch(
+        "devtools.dump_devinfo.handle_device", new_callable=mocker.AsyncMock
+    )
+
+    result = await runner.invoke(
+        dump_devinfo_cli,
+        [
+            "--host",
+            "127.0.0.1",
+            "-df",
+            "IOT.SMARTPLUGSWITCH",
+            "-e",
+            "KLAP",
+            "-lv",
+            "2",
+            "-kv",
+            "1",
+            "--credentials-hash",
+            "credential-hash",
+            "--no-https",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert captured_config is not None
+    assert captured_config.credentials is None
+    assert captured_config.credentials_hash == "credential-hash"
+    assert captured_config.connection_type.login_version == 2
+    assert captured_config.connection_type.klap_version == 1
+    handle_device.assert_awaited_once()
+
+
+async def test_dump_devinfo_help_includes_direct_connection_aliases(runner):
+    """The devtool exposes all direct connection option aliases."""
+    result = await runner.invoke(dump_devinfo_cli, ["--help"])
+
+    assert result.exit_code == 0
+    for option_names in (
+        "-df, --device-family",
+        "-e, --encrypt-type",
+        "-lv, --login-version",
+        "-kv, --klap-version",
+    ):
+        assert option_names in result.output
+
+
+@pytest.mark.parametrize(
+    ("device_family", "encrypt_type", "expected_error"),
+    [
+        pytest.param(
+            "SMART.TAPOPLUG",
+            "KLAP",
+            "--klap-version is only used by IOT devices",
+            id="smart-klap-version",
+        ),
+        pytest.param(
+            "IOT.SMARTPLUGSWITCH",
+            "XOR",
+            "--klap-version requires --encrypt-type KLAP",
+            id="non-klap-klap-version",
+        ),
+    ],
+)
+async def test_dump_devinfo_klap_version_validation_uses_canonical_name(
+    runner, device_family, encrypt_type, expected_error
+):
+    """Short-option validation errors use the descriptive option name."""
+    result = await runner.invoke(
+        dump_devinfo_cli,
+        [
+            "--host",
+            "127.0.0.1",
+            "-df",
+            device_family,
+            "-e",
+            encrypt_type,
+            "-kv",
+            "1",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert expected_error in result.output
+
+
+async def test_dump_devinfo_discovery_options_are_forwarded(mocker, runner):
+    """Discovery uses the devtool's port and credential-hash options."""
+    discover = mocker.patch(
+        "devtools.dump_devinfo.Discover.discover",
+        new_callable=mocker.AsyncMock,
+        return_value={},
+    )
+
+    result = await runner.invoke(
+        dump_devinfo_cli,
+        ["--port", "12345", "--credentials-hash", "credential-hash"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert discover.await_args.kwargs["port"] == 12345
+    assert discover.await_args.kwargs["credentials_hash"] == "credential-hash"

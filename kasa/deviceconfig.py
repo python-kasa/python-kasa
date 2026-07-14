@@ -3,9 +3,9 @@
 If you are connecting to a newer KASA or TAPO device you can get the device
 via discovery or connect directly with :class:`DeviceConfig`.
 
-Discovery returns a list of discovered devices:
+Discovery returns a dictionary of discovered devices keyed by IP address:
 
->>> from kasa import Discover, Device
+>>> from kasa import Device, DeviceConfig, Discover
 >>> device = await Discover.discover_single(
 ...     "127.0.0.3",
 ...     username="user@example.com",
@@ -22,7 +22,7 @@ None
 : {'device_family': 'SMART.TAPOBULB', 'encryption_type': 'KLAP', 'login_version': 2, \
 'https': False, 'http_port': 80}}
 
->>> later_device = await Device.connect(config=Device.Config.from_dict(config_dict))
+>>> later_device = await Device.connect(config=DeviceConfig.from_dict(config_dict))
 >>> print(later_device.alias)  # Alias is available as connect() calls update()
 Living Room Bulb
 
@@ -65,7 +65,7 @@ class DeviceEncryptionType(Enum):
 
 
 class DeviceFamily(Enum):
-    """Encrypt type enum."""
+    """Supported device-family identifiers advertised by discovery."""
 
     IotSmartPlugSwitch = "IOT.SMARTPLUGSWITCH"
     IotSmartBulb = "IOT.SMARTBULB"
@@ -94,13 +94,20 @@ class _DeviceConfigBaseMixin(DataClassJSONMixin):
 
 @dataclass
 class DeviceConnectionParameters(_DeviceConfigBaseMixin):
-    """Class to hold the the parameters determining connection type."""
+    """Parameters that select a device protocol and transport."""
 
+    #: Device-family identifier advertised by discovery
     device_family: DeviceFamily
+    #: Encryption scheme advertised by discovery
     encryption_type: DeviceEncryptionType
+    #: Login version advertised by discovery, when present
     login_version: int | None = None
+    #: Whether the transport uses HTTPS
     https: bool = False
+    #: HTTP port advertised by discovery, when present
     http_port: int | None = None
+    #: IOT KLAP handshake version advertised as ``new_klap``, when present
+    klap_version: int | None = None
 
     @staticmethod
     def from_values(
@@ -110,6 +117,7 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
         login_version: int | None = None,
         https: bool | None = None,
         http_port: int | None = None,
+        klap_version: int | None = None,
     ) -> DeviceConnectionParameters:
         """Return connection parameters from string values."""
         try:
@@ -121,6 +129,7 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
                 login_version,
                 https,
                 http_port=http_port,
+                klap_version=klap_version,
             )
         except (ValueError, TypeError) as ex:
             raise KasaException(
@@ -131,24 +140,24 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
 
 @dataclass
 class DeviceConfig(_DeviceConfigBaseMixin):
-    """Class to represent paramaters that determine how to connect to devices."""
+    """Class to represent parameters that determine how to connect to devices."""
 
     DEFAULT_TIMEOUT = 5
     #: IP address or hostname
     host: str
     #: Timeout for querying the device
     timeout: int | None = DEFAULT_TIMEOUT
-    #: Override the default 9999 port to support port forwarding
+    #: Override the protocol's default connection port to support port forwarding
     port_override: int | None = None
     #: Credentials for devices requiring authentication
     credentials: Credentials | None = None
     #: Credentials hash for devices requiring authentication.
-    #: If credentials are also supplied they take precendence over credentials_hash.
+    #: If credentials are also supplied they take precedence over credentials_hash.
     #: Credentials hash can be retrieved from :attr:`Device.credentials_hash`
     credentials_hash: str | None = None
-    #: The protocol specific type of connection.  Defaults to the legacy type.
+    #: The batch size for protocols supporting multiple request batches.
     batch_size: int | None = None
-    #: The batch size for protoools supporting multiple request batches.
+    #: The protocol-specific connection type. Defaults to IOT over XOR.
     connection_type: DeviceConnectionParameters = field(
         default_factory=lambda: DeviceConnectionParameters(
             DeviceFamily.IotSmartPlugSwitch, DeviceEncryptionType.Xor

@@ -15,7 +15,7 @@ import asyncclick as click
 if TYPE_CHECKING:
     from kasa import Device
 
-from kasa.deviceconfig import DeviceEncryptionType
+from kasa.deviceconfig import DeviceEncryptionType, DeviceFamily
 
 from .common import (
     SKIP_UPDATE_COMMANDS,
@@ -40,10 +40,11 @@ TYPES = [
 ]
 
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
+DEVICE_FAMILIES = [device_family.value for device_family in DeviceFamily]
 DEFAULT_TARGET = "255.255.255.255"
 
 
-def _legacy_type_to_class(_type: str) -> Any:
+def _iot_type_to_class(_type: str) -> Any:
     from kasa.iot import (
         IotBulb,
         IotDimmer,
@@ -108,8 +109,11 @@ def _legacy_type_to_class(_type: str) -> Any:
     "--port",
     envvar="KASA_PORT",
     required=False,
-    type=int,
-    help="The port of the device to connect to.",
+    type=click.IntRange(min=1, max=65535),
+    help=(
+        "The device connection port. During discovery this also overrides the "
+        "UDP discovery port; TDP ports 20002 and 20004 are reserved."
+    ),
 )
 @click.option(
     "--alias",
@@ -147,7 +151,10 @@ def _legacy_type_to_class(_type: str) -> Any:
     envvar="KASA_TYPE",
     default=None,
     type=click.Choice(TYPES, case_sensitive=False),
-    help="The device type in order to bypass discovery. Use `smart` for newer devices",
+    help=(
+        "Device type used to bypass discovery. IOT types select their concrete "
+        "class; `smart` and `camera` select protocol defaults."
+    ),
 )
 @click.option(
     "--json/--no-json",
@@ -157,34 +164,47 @@ def _legacy_type_to_class(_type: str) -> Any:
     help="Output raw device response as JSON.",
 )
 @click.option(
+    "-df",
+    "--device-family",
+    envvar="KASA_DEVICE_FAMILY",
+    default=None,
+    type=click.Choice(DEVICE_FAMILIES, case_sensitive=False),
+    help=(
+        "Exact device family for an advanced direct connection, e.g. "
+        "`SMART.KASASWITCH`."
+    ),
+)
+@click.option(
     "-e",
     "--encrypt-type",
     envvar="KASA_ENCRYPT_TYPE",
     default=None,
     type=click.Choice(ENCRYPT_TYPES, case_sensitive=False),
-)
-@click.option(
-    "-df",
-    "--device-family",
-    envvar="KASA_DEVICE_FAMILY",
-    default="SMART.TAPOPLUG",
-    help="Device family type, e.g. `SMART.KASASWITCH`. Deprecated use `--type smart`",
+    help="Encryption type for an advanced direct connection.",
 )
 @click.option(
     "-lv",
     "--login-version",
     envvar="KASA_LOGIN_VERSION",
-    default=2,
-    type=int,
-    help="The login version for device authentication. Defaults to 2",
+    default=None,
+    type=click.IntRange(min=1),
+    help="Login version for an advanced direct connection.",
+)
+@click.option(
+    "-kv",
+    "--klap-version",
+    envvar="KASA_KLAP_VERSION",
+    default=None,
+    type=click.IntRange(min=1),
+    help="IOT KLAP handshake version for an advanced direct connection.",
 )
 @click.option(
     "--https/--no-https",
     envvar="KASA_HTTPS",
-    default=False,
+    default=None,
     is_flag=True,
     type=bool,
-    help="Set flag if the device encryption uses https.",
+    help="Whether an advanced direct connection uses HTTPS.",
 )
 @click.option(
     "--timeout",
@@ -234,11 +254,12 @@ async def cli(
     verbose,
     debug,
     type,
-    encrypt_type,
-    https,
-    device_family,
-    login_version,
     json,
+    device_family,
+    encrypt_type,
+    login_version,
+    klap_version,
+    https,
     timeout,
     discovery_timeout,
     username,
@@ -273,15 +294,72 @@ async def cli(
     # but this keeps mypy happy for now
     logging.basicConfig(**logging_config)  # type: ignore
 
-    if ctx.invoked_subcommand == "discover":
-        return
-
     if alias is not None and host is not None:
         raise click.BadOptionUsage("alias", "Use either --alias or --host, not both.")
 
     if bool(password) != bool(username):
         raise click.BadOptionUsage(
             "username", "Using authentication requires both --username and --password"
+        )
+
+    connection_options = {
+        "type": type,
+        "device-family": device_family,
+        "encrypt-type": encrypt_type,
+        "login-version": login_version,
+        "klap-version": klap_version,
+        "https": https,
+    }
+    supplied_connection_options = {
+        option: value
+        for option, value in connection_options.items()
+        if value is not None
+    }
+
+    if ctx.invoked_subcommand == "discover":
+        if supplied_connection_options:
+            option = next(iter(supplied_connection_options))
+            raise click.BadOptionUsage(
+                option,
+                f"--{option} configures a direct connection and cannot be used "
+                "with discover",
+            )
+        return
+
+    if supplied_connection_options and host is None:
+        raise click.UsageError("Direct connection options require --host")
+
+    advanced_connection_options = {
+        option: value
+        for option, value in connection_options.items()
+        if option != "type" and value is not None
+    }
+    if type is not None and type not in {"smart", "camera"}:
+        if advanced_connection_options:
+            option = next(iter(advanced_connection_options))
+            raise click.BadOptionUsage(
+                option, f"--{option} is not used with IOT --type {type}"
+            )
+    elif type == "camera":
+        incompatible = {
+            option: value
+            for option, value in advanced_connection_options.items()
+            if option != "login-version"
+        }
+        if incompatible:
+            option = next(iter(incompatible))
+            raise click.BadOptionUsage(
+                option,
+                f"--{option} is fixed by --type camera",
+            )
+    elif (
+        type is None
+        and advanced_connection_options
+        and (not device_family or not encrypt_type)
+    ):
+        raise click.UsageError(
+            "Advanced direct connections require both --device-family and "
+            "--encrypt-type"
         )
 
     if username:
@@ -304,32 +382,77 @@ async def cli(
     device_discovered = False
 
     if type is not None and type not in {"smart", "camera"}:
-        from kasa.deviceconfig import DeviceConfig
+        from kasa.deviceconfig import DeviceConfig, DeviceConnectionParameters
 
-        config = DeviceConfig(host=host, port_override=port, timeout=timeout)
-        dev = _legacy_type_to_class(type)(host, config=config)
+        iot_family = (
+            DeviceFamily.IotSmartBulb
+            if type in {"bulb", "lightstrip"}
+            else DeviceFamily.IotSmartPlugSwitch
+        )
+
+        config = DeviceConfig(
+            host=host,
+            port_override=port,
+            timeout=timeout,
+            credentials=credentials,
+            credentials_hash=credentials_hash,
+            connection_type=DeviceConnectionParameters(
+                iot_family,
+                DeviceEncryptionType.Xor,
+            ),
+        )
+        dev = _iot_type_to_class(type)(host, config=config)
     elif type in {"smart", "camera"} or (device_family and encrypt_type):
         if type == "camera":
             encrypt_type = "AES"
             https = True
             device_family = "SMART.IPCAMERA"
+            if login_version is None:
+                login_version = 2
+        elif type == "smart":
+            device_family = device_family or "SMART.TAPOPLUG"
+            encrypt_type = encrypt_type or "KLAP"
+            https = bool(https)
 
         from kasa.device import Device
         from kasa.deviceconfig import (
             DeviceConfig,
             DeviceConnectionParameters,
-            DeviceEncryptionType,
-            DeviceFamily,
         )
 
-        if not encrypt_type:
-            encrypt_type = "KLAP"
+        try:
+            family = DeviceFamily(device_family)
+            encryption = DeviceEncryptionType(encrypt_type)
+        except ValueError as ex:
+            raise click.BadParameter(
+                "Invalid device connection parameters",
+                param_hint="--device-family/--encrypt-type",
+            ) from ex
+
+        if type == "smart" and not family.value.startswith("SMART."):
+            raise click.BadOptionUsage(
+                "device-family", "--type smart requires a SMART device family"
+            )
+        if klap_version is not None:
+            if encryption is not DeviceEncryptionType.Klap:
+                raise click.BadOptionUsage(
+                    "klap-version",
+                    "--klap-version requires --encrypt-type KLAP",
+                )
+            if not family.value.startswith("IOT."):
+                raise click.BadOptionUsage(
+                    "klap-version",
+                    "--klap-version is only used by IOT devices",
+                )
+        if login_version is None and family.value.startswith("SMART."):
+            login_version = 2
 
         ctype = DeviceConnectionParameters(
-            DeviceFamily(device_family),
-            DeviceEncryptionType(encrypt_type),
+            family,
+            encryption,
             login_version,
-            https,
+            bool(https),
+            klap_version=klap_version,
         )
         config = DeviceConfig(
             host=host,
@@ -339,6 +462,10 @@ async def cli(
             timeout=timeout,
             connection_type=ctype,
         )
+        from kasa.device_factory import is_connection_type_supported
+
+        if not is_connection_type_supported(ctype, strict=True):
+            raise click.UsageError("Unsupported direct connection option combination")
         dev = await Device.connect(config=config)
         device_updated = True
     elif alias:
@@ -347,7 +474,13 @@ async def cli(
         from .discover import find_dev_from_alias
 
         dev = await find_dev_from_alias(
-            alias=alias, target=target, credentials=credentials
+            alias=alias,
+            target=target,
+            credentials=credentials,
+            credentials_hash=credentials_hash,
+            timeout=timeout,
+            discovery_timeout=discovery_timeout,
+            port=port,
         )
         if not dev:
             echo(f"No device with name {alias} found")
