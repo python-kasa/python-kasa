@@ -120,6 +120,15 @@
 .. autoclass:: kasa.exceptions.AuthenticationError
     :members:
     :undoc-members:
+
+.. autoclass:: kasa.exceptions.UnsupportedAuthenticationError
+    :members:
+    :undoc-members:
+
+.. autoclass:: kasa.exceptions.DiscoveryAuthenticationError
+    :members:
+    :undoc-members:
+
 ```
 
 ```{eval-rst}

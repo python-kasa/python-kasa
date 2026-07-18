@@ -10,7 +10,12 @@ from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta, tzinfo
 from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
-from ..device import Device, DeviceInfo, WifiNetwork
+from ..device import (
+    Device,
+    DeviceInfo,
+    WifiNetwork,
+    get_unsupported_authentication_error,
+)
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
@@ -33,7 +38,6 @@ from .smartmodule import SmartModule
 if TYPE_CHECKING:
     from .smartchilddevice import SmartChildDevice
 _LOGGER = logging.getLogger(__name__)
-
 
 # List of modules that non hub devices with children, i.e. ks240/P300, report on
 # the child but only work on the parent.  See longer note below in _initialize_modules.
@@ -262,7 +266,17 @@ class SmartDevice(Device):
         """Update the device."""
         if self.credentials is None and self.credentials_hash is None:
             raise AuthenticationError("Tapo plug requires authentication.")
+        try:
+            await self._update_device(update_children)
+        except AuthenticationError as ex:
+            if unsupported_error := get_unsupported_authentication_error(
+                self.host, self._discovery_info, ex
+            ):
+                raise unsupported_error from ex
+            raise
 
+    async def _update_device(self, update_children: bool) -> None:
+        """Perform the protocol-specific update operation."""
         first_update = self._last_update_time is None
         now = time.monotonic()
         self._last_update_time = now
@@ -729,8 +743,10 @@ class SmartDevice(Device):
     def update_from_discover_info(
         self,
         info: dict,
+        *,
+        device_info: dict | None = None,
     ) -> None:
-        """Update state from info from the discover call."""
+        """Update state from discovery information."""
         self._discovery_info = info
         self._info = info
 
