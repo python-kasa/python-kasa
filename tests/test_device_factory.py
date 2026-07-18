@@ -7,10 +7,11 @@ the testing fake protocols.
 """
 
 import logging
-from typing import cast
+from typing import Any, cast
 
 import aiohttp
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
+from pytest_mock import MockerFixture
 
 from kasa import (
     BaseProtocol,
@@ -22,12 +23,14 @@ from kasa import (
     SmartProtocol,
 )
 from kasa.device_factory import (
+    GET_SYSINFO_QUERY,
     Device,
     IotDevice,
     SmartCamDevice,
     SmartDevice,
     connect,
     get_device_class_from_family,
+    get_device_class_from_sys_info,
     get_protocol,
 )
 from kasa.deviceconfig import (
@@ -37,6 +40,8 @@ from kasa.deviceconfig import (
     DeviceFamily,
 )
 from kasa.discover import DiscoveryResult
+from kasa.exceptions import UnsupportedDeviceError
+from kasa.iot import IotBulb
 from kasa.transports import (
     AesTransport,
     BaseTransport,
@@ -55,12 +60,23 @@ from .conftest import DISCOVERY_MOCK_IP
 pytestmark = [pytest.mark.requires_dummy]
 
 
-def _get_connection_type_device_class(discovery_info):
+def _get_connection_type_device_class(
+    discovery_info: dict[str, Any],
+) -> tuple[DeviceConnectionParameters, type[Device]]:
+    device_class: type[Device]
     if "result" in discovery_info:
-        device_class = Discover._get_device_class(discovery_info)
         dr = DiscoveryResult.from_dict(discovery_info["result"])
-
         connection_type = Discover._get_connection_parameters(dr)
+        # For IoT device families, the precise subclass is determined by sysinfo
+        # at connect time (not from the discovery response alone); use the base
+        # IotDevice class for isinstance checks in tests.
+        if connection_type.device_family in (
+            DeviceFamily.IotSmartPlugSwitch,
+            DeviceFamily.IotSmartBulb,
+        ):
+            device_class = IotDevice
+        else:
+            device_class = Discover._get_device_class(discovery_info)
     else:
         connection_type = DeviceConnectionParameters.from_values(
             DeviceFamily.IotSmartPlugSwitch.value, DeviceEncryptionType.Xor.value
@@ -72,8 +88,8 @@ def _get_connection_type_device_class(discovery_info):
 
 async def test_connect(
     discovery_mock,
-    mocker,
-):
+    mocker: MockerFixture,
+) -> None:
     """Test that if the protocol is passed in it gets set correctly."""
     host = DISCOVERY_MOCK_IP
     ctype, device_class = _get_connection_type_device_class(
@@ -260,6 +276,12 @@ ET = DeviceEncryptionType
             id="iot-klap",
         ),
         pytest.param(
+            CP(DF.IotSmartPlugSwitch, ET.Klap, https=False, new_klap=True),
+            IotProtocol,
+            KlapTransportV2,
+            id="iot-new-klap",
+        ),
+        pytest.param(
             CP(DF.IotSmartPlugSwitch, ET.Xor, https=False),
             IotProtocol,
             XorTransport,
@@ -289,9 +311,106 @@ async def test_get_protocol(
     conn_params: DeviceConnectionParameters,
     expected_protocol: type[BaseProtocol],
     expected_transport: type[BaseTransport],
-):
+) -> None:
     """Test get_protocol returns the right protocol."""
     config = DeviceConfig("127.0.0.1", connection_type=conn_params)
     protocol = get_protocol(config)
     assert isinstance(protocol, expected_protocol)
     assert isinstance(protocol._transport, expected_transport)
+
+
+async def test_connect_with_host_and_config_raises():
+    """Cover branch raising when both host and config are provided."""
+    dummy = DeviceConfig(host="127.0.0.1")
+    with pytest.raises(KasaException):
+        await connect(host="127.0.0.1", config=dummy)
+
+
+async def test_connect_protocol_none_raises():
+    """Cover branch when get_protocol returns None."""
+    params = DeviceConnectionParameters(
+        device_family=DeviceFamily.SmartTapoPlug,
+        encryption_type=DeviceEncryptionType.Xor,  # No SMART.XOR mapping
+    )
+    cfg = DeviceConfig(host="127.0.0.15", connection_type=params)
+    with pytest.raises(UnsupportedDeviceError):
+        await connect(config=cfg)
+
+
+async def test__connect_iot_ipcamera_unsupported_family():
+    """Cover else branch in _connect raising UnsupportedDeviceError."""
+    # Use a valid DeviceFamily that is intentionally unsupported by get_device_class_from_family.
+    params = DeviceConnectionParameters(
+        device_family=DeviceFamily.IotIpCamera,
+        encryption_type=DeviceEncryptionType.Aes,
+        https=True,
+    )
+    cfg = DeviceConfig(host="127.0.0.16", connection_type=params)
+    protocol = get_protocol(cfg)
+    assert protocol is not None
+    # Ensure first XOR path is not taken.
+    assert not isinstance(protocol._transport, XorTransport)
+    with pytest.raises(UnsupportedDeviceError):
+        await connect(config=cfg)
+
+
+def test_get_protocol_returns_none_for_unsupported_combo() -> None:
+    """Cover protocol_transport_key miss returning None."""
+    p = DeviceConnectionParameters(
+        device_family=DeviceFamily.SmartTapoPlug,
+        encryption_type=DeviceEncryptionType.Xor,
+    )
+    proto = get_protocol(DeviceConfig("127.0.0.99", connection_type=p))
+    assert proto is None
+
+
+def test_get_protocol_strict_encryption_mismatch() -> None:
+    """Cover strict=True mismatch branch for camera."""
+    p = DeviceConnectionParameters(
+        device_family=DeviceFamily.SmartIpCamera,
+        encryption_type=DeviceEncryptionType.Klap,
+    )
+    proto = get_protocol(DeviceConfig("127.0.0.55", connection_type=p), strict=True)
+    assert proto is None
+
+
+def test_get_device_class_from_sys_info_mapping() -> None:
+    """Cover get_device_class_from_sys_info mapping."""
+    info = {"system": {"get_sysinfo": {"type": "IOT.SMARTBULB"}}}
+    cls = get_device_class_from_sys_info(info)
+    assert cls is IotBulb
+
+
+async def test_connect_with_host_only_branch_raises_unsupported(
+    mocker: MockerFixture,
+) -> None:
+    """Exercise connect(host=..., config=None) to hit 'if host:' branch."""
+    mocker.patch("kasa.device_factory.get_protocol", return_value=None)
+    with pytest.raises(UnsupportedDeviceError):
+        await connect(host="127.0.0.66", config=None)  # type: ignore[arg-type]
+
+
+async def test_connect_iot_family_resolves_subclass_from_sysinfo(
+    mocker: MockerFixture,
+) -> None:
+    """IoT discovery families are narrowed to the concrete subclass via sysinfo."""
+    query_mock = mocker.patch(
+        "kasa.IotProtocol.query",
+        new_callable=mocker.AsyncMock,
+        return_value={"system": {"get_sysinfo": {"type": "IOT.SMARTBULB"}}},
+    )
+    update_mock = mocker.patch.object(IotBulb, "update", new_callable=mocker.AsyncMock)
+    config = DeviceConfig(
+        host="127.0.0.1",
+        connection_type=DeviceConnectionParameters(
+            DeviceFamily.IotSmartPlugSwitch,
+            DeviceEncryptionType.Klap,
+            new_klap=True,
+        ),
+    )
+
+    dev = await connect(config=config)
+
+    assert isinstance(dev, IotBulb)
+    query_mock.assert_awaited_once_with(GET_SYSINFO_QUERY)
+    update_mock.assert_awaited_once()

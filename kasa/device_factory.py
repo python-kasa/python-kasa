@@ -104,21 +104,20 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> Device:
     device_class: type[Device] | None
     device: Device | None = None
 
-    if isinstance(protocol, IotProtocol) and isinstance(
-        protocol._transport, XorTransport
-    ):
-        info = await protocol.query(GET_SYSINFO_QUERY)
-        _perf_log(True, "get_sysinfo")
-        device_class = get_device_class_from_sys_info(info)
-        device = device_class(config.host, protocol=protocol)
-        device.update_from_discover_info(info)
-        await device.update()
-        _perf_log(True, "update")
-        return device
-    elif device_class := get_device_class_from_family(
+    if device_class := get_device_class_from_family(
         config.connection_type.device_family.value, https=config.connection_type.https
     ):
-        device = device_class(host=config.host, protocol=protocol)
+        if issubclass(device_class, IotDevice):
+            # IoT devices report a generic device family (e.g. IOT.SMARTPLUGSWITCH)
+            # that does not distinguish plug/strip/switch/etc.  Query sysinfo for
+            # the precise subclass regardless of which transport is in use.
+            info = await protocol.query(GET_SYSINFO_QUERY)
+            _perf_log(True, "get_sysinfo")
+            device_class = get_device_class_from_sys_info(info)
+            device = device_class(config.host, protocol=protocol)
+            device.update_from_discover_info(info)
+        else:
+            device = device_class(host=config.host, protocol=protocol)
         await device.update()
         _perf_log(True, "update")
         return device
@@ -146,7 +145,10 @@ def get_device_class_from_sys_info(sysinfo: dict[str, Any]) -> type[IotDevice]:
 
 
 def get_device_class_from_family(
-    device_type: str, *, https: bool, require_exact: bool = False
+    device_type: str,
+    *,
+    https: bool,
+    require_exact: bool = False,
 ) -> type[Device] | None:
     """Return the device class from the type name."""
     supported_device_types: dict[str, type[Device]] = {
@@ -221,6 +223,7 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
         + "."
         + ctype.encryption_type.value
         + (".HTTPS" if ctype.https else "")
+        + (".NEW_KLAP" if ctype.new_klap else "")
     )
 
     _LOGGER.debug("Finding transport for %s", protocol_transport_key)
@@ -229,6 +232,7 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
     ] = {
         "IOT.XOR": (IotProtocol, XorTransport),
         "IOT.KLAP": (IotProtocol, KlapTransport),
+        "IOT.KLAP.NEW_KLAP": (IotProtocol, KlapTransportV2),
         "SMART.AES": (SmartProtocol, AesTransport),
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
         "SMART.KLAP.HTTPS": (SmartProtocol, KlapTransportV2),
