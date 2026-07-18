@@ -19,6 +19,7 @@ Some newer Kasa devices require authentication. These are marked with [^1] in th
 
 - **EP10**
   - Hardware: 1.0 (US) / Firmware: 1.0.2
+  - Hardware: 1.0 (US) / Firmware: 1.1.1
 - **EP25**
   - Hardware: 1.0 (US) / Firmware: 1.0.14
   - Hardware: 2.6 (US) / Firmware: 1.0.1[^1]
@@ -32,6 +33,7 @@ Some newer Kasa devices require authentication. These are marked with [^1] in th
   - Hardware: 1.0 (US) / Firmware: 1.5.7
   - Hardware: 2.1 (US) / Firmware: 1.1.2
   - Hardware: 2.1 (US) / Firmware: 1.1.4
+  - Hardware: 5.0 (US) / Firmware: 1.1.3
 - **HS105**
   - Hardware: 1.0 (US) / Firmware: 1.5.6
 - **HS110**
