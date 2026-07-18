@@ -146,7 +146,7 @@ SENSORS_SMART = {
     "S220",
     "D100C",  # needs a home category?
 }
-THERMOSTATS_SMART = {"KE100"}
+THERMOSTATS_SMART = {"KE100", "KE110"}
 
 VACUUMS_SMART = {"RV20"}
 
