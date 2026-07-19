@@ -192,7 +192,7 @@ The following devices have been tested and confirmed as working. If your device 
 - **Bulbs**: KL110, KL110B, KL120, KL125, KL130, KL135, KL50, KL60, LB100, LB110, LB130
 - **Light Strips**: KL400L10, KL400L5, KL420L5, KL430
 - **Hubs**: KH100[^1]
-- **Hub-Connected Devices[^3]**: KE100[^1]
+- **Hub-Connected Devices[^3]**: KE100[^1], KE110[^1]
 
 ### Supported Tapo[^1] devices
 
