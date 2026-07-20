@@ -200,3 +200,15 @@ SMART_AUTHENTICATION_ERRORS = [
     SmartErrorCode.TRANSPORT_UNKNOWN_CREDENTIALS_ERROR,
     SmartErrorCode.HOMEKIT_LOGIN_FAIL,
 ]
+
+
+#: Onboarding sources that are known to work
+SUPPORTED_OBD_SRCS = {"tplink", "matter", "apple"}
+
+
+class UnsupportedAuthenticationError(UnsupportedDeviceError, AuthenticationError):
+    """Raised when authentication fails with unsupported provisioning method.
+
+    This can be used to display a more helpful message in when we know it is
+    not necessarily an issue with the inputted credentials.
+    """

@@ -29,6 +29,7 @@ from kasa.iot.iotdevice import _extract_sys_info
 from kasa.protocols.iotprotocol import REDACTORS as IOT_REDACTORS
 from kasa.protocols.protocol import redact_data
 
+from ..exceptions import UnsupportedAuthenticationError
 from ..json import dumps as json_dumps
 from .common import echo, error
 
@@ -70,14 +71,20 @@ async def detail(ctx: click.Context) -> DeviceDict:
     async def print_unsupported(unsupported_exception: UnsupportedDeviceError) -> None:
         unsupported.append(unsupported_exception)
         async with sem:
+            echo("== Unsupported device ==")
+            echo(f"\t{unsupported_exception}")
+            echo()
+
             if unsupported_exception.discovery_result:
-                echo("== Unsupported device ==")
                 _echo_discovery_info(unsupported_exception.discovery_result)
                 echo()
-            else:
-                echo("== Unsupported device ==")
-                echo(f"\t{unsupported_exception}")
-                echo()
+                if isinstance(unsupported_exception, UnsupportedAuthenticationError):
+                    obd_src = unsupported_exception.discovery_result.get("obd_src")
+                    echo(
+                        f"\t[red bold]Provisioned using unsupported"
+                        f" '{obd_src}'.[/red bold]"
+                    )
+                    echo("\tTo fix, reset and provision manually.")
 
     from .device import state
 
@@ -87,6 +94,8 @@ async def detail(ctx: click.Context) -> DeviceDict:
         async with sem:
             try:
                 await dev.update()
+            except UnsupportedAuthenticationError as ex:
+                await print_unsupported(ex)
             except AuthenticationError:
                 if TYPE_CHECKING:
                     assert dev._discovery_info
@@ -159,6 +168,8 @@ async def list(ctx: click.Context) -> DeviceDict:
         async with sem:
             try:
                 await dev.update()
+            except UnsupportedAuthenticationError as ex:
+                await print_unsupported(ex)
             except AuthenticationError:
                 echo(f"{infostr} - Authentication failed")
             except TimeoutError:

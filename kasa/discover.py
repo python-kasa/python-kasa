@@ -123,6 +123,7 @@ from kasa.deviceconfig import (
 from kasa.exceptions import (
     KasaException,
     TimeoutError,
+    UnsupportedAuthenticationError,
     UnsupportedDeviceError,
 )
 from kasa.iot.iotdevice import IotDevice, _extract_sys_info
@@ -284,6 +285,16 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         task: asyncio.Task = asyncio.create_task(coro)
         self.callback_tasks.append(task)
 
+    async def _on_discovered_wrapper(self, device: Device) -> None:
+        """Wrap on_discovered to handle UnsupportedAuthenticationError."""
+        assert self.on_discovered is not None  # noqa: S101
+        try:
+            await self.on_discovered(device)
+        except UnsupportedAuthenticationError as ex:
+            self.unsupported_device_exceptions[device.host] = ex
+            if self.on_unsupported is not None:
+                await self.on_unsupported(ex)
+
     async def wait_for_discovery_to_complete(self) -> None:
         """Wait for the discovery task to complete."""
         # Give some time for connection_made event to be received
@@ -393,7 +404,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.discovered_devices[ip] = device
 
         if self.on_discovered is not None:
-            self._run_callback_task(self.on_discovered(device))
+            self._run_callback_task(self._on_discovered_wrapper(device))
 
         self._handle_discovered_event()
 

@@ -32,6 +32,7 @@ from kasa.exceptions import (
     DeviceError,
     KasaException,
     TimeoutError,
+    UnsupportedAuthenticationError,
     UnsupportedDeviceError,
 )
 from kasa.feature import Feature
@@ -68,6 +69,7 @@ __all__ = [
     "KasaException",
     "AuthenticationError",
     "DeviceError",
+    "UnsupportedAuthenticationError",
     "UnsupportedDeviceError",
     "TimeoutError",
     "Credentials",
