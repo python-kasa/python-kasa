@@ -11,7 +11,9 @@ dependencies = [
   "cryptography>=1.9",
   "aiohttp>=3",
   "tzdata>=2024.2 ; platform_system == 'Windows'",
-  "mashumaro>=3.20"
+  "mashumaro>=3.20",
+  "httpx",
+  "cryptography"
 ]
 
 classifiers = [

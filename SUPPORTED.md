@@ -352,6 +352,11 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 - **RV30 Max**
   - Hardware: 1.0 (US) / Firmware: 1.2.0
 
+### Locks
+
+- **DL100**
+  - Hardware: 1.0 (US) / Firmware: 1.0.17
+
 ### Hubs
 
 - **H100**
