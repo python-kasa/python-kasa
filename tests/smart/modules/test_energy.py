@@ -1,6 +1,8 @@
+import calendar
 import copy
 import logging
 from contextlib import nullcontext as does_not_raise
+from datetime import date
 from unittest.mock import patch
 
 import pytest
@@ -21,6 +23,11 @@ s515d_smart = parametrize(
 p110_v1_smart = parametrize(
     "p110 v1 smart",
     model_filter={"P110(EU)_1.0_1.0.7"},
+    protocol_filter={"SMART"},
+)
+kp125m_smart = parametrize(
+    "kp125m smart",
+    model_filter={"KP125M(US)_1.0_1.2.3"},
     protocol_filter={"SMART"},
 )
 
@@ -88,11 +95,13 @@ def _mock_query(responses: dict[str, object], calls: list[str]):
 async def test_supported(dev: SmartDevice) -> None:
     energy_module = _get_energy_module(dev)
     assert energy_module.supports(Energy.ModuleFeature.CONSUMPTION_TOTAL) is False
-    assert energy_module.supports(Energy.ModuleFeature.PERIODIC_STATS) is False
     if energy_module.supported_version < 2:
         assert energy_module.supports(Energy.ModuleFeature.VOLTAGE_CURRENT) is False
+        assert energy_module.supports(Energy.ModuleFeature.PERIODIC_STATS) is False
     else:
         assert energy_module.supports(Energy.ModuleFeature.VOLTAGE_CURRENT) is True
+        # v2 devices expose historical stats via get_energy_data.
+        assert energy_module.supports(Energy.ModuleFeature.PERIODIC_STATS) is True
 
 
 @has_emeter_smart
@@ -424,3 +433,60 @@ async def test_s515d_missing_get_current_power_is_optional(dev: SmartDevice) -> 
     assert "get_current_power" not in energy_module.data
     assert energy_module.current_consumption == 0.0
     assert energy_module.status.power == 0.0
+
+
+@kp125m_smart
+async def test_get_monthly_stats(dev: SmartDevice) -> None:
+    """Monthly stats map the 12 get_energy_data buckets to {month: energy}."""
+    energy_module = _get_v2_energy_module(dev)
+    assert energy_module.supports(Energy.ModuleFeature.PERIODIC_STATS)
+
+    # Fake transport returns month*1000 Wh per bucket.
+    stats = await energy_module.get_monthly_stats(year=2024)
+    assert stats == {month: float(month) for month in range(1, 13)}
+
+    stats_wh = await energy_module.get_monthly_stats(year=2024, kwh=False)
+    assert stats_wh == {month: month * 1000 for month in range(1, 13)}
+
+
+@kp125m_smart
+async def test_get_daily_stats(dev: SmartDevice) -> None:
+    """Daily stats return the requested month's days keyed by day-of-month."""
+    energy_module = _get_v2_energy_module(dev)
+
+    year, month = 2024, 2  # leap February -> 29 days
+    days_in_month = calendar.monthrange(year, month)[1]
+
+    stats = await energy_module.get_daily_stats(year=year, month=month)
+    assert set(stats) == set(range(1, days_in_month + 1))
+
+    # Fake transport returns day_of_year*10 Wh per bucket; 1 Feb 2024 is doy 32.
+    expected_first = date(year, month, 1).timetuple().tm_yday * 10 / 1000
+    assert stats[1] == expected_first
+    expected_last = date(year, month, days_in_month).timetuple().tm_yday * 10 / 1000
+    assert stats[days_in_month] == expected_last
+
+
+@kp125m_smart
+async def test_energy_data_follows_continuation_cursor(dev: SmartDevice) -> None:
+    """A response ending before the requested window is re-queried and merged."""
+    energy_module = _get_v2_energy_module(dev)
+
+    pages = [
+        {"get_energy_data": {"end_timestamp": 150, "data": [10, 20]}},
+        {"get_energy_data": {"end_timestamp": 300, "data": [30]}},
+    ]
+    starts: list[int] = []
+
+    async def fake_call(method: str, params: dict | None = None) -> dict:
+        assert method == "get_energy_data"
+        assert params is not None
+        starts.append(params["start_timestamp"])
+        return pages[len(starts) - 1]
+
+    with patch.object(energy_module, "call", side_effect=fake_call):
+        data = await energy_module._query_energy_data(0, 300, 1440)
+
+    assert data == [10, 20, 30]
+    # Second request continues from the first response's end_timestamp.
+    assert starts == [0, 150]
