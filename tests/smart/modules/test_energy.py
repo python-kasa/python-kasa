@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kasa import DeviceError, Module
+from kasa import DeviceError, KasaException, Module
 from kasa.exceptions import SmartErrorCode
 from kasa.interfaces.energy import Energy
 from kasa.smart import SmartDevice
@@ -490,3 +490,69 @@ async def test_energy_data_follows_continuation_cursor(dev: SmartDevice) -> None
     assert data == [10, 20, 30]
     # Second request continues from the first response's end_timestamp.
     assert starts == [0, 150]
+
+
+@kp125m_smart
+async def test_get_monthly_stats_defaults_to_current_year(dev: SmartDevice) -> None:
+    """With no year, the current year's full 12 months are returned."""
+    energy_module = _get_v2_energy_module(dev)
+    # get_monthly_stats always spans Jan 1 -> Jan 1, so the mapping is
+    # independent of the current date.
+    stats = await energy_module.get_monthly_stats()
+    assert stats == {month: float(month) for month in range(1, 13)}
+
+
+@kp125m_smart
+async def test_get_daily_stats_defaults_to_current_month(dev: SmartDevice) -> None:
+    """With no year/month, the current month's days are returned."""
+    energy_module = _get_v2_energy_module(dev)
+    today = date.today()
+    days_in_month = calendar.monthrange(today.year, today.month)[1]
+
+    stats = await energy_module.get_daily_stats()
+    assert set(stats) == set(range(1, days_in_month + 1))
+
+
+@kp125m_smart
+async def test_get_daily_stats_fourth_quarter(dev: SmartDevice) -> None:
+    """A Q4 month uses next-year Jan 1 as the quarter end."""
+    energy_module = _get_v2_energy_module(dev)
+
+    year, month = 2024, 11
+    days_in_month = calendar.monthrange(year, month)[1]
+
+    stats = await energy_module.get_daily_stats(year=year, month=month, kwh=False)
+    assert set(stats) == set(range(1, days_in_month + 1))
+    # kwh=False returns raw Wh (day_of_year * 10 from the fake transport).
+    assert stats[1] == date(year, month, 1).timetuple().tm_yday * 10
+
+
+@kp125m_smart
+async def test_query_energy_data_edge_cases(dev: SmartDevice) -> None:
+    """A zero-width window makes no calls; a stalled cursor stops the loop."""
+    energy_module = _get_v2_energy_module(dev)
+
+    # start == end -> no request, empty result.
+    assert await energy_module._query_energy_data(300, 300, 1440) == []
+
+    async def stalled_call(method: str, params: dict | None = None) -> dict:
+        # Always report the same end_timestamp, i.e. no forward progress.
+        assert params is not None
+        return {
+            "get_energy_data": {
+                "end_timestamp": params["start_timestamp"],
+                "data": [7],
+            }
+        }
+
+    with patch.object(energy_module, "call", side_effect=stalled_call):
+        data = await energy_module._query_energy_data(0, 300, 1440)
+    assert data == [7]  # single page, no infinite loop
+
+
+@kp125m_smart
+async def test_erase_stats_not_supported(dev: SmartDevice) -> None:
+    """erase_stats is not implemented for SMART devices."""
+    energy_module = _get_v2_energy_module(dev)
+    with pytest.raises(KasaException, match="does not support erasing"):
+        await energy_module.erase_stats()
