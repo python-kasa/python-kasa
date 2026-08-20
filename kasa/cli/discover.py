@@ -70,13 +70,12 @@ async def detail(ctx: click.Context) -> DeviceDict:
     async def print_unsupported(unsupported_exception: UnsupportedDeviceError) -> None:
         unsupported.append(unsupported_exception)
         async with sem:
+            echo("== Unsupported device ==")
+            echo(f"\t{unsupported_exception}")
             if unsupported_exception.discovery_result:
-                echo("== Unsupported device ==")
                 _echo_discovery_info(unsupported_exception.discovery_result)
                 echo()
             else:
-                echo("== Unsupported device ==")
-                echo(f"\t{unsupported_exception}")
                 echo()
 
     from .device import state
@@ -87,11 +86,12 @@ async def detail(ctx: click.Context) -> DeviceDict:
         async with sem:
             try:
                 await dev.update()
-            except AuthenticationError:
+            except AuthenticationError as ex:
                 if TYPE_CHECKING:
                     assert dev._discovery_info
                 auth_failed.append(dev._discovery_info)
                 echo("== Authentication failed for device ==")
+                echo(f"\t{ex}")
                 _echo_discovery_info(dev._discovery_info)
                 echo()
             else:
@@ -159,8 +159,8 @@ async def list(ctx: click.Context) -> DeviceDict:
         async with sem:
             try:
                 await dev.update()
-            except AuthenticationError:
-                echo(f"{infostr} - Authentication failed")
+            except AuthenticationError as ex:
+                echo(f"{infostr} - Authentication failed: {ex}")
             except TimeoutError:
                 echo(f"{infostr} - Timed out")
             except Exception as ex:

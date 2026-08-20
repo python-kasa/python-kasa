@@ -838,6 +838,14 @@ class Discover:
                 discovery_result=discovery_result.to_dict(),
                 host=discovery_result.ip,
             )
+        if encrypt_type == "TPAP":
+            raise UnsupportedDeviceError(
+                f"Device {discovery_result.ip} uses TPAP, which is not supported. "
+                "Enable Third-Party Device Support in the Tapo app to make the "
+                "device use KLAP.",
+                discovery_result=discovery_result.to_dict(),
+                host=discovery_result.ip,
+            )
         return DeviceConnectionParameters.from_values(
             type_,
             encrypt_type,

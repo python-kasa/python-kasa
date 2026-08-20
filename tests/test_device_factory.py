@@ -36,7 +36,8 @@ from kasa.deviceconfig import (
     DeviceEncryptionType,
     DeviceFamily,
 )
-from kasa.discover import DiscoveryResult
+from kasa.discover import DiscoveryResult, EncryptionScheme
+from kasa.exceptions import UnsupportedDeviceError
 from kasa.transports import (
     AesTransport,
     BaseTransport,
@@ -53,6 +54,29 @@ from .conftest import DISCOVERY_MOCK_IP
 # Device Factory tests are not relevant for real devices which run against
 # a single device that has already been created via the factory.
 pytestmark = [pytest.mark.requires_dummy]
+
+
+def test_tpap_discovery_error_is_actionable() -> None:
+    """Test TPAP discovery directs users to the compatibility setting."""
+    discovery_result = DiscoveryResult(
+        device_type="SMART.TAPOPLUG",
+        device_model="P316M(US)",
+        device_id="device-id",
+        ip="127.0.0.1",
+        mac="00-11-22-33-44-55",
+        mgt_encrypt_schm=EncryptionScheme(
+            is_support_https=False,
+            encrypt_type="TPAP",
+            http_port=80,
+            lv=2,
+        ),
+    )
+
+    with pytest.raises(
+        UnsupportedDeviceError,
+        match="Enable Third-Party Device Support.*use KLAP",
+    ):
+        Discover._get_connection_parameters(discovery_result)
 
 
 def _get_connection_type_device_class(discovery_info):
