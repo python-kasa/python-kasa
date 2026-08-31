@@ -118,6 +118,12 @@ class KlapTransport(BaseTransport):
 
         self._http_client = HttpClient(config)
         self._local_seed: bytes | None = None
+        # A hash another transport produced is not a bad password.
+        if self._credentials_hash and not self._is_transport_credentials_hash(
+            self._credentials_hash
+        ):
+            self._credentials_hash = None
+
         if (
             not self._credentials or self._credentials.username is None
         ) and not self._credentials_hash:
@@ -161,6 +167,26 @@ class KlapTransport(BaseTransport):
         if self._credentials == Credentials():
             return None
         return base64.b64encode(self._local_auth_hash).decode()
+
+    @classmethod
+    def _is_transport_credentials_hash(cls, credentials_hash: str) -> bool:
+        """Whether the hash has the shape this transport produces.
+
+        A device can change its encryption type without the credentials
+        changing, so a stored hash may be one that another transport wrote.
+        A klap hash is the base64 of a raw digest, so it is the right length
+        and, unlike the json hashes other transports store, not decodable.
+        """
+        try:
+            decoded = base64.b64decode(credentials_hash.encode(), validate=True)
+        except ValueError:
+            return False
+        if len(decoded) != len(cls.generate_auth_hash(Credentials())):
+            return False
+        try:
+            return not isinstance(json_loads(decoded), dict)
+        except (ValueError, UnicodeDecodeError):
+            return True
 
     async def perform_handshake1(self) -> tuple[bytes, bytes, bytes]:
         """Perform handshake1."""

@@ -86,6 +86,12 @@ class AesTransport(BaseTransport):
         super().__init__(config=config)
 
         self._login_version = config.connection_type.login_version
+        # A hash another transport produced is not a bad password.
+        if self._credentials_hash and not self._is_transport_credentials_hash(
+            self._credentials_hash
+        ):
+            self._credentials_hash = None
+
         if (
             not self._credentials or self._credentials.username is None
         ) and not self._credentials_hash:
@@ -130,6 +136,15 @@ class AesTransport(BaseTransport):
         if self._credentials == Credentials():
             return None
         return base64.b64encode(json_dumps(self._login_params).encode()).decode()
+
+    @staticmethod
+    def _is_transport_credentials_hash(credentials_hash: str) -> bool:
+        """Whether the hash has the shape this transport produces."""
+        try:
+            decoded = json_loads(base64.b64decode(credentials_hash.encode()))
+        except (ValueError, UnicodeDecodeError):
+            return False
+        return isinstance(decoded, dict) and "username" in decoded
 
     def _get_login_params(self, credentials: Credentials) -> dict[str, str]:
         """Get the login parameters based on the login_version."""

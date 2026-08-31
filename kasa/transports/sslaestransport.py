@@ -91,6 +91,13 @@ class SslAesTransport(BaseTransport):
         super().__init__(config=config)
 
         self._login_version = config.connection_type.login_version
+
+        # A hash another transport produced is not a bad password.
+        if self._credentials_hash and not self._is_transport_credentials_hash(
+            self._credentials_hash
+        ):
+            self._credentials_hash = None
+
         if (
             not self._credentials or self._credentials.username is None
         ) and not self._credentials_hash:
@@ -146,6 +153,15 @@ class SslAesTransport(BaseTransport):
     def _create_b64_credentials(credentials: Credentials) -> str:
         ch = {"un": credentials.username, "pwd": credentials.password}
         return base64.b64encode(json_dumps(ch).encode()).decode()
+
+    @staticmethod
+    def _is_transport_credentials_hash(credentials_hash: str) -> bool:
+        """Whether the hash has the shape this transport produces."""
+        try:
+            decoded = json_loads(base64.b64decode(credentials_hash.encode()))
+        except (ValueError, UnicodeDecodeError):
+            return False
+        return isinstance(decoded, dict) and "un" in decoded and "pwd" in decoded
 
     @property
     def credentials_hash(self) -> str | None:
