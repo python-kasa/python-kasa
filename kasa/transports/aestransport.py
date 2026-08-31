@@ -20,7 +20,12 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from yarl import URL
 
-from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
+from kasa.credentials import (
+    DEFAULT_CREDENTIALS,
+    Credentials,
+    _credentials_from_plaintext_hash,
+    get_default_credentials,
+)
 from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import (
     SMART_AUTHENTICATION_ERRORS,
@@ -90,6 +95,10 @@ class AesTransport(BaseTransport):
         if self._credentials_hash and not self._is_transport_credentials_hash(
             self._credentials_hash
         ):
+            if not self._credentials:
+                self._credentials = _credentials_from_plaintext_hash(
+                    self._credentials_hash
+                )
             self._credentials_hash = None
 
         if (
