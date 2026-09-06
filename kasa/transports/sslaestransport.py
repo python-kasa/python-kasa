@@ -74,6 +74,7 @@ class SslAesTransport(BaseTransport):
     CIPHERS = ":".join(
         [
             "ECDHE-RSA-AES128-GCM-SHA256",
+            "ECDHE-RSA-AES256-GCM-SHA384",
             "AES256-GCM-SHA384",
             "AES256-SHA256",
             "AES128-GCM-SHA256",
