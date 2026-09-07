@@ -129,14 +129,9 @@ def filter_fixtures(
         if isinstance(model_filter, str):
             model_filter = {model_filter}
         assert isinstance(model_filter, set), "model filter must be a set"
-        model_filter_list = [mf for mf in model_filter]
-        if (
-            len(model_filter_list) == 1
-            and (model := model_filter_list[0])
-            and len(model.split("_")) == 3
-        ):
-            # filter string includes hw and fw, return exact match
-            return fixture_data.name == f"{model}.json"
+        fixture_base = fixture_data.name.removesuffix(".json")
+        if fixture_base in model_filter or fixture_data.name in model_filter:
+            return True
         file_model_region = fixture_data.name.split("_")[0]
         file_model = file_model_region.split("(")[0]
         return file_model in model_filter

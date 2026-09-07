@@ -55,9 +55,13 @@ BULBS_IOT_VARIABLE_TEMP = {
     "KL135",
     "KL430",
 }
-# KL400L5 firmware 1.0.5 and 1.0.8 fixtures report no variable color temperature
-# support, so match the supporting 1.0.11 fixture rather than the entire model.
-BULBS_IOT_VARIABLE_TEMP_FIXTURES = {"KL400L5(US)_1.0_1.0.11"}
+# KL400L5 firmware 1.0.5/1.0.8 and KL420L5 firmware 1.0.2 fixtures report no
+# variable color temperature support, so match the supporting fixtures rather
+# than the entire model.
+BULBS_IOT_VARIABLE_TEMP_FIXTURES = {
+    "KL400L5(US)_1.0_1.0.11",
+    "KL420L5(US)_1.0_1.0.7",
+}
 BULBS_IOT_COLOR = {"LB130", "KL125", "KL130", "KL135", *BULBS_IOT_LIGHT_STRIP}
 BULBS_IOT_DIMMABLE = {"KL50", "KL60", "LB100", "LB110", "KL110", "KL110B"}
 BULBS_IOT = (
