@@ -91,6 +91,7 @@ TPLINK_KELVIN = {
     r"KL120\(EU\)": ColorTempRange(2700, 6500),
     r"KL120\(US\)": ColorTempRange(2700, 5000),
     r"KL400L5": ColorTempRange(2500, 9000),
+    r"KL420": ColorTempRange(2500, 9000),
     r"KL430": ColorTempRange(2500, 9000),
 }
 
