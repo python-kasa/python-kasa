@@ -245,7 +245,17 @@ class SmartProtocol(BaseProtocol):
                     batch_name,
                     pf(smart_request),
                 )
-            response_step = await self._transport.send(smart_request)
+            try:
+                response_step = await self._transport.send(smart_request)
+            except TimeoutError as ex:
+                # P300 does not respond to some batched requests (e.g. both child
+                # list requests together) so disable batching
+                if self._multi_request_batch_size != 1:
+                    self._multi_request_batch_size = 1
+                    raise _RetryableError(
+                        "Timeout during multi request, multi requests disabled"
+                    ) from ex
+                raise ex
             if debug_enabled:
                 if self._redact_data:
                     data = redact_data(response_step, REDACTORS)
