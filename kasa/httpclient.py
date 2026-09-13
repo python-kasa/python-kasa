@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import builtins
 import logging
 import ssl
 import time
@@ -144,7 +145,9 @@ class HttpClient:
             raise _ConnectionError(
                 f"Device connection error: {self._config.host}: {ex}", ex
             ) from ex
-        except (aiohttp.ServerTimeoutError, TimeoutError) as ex:
+        # TimeoutError is imported from kasa.exceptions and shadows the builtin,
+        # which is what aiohttp raises when ClientTimeout(total=...) expires.
+        except (aiohttp.ServerTimeoutError, builtins.TimeoutError) as ex:
             raise TimeoutError(
                 "Unable to query the device, "
                 + f"timed out: {self._config.host}: {ex}",
