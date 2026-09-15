@@ -14,12 +14,19 @@ class LastDetection(SmartCamModule):
     Backed by ``getLastAlarmInfo`` (``last_alarm_time``/``last_alarm_type``),
     which is refreshed within a second of a detection and needs no SD card.
     The timestamp keeps advancing while the motion continues.
+
+    Hub children are excluded as their modules are only refreshed once a day,
+    which defeats the purpose of polling the last detection.
     """
 
     REQUIRED_COMPONENT = "detection"
     QUERY_GETTER_NAME = "getLastAlarmInfo"
     QUERY_MODULE_NAME = "system"
     QUERY_SECTION_NAMES = "last_alarm_info"
+
+    async def _check_supported(self) -> bool:
+        """Additional check to see if the module is supported by the device."""
+        return not self._device._is_hub_child
 
     def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
@@ -51,14 +58,15 @@ class LastDetection(SmartCamModule):
         """Return timestamp of the last detection, None if nothing was detected yet.
 
         Devices report an empty string or 0 when nothing has been detected yet.
+        Unparseable values are reported as None as well.
         """
         try:
             timestamp = int(self.data["last_alarm_info"].get("last_alarm_time"))
-        except (TypeError, ValueError):
+            if not timestamp:
+                return None
+            return datetime.fromtimestamp(timestamp, tz=self._device.timezone)
+        except (TypeError, ValueError, OverflowError, OSError):
             return None
-        if not timestamp:
-            return None
-        return datetime.fromtimestamp(timestamp, tz=self._device.timezone)
 
     @property
     def last_detection_type(self) -> str | None:

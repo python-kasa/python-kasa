@@ -7,6 +7,7 @@ from datetime import datetime
 import pytest
 
 from kasa import Device
+from kasa.smart import SmartDevice
 from kasa.smartcam.smartcammodule import SmartCamModule
 
 from ...device_fixtures import parametrize
@@ -15,6 +16,11 @@ lastdetection_smartcam = parametrize(
     "has last detection",
     component_filter="detection",
     protocol_filter={"SMARTCAM"},
+)
+lastdetection_hub_child = parametrize(
+    "hub child with detection",
+    component_filter="detection",
+    protocol_filter={"SMARTCAM.CHILD"},
 )
 
 
@@ -58,6 +64,7 @@ async def test_last_detection_values(dev: Device) -> None:
         "",  # never triggered (C100)
         "0",  # never triggered (C110, C220, ...)
         "nonsense",  # unexpected value must not break feature access
+        "99999999999999999",  # out of range for datetime.fromtimestamp
     ],
 )
 async def test_last_detection_never_triggered(dev: Device, time_raw: str) -> None:
@@ -69,3 +76,17 @@ async def test_last_detection_never_triggered(dev: Device, time_raw: str) -> Non
 
     assert last_detection.last_detection_timestamp is None
     assert last_detection.last_detection_type is None
+
+
+@lastdetection_hub_child
+async def test_last_detection_not_exposed_on_hub_children(dev: Device) -> None:
+    """Test that hub children do not expose the module.
+
+    Hub child modules are only refreshed once a day, which defeats the purpose
+    of polling the last detection.
+    """
+    assert isinstance(dev, SmartDevice)
+    assert dev._is_hub_child
+    assert SmartCamModule.SmartCamLastDetection not in dev.modules
+    assert "last_detection_timestamp" not in dev.features
+    assert "last_detection_type" not in dev.features
