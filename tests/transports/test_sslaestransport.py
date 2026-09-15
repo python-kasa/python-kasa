@@ -339,6 +339,32 @@ async def test_unencrypted_passthrough_errors(
         await transport.send(json_dumps(request))
 
 
+@pytest.mark.xdist_group(name="caplog")
+async def test_handshake_unaccepted_username_no_unknown_error_warning(
+    mocker: MockerFixture, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Secure-login devices answer -60502 for an unaccepted username.
+
+    The transport falls back to the default username; the code must be known
+    so that no 'unknown error code' warning is logged on every connection.
+    """
+    host = "127.0.0.1"
+    mock_ssl_aes_device = MockSslAesDevice(host, want_default_username=True)
+    mocker.patch.object(
+        aiohttp.ClientSession, "post", side_effect=mock_ssl_aes_device.post
+    )
+    transport = SslAesTransport(
+        config=DeviceConfig(host, credentials=Credentials(MOCK_USER, MOCK_PWD))
+    )
+
+    caplog.set_level(logging.WARNING, logger="kasa.transports.sslaestransport")
+    await transport.perform_handshake()
+
+    assert transport._state is TransportState.ESTABLISHED
+    assert "received unknown error code" not in caplog.text
+    assert SmartErrorCode.from_int(-60502) is SmartErrorCode.UNKNOWN_USERNAME
+
+
 async def test_device_blocked_response(mocker: MockerFixture) -> None:
     host = "127.0.0.1"
     mock_ssl_aes_device = MockSslAesDevice(host, device_blocked=True)
@@ -459,11 +485,17 @@ async def test_login_version_default_credentials(
 
 
 class MockSslAesDevice:
+    # Response observed on secure-login devices (C200, H200) when the username
+    # is not the one accepted for secure login. The -60502 inner code is not
+    # documented, the transport falls back to the default username on it.
     BAD_USER_RESP = {
         "error_code": SmartErrorCode.SESSION_EXPIRED.value,
         "result": {
             "data": {
                 "code": -60502,
+                "encrypt_type": ["1", "2"],
+                "key": "Someb64keyWithUnknownPurpose",
+                "nonce": "MixedCaseAlphaNumericWithUnknownPurpose",
             }
         },
     }
