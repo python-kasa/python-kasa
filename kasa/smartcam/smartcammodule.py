@@ -54,6 +54,10 @@ class SmartCamModule(SmartModule):
 
     SmartCamBattery: Final[ModuleName[modules.Battery]] = ModuleName("Battery")
 
+    SmartCamLastDetection: Final[ModuleName[modules.LastDetection]] = ModuleName(
+        "LastDetection"
+    )
+
     SmartCamDeviceModule: Final[ModuleName[modules.DeviceModule]] = ModuleName(
         "devicemodule"
     )
