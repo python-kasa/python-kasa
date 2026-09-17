@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>gzplug — Bench Plug Controller</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🔌</text></svg>">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="bar">
+  <h1>gzplug <span class="sub">bench plug controller</span></h1>
+  <div class="bar-right">
+    <span id="run-badge" class="badge idle">idle</span>
+    <span id="link" class="link-dot" title="Connecting…"></span>
+  </div>
+</header>
+
+<main>
+  <!-- Credentials, shown only until they are set. -->
+  <section id="setup" class="card hidden">
+    <h2>Account</h2>
+    <p class="note">
+      Shared test-team TP-Link account. Stored in plaintext in
+      <code>config.json</code> by design — do not reuse this password.
+    </p>
+    <form id="creds-form" class="row">
+      <input id="creds-user" type="email" placeholder="you@example.com" required>
+      <input id="creds-pass" type="password" placeholder="password" required>
+      <button type="submit">Save</button>
+    </form>
+  </section>
+
+  <!-- Devices and their live state. -->
+  <section class="card">
+    <div class="card-head">
+      <h2>Plugs <span id="device-count" class="count"></span></h2>
+      <div class="actions">
+        <button id="btn-discover" class="ghost">Scan network</button>
+        <button id="btn-add" class="ghost">Add by IP</button>
+      </div>
+    </div>
+    <div id="devices" class="devices"></div>
+    <p id="devices-empty" class="empty hidden">
+      No plugs yet. Scan the network, or add one by IP if discovery cannot
+      reach it.
+    </p>
+    <div id="discover-result" class="discover-result hidden"></div>
+  </section>
+
+  <!-- Run parameters. -->
+  <section class="card">
+    <h2>Run</h2>
+    <form id="run-form">
+      <fieldset class="picker">
+        <legend>Plugs to drive</legend>
+        <div id="run-devices" class="chips"></div>
+      </fieldset>
+
+      <div class="params">
+        <label>Cycles<input id="p-cycles" type="number" min="1" max="100000" value="3"></label>
+        <label>On time (s)<input id="p-on" type="number" min="0" step="0.1" value="5"></label>
+        <label>Off time (s)<input id="p-off" type="number" min="0" step="0.1" value="5"></label>
+        <label class="grow">Label<input id="p-label" type="text" placeholder="e.g. PS300 passthrough"></label>
+      </div>
+
+      <div class="toggles">
+        <label class="check">
+          <input id="p-continue" type="checkbox">
+          <span>Continue on error
+            <em>Retry and press on through faults. Off means the run stops at
+            the first anomaly.</em>
+          </span>
+        </label>
+        <label class="check">
+          <input id="p-restore" type="checkbox" checked>
+          <span>Restore original state
+            <em>Put each plug back how it was found, including on stop.</em>
+          </span>
+        </label>
+      </div>
+
+      <div class="run-bar">
+        <button id="btn-start" type="submit" class="primary">Start run</button>
+        <button id="btn-stop" type="button" class="danger hidden">Stop</button>
+        <span id="run-progress" class="progress"></span>
+      </div>
+    </form>
+  </section>
+
+  <!-- Event log. -->
+  <section class="card log-card">
+    <div class="card-head">
+      <h2>Log</h2>
+      <div class="actions">
+        <label class="check inline">
+          <input id="show-samples" type="checkbox">
+          <span>Show samples</span>
+        </label>
+        <a id="csv-link" class="ghost hidden" download>Download CSV</a>
+        <button id="btn-clear" class="ghost">Clear</button>
+      </div>
+    </div>
+    <div id="log" class="log"></div>
+  </section>
+</main>
+
+<div id="toast" class="toast hidden"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

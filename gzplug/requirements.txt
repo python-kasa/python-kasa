@@ -1,0 +1,16 @@
+# Phase 2 web UI dependencies, deliberately NOT in pyproject.toml.
+#
+# Adding them as an optional-dependency group invalidates uv.lock, which
+# would put a fork-specific diff into a 443KB tracked file and cause a
+# conflict on every upstream merge. Installing them separately keeps the
+# lockfile byte-identical to upstream's.
+#
+#     uv pip install -r gzplug/requirements.txt
+
+fastapi>=0.115
+uvicorn>=0.30
+# Required for live updates. Without it uvicorn refuses the WebSocket
+# upgrade with a 404 and the page silently never updates -- and because
+# Starlette's TestClient speaks ASGI directly, the test suite does not
+# catch it. Verified against a real server, 2026-09-17.
+websockets>=12
