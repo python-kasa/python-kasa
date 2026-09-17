@@ -28,3 +28,9 @@ venv
 
 /build
 docs/build
+
+# GZ fork only: gzplug runtime artifacts
+.mypy_cache/
+config.json
+runs/
+/dist-gzplug/

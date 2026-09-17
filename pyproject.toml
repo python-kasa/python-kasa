@@ -36,6 +36,8 @@ shell = ["ptpython", "rich"]
 
 [project.scripts]
 kasa = "kasa.cli.__main__:cli"
+# GZ fork only
+gzplug = "gzplug.cli:main"
 
 [dependency-groups]
 dev = [
@@ -82,6 +84,11 @@ include = [
 [tool.hatch.build.targets.wheel]
 include = [
   "/kasa",
+  "/gzplug",  # GZ fork only: without this the gzplug script has no module
+]
+# GZ fork only: keep the app's tests out of the wheel and the frozen build.
+exclude = [
+  "/gzplug/tests",
 ]
 
 [tool.coverage.run]
@@ -107,6 +114,7 @@ exclude_lines = [
 [tool.pytest.ini_options]
 testpaths = [
     "tests",
+    "gzplug/tests",  # GZ fork only
 ]
 markers = [
     "requires_dummy: test requires dummy data to pass, skipped on real devices",
@@ -168,6 +176,19 @@ convention = "pep257"
 "docs/source/conf.py" = [
     "D100",
     "D103",
+]
+# GZ fork only: the app's tests follow the same exemptions upstream grants its own.
+"gzplug/tests/*.py" = [
+    "S105", # test passwords are not secrets
+    "S106",
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "D104",
+    "S101", # allow asserts
+    "E501", # ignore line-too-longs
+    "ANN", # skip for now
 ]
 # Temporary ANN disable
 "kasa/cli/*.py" = [
