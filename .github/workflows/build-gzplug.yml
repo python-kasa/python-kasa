@@ -1,0 +1,131 @@
+# GZ fork only: builds the bench plug controller executable for the test team.
+#
+# Not an upstream workflow. Runs only on gzplug-* tags, so it never fires on
+# an upstream sync.
+#
+# The smoke step is the point of this job. A PyInstaller build succeeding says
+# nothing about whether the frozen bundle can serve its static files, read the
+# python-kasa distribution metadata, or perform a WebSocket upgrade -- all
+# three have broken while the test suite stayed green. The release is gated on
+# the built executable actually working.
+
+name: Build gzplug (Windows)
+
+on:
+  push:
+    tags:
+      - "gzplug-v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      # Deliberately not 3.14: the repository supports it and the dev venv
+      # uses it, but PyInstaller's support for it is new. The build Python is
+      # pinned independently of the development one.
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install -r gzplug/requirements.txt
+          pip install pyinstaller
+
+      - name: Build
+        run: pyinstaller gzplug/packaging/gzplug.spec --noconfirm
+
+      - name: Smoke test the built executable
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $exe = "dist\gzplug\gzplug.exe"
+          if (-not (Test-Path $exe)) { throw "executable was not produced" }
+
+          # The CLI must be reachable from the same binary as the UI.
+          & $exe devices
+          if ($LASTEXITCODE -ne 0) { throw "CLI failed (exit $LASTEXITCODE)" }
+
+          $port = 8791
+          $proc = Start-Process -FilePath $exe `
+            -ArgumentList "ui","--port","$port","--no-browser" `
+            -PassThru -NoNewWindow
+
+          try {
+            # Frozen builds start slowly the first time; poll rather than sleep.
+            $ready = $false
+            foreach ($i in 1..40) {
+              Start-Sleep -Seconds 1
+              try {
+                Invoke-WebRequest "http://127.0.0.1:$port/api/state" `
+                  -UseBasicParsing -TimeoutSec 3 | Out-Null
+                $ready = $true
+                break
+              } catch { }
+            }
+            if (-not $ready) { throw "server never became ready" }
+
+            foreach ($path in "/", "/static/app.js", "/static/style.css", "/api/state") {
+              $r = Invoke-WebRequest "http://127.0.0.1:$port$path" `
+                -UseBasicParsing -TimeoutSec 10
+              if ($r.StatusCode -ne 200) { throw "$path returned $($r.StatusCode)" }
+              if ($r.RawContentLength -eq 0) { throw "$path was empty" }
+              Write-Host "ok  $path  $($r.StatusCode)  $($r.RawContentLength) bytes"
+            }
+
+            # Without a websocket library uvicorn answers /ws with 404 and the
+            # page silently never updates. ASGI tests cannot see this.
+            $ws = [System.Net.WebSockets.ClientWebSocket]::new()
+            $cts = [System.Threading.CancellationTokenSource]::new(10000)
+            $ws.ConnectAsync("ws://127.0.0.1:$port/ws", $cts.Token).GetAwaiter().GetResult()
+            if ($ws.State -ne "Open") { throw "websocket did not open: $($ws.State)" }
+
+            # The first frame is a full state snapshot.
+            $buffer = [System.ArraySegment[byte]]::new([byte[]]::new(8192))
+            $result = $ws.ReceiveAsync($buffer, $cts.Token).GetAwaiter().GetResult()
+            $text = [System.Text.Encoding]::UTF8.GetString($buffer.Array, 0, $result.Count)
+            if ($text -notmatch '"snapshot"') { throw "no snapshot frame: $text" }
+            Write-Host "ok  websocket snapshot received"
+          }
+          finally {
+            if ($proc -and -not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
+          }
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}" -replace '^gzplug-', ''
+          if (-not $version) { $version = "dev" }
+          $name = "gzplug-$version-windows-x64.zip"
+          Compress-Archive -Path dist\gzplug\* -DestinationPath $name
+          "ZIP_NAME=$name" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "packaged $name"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gzplug-windows
+          path: ${{ env.ZIP_NAME }}
+
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/gzplug-v')
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+        with:
+          files: ${{ env.ZIP_NAME }}
+          name: gzplug ${{ github.ref_name }}
+          body: |
+            Bench plug controller for the test team.
+
+            Download the zip, extract it anywhere, and run `gzplug.exe`.
+            It opens the interface in your browser. `config.json` and the
+            `runs\` folder are written next to the executable.
+
+            The first network scan triggers a Windows Firewall prompt. It has
+            to be allowed, or discovery silently finds nothing.
