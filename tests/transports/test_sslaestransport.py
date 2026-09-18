@@ -48,6 +48,12 @@ MOCK_STOCK = "abcdefghijklmnopqrstuvwxyz1234)("
 MOCK_UNENCRYPTED_PASSTHROUGH_STOK = "32charLowerCaseHexStok"
 
 
+def test_ssl_ciphers_include_modern_tapo_suites() -> None:
+    """Keep compatibility with cameras that dropped legacy RSA ciphers."""
+    assert "ECDHE-RSA-AES128-GCM-SHA256" in SslAesTransport.CIPHERS
+    assert "ECDHE-RSA-AES256-GCM-SHA384" in SslAesTransport.CIPHERS
+
+
 @pytest.mark.parametrize(
     (
         "status_code",
