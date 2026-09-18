@@ -9,7 +9,10 @@ import pytest
 
 from kasa import Device
 from kasa.smart import SmartDevice
-from kasa.smartcam.modules.lastalertdetection import LastAlertType
+from kasa.smartcam.modules.lastalertdetection import (
+    LastAlertDetection,
+    LastAlertType,
+)
 from kasa.smartcam.smartcammodule import SmartCamModule
 
 from ...device_fixtures import parametrize
@@ -68,6 +71,8 @@ async def test_last_alert_type_unknown_logs_once(
     last_alert = dev.modules.get(SmartCamModule.SmartCamLastAlertDetection)
     assert last_alert
     caplog.set_level(logging.WARNING)
+    # The warned-once set is process-wide, reset it so each fixture starts clean.
+    LastAlertDetection._logged_unknown_types.clear()
 
     _set_last_alarm_info(dev, "1734967724", "vehicle")
     assert last_alert.last_alert_type is LastAlertType.Unknown
