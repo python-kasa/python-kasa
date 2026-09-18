@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import logging
 import time
 from collections import OrderedDict
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta, tzinfo
-from typing import TYPE_CHECKING, Any, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, TypeGuard, cast
 
 from ..device import Device, DeviceInfo, WifiNetwork
 from ..device_type import DeviceType
@@ -263,6 +264,16 @@ class SmartDevice(Device):
         if self.credentials is None and self.credentials_hash is None:
             raise AuthenticationError("Tapo plug requires authentication.")
 
+        try:
+            await self._update(update_children)
+        except AuthenticationError as ex:
+            auth_error = self._get_discovery_authentication_error(ex)
+            if auth_error is ex:
+                raise
+            raise auth_error from ex
+
+    async def _update(self, update_children: bool = True) -> None:
+        """Update the device after validating authentication requirements."""
         first_update = self._last_update_time is None
         now = time.monotonic()
         self._last_update_time = now
@@ -296,6 +307,56 @@ class SmartDevice(Device):
         if _LOGGER.isEnabledFor(logging.DEBUG):
             updated = self._last_update if first_update else resp
             _LOGGER.debug("Update completed %s: %s", self.host, list(updated.keys()))
+
+    def _get_discovery_authentication_error(
+        self, error: AuthenticationError
+    ) -> AuthenticationError:
+        """Return a more actionable error using discovery authentication metadata."""
+        discovery_info = self._discovery_info
+        if not discovery_info:
+            return error
+
+        obd_src = discovery_info.get("obd_src")
+        if obd_src == "tss":
+            message = (
+                f"Device {self.host} was provisioned using TP-Link Simple Setup "
+                "(obd_src=tss), which may not expose compatible local credentials. "
+                "Factory-reset the device, provision it through the Tapo app, and "
+                "then enable Third-Party Device Support."
+            )
+            return AuthenticationError(message, error_code=error.error_code)
+
+        credentials = self.credentials
+        owner = discovery_info.get("owner")
+        if credentials and self._is_owner_hash(owner):
+            supplied_owner = hashlib.md5(  # noqa: S324
+                credentials.username.encode()
+            ).hexdigest()
+            if supplied_owner.casefold() != owner.casefold():
+                message = (
+                    f"The supplied username does not match the owner of device "
+                    f"{self.host}. Check that the TP-Link account email is correct "
+                    "and uses the same letter case as in the Tapo app."
+                )
+            else:
+                message = (
+                    f"The owner of device {self.host} matches the supplied username, "
+                    "but its local authentication key does not match. Re-enable "
+                    "Third-Party Device Support in the Tapo app; if the failure "
+                    "persists, factory-reset and reprovision the device."
+                )
+            return AuthenticationError(message, error_code=error.error_code)
+
+        return error
+
+    @staticmethod
+    def _is_owner_hash(owner: Any) -> TypeGuard[str]:
+        """Return whether owner is a meaningful MD5 username hash."""
+        if not isinstance(owner, str) or len(owner) != 32:
+            return False
+        if owner == "0" * 32:
+            return False
+        return all(character in "0123456789abcdefABCDEF" for character in owner)
 
     async def _handle_module_post_update(
         self, module: SmartModule, update_time: float, had_query: bool

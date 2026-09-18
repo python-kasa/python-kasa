@@ -13,8 +13,8 @@ import pytest
 from freezegun.api import FrozenDateTimeFactory
 from pytest_mock import MockerFixture
 
-from kasa import Device, DeviceType, KasaException, Module
-from kasa.exceptions import DeviceError, SmartErrorCode
+from kasa import Credentials, Device, DeviceConfig, DeviceType, KasaException, Module
+from kasa.exceptions import AuthenticationError, DeviceError, SmartErrorCode
 from kasa.smart import SmartDevice
 from kasa.smart.modules.energy import Energy
 from kasa.smart.smartmodule import SmartModule
@@ -125,6 +125,64 @@ async def test_initial_update(dev: SmartDevice, mocker: MockerFixture) -> None:
     assert dev.modules
     initialize_features.assert_called_once()
     assert dev.features
+
+
+@pytest.mark.parametrize(
+    ("discovery_info", "expected"),
+    [
+        pytest.param(
+            {
+                "obd_src": "tss",
+                "owner": "b58996c504c5638798eb6b511e6f49af",
+            },
+            "provisioned using TP-Link Simple Setup",
+            id="tss-provisioning",
+        ),
+        pytest.param(
+            {"obd_src": "tplink", "owner": "a" * 32},
+            "supplied username does not match the owner",
+            id="owner-mismatch",
+        ),
+        pytest.param(
+            {
+                "obd_src": "tplink",
+                "owner": "b58996c504c5638798eb6b511e6f49af",
+            },
+            "owner of device 127.0.0.1 matches the supplied username",
+            id="local-key-mismatch",
+        ),
+        pytest.param(
+            {"obd_src": "tplink", "owner": "0" * 32},
+            "original authentication failure",
+            id="redacted-owner",
+        ),
+    ],
+)
+async def test_authentication_failure_diagnostics(
+    discovery_info: dict[str, str], expected: str, mocker: MockerFixture
+) -> None:
+    """Test authentication failures are enriched with discovery metadata."""
+    config = DeviceConfig(
+        "127.0.0.1", credentials=Credentials("user@example.com", "password")
+    )
+    dev = SmartDevice("127.0.0.1", config=config)
+    dev.update_from_discover_info(discovery_info)
+    original_error = AuthenticationError(
+        "original authentication failure",
+        error_code=SmartErrorCode.LOGIN_ERROR,
+    )
+    mocker.patch.object(dev.protocol, "query", side_effect=original_error)
+
+    with pytest.raises(AuthenticationError, match=expected) as ex_info:
+        await dev.update()
+
+    assert ex_info.value.error_code is SmartErrorCode.LOGIN_ERROR
+    if ex_info.value is original_error:
+        assert ex_info.value.__cause__ is None
+    else:
+        assert ex_info.value.__cause__ is original_error
+
+    await dev.disconnect()
 
 
 @device_smart
