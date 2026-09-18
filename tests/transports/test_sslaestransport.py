@@ -343,11 +343,7 @@ async def test_unencrypted_passthrough_errors(
 async def test_handshake_unaccepted_username_no_unknown_error_warning(
     mocker: MockerFixture, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """Secure-login devices answer -60502 for an unaccepted username.
-
-    The transport falls back to the default username; the code must be known
-    so that no 'unknown error code' warning is logged on every connection.
-    """
+    """Secure-login devices answer -60502 for an unaccepted username."""
     host = "127.0.0.1"
     mock_ssl_aes_device = MockSslAesDevice(host, want_default_username=True)
     mocker.patch.object(
@@ -363,6 +359,31 @@ async def test_handshake_unaccepted_username_no_unknown_error_warning(
     assert transport._state is TransportState.ESTABLISHED
     assert "received unknown error code" not in caplog.text
     assert SmartErrorCode.from_int(-60502) is SmartErrorCode.UNKNOWN_USERNAME
+
+
+@pytest.mark.xdist_group(name="caplog")
+async def test_handshake_unknown_inner_error_code(
+    mocker: MockerFixture, caplog: pytest.LogCaptureFixture
+) -> None:
+    host = "127.0.0.1"
+    mock_ssl_aes_device = MockSslAesDevice(host)
+    mocker.patch.object(
+        aiohttp.ClientSession, "post", side_effect=mock_ssl_aes_device.post
+    )
+    mocker.patch.object(
+        MockSslAesDevice,
+        "BAD_USER_RESP",
+        {**MockSslAesDevice.BAD_USER_RESP, "result": {"data": {"code": -99999}}},
+    )
+    transport = SslAesTransport(
+        config=DeviceConfig(host, credentials=Credentials("foobar", MOCK_PWD))
+    )
+
+    caplog.set_level(logging.WARNING, logger="kasa.transports.sslaestransport")
+    with pytest.raises(AuthenticationError):
+        await transport.perform_handshake()
+
+    assert f"Device {host} received unknown error code: -99999" in caplog.text
 
 
 async def test_device_blocked_response(mocker: MockerFixture) -> None:
@@ -486,8 +507,7 @@ async def test_login_version_default_credentials(
 
 class MockSslAesDevice:
     # Response observed on secure-login devices (C200, H200) when the username
-    # is not the one accepted for secure login. The -60502 inner code is not
-    # documented, the transport falls back to the default username on it.
+    # is not the one accepted for secure login.
     BAD_USER_RESP = {
         "error_code": SmartErrorCode.SESSION_EXPIRED.value,
         "result": {
