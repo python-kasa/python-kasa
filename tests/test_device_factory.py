@@ -45,6 +45,7 @@ from kasa.transports import (
     LinkieTransportV2,
     SslAesTransport,
     SslTransport,
+    TpapTransport,
     XorTransport,
 )
 
@@ -242,6 +243,18 @@ ET = DeviceEncryptionType
             id="smartcam-doorbell",
         ),
         pytest.param(
+            CP(DF.SmartIpCamera, ET.Tpap, https=True),
+            SmartCamProtocol,
+            TpapTransport,
+            id="smartcam-tpap",
+        ),
+        pytest.param(
+            CP(DF.SmartTapoHub, ET.Tpap, https=True),
+            SmartCamProtocol,
+            TpapTransport,
+            id="smartcam-hub-tpap",
+        ),
+        pytest.param(
             CP(DF.IotIpCamera, ET.Aes, https=True),
             IotProtocol,
             LinkieTransportV2,
@@ -282,6 +295,12 @@ ET = DeviceEncryptionType
             SmartProtocol,
             KlapTransportV2,
             id="smart-chime",
+        ),
+        pytest.param(
+            CP(DF.SmartTapoPlug, ET.Tpap, https=False),
+            SmartProtocol,
+            TpapTransport,
+            id="smart-tpap",
         ),
     ],
 )
