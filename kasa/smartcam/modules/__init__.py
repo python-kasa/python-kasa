@@ -10,7 +10,7 @@ from .childsetup import ChildSetup
 from .device import DeviceModule
 from .glassdetection import GlassDetection
 from .homekit import HomeKit
-from .lastdetection import LastDetection
+from .lastalertdetection import LastAlertDetection
 from .led import Led
 from .lensmask import LensMask
 from .linecrossingdetection import LineCrossingDetection
@@ -34,7 +34,7 @@ __all__ = [
     "ChildSetup",
     "DeviceModule",
     "GlassDetection",
-    "LastDetection",
+    "LastAlertDetection",
     "Led",
     "LineCrossingDetection",
     "MeowDetection",
