@@ -2,6 +2,8 @@ import re
 
 import aiohttp
 import pytest
+from pytest_mock import MockerFixture
+from yarl import URL
 
 from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import (
@@ -52,9 +54,15 @@ from kasa.httpclient import HttpClient
     ),
 )
 @pytest.mark.parametrize("mock_read", [False, True], ids=("post", "read"))
-async def test_httpclient_errors(mocker, error, error_raises, error_message, mock_read):
+async def test_httpclient_errors(
+    mocker: MockerFixture,
+    error: Exception,
+    error_raises: type[Exception],
+    error_message: str,
+    mock_read: bool,
+) -> None:
     class _mock_response:
-        def __init__(self, status, error):
+        def __init__(self, status, error) -> None:
             self.status = status
             self.error = error
             self.call_count = 0
@@ -62,10 +70,10 @@ async def test_httpclient_errors(mocker, error, error_raises, error_message, moc
         async def __aenter__(self):
             return self
 
-        async def __aexit__(self, exc_t, exc_v, exc_tb):
+        async def __aexit__(self, exc_t, exc_v, exc_tb) -> None:
             pass
 
-        async def read(self):
+        async def read(self) -> bytes:
             self.call_count += 1
             raise self.error
 
@@ -90,7 +98,7 @@ async def test_httpclient_errors(mocker, error, error_raises, error_message, moc
         + re.escape(f", {repr(error)})")
     )
     with pytest.raises(error_raises, match=error_message) as exc_info:
-        await client.post("http://foobar")
+        await client.post(URL("http://foobar"))
 
     assert re.match(full_msg, str(exc_info.value))
     if mock_read:
