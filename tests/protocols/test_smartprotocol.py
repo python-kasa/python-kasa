@@ -1,3 +1,4 @@
+import json
 import logging
 
 import pytest
@@ -9,6 +10,7 @@ from kasa.exceptions import (
     DeviceError,
     KasaException,
     SmartErrorCode,
+    TimeoutError,
 )
 from kasa.protocols.smartcamprotocol import SmartCamProtocol
 from kasa.protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
@@ -233,6 +235,102 @@ async def test_smart_device_multiple_request_non_json_decode_failure(
     assert dummy_protocol._multi_request_batch_size == 5
 
     assert send_mock.call_count == 1
+
+
+async def test_smart_device_multiple_request_timeout(
+    dummy_protocol: SmartProtocol, mocker: MockerFixture
+) -> None:
+    """Test that a timed out multi request disables batching and retries."""
+    requests = {}
+    mock_responses = []
+    for i in range(10):
+        method = f"get_method_{i}"
+        requests[method] = {"foo": "bar", "bar": "foo"}
+        mock_responses.append(
+            {"method": method, "result": {"great": "success"}, "error_code": 0}
+        )
+
+    send_mock = mocker.patch.object(
+        dummy_protocol._transport,
+        "send",
+        side_effect=[TimeoutError("Simulated timeout"), *mock_responses],
+    )
+    mocker.patch("asyncio.sleep")
+    dummy_protocol._multi_request_batch_size = 5
+    resp = await dummy_protocol.query(requests, retry_count=1)
+    assert dummy_protocol._multi_request_batch_size == 1
+    assert resp == {method: {"great": "success"} for method in requests}
+    # Call count should be the timed out batch + number of requests
+    assert send_mock.call_count == len(requests) + 1
+
+
+async def test_smart_device_multiple_request_timeout_single_requests(
+    dummy_protocol: SmartProtocol, mocker: MockerFixture
+) -> None:
+    """Test that timeouts on single requests are still retried and raised."""
+    send_mock = mocker.patch.object(
+        dummy_protocol._transport,
+        "send",
+        side_effect=TimeoutError("Simulated timeout"),
+    )
+    mocker.patch("asyncio.sleep")
+    dummy_protocol._multi_request_batch_size = 1
+    with pytest.raises(TimeoutError):
+        await dummy_protocol.query(DUMMY_MULTIPLE_QUERY, retry_count=2)
+    assert dummy_protocol._multi_request_batch_size == 1
+    assert send_mock.call_count == 3
+
+
+async def test_smart_device_multiple_request_child_lists_timeout(
+    dummy_protocol: SmartProtocol, mocker: MockerFixture
+) -> None:
+    """Test devices that do not respond to batched child list requests.
+
+    The P300(EU) 1.0.7 firmware never answers a multipleRequest containing both
+    get_child_device_component_list and get_child_device_list, while each
+    request sent on its own succeeds.
+    """
+    child_list_methods = {"get_child_device_component_list", "get_child_device_list"}
+    results = {
+        "get_child_device_component_list": {
+            "child_component_list": [],
+            "start_index": 0,
+            "sum": 0,
+        },
+        "get_child_device_list": {
+            "child_device_list": [],
+            "start_index": 0,
+            "sum": 0,
+        },
+    }
+
+    async def _send(request: str) -> dict:
+        req = json.loads(request)
+        if req["method"] != "multipleRequest":
+            return {"result": results[req["method"]], "error_code": 0}
+        methods = {r["method"] for r in req["params"]["requests"]}
+        if child_list_methods <= methods:
+            raise TimeoutError("Simulated timeout")
+        return {
+            "result": {
+                "responses": [
+                    {"method": m, "result": results[m], "error_code": 0}
+                    for m in methods
+                ]
+            },
+            "error_code": 0,
+        }
+
+    send_mock = mocker.patch.object(
+        dummy_protocol._transport, "send", side_effect=_send
+    )
+    mocker.patch("asyncio.sleep")
+    assert dummy_protocol._multi_request_batch_size == 5
+    resp = await dummy_protocol.query(dict.fromkeys(child_list_methods))
+    assert resp == results
+    assert dummy_protocol._multi_request_batch_size == 1
+    # The timed out batch + one single request per method
+    assert send_mock.call_count == 3
 
 
 async def test_childdevicewrapper_unwrapping(
