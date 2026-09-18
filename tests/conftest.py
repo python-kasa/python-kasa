@@ -5,6 +5,7 @@ import functools
 import os
 import sys
 import warnings
+from collections import defaultdict
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -23,6 +24,11 @@ from kasa.transports.basetransport import BaseTransport
 
 from .device_fixtures import *  # noqa: F403
 from .discovery_fixtures import *  # noqa: F403
+from .fixture_selection import (
+    DEFAULT_REPRESENTATIVE_LIMIT,
+    find_fixture_infos,
+    select_representative_fixtures,
+)
 from .fixtureinfo import fixture_info  # noqa: F401
 
 # Parametrize tests to run with device both on and off
@@ -138,9 +144,19 @@ def pytest_addoption(parser):
     parser.addoption(
         "--password", action="store", default=None, help="authentication password"
     )
+    parser.addoption(
+        "--fixture-set",
+        action="store",
+        choices=("all", "representative"),
+        default="all",
+        help="run all device fixtures or a representative subset per test",
+    )
 
 
 def pytest_collection_modifyitems(config, items):
+    if config.getoption("--fixture-set") == "representative":
+        _select_representative_fixture_items(config, items)
+
     if not config.getoption("--ip"):
         print("Testing against fixtures.")
         # pytest_socket doesn't work properly in windows with asyncio
@@ -158,6 +174,71 @@ def pytest_collection_modifyitems(config, items):
                 item.add_marker(requires_dummy)
             else:
                 item.add_marker(pytest.mark.enable_socket)
+
+
+def _select_representative_fixture_items(config, items):
+    """Deselect excess fixture variants while preserving parameter coverage."""
+    fixture_pools = defaultdict(set)
+    fixture_items = {}
+    limits = {}
+
+    for item in items:
+        if item.get_closest_marker("all_fixtures"):
+            continue
+        callspec = getattr(item, "callspec", None)
+        if callspec is None:
+            continue
+        fixture_infos = tuple(
+            fixture
+            for value in callspec.params.values()
+            for fixture in find_fixture_infos(value)
+        )
+        if not fixture_infos:
+            continue
+
+        test_id = item.nodeid.split("[", maxsplit=1)[0]
+        fixture_items[item] = (test_id, fixture_infos)
+        fixture_pools[test_id].update(fixture_infos)
+
+        marker = item.get_closest_marker("fixture_representatives")
+        limit = (
+            marker.args[0] if marker and marker.args else DEFAULT_REPRESENTATIVE_LIMIT
+        )
+        if not isinstance(limit, int) or limit < 1:
+            raise pytest.UsageError(
+                "fixture_representatives requires a positive integer limit"
+            )
+        previous_limit = limits.setdefault(test_id, limit)
+        if previous_limit != limit:
+            raise pytest.UsageError(
+                f"conflicting representative fixture limits for {test_id}"
+            )
+
+    selected_by_test = {
+        test_id: set(
+            select_representative_fixtures(
+                fixtures,
+                limit=limits[test_id],
+            )
+        )
+        for test_id, fixtures in fixture_pools.items()
+    }
+    selected = []
+    deselected = []
+    for item in items:
+        fixture_item = fixture_items.get(item)
+        if fixture_item is None:
+            selected.append(item)
+            continue
+        test_id, fixture_infos = fixture_item
+        if all(fixture in selected_by_test[test_id] for fixture in fixture_infos):
+            selected.append(item)
+        else:
+            deselected.append(item)
+
+    if deselected:
+        config.hook.pytest_deselected(items=deselected)
+    items[:] = selected
 
 
 @pytest.fixture(autouse=True, scope="session")
