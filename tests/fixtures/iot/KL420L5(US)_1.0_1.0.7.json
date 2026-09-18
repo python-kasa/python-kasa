@@ -1,0 +1,57 @@
+{
+    "smartlife.iot.common.emeter": {
+        "get_realtime": {
+            "err_code": 0,
+            "power_mw": 500,
+            "total_wh": 1192
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "LEF": 1,
+            "active_mode": "none",
+            "alias": "#MASKED_NAME#",
+            "ctrl_protocols": {
+                "name": "Linkie",
+                "version": "1.0"
+            },
+            "description": "Kasa Smart Light Strip, Multicolor",
+            "dev_state": "normal",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "disco_ver": "1.0",
+            "err_code": 0,
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "is_color": 1,
+            "is_dimmable": 1,
+            "is_factory": false,
+            "is_variable_color_temp": 1,
+            "latitude_i": 0,
+            "length": 50,
+            "light_state": {
+                "brightness": 60,
+                "color_temp": 2700,
+                "hue": 0,
+                "mode": "normal",
+                "on_off": 1,
+                "saturation": 0
+            },
+            "lighting_effect_state": {
+                "brightness": 60,
+                "custom": 0,
+                "enable": 0,
+                "id": "CdLeIgiKcQrLKMINRPTMbylATulQewLD",
+                "name": "Aurora"
+            },
+            "longitude_i": 0,
+            "mic_mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTBULB",
+            "model": "KL420L5(US)",
+            "oemId": "00000000000000000000000000000000",
+            "preferred_state": [],
+            "rssi": -19,
+            "status": "new",
+            "sw_ver": "1.0.7 Build 240809 Rel.170227"
+        }
+    }
+}
