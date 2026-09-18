@@ -59,9 +59,18 @@ class SmartDevice(Device):
         config: DeviceConfig | None = None,
         protocol: SmartProtocol | None = None,
     ) -> None:
-        _protocol = protocol or SmartProtocol(
-            transport=AesTransport(config=config or DeviceConfig(host=host)),
-        )
+        # Support TPAP encryption type (closes #1590)
+        if config and config.encrypt_type == "TPAP":
+            _protocol = protocol or SmartProtocol(
+                transport=AesTransport(
+                    config=config,
+                    encrypt_type="TPAP",
+                ),
+            )
+        else:
+            _protocol = protocol or SmartProtocol(
+                transport=AesTransport(config=config or DeviceConfig(host=host)),
+            )
         super().__init__(host=host, config=config, protocol=_protocol)
         self.protocol: SmartProtocol
         self._components_raw: ComponentsRaw | None = None
