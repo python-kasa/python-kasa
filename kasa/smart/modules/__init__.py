@@ -36,6 +36,7 @@ from .motionsensor import MotionSensor
 from .overheatprotection import OverheatProtection
 from .powerprotection import PowerProtection
 from .reportmode import ReportMode
+from .segmenteffect import SegmentEffect
 from .speaker import Speaker
 from .temperaturecontrol import TemperatureControl
 from .temperaturesensor import TemperatureSensor
@@ -81,6 +82,7 @@ __all__ = [
     "Consumables",
     "CleanRecords",
     "SmartLightEffect",
+    "SegmentEffect",
     "PowerProtection",
     "OverheatProtection",
     "Speaker",

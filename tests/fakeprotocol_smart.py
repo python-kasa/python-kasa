@@ -516,6 +516,23 @@ class FakeSmartTransport(BaseTransport):
             info["get_device_info"]["lighting_effect"]["id"] = params["id"]
             info["get_lighting_effect"] = copy.deepcopy(params)
 
+    def _apply_segment_effect_rule(self, info, params):
+        """Set or remove values as per the device behaviour."""
+        if "get_segment_effect_rule" in info:
+            info["get_segment_effect_rule"] = copy.deepcopy(params)
+        segment_effect = info.get("get_device_info", {}).get("segment_effect")
+        if isinstance(segment_effect, dict):
+            for key in (
+                "id",
+                "name",
+                "custom",
+                "enable",
+                "brightness",
+                "display_colors",
+            ):
+                if key in params:
+                    segment_effect[key] = params[key]
+
     def _set_led_info(self, info, params):
         """Set or remove values as per the device behaviour."""
         info["get_led_info"]["led_status"] = params["led_rule"] != "never"
@@ -680,6 +697,9 @@ class FakeSmartTransport(BaseTransport):
             return {"error_code": 0}
         elif method == "set_lighting_effect":
             self._set_light_strip_effect(info, params)
+            return {"error_code": 0}
+        elif method == "apply_segment_effect_rule":
+            self._apply_segment_effect_rule(info, params)
             return {"error_code": 0}
         elif method == "set_led_info":
             self._set_led_info(info, params)
