@@ -22,10 +22,15 @@ from datetime import datetime, timedelta, tzinfo
 from typing import TYPE_CHECKING, Any, cast
 from warnings import warn
 
-from ..device import Device, DeviceInfo, WifiNetwork
+from ..device import (
+    Device,
+    DeviceInfo,
+    WifiNetwork,
+    get_unsupported_authentication_error,
+)
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..exceptions import KasaException, UnsupportedDeviceError
+from ..exceptions import AuthenticationError, KasaException, UnsupportedDeviceError
 from ..feature import Feature
 from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
@@ -70,12 +75,17 @@ def _parse_features(features: str) -> set[str]:
     return set(features.split(":"))
 
 
-def _extract_sys_info(info: dict[str, Any]) -> dict[str, Any]:
-    """Return the system info structure."""
-    sysinfo_default = info.get("system", {}).get("get_sysinfo", {})
-    sysinfo_nest = sysinfo_default.get("system", {})
+def extract_sys_info(info: dict[str, Any]) -> dict[str, Any]:
+    """Return a validated system information structure, if one is present."""
+    system = info.get("system")
+    if not isinstance(system, dict):
+        return {}
+    sysinfo_default = system.get("get_sysinfo")
+    if not isinstance(sysinfo_default, dict):
+        return {}
+    sysinfo_nest = sysinfo_default.get("system")
 
-    if len(sysinfo_nest) > len(sysinfo_default) and isinstance(sysinfo_nest, dict):
+    if isinstance(sysinfo_nest, dict) and len(sysinfo_nest) > len(sysinfo_default):
         return sysinfo_nest
     return sysinfo_default
 
@@ -304,6 +314,17 @@ class IotDevice(Device):
 
         Needed for properties that are decorated with `requires_update`.
         """
+        try:
+            await self._update_device(update_children)
+        except AuthenticationError as ex:
+            if unsupported_error := get_unsupported_authentication_error(
+                self.host, self._discovery_info, ex
+            ):
+                raise unsupported_error from ex
+            raise
+
+    async def _update_device(self, update_children: bool) -> None:
+        """Perform the protocol-specific update operation."""
         req = {}
         req.update(self._create_request("system", "get_sysinfo"))
 
@@ -314,14 +335,14 @@ class IotDevice(Device):
             _LOGGER.debug("Performing the initial update to obtain sysinfo")
             response = await self.protocol.query(req)
             self._last_update = response
-            self._set_sys_info(_extract_sys_info(response))
+            self._set_sys_info(extract_sys_info(response))
 
         if not self._modules:
             await self._initialize_modules()
 
         await self._modular_update(req)
 
-        self._set_sys_info(_extract_sys_info(self._last_update))
+        self._set_sys_info(extract_sys_info(self._last_update))
         for module in self._modules.values():
             await module._post_update_hook()
 
@@ -444,19 +465,29 @@ class IotDevice(Device):
 
             self._supported_modules = supported
 
-    def update_from_discover_info(self, info: dict[str, Any]) -> None:
-        """Update state from info from the discover call."""
+    def update_from_discover_info(
+        self,
+        info: dict[str, Any],
+        *,
+        device_info: dict[str, Any] | None = None,
+    ) -> None:
+        """Update state from discovery and optional full device information."""
         self._discovery_info = info
-        if "system" in info and (sys_info := info["system"].get("get_sysinfo")):
-            self._last_update = info
+        initialization_info = device_info or info
+        if sys_info := extract_sys_info(initialization_info):
+            self._last_update = initialization_info
             self._set_sys_info(sys_info)
         else:
             # This allows setting of some info properties directly
             # from partial discovery info that will then be found
             # by the requires_update decorator
-            discovery_model = info["device_model"]
+            discovery_model = initialization_info.get("device_model")
+            if not isinstance(discovery_model, str):
+                raise KasaException(
+                    "Discovery response contained neither sysinfo nor a device model"
+                )
             no_region_model, _, _ = discovery_model.partition("(")
-            self._set_sys_info({**info, "model": no_region_model})
+            self._set_sys_info({**initialization_info, "model": no_region_model})
 
     def _set_sys_info(self, sys_info: dict[str, Any]) -> None:
         """Set sys_info."""
@@ -717,13 +748,16 @@ class IotDevice(Device):
     @staticmethod
     def _get_device_type_from_sys_info(info: dict[str, Any]) -> DeviceType:
         """Find SmartDevice subclass for device described by passed data."""
-        if "system" in info.get("system", {}).get("get_sysinfo", {}):
+        system = info.get("system")
+        if not isinstance(system, dict):
+            raise KasaException("No 'system' or 'get_sysinfo' in response")
+        raw_sysinfo = system.get("get_sysinfo")
+        if not isinstance(raw_sysinfo, dict):
+            raise KasaException("No 'system' or 'get_sysinfo' in response")
+        if isinstance(raw_sysinfo.get("system"), dict):
             return DeviceType.Camera
 
-        if "system" not in info or "get_sysinfo" not in info["system"]:
-            raise KasaException("No 'system' or 'get_sysinfo' in response")
-
-        sysinfo: dict[str, Any] = _extract_sys_info(info)
+        sysinfo: dict[str, Any] = extract_sys_info(info)
         type_: str | None = sysinfo.get("type", sysinfo.get("mic_type"))
         if type_ is None:
             raise KasaException("Unable to find the device type field!")
@@ -744,19 +778,23 @@ class IotDevice(Device):
 
             return DeviceType.Bulb
 
-        _LOGGER.warning("Unknown device type %s, falling back to plug", type_)
-        return DeviceType.Plug
+        _LOGGER.warning("Unknown IOT device type %s", type_)
+        return DeviceType.Unknown
 
     @staticmethod
     def _get_device_info(
         info: dict[str, Any], discovery_info: dict[str, Any] | None
     ) -> DeviceInfo:
         """Get model information for a device."""
-        sys_info = _extract_sys_info(info)
+        sys_info = extract_sys_info(info)
+        if not sys_info:
+            raise KasaException("No 'system' or 'get_sysinfo' in response")
 
         # Get model and region info
         region = None
-        device_model = sys_info["model"]
+        device_model = sys_info.get("model")
+        if not isinstance(device_model, str):
+            raise UnsupportedDeviceError("model not found in sysinfo response")
         long_name, _, region = device_model.partition("(")
         if region:  # All iot devices have region but just in case
             region = region.replace(")", "")
@@ -767,11 +805,16 @@ class IotDevice(Device):
             raise UnsupportedDeviceError("type nor mic_type found in sysinfo response")
 
         device_type = IotDevice._get_device_type_from_sys_info(info)
-        fw_version_full = sys_info["sw_ver"]
+        fw_version_full = sys_info.get("sw_ver")
+        if not isinstance(fw_version_full, str):
+            raise UnsupportedDeviceError("sw_ver not found in sysinfo response")
         if " " in fw_version_full:
             firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
         else:
             firmware_version, firmware_build = fw_version_full, None
+        hardware_version = sys_info.get("hw_ver")
+        if not isinstance(hardware_version, str):
+            raise UnsupportedDeviceError("hw_ver not found in sysinfo response")
         auth = bool(discovery_info and ("mgt_encrypt_schm" in discovery_info))
 
         return DeviceInfo(
@@ -780,7 +823,7 @@ class IotDevice(Device):
             brand="kasa",
             device_family=device_family,
             device_type=device_type,
-            hardware_version=sys_info["hw_ver"],
+            hardware_version=hardware_version,
             firmware_version=firmware_version,
             firmware_build=firmware_build,
             requires_auth=auth,

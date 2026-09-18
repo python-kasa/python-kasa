@@ -16,9 +16,12 @@ from kasa import (
     Device,
     DeviceError,
     DeviceType,
+    DiscoveryAuthenticationError,
     EmeterStatus,
     KasaException,
     Module,
+    UnsupportedAuthenticationError,
+    UnsupportedDeviceError,
 )
 from kasa.cli.device import (
     alias,
@@ -30,6 +33,7 @@ from kasa.cli.device import (
     toggle,
     update_credentials,
 )
+from kasa.cli.discover import _format_connection_options, echo_discovery_info
 from kasa.cli.light import (
     brightness,
     effect,
@@ -38,15 +42,23 @@ from kasa.cli.light import (
     presets_modify,
     temperature,
 )
-from kasa.cli.main import TYPES, _legacy_type_to_class, cli, cmd_command, raw_command
+from kasa.cli.main import TYPES, _iot_type_to_class, cli, cmd_command, raw_command
 from kasa.cli.time import time
 from kasa.cli.usage import energy
 from kasa.cli.wifi import wifi
-from kasa.discover import Discover, DiscoveryResult, redact_data
-from kasa.iot import IotDevice
+from kasa.device_factory import get_protocol
+from kasa.deviceconfig import (
+    DeviceConfig,
+    DeviceConnectionParameters,
+    DeviceEncryptionType,
+    DeviceFamily,
+)
+from kasa.discover import DiscoveryResult, redact_data
+from kasa.iot import IotDevice, IotPlug
 from kasa.json import dumps as json_dumps
 from kasa.smart import SmartDevice
 from kasa.smartcam import SmartCamDevice
+from kasa.transports import KlapTransport, KlapTransportV2
 
 from .conftest import (
     device_iot,
@@ -58,26 +70,96 @@ from .conftest import (
     parametrize_combine,
     turn_on,
 )
+from .discovery_fixtures import get_device_class_from_discovery
 
 # The cli tests should be testing the cli logic rather than a physical device
 # so mark the whole file for skipping with real devices.
 pytestmark = [pytest.mark.requires_dummy]
 
 
+def _iot_klap_tdp_response(host: str = "127.0.0.1") -> dict:
+    """Return a representative IOT KLAP TDP discovery response."""
+    return {
+        "discovery_response": {
+            "result": {
+                "device_type": "IOT.SMARTPLUGSWITCH",
+                "device_model": "HS300(US)",
+                "device_id": "device-id",
+                "ip": host,
+                "mac": "00-00-00-00-00-00",
+                "mgt_encrypt_schm": {
+                    "is_support_https": False,
+                    "encrypt_type": "KLAP",
+                    "http_port": 80,
+                    "lv": 2,
+                    "new_klap": 1,
+                },
+            },
+            "error_code": 0,
+        },
+        "meta": {"ip": host, "port": 20002, "source": "tdp"},
+    }
+
+
+def test_echo_wrapped_tdp_discovery_info(mocker) -> None:
+    """Wrapped TDP results use the structured CLI formatter."""
+    echo = mocker.patch("kasa.cli.discover.echo")
+    discovery_info = {
+        "result": {
+            "device_type": "IOT.SMARTPLUGSWITCH",
+            "device_model": "KP115(US)",
+            "device_id": "device-id",
+            "ip": "127.0.0.1",
+            "mac": "00-00-00-00-00-00",
+            "mgt_encrypt_schm": {
+                "is_support_https": False,
+                "encrypt_type": "KLAP",
+                "http_port": 80,
+                "lv": 2,
+            },
+        },
+        "error_code": 0,
+    }
+
+    echo_discovery_info(discovery_info)
+
+    assert any("Discovery Result" in call.args[0] for call in echo.call_args_list)
+    assert not any(
+        "Discovery information" in call.args[0] for call in echo.call_args_list
+    )
+
+
+def test_connection_options_use_canonical_long_names() -> None:
+    """Generated connection options use stable, descriptive names."""
+    config = DeviceConfig(
+        host="127.0.0.1",
+        connection_type=DeviceConnectionParameters(
+            DeviceFamily.IotSmartPlugSwitch,
+            DeviceEncryptionType.Klap,
+            login_version=2,
+            klap_version=1,
+        ),
+    )
+    assert _format_connection_options(config.connection_type) == (
+        "--device-family IOT.SMARTPLUGSWITCH --encrypt-type KLAP "
+        "--login-version 2 --klap-version 1 --no-https"
+    )
+
+
 async def test_help(runner):
-    """Test that all the lazy modules are correctly names."""
+    """Test that lazy modules and direct connection aliases are exposed."""
     res = await runner.invoke(cli, ["--help"])
     assert res.exit_code == 0, "--help failed, check lazy module names"
+    for option_names in (
+        "-df, --device-family",
+        "-e, --encrypt-type",
+        "-lv, --login-version",
+        "-kv, --klap-version",
+    ):
+        assert option_names in res.output
 
 
-@pytest.mark.parametrize(
-    ("device_family", "encrypt_type"),
-    [
-        pytest.param(None, None, id="No connect params"),
-        pytest.param("SMART.TAPOPLUG", None, id="Only device_family"),
-    ],
-)
-async def test_update_called_by_cli(dev, mocker, runner, device_family, encrypt_type):
+async def test_update_called_by_cli(dev, mocker, runner):
     """Test that device update is called on main."""
     update = mocker.patch.object(dev, "update")
 
@@ -96,15 +178,29 @@ async def test_update_called_by_cli(dev, mocker, runner, device_family, encrypt_
             "foo",
             "--password",
             "bar",
-            "--device-family",
-            device_family,
-            "--encrypt-type",
-            encrypt_type,
         ],
         catch_exceptions=False,
     )
     assert res.exit_code == 0
     update.assert_called()
+
+
+@pytest.mark.parametrize(
+    "option",
+    [
+        pytest.param(("--device-family", "SMART.TAPOPLUG"), id="device-family"),
+        pytest.param(("--encrypt-type", "KLAP"), id="encrypt-type"),
+        pytest.param(("--login-version", "2"), id="login-version"),
+        pytest.param(("--klap-version", "1"), id="klap-version"),
+        pytest.param(("--https",), id="https"),
+    ],
+)
+async def test_incomplete_direct_connection_options_are_rejected(runner, option):
+    """Advanced direct connection options must not be silently ignored."""
+    res = await runner.invoke(cli, ["--host", "127.0.0.1", *option])
+
+    assert res.exit_code == 2
+    assert "require both --device-family and --encrypt-type" in res.output
 
 
 async def test_list_devices(discovery_mock, runner):
@@ -117,15 +213,79 @@ async def test_list_devices(discovery_mock, runner):
     assert res.exit_code == 0
     header = (
         f"{'HOST':<15} {'MODEL':<9} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} "
-        f"{'HTTPS':<5} {'LV':<3} {'ALIAS'}"
+        f"{'HTTPS':<5} {'LV':<3} {'KV':<3} {'SOURCE':<9} {'ALIAS / RESULT'}"
+    )
+    source = (
+        "UDP/9999"
+        if discovery_mock.discovery_port == 9999
+        else f"TDP/{discovery_mock.discovery_port}"
     )
     row = (
         f"{discovery_mock.ip:<15} {discovery_mock.model:<9} {discovery_mock.device_type:<20} "
-        f"{discovery_mock.encrypt_type:<7} {discovery_mock.https:<5} "
-        f"{discovery_mock.login_version or '-':<3}"
+        f"{discovery_mock.encrypt_type:<7} {str(discovery_mock.https):<5} "
+        f"{discovery_mock.login_version or '-':<3} "
+        f"{discovery_mock.klap_version or '-':<3} "
+        f"{source:<9}"
     )
-    assert header in res.output
-    assert row in res.output
+    output = res.output.replace("\n", "")
+    assert header in output
+    assert row in output
+
+
+async def test_list_hostname_uses_single_resolved_host(mocker, runner):
+    """A targeted hostname produces one row keyed by the resolved address."""
+    host = "device.local"
+    ip = "127.0.0.1"
+    connection_type = DeviceConnectionParameters(
+        DeviceFamily.IotSmartPlugSwitch,
+        DeviceEncryptionType.Xor,
+    )
+    device = mocker.MagicMock(spec=Device)
+    device.host = ip
+    device.model = "HS100"
+    device.alias = "Plug"
+    device.config = DeviceConfig(ip, connection_type=connection_type)
+    device.update = mocker.AsyncMock()
+    device.disconnect = mocker.AsyncMock()
+    raw_response = {
+        "meta": {"ip": ip, "port": 9999, "source": "udp"},
+        "discovery_response": {
+            "system": {
+                "get_sysinfo": {
+                    "type": DeviceFamily.IotSmartPlugSwitch.value,
+                    "model": device.model,
+                }
+            }
+        },
+    }
+
+    async def discover_single(requested_host, **kwargs):
+        kwargs["on_discovered_raw"](raw_response)
+        await kwargs["on_discovered"](device)
+        device.host = requested_host
+        return device
+
+    mocker.patch(
+        "kasa.cli.discover.Discover.discover_single",
+        side_effect=discover_single,
+    )
+
+    res = await runner.invoke(
+        cli,
+        ["--host", host, "discover", "list"],
+        catch_exceptions=False,
+    )
+
+    assert res.exit_code == 0
+    expected = (
+        f"{ip:<15} {'HS100':<9} {DeviceFamily.IotSmartPlugSwitch.value:<20} "
+        f"{'XOR':<7} {'False':<5} {'-':<3} {'-':<3} "
+        f"{'UDP/9999':<9} Plug"
+    )
+    output = res.output.replace("\n", "")
+    assert expected in output
+    assert output.count(DeviceFamily.IotSmartPlugSwitch.value) == 1
+    device.disconnect.assert_awaited_once()
 
 
 async def test_discover_raw(discovery_mock, runner, mocker):
@@ -140,7 +300,11 @@ async def test_discover_raw(discovery_mock, runner, mocker):
 
     expected = {
         "discovery_response": discovery_mock.discovery_data,
-        "meta": {"ip": "127.0.0.123", "port": discovery_mock.discovery_port},
+        "meta": {
+            "ip": "127.0.0.123",
+            "port": discovery_mock.discovery_port,
+            "source": "udp" if discovery_mock.discovery_port == 9999 else "tdp",
+        },
     }
     assert res.output == json_dumps(expected, indent=True) + "\n"
 
@@ -164,6 +328,11 @@ async def test_discover_raw(discovery_mock, runner, mocker):
             "Authentication failed",
             id="auth",
         ),
+        pytest.param(
+            UnsupportedDeviceError("Unsupported after discovery"),
+            "Unsupported device",
+            id="unsupported",
+        ),
         pytest.param(TimeoutError(), "Timed out", id="timeout"),
         pytest.param(Exception("Foobar"), "Error: Foobar", id="other-error"),
     ],
@@ -171,7 +340,9 @@ async def test_discover_raw(discovery_mock, runner, mocker):
 @new_discovery
 async def test_list_update_failed(discovery_mock, mocker, runner, exception, expected):
     """Test that device update is called on main."""
-    device_class = Discover._get_device_class(discovery_mock.discovery_data)
+    device_class = get_device_class_from_discovery(
+        discovery_mock.discovery_data, discovery_mock.query_data
+    )
     mocker.patch.object(
         device_class,
         "update",
@@ -185,12 +356,19 @@ async def test_list_update_failed(discovery_mock, mocker, runner, exception, exp
     assert res.exit_code == 0
     header = (
         f"{'HOST':<15} {'MODEL':<9} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} "
-        f"{'HTTPS':<5} {'LV':<3} {'ALIAS'}"
+        f"{'HTTPS':<5} {'LV':<3} {'KV':<3} {'SOURCE':<9} {'ALIAS / RESULT'}"
+    )
+    source = (
+        "UDP/9999"
+        if discovery_mock.discovery_port == 9999
+        else f"TDP/{discovery_mock.discovery_port}"
     )
     row = (
         f"{discovery_mock.ip:<15} {discovery_mock.model:<9} {discovery_mock.device_type:<20} "
-        f"{discovery_mock.encrypt_type:<7} {discovery_mock.https:<5} "
-        f"{discovery_mock.login_version or '-':<3} - {expected}"
+        f"{discovery_mock.encrypt_type:<7} {str(discovery_mock.https):<5} "
+        f"{discovery_mock.login_version or '-':<3} "
+        f"{discovery_mock.klap_version or '-':<3} "
+        f"{source:<9} {expected}"
     )
     assert header in res.output.replace("\n", "")
     assert row in res.output.replace("\n", "")
@@ -206,11 +384,46 @@ async def test_list_unsupported(unsupported_device_info, runner):
     assert res.exit_code == 0
     header = (
         f"{'HOST':<15} {'MODEL':<9} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} "
-        f"{'HTTPS':<5} {'LV':<3} {'ALIAS'}"
+        f"{'HTTPS':<5} {'LV':<3} {'KV':<3} {'SOURCE':<9} {'ALIAS / RESULT'}"
     )
-    row = f"{'127.0.0.1':<15} UNSUPPORTED DEVICE"
-    assert header in res.output
-    assert row in res.output
+    output = res.output.replace("\n", "")
+    assert header in output
+    assert "127.0.0.1" in res.output
+    assert "TDP/20002" in res.output
+    assert "Unsupported device" in res.output
+
+
+async def test_list_authentication_failure_before_device_creation(mocker, runner):
+    """List uses the same complete row when authentication blocks creation."""
+    host = "127.0.0.1"
+    raw_response = _iot_klap_tdp_response(host)
+
+    async def discover(**kwargs):
+        kwargs["on_discovered_raw"](raw_response)
+        await kwargs["on_authentication_error"](
+            DiscoveryAuthenticationError(
+                "Authentication failed",
+                host=host,
+                discovery_result=raw_response["discovery_response"],
+            )
+        )
+        return {}
+
+    mocker.patch("kasa.cli.discover.Discover.discover", side_effect=discover)
+
+    res = await runner.invoke(
+        cli,
+        ["--discovery-timeout", "0", "discover", "list"],
+        catch_exceptions=False,
+    )
+
+    assert res.exit_code == 0
+    expected = (
+        f"{host:<15} {'HS300':<9} {'IOT.SMARTPLUGSWITCH':<20} "
+        f"{'KLAP':<7} {'False':<5} {'2':<3} {'1':<3} "
+        f"{'TDP/20002':<9} Authentication failed"
+    )
+    assert expected in res.output.replace("\n", "")
 
 
 async def test_sysinfo(dev: Device, runner):
@@ -776,22 +989,28 @@ async def test_credentials(discovery_mock, mocker, runner):
     mocker.patch("kasa.cli.device.state", new=_state)
 
     dr = DiscoveryResult.from_dict(discovery_mock.discovery_data["result"])
+    connection_type = dr.to_connection_parameters()
+    args = [
+        "--host",
+        "127.0.0.123",
+        "--username",
+        "foo",
+        "--password",
+        "bar",
+        "--device-family",
+        connection_type.device_family.value,
+        "--encrypt-type",
+        connection_type.encryption_type.value,
+    ]
+    if connection_type.login_version is not None:
+        args += ["--login-version", str(connection_type.login_version)]
+    if connection_type.klap_version is not None:
+        args += ["--klap-version", str(connection_type.klap_version)]
+    args.append("--https" if connection_type.https else "--no-https")
+
     res = await runner.invoke(
         cli,
-        [
-            "--host",
-            "127.0.0.123",
-            "--username",
-            "foo",
-            "--password",
-            "bar",
-            "--device-family",
-            dr.device_type,
-            "--encrypt-type",
-            dr.mgt_encrypt_schm.encrypt_type,
-            "--login-version",
-            dr.mgt_encrypt_schm.lv or 1,
-        ],
+        args,
     )
     assert res.exit_code == 0
 
@@ -825,11 +1044,36 @@ async def test_without_device_type(dev, mocker, runner):
         "127.0.0.1",
         port=None,
         credentials=Credentials("foo", "bar"),
+        credentials_hash=None,
         timeout=5,
         discovery_timeout=7,
+        on_discovered=ANY,
         on_unsupported=ANY,
+        on_authentication_error=ANY,
         on_discovered_raw=ANY,
     )
+
+
+async def test_credentials_hash_is_passed_to_discovery(mocker, runner):
+    """The global credentials hash must not be ignored by discovery."""
+    discover_single = mocker.patch(
+        "kasa.discover.Discover.discover_single", return_value=None
+    )
+
+    res = await runner.invoke(
+        cli,
+        [
+            "--host",
+            "127.0.0.1",
+            "--credentials-hash",
+            "hashed-credentials",
+            "discover",
+            "raw",
+        ],
+    )
+
+    assert res.exit_code == 0, res.output
+    assert discover_single.call_args.kwargs["credentials_hash"] == "hashed-credentials"
 
 
 @pytest.mark.parametrize("auth_param", ["--username", "--password"])
@@ -930,6 +1174,8 @@ async def test_discover_unsupported(unsupported_device_info, runner):
     )
     assert res.exit_code == 0
     assert "== Unsupported device ==" in res.output
+    assert "Found 1 devices" in res.output
+    assert "Found 1 unsupported devices" in res.output
 
 
 async def test_host_unsupported(unsupported_device_info, runner):
@@ -958,7 +1204,9 @@ async def test_discover_auth_failed(discovery_mock, mocker, runner):
     """Test discovery output."""
     host = "127.0.0.1"
     discovery_mock.ip = host
-    device_class = Discover._get_device_class(discovery_mock.discovery_data)
+    device_class = get_device_class_from_discovery(
+        discovery_mock.discovery_data, discovery_mock.query_data
+    )
     mocker.patch.object(
         device_class,
         "update",
@@ -981,6 +1229,83 @@ async def test_discover_auth_failed(discovery_mock, mocker, runner):
     assert res.exit_code == 0
     assert "== Authentication failed for device ==" in res.output
     assert "== Discovery Result ==" in res.output
+    assert "Found 1 devices" in res.output
+    assert "Found 1 devices that failed to authenticate" in res.output
+
+
+@new_discovery
+async def test_discover_update_unsupported(discovery_mock, mocker, runner):
+    """A regular unsupported update outcome remains in the device total."""
+    host = "127.0.0.1"
+    discovery_mock.ip = host
+    device_class = get_device_class_from_discovery(
+        discovery_mock.discovery_data, discovery_mock.query_data
+    )
+    mocker.patch.object(
+        device_class,
+        "update",
+        side_effect=UnsupportedDeviceError("Unsupported after discovery"),
+    )
+
+    res = await runner.invoke(
+        cli,
+        [
+            "--discovery-timeout",
+            0,
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+            "discover",
+        ],
+    )
+
+    assert res.exit_code == 0
+    assert "== Unsupported device ==" in res.output
+    assert "Found 1 devices" in res.output
+    assert "Found 1 unsupported devices" in res.output
+
+
+@new_discovery
+async def test_discover_update_unsupported_authentication(
+    discovery_mock, mocker, runner
+):
+    """Unsupported onboarding receives specific reset and provisioning advice."""
+    host = "127.0.0.1"
+    discovery_mock.ip = host
+    device_class = get_device_class_from_discovery(
+        discovery_mock.discovery_data, discovery_mock.query_data
+    )
+    mocker.patch.object(
+        device_class,
+        "update",
+        side_effect=UnsupportedAuthenticationError(
+            "Unsupported authentication",
+            host=host,
+            onboarding_source="amazon",
+        ),
+    )
+
+    res = await runner.invoke(
+        cli,
+        [
+            "--discovery-timeout",
+            0,
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+            "discover",
+        ],
+    )
+
+    assert res.exit_code == 0
+    assert "== Unsupported device authentication ==" in res.output
+    assert "Onboarding source: amazon" in res.output
+    assert "Reset and provision this device" in res.output
+    assert "Found 1 devices" in res.output
+    assert "Found 1 unsupported devices" in res.output
+    assert "failed to authenticate" not in res.output
 
 
 @new_discovery
@@ -988,7 +1313,9 @@ async def test_host_auth_failed(discovery_mock, mocker, runner):
     """Test discovery output."""
     host = "127.0.0.1"
     discovery_mock.ip = host
-    device_class = Discover._get_device_class(discovery_mock.discovery_data)
+    device_class = get_device_class_from_discovery(
+        discovery_mock.discovery_data, discovery_mock.query_data
+    )
     mocker.patch.object(
         device_class,
         "update",
@@ -1008,7 +1335,7 @@ async def test_host_auth_failed(discovery_mock, mocker, runner):
     )
 
     assert res.exit_code != 0
-    assert isinstance(res.exception, AuthenticationError)
+    assert "requested device could not be queried" in res.output
 
 
 @pytest.mark.parametrize("device_type", TYPES)
@@ -1028,7 +1355,7 @@ async def test_type_param(device_type, mocker, runner):
     elif device_type == "smart":
         expected_type = SmartDevice
     else:
-        expected_type = _legacy_type_to_class(device_type)
+        expected_type = _iot_type_to_class(device_type)
     mocker.patch.object(expected_type, "update")
     res = await runner.invoke(
         cli,
@@ -1036,6 +1363,13 @@ async def test_type_param(device_type, mocker, runner):
     )
     assert res.exit_code == 0
     assert isinstance(result_device, expected_type)
+    if device_type not in {"smart", "camera"}:
+        expected_family = (
+            DeviceFamily.IotSmartBulb
+            if device_type in {"bulb", "lightstrip"}
+            else DeviceFamily.IotSmartPlugSwitch
+        )
+        assert result_device.config.connection_type.device_family is expected_family
 
 
 @pytest.mark.parametrize(
@@ -1073,6 +1407,146 @@ async def test_type_camera_login_version(
     assert res.exit_code == 0, res.output
     assert captured_config is not None
     assert captured_config.connection_type.login_version == expected_login_version
+
+
+@pytest.mark.parametrize(
+    ("login_version", "klap_version", "expected_transport"),
+    [
+        pytest.param(None, None, KlapTransport, id="advertised-values-absent"),
+        pytest.param(2, None, KlapTransport, id="login-version-is-not-klap-v2"),
+        pytest.param(2, 1, KlapTransportV2, id="klap-version-selects-v2"),
+    ],
+)
+async def test_iot_klap_direct_connection_versions(
+    login_version, klap_version, expected_transport, mocker, runner
+):
+    """IOT KLAP generation is independent from the login version."""
+    captured_config = None
+    mocker.patch("kasa.cli.device.state")
+
+    async def _mock_connect(config):
+        nonlocal captured_config
+        captured_config = config
+        return IotPlug(config.host, config=config)
+
+    mocker.patch("kasa.device.Device.connect", side_effect=_mock_connect)
+    args = [
+        "--host",
+        "127.0.0.1",
+        "-df",
+        "IOT.SMARTPLUGSWITCH",
+        "-e",
+        "KLAP",
+    ]
+    if login_version is not None:
+        args += ["-lv", str(login_version)]
+    if klap_version is not None:
+        args += ["-kv", str(klap_version)]
+
+    res = await runner.invoke(cli, args)
+
+    assert res.exit_code == 0, res.output
+    assert captured_config is not None
+    assert captured_config.connection_type.login_version == login_version
+    assert captured_config.connection_type.klap_version == klap_version
+    protocol = get_protocol(captured_config)
+    assert protocol is not None
+    assert isinstance(protocol._transport, expected_transport)
+    await protocol.close()
+
+
+@pytest.mark.parametrize(
+    ("args", "expected_error"),
+    [
+        pytest.param(
+            ["--type", "smart", "discover"],
+            "--type configures a direct connection and cannot be used with discover",
+            id="direct-type-discover",
+        ),
+        pytest.param(
+            ["--type", "plug", "--encrypt-type", "KLAP"],
+            "--encrypt-type is not used with IOT --type plug",
+            id="iot-unused-encryption",
+        ),
+        pytest.param(
+            [
+                "--device-family",
+                "SMART.TAPOPLUG",
+                "--encrypt-type",
+                "KLAP",
+                "--klap-version",
+                "1",
+            ],
+            "--klap-version is only used by IOT devices",
+            id="smart-klap-version",
+        ),
+        pytest.param(
+            [
+                "--device-family",
+                "IOT.SMARTPLUGSWITCH",
+                "--encrypt-type",
+                "XOR",
+                "--klap-version",
+                "1",
+            ],
+            "--klap-version requires --encrypt-type KLAP",
+            id="non-klap-klap-version",
+        ),
+    ],
+)
+async def test_incompatible_direct_connection_options_are_rejected(
+    runner, args, expected_error
+):
+    """Connection flags that cannot affect the selected path must fail."""
+    if "discover" not in args:
+        args = ["--host", "127.0.0.1", *args]
+
+    res = await runner.invoke(cli, args)
+
+    assert res.exit_code == 2
+    assert expected_error in res.output
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        pytest.param(["--port", "0"], id="invalid-port"),
+        pytest.param(
+            [
+                "--device-family",
+                "SMART.UNKNOWN",
+                "--encrypt-type",
+                "KLAP",
+            ],
+            id="unknown-family",
+        ),
+        pytest.param(
+            [
+                "--device-family",
+                "SMART.IPCAMERA",
+                "--encrypt-type",
+                "KLAP",
+                "--https",
+            ],
+            id="unsupported-exact-route",
+        ),
+        pytest.param(
+            [
+                "--device-family",
+                "SMART.IPCAMERA",
+                "--encrypt-type",
+                "AES",
+                "--no-https",
+            ],
+            id="unconstructible-exact-route",
+        ),
+    ],
+)
+async def test_invalid_connection_option_values_are_rejected(runner, args):
+    """Direct connection values are constrained to routes the CLI can use."""
+    res = await runner.invoke(cli, ["--host", "127.0.0.1", *args])
+
+    assert res.exit_code == 2
 
 
 @pytest.mark.skip(
@@ -1418,9 +1892,47 @@ async def test_cli_child_commands(
         assert dev.children[0].update == child_update_method
 
 
-async def test_discover_config(dev: Device, mocker, runner):
-    """Test that device config is returned."""
+async def test_discover_config_uses_authoritative_discovery(mocker, runner):
+    """Discovery config reports TDP parameters even when authentication fails."""
     host = "127.0.0.1"
+    raw_response = _iot_klap_tdp_response(host)
+
+    async def discover_single(*args, **kwargs):
+        kwargs["on_discovered_raw"](raw_response)
+        raise DiscoveryAuthenticationError(
+            "Authentication failed",
+            host=host,
+            discovery_result=raw_response["discovery_response"],
+        )
+
+    mocker.patch(
+        "kasa.cli.discover.Discover.discover_single", side_effect=discover_single
+    )
+    try_connect_all = mocker.patch("kasa.cli.discover.Discover.try_connect_all")
+
+    res = await runner.invoke(
+        cli,
+        ["--host", host, "discover", "config"],
+        catch_exceptions=False,
+    )
+
+    assert res.exit_code == 0
+    assert f"Using TDP/20002 discovery response from {host}" in res.output
+    assert (
+        "--device-family IOT.SMARTPLUGSWITCH --encrypt-type KLAP "
+        "--login-version 2 --klap-version 1 --no-https"
+    ) in res.output.replace("\n", "")
+    assert "direct connection routes" not in res.output
+    try_connect_all.assert_not_called()
+
+
+async def test_discover_config_falls_back_to_direct_probe(dev: Device, mocker, runner):
+    """Test that config falls back when discovery provides no usable response."""
+    host = "127.0.0.1"
+    mocker.patch(
+        "kasa.cli.discover.Discover.discover_single",
+        side_effect=KasaException("No discovery response"),
+    )
     mocker.patch("kasa.device_factory._connect", side_effect=[Exception, dev])
 
     res = await runner.invoke(
@@ -1439,21 +1951,68 @@ async def test_discover_config(dev: Device, mocker, runner):
     )
     assert res.exit_code == 0
     cparam = dev.config.connection_type
-    expected = f"--device-family {cparam.device_family.value} --encrypt-type {cparam.encryption_type.value} {'--https' if cparam.https else '--no-https'}"
+    expected_options = [
+        f"--device-family {cparam.device_family.value}",
+        f"--encrypt-type {cparam.encryption_type.value}",
+    ]
+    if cparam.login_version is not None:
+        expected_options.append(f"--login-version {cparam.login_version}")
+    if cparam.klap_version is not None:
+        expected_options.append(f"--klap-version {cparam.klap_version}")
+    expected_options.append("--https" if cparam.https else "--no-https")
+    expected = " ".join(expected_options)
     assert expected in res.output
+    assert "Trying direct connection routes instead" in res.output
+    assert "Managed to connect using direct probing" in res.output
     assert re.search(
-        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ \+ \w+ failed",
+        r"Attempt to connect to 127\.0\.0\.1 with .* failed",
         res.output.replace("\n", ""),
     )
     assert re.search(
-        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ \+ \w+ succeeded",
+        r"Attempt to connect to 127\.0\.0\.1 with .* succeeded",
         res.output.replace("\n", ""),
     )
+    assert "SMART." in res.output or "IOT." in res.output
+
+
+async def test_discover_config_does_not_override_a_discovery_response(mocker, runner):
+    """Direct probing does not replace a received discovery response."""
+    host = "127.0.0.1"
+    raw_response = {
+        "discovery_response": {"result": "invalid", "error_code": 0},
+        "meta": {"ip": host, "port": 20002, "source": "tdp"},
+    }
+
+    async def discover_single(*args, **kwargs):
+        kwargs["on_discovered_raw"](raw_response)
+        raise UnsupportedDeviceError("Unsupported discovery response", host=host)
+
+    mocker.patch(
+        "kasa.cli.discover.Discover.discover_single", side_effect=discover_single
+    )
+    try_connect_all = mocker.patch("kasa.cli.discover.Discover.try_connect_all")
+
+    res = await runner.invoke(
+        cli,
+        ["--host", host, "discover", "config"],
+        catch_exceptions=False,
+    )
+
+    assert res.exit_code == 1
+    assert (
+        "Unable to determine a connection configuration from the TDP/20002 "
+        "discovery response"
+    ) in res.output.replace("\n", "")
+    try_connect_all.assert_not_called()
 
 
 async def test_discover_config_invalid(mocker, runner):
     """Test the device config command with invalids."""
     host = "127.0.0.1"
+    mocker.patch(
+        "kasa.cli.discover.Discover.discover_single",
+        side_effect=KasaException("No discovery response"),
+    )
     mocker.patch("kasa.discover.Discover.try_connect_all", return_value=None)
 
     res = await runner.invoke(

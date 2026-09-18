@@ -5,7 +5,7 @@
 :func:`~kasa.Discover.discover` returns a dict[str,Device] of devices on your network:
 
 >>> devices = await Discover.discover(username="user@example.com", password="great_password")
->>> for dev in devices.values():
+>>> for dev in sorted(devices.values(), key=lambda dev: dev.host):
 ...     await dev.update()
 ...     print(dev.host)
 127.0.0.1

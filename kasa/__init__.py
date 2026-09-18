@@ -30,8 +30,10 @@ from kasa.emeterstatus import EmeterStatus
 from kasa.exceptions import (
     AuthenticationError,
     DeviceError,
+    DiscoveryAuthenticationError,
     KasaException,
     TimeoutError,
+    UnsupportedAuthenticationError,
     UnsupportedDeviceError,
 )
 from kasa.feature import Feature
@@ -67,7 +69,9 @@ __all__ = [
     "Module",
     "KasaException",
     "AuthenticationError",
+    "DiscoveryAuthenticationError",
     "DeviceError",
+    "UnsupportedAuthenticationError",
     "UnsupportedDeviceError",
     "TimeoutError",
     "Credentials",

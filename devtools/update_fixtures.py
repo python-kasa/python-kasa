@@ -7,9 +7,10 @@ from pathlib import Path
 
 import asyncclick as click
 
-from devtools.dump_devinfo import _wrap_redactors
-from kasa.discover import NEW_DISCOVERY_REDACTORS, redact_data
+from devtools.dump_devinfo import wrap_redactors
+from kasa.discover import TDP_DISCOVERY_REDACTORS
 from kasa.protocols.iotprotocol import REDACTORS as IOT_REDACTORS
+from kasa.protocols.protocol import redact_data
 from kasa.protocols.smartprotocol import REDACTORS as SMART_REDACTORS
 
 FIXTURE_FOLDER = "tests/fixtures/"
@@ -96,9 +97,9 @@ def _redactor_result_update(info) -> bool:
         if not isinstance(val, dict):
             continue
         if key == "discovery_result":
-            info[key] = redact_data(val, _wrap_redactors(NEW_DISCOVERY_REDACTORS))
+            info[key] = redact_data(val, wrap_redactors(TDP_DISCOVERY_REDACTORS))
         else:
-            info[key] = redact_data(val, _wrap_redactors(redactors))
+            info[key] = redact_data(val, wrap_redactors(redactors))
         diffs: dict[str, tuple[str, str]] = {}
         _diff_data(key, val, info[key], diffs)
         if diffs:

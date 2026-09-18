@@ -55,6 +55,25 @@ class AuthenticationError(DeviceError):
     """Base exception for device authentication errors."""
 
 
+class UnsupportedAuthenticationError(UnsupportedDeviceError, AuthenticationError):
+    """Authentication error for a device using unsupported onboarding."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.discovery_result = kwargs.get("discovery_result")
+        self.host = kwargs.get("host")
+        self.onboarding_source: str | None = kwargs.get("onboarding_source")
+        AuthenticationError.__init__(self, *args, **kwargs)
+
+
+class DiscoveryAuthenticationError(AuthenticationError):
+    """Authentication error that prevented discovery from creating a device."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.discovery_result = kwargs.get("discovery_result")
+        self.host = kwargs.get("host")
+        super().__init__(*args, **kwargs)
+
+
 class _RetryableError(DeviceError):
     """Retryable exception for device errors."""
 

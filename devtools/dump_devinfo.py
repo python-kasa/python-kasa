@@ -33,15 +33,19 @@ from kasa import (
     DeviceConfig,
     DeviceConnectionParameters,
     Discover,
+    DiscoveryAuthenticationError,
     KasaException,
     TimeoutError,
+    UnsupportedAuthenticationError,
+    UnsupportedDeviceError,
 )
 from kasa.device_factory import get_protocol
 from kasa.deviceconfig import DeviceEncryptionType, DeviceFamily
 from kasa.discover import (
-    NEW_DISCOVERY_REDACTORS,
+    TDP_DISCOVERY_REDACTORS,
     DiscoveredRaw,
     DiscoveryResult,
+    select_discovery_response,
 )
 from kasa.exceptions import SmartErrorCode
 from kasa.protocols import IotProtocol
@@ -75,11 +79,12 @@ IOT_SUFFIX = "IOT"
 NO_GIT_FIXTURE_FOLDER = "kasa-fixtures"
 
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
+DEVICE_FAMILIES = [device_family.value for device_family in DeviceFamily]
 
 _LOGGER = logging.getLogger(__name__)
 
 
-def _wrap_redactors(redactors: dict[str, Callable[[Any], Any] | None]):
+def wrap_redactors(redactors: dict[str, Callable[[Any], Any] | None]):
     """Wrap the redactors for dump_devinfo.
 
     Will replace all partial REDACT_ values with zeros.
@@ -146,7 +151,7 @@ async def handle_device(
         )
     else:
         fixture_results = [
-            await get_legacy_fixture(protocol, discovery_info=discovery_info)
+            await get_iot_fixture(protocol, discovery_info=discovery_info)
         ]
 
     for fixture_result in fixture_results:
@@ -201,6 +206,13 @@ async def handle_device(
     envvar="KASA_PASSWORD",
     help="Password to use to authenticate to device.",
 )
+@click.option(
+    "--credentials-hash",
+    default=None,
+    required=False,
+    envvar="KASA_CREDENTIALS_HASH",
+    help="Hashed credentials used to authenticate to the device.",
+)
 @click.option("--basedir", help="Base directory for the git repository", default=".")
 @click.option("--autosave", is_flag=True, default=False, help="Save without prompting")
 @click.option(
@@ -224,34 +236,44 @@ async def handle_device(
     help="Timeout for discovery.",
 )
 @click.option(
+    "-df",
+    "--device-family",
+    envvar="KASA_DEVICE_FAMILY",
+    default=None,
+    type=click.Choice(DEVICE_FAMILIES, case_sensitive=False),
+    help="Exact device family for an advanced direct connection.",
+)
+@click.option(
     "-e",
     "--encrypt-type",
     envvar="KASA_ENCRYPT_TYPE",
     default=None,
     type=click.Choice(ENCRYPT_TYPES, case_sensitive=False),
-)
-@click.option(
-    "-df",
-    "--device-family",
-    envvar="KASA_DEVICE_FAMILY",
-    default="SMART.TAPOPLUG",
-    help="Device family type, e.g. `SMART.KASASWITCH`.",
+    help="Encryption type for an advanced direct connection.",
 )
 @click.option(
     "-lv",
     "--login-version",
     envvar="KASA_LOGIN_VERSION",
-    default=2,
-    type=int,
-    help="The login version for device authentication. Defaults to 2",
+    default=None,
+    type=click.IntRange(min=1),
+    help="Login version for an advanced direct connection.",
+)
+@click.option(
+    "-kv",
+    "--klap-version",
+    envvar="KASA_KLAP_VERSION",
+    default=None,
+    type=click.IntRange(min=1),
+    help="IOT KLAP handshake version for an advanced direct connection.",
 )
 @click.option(
     "--https/--no-https",
     envvar="KASA_HTTPS",
-    default=False,
+    default=None,
     is_flag=True,
     type=bool,
-    help="Set flag if the device encryption uses https.",
+    help="Whether an advanced direct connection uses HTTPS.",
 )
 @click.option(
     "--timeout",
@@ -259,24 +281,30 @@ async def handle_device(
     default=15,
     help="Timeout for queries.",
 )
-@click.option("--port", help="Port override", type=int)
+@click.option(
+    "--port",
+    help="Connection and UDP discovery port override.",
+    type=click.IntRange(min=1, max=65535),
+)
 async def cli(
     host,
     target,
+    username,
+    password,
+    credentials_hash,
     basedir,
     autosave,
-    debug,
-    username,
-    discovery_timeout,
-    password,
     batch_size,
+    debug,
     discovery_info,
-    encrypt_type,
-    https,
+    discovery_timeout,
     device_family,
+    encrypt_type,
     login_version,
-    port,
+    klap_version,
+    https,
     timeout,
+    port,
 ):
     """Generate devinfo files for devices.
 
@@ -285,30 +313,90 @@ async def cli(
     if debug:
         logging.basicConfig(level=logging.DEBUG)
 
-    raw_discovery = {}
+    if bool(username) != bool(password):
+        raise click.UsageError(
+            "Using authentication requires both --username and --password"
+        )
+
+    connection_options = {
+        "device-family": device_family,
+        "encrypt-type": encrypt_type,
+        "login-version": login_version,
+        "klap-version": klap_version,
+        "https": https,
+    }
+    supplied_connection_options = {
+        option: value
+        for option, value in connection_options.items()
+        if value is not None
+    }
+    if (discovery_info or supplied_connection_options) and host is None:
+        raise click.UsageError("Direct connection options require --host")
+    if discovery_info and supplied_connection_options:
+        raise click.UsageError(
+            "Use either --discovery-info or explicit connection options, not both"
+        )
+    if supplied_connection_options and (not device_family or not encrypt_type):
+        raise click.UsageError(
+            "Advanced direct connections require both --device-family and "
+            "--encrypt-type"
+        )
+
+    raw_discovery: dict[str, list[DiscoveredRaw]] = {}
+    unsupported: dict[str, UnsupportedDeviceError] = {}
+    authentication_failed: dict[str, DiscoveryAuthenticationError] = {}
 
     def capture_raw(discovered: DiscoveredRaw):
-        raw_discovery[discovered["meta"]["ip"]] = discovered["discovery_response"]
+        meta = discovered["meta"]
+        raw_discovery.setdefault(meta["ip"], []).append(discovered)
 
-    credentials = Credentials(username=username, password=password)
+    async def capture_unsupported(ex: UnsupportedDeviceError) -> None:
+        host_key = ex.host or "unknown"
+        unsupported[host_key] = ex
+        if isinstance(ex, UnsupportedAuthenticationError):
+            source = ex.onboarding_source or "unknown"
+            click.echo(
+                f"Unsupported authentication at {host_key} "
+                f"(onboarding source: {source}): {ex}"
+            )
+        else:
+            click.echo(f"Unsupported device at {host_key}: {ex}")
+
+    async def capture_authentication_error(
+        ex: DiscoveryAuthenticationError,
+    ) -> None:
+        host_key = ex.host or "unknown"
+        authentication_failed[host_key] = ex
+        click.echo(f"Authentication failed for device at {host_key}: {ex}")
+
+    def get_discovery_response(host_key: str) -> dict:
+        responses = raw_discovery.get(host_key)
+        if responses is None and len(raw_discovery) == 1:
+            responses = next(iter(raw_discovery.values()))
+        if not responses:
+            raise KasaException(
+                f"No decoded discovery response captured for {host_key}"
+            )
+        return select_discovery_response(responses)["discovery_response"]
+
+    credentials = (
+        Credentials(username=username, password=password)
+        if username and password
+        else None
+    )
     if host is not None:
         if discovery_info:
             click.echo(f"Host and discovery info given, trying connect on {host}.")
 
             di = json.loads(discovery_info)
             dr = DiscoveryResult.from_dict(di)
-            connection_type = DeviceConnectionParameters.from_values(
-                dr.device_type,
-                dr.mgt_encrypt_schm.encrypt_type,
-                login_version=dr.mgt_encrypt_schm.lv,
-                https=dr.mgt_encrypt_schm.is_support_https,
-                http_port=dr.mgt_encrypt_schm.http_port,
-            )
+            connection_type = dr.to_connection_parameters()
             dc = DeviceConfig(
                 host=host,
                 connection_type=connection_type,
                 port_override=port,
                 credentials=credentials,
+                credentials_hash=credentials_hash,
                 timeout=timeout,
             )
             device = await Device.connect(config=dc)
@@ -320,20 +408,39 @@ async def cli(
                 batch_size=batch_size,
             )
         elif device_family and encrypt_type:
+            try:
+                family = DeviceFamily(device_family)
+                encryption = DeviceEncryptionType(encrypt_type)
+            except ValueError as ex:
+                raise click.BadParameter(
+                    "Invalid device connection parameters",
+                    param_hint="--device-family/--encrypt-type",
+                ) from ex
+            if klap_version is not None:
+                if encryption is not DeviceEncryptionType.Klap:
+                    raise click.UsageError(
+                        "--klap-version requires --encrypt-type KLAP"
+                    )
+                if not family.value.startswith("IOT."):
+                    raise click.UsageError("--klap-version is only used by IOT devices")
+            if login_version is None and family.value.startswith("SMART."):
+                login_version = 2
             ctype = DeviceConnectionParameters(
-                DeviceFamily(device_family),
-                DeviceEncryptionType(encrypt_type),
+                family,
+                encryption,
                 login_version,
-                https,
+                bool(https),
+                klap_version=klap_version,
             )
             config = DeviceConfig(
                 host=host,
                 port_override=port,
                 credentials=credentials,
+                credentials_hash=credentials_hash,
                 connection_type=ctype,
                 timeout=timeout,
             )
-            if protocol := get_protocol(config):
+            if protocol := get_protocol(config, strict=True):
                 await handle_device(basedir, autosave, protocol, batch_size=batch_size)
             else:
                 raise KasaException(
@@ -344,12 +451,17 @@ async def cli(
             device = await Discover.discover_single(
                 host,
                 credentials=credentials,
+                credentials_hash=credentials_hash,
                 port=port,
                 discovery_timeout=discovery_timeout,
                 timeout=timeout,
+                on_unsupported=capture_unsupported,
+                on_authentication_error=capture_authentication_error,
                 on_discovered_raw=capture_raw,
             )
-            discovery_info = raw_discovery[device.host]
+            if device is None:
+                return
+            discovery_info = get_discovery_response(device.host)
             if decrypted_data := device._discovery_info.get("decrypted_data"):
                 discovery_info["result"]["decrypted_data"] = decrypted_data
             await handle_device(
@@ -367,13 +479,18 @@ async def cli(
         devices = await Discover.discover(
             target=target,
             credentials=credentials,
+            credentials_hash=credentials_hash,
+            port=port,
             discovery_timeout=discovery_timeout,
             timeout=timeout,
+            on_unsupported=capture_unsupported,
+            on_authentication_error=capture_authentication_error,
             on_discovered_raw=capture_raw,
         )
-        click.echo(f"Detected {len(devices)} devices")
+        detected_hosts = set(devices) | set(unsupported) | set(authentication_failed)
+        click.echo(f"Detected {len(detected_hosts)} devices")
         for dev in devices.values():
-            discovery_info = raw_discovery[dev.host]
+            discovery_info = get_discovery_response(dev.host)
             if decrypted_data := dev._discovery_info.get("decrypted_data"):
                 discovery_info["result"]["decrypted_data"] = decrypted_data
 
@@ -386,10 +503,10 @@ async def cli(
             )
 
 
-async def get_legacy_fixture(
+async def get_iot_fixture(
     protocol: IotProtocol, *, discovery_info: dict[str, dict[str, Any]] | None
 ) -> FixtureResult:
-    """Get fixture for legacy IOT style protocol."""
+    """Get a fixture for an IOT protocol device."""
     items = [
         Call(module="system", method="get_sysinfo"),
         Call(module="emeter", method="get_realtime"),
@@ -459,7 +576,7 @@ async def get_legacy_fixture(
     finally:
         await protocol.close()
 
-    final = redact_data(final, _wrap_redactors(IOT_REDACTORS))
+    final = redact_data(final, wrap_redactors(IOT_REDACTORS))
 
     # Scrub the child device ids
     if children := final.get("system", {}).get("get_sysinfo", {}).get("children"):
@@ -471,7 +588,7 @@ async def get_legacy_fixture(
 
     if discovery_info and not discovery_info.get("system"):
         final["discovery_result"] = redact_data(
-            discovery_info, _wrap_redactors(NEW_DISCOVERY_REDACTORS)
+            discovery_info, wrap_redactors(TDP_DISCOVERY_REDACTORS)
         )
 
     click.echo(f"Got {len(successes)} successes")
@@ -989,10 +1106,10 @@ async def get_smart_fixtures(
     # scrub the child ids
     scrubbed_child_id_map = scrub_child_device_ids(final, child_responses)
 
-    # Redact data from the main device response. _wrap_redactors ensure we do
+    # Redact data from the main device response. wrap_redactors ensures we do
     # not redact the scrubbed child device ids and replaces REDACTED_partial_id
     # with zeros
-    final = redact_data(final, _wrap_redactors(SMART_REDACTORS))
+    final = redact_data(final, wrap_redactors(SMART_REDACTORS))
 
     # smart cam child devices provide more information in getChildDeviceList on the
     # parent than they return when queried directly for getDeviceInfo so we will store
@@ -1026,7 +1143,7 @@ async def get_smart_fixtures(
             and parent_model
             and child_model != parent_model
         ):
-            response = redact_data(response, _wrap_redactors(SMART_REDACTORS))
+            response = redact_data(response, wrap_redactors(SMART_REDACTORS))
             model_info = SmartDevice._get_device_info(response, None)
             fixture_results.append(
                 get_smart_child_fixture(
@@ -1044,7 +1161,7 @@ async def get_smart_fixtures(
             and parent_model
             and child_model != parent_model
         ):
-            response = redact_data(response, _wrap_redactors(SMART_REDACTORS))
+            response = redact_data(response, wrap_redactors(SMART_REDACTORS))
             # There is more info in the childDeviceList on the parent
             # particularly the region is needed here.
             child_info_from_parent = child_infos_on_parent[scrubbed_child_id]
@@ -1063,7 +1180,7 @@ async def get_smart_fixtures(
     discovery_result = None
     if discovery_info:
         final["discovery_result"] = redact_data(
-            discovery_info, _wrap_redactors(NEW_DISCOVERY_REDACTORS)
+            discovery_info, wrap_redactors(TDP_DISCOVERY_REDACTORS)
         )
         discovery_result = discovery_info["result"]
 

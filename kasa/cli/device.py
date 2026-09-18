@@ -81,11 +81,11 @@ async def state(ctx, dev: Device):
         echo("\n\t[bold]== Protocol information ==[/bold]")
         echo(f"\tCredentials hash:  {dev.credentials_hash}")
         echo()
-        from .discover import _echo_discovery_info
+        from .discover import echo_discovery_info
 
         if TYPE_CHECKING:
             assert dev._discovery_info
-        _echo_discovery_info(dev._discovery_info)
+        echo_discovery_info(dev._discovery_info)
 
     return dev.internal_state
 

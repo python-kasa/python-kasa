@@ -123,7 +123,11 @@ from .deviceconfig import (
     DeviceEncryptionType,
     DeviceFamily,
 )
-from .exceptions import KasaException
+from .exceptions import (
+    AuthenticationError,
+    KasaException,
+    UnsupportedAuthenticationError,
+)
 from .feature import Feature
 from .module import Module
 from .protocols import BaseProtocol, IotProtocol
@@ -153,6 +157,38 @@ class WifiNetwork:
 
 
 _LOGGER = logging.getLogger(__name__)
+
+_SUPPORTED_ONBOARDING_SOURCES = frozenset({"apple", "matter", "tplink"})
+
+
+def get_unsupported_authentication_error(
+    host: str,
+    discovery_info: dict[str, Any] | None,
+    error: AuthenticationError,
+) -> UnsupportedAuthenticationError | None:
+    """Return an unsupported-onboarding error when discovery proves one applies.
+
+    Discovery information alone cannot distinguish unsupported onboarding from
+    incorrect credentials. This helper must only be called after a real
+    authentication attempt has failed.
+    """
+    if not isinstance(discovery_info, dict):
+        return None
+    onboarding_info = discovery_info.get("result", discovery_info)
+    if not isinstance(onboarding_info, dict):
+        return None
+    onboarding_source = onboarding_info.get("obd_src")
+    if not isinstance(onboarding_source, str) or not onboarding_source:
+        return None
+    if onboarding_source in _SUPPORTED_ONBOARDING_SOURCES:
+        return None
+    return UnsupportedAuthenticationError(
+        *error.args,
+        discovery_result=discovery_info,
+        error_code=error.error_code,
+        host=host,
+        onboarding_source=onboarding_source,
+    )
 
 
 @dataclass
@@ -233,7 +269,7 @@ class Device(ABC):
     ) -> Device:
         """Connect to a single device by the given hostname or device configuration.
 
-        This method avoids the UDP based discovery process and
+        This method avoids the broadcast discovery process and
         will connect directly to the device.
 
         It is generally preferred to avoid :func:`discover_single()` and
@@ -325,8 +361,13 @@ class Device(ABC):
         return self._device_type
 
     @abstractmethod
-    def update_from_discover_info(self, info: dict) -> None:
-        """Update state from info from the discover call."""
+    def update_from_discover_info(
+        self,
+        info: dict,
+        *,
+        device_info: dict | None = None,
+    ) -> None:
+        """Update state from discovery and optional full device information."""
 
     @property
     def config(self) -> DeviceConfig:

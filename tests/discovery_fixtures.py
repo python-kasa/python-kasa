@@ -3,12 +3,18 @@ from __future__ import annotations
 import asyncio
 import copy
 from collections.abc import Coroutine
+from contextlib import suppress
 from dataclasses import dataclass
 from json import dumps as json_dumps
 from typing import Any, TypedDict
 
 import pytest
 
+from kasa import Device
+from kasa.device_factory import (
+    get_device_class_from_family,
+    get_device_class_from_sys_info,
+)
 from kasa.transports.xortransport import XorEncryption
 
 from .fakeprotocol_iot import FakeIotProtocol
@@ -17,6 +23,24 @@ from .fakeprotocol_smartcam import FakeSmartCamProtocol
 from .fixtureinfo import FixtureInfo, filter_fixtures, idgenerator
 
 DISCOVERY_MOCK_IP = "127.0.0.123"
+
+
+def get_device_class_from_discovery(
+    info: dict[str, Any], device_info: dict[str, Any] | None = None
+) -> type[Device]:
+    """Return the expected device class for test discovery data."""
+    if result := info.get("result"):
+        encryption = result.get("mgt_encrypt_schm") or {}
+        if result["device_type"].startswith("IOT.") and device_info is not None:
+            return get_device_class_from_sys_info(device_info)
+        device_class = get_device_class_from_family(
+            result["device_type"],
+            https=encryption.get("is_support_https", False),
+        )
+        if device_class is None:
+            raise AssertionError(f"Unsupported test device family: {result}")
+        return device_class
+    return get_device_class_from_sys_info(info)
 
 
 class DiscoveryResponse(TypedDict):
@@ -97,11 +121,6 @@ UNSUPPORTED_DEVICES = {
         "FOO",
         omit_keys={"mgt_encrypt_schm": "encrypt_type", "encrypt_info": None},
     ),
-    "unable_to_parse": _make_unsupported(
-        "SMART.TAPOBULB",
-        "FOO",
-        omit_keys={"device_id": None},
-    ),
     "invalidinstance": _make_unsupported(
         "IOT.SMARTPLUGSWITCH",
         "KLAP",
@@ -164,6 +183,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
         login_version: int | None = None
         port_override: int | None = None
         http_port: int | None = None
+        klap_version: int | None = None
 
         @property
         def model(self) -> str:
@@ -200,6 +220,11 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             login_version = max([int(i) for i in et])
         https = discovery_result["mgt_encrypt_schm"]["is_support_https"]
         http_port = discovery_result["mgt_encrypt_schm"].get("http_port")
+        klap_version = (
+            discovery_result["mgt_encrypt_schm"].get("new_klap") or None
+            if device_type.startswith("IOT.") and encrypt_type == "KLAP"
+            else None
+        )
         if not http_port:  # noqa: SIM108
             # Not all discovery responses set the http port, i.e. smartcam.
             default_port = 443 if https else 80
@@ -216,6 +241,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             https,
             login_version,
             http_port=http_port,
+            klap_version=klap_version,
         )
     else:
         sys_info = fixture_data["system"]["get_sysinfo"]
@@ -257,28 +283,22 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
 
     # Mock _run_callback_task so the tasks complete in the order they started.
     # Otherwise test output is non-deterministic which affects readme examples.
-    callback_queue: asyncio.Queue = asyncio.Queue()
-    exception_queue: asyncio.Queue = asyncio.Queue()
-
-    async def process_callback_queue(finished_event: asyncio.Event) -> None:
-        while (finished_event.is_set() is False) or callback_queue.qsize():
-            coro = await callback_queue.get()
-            try:
-                await coro
-            except Exception as ex:
-                await exception_queue.put(ex)
-            else:
-                await exception_queue.put(None)
-            callback_queue.task_done()
-
-    async def wait_for_coro():
-        await callback_queue.join()
-        if ex := exception_queue.get_nowait():
-            raise ex
+    callback_tail: asyncio.Task | None = None
 
     def _run_callback_task(self, coro: Coroutine) -> None:
-        callback_queue.put_nowait(coro)
-        task = asyncio.create_task(wait_for_coro())
+        nonlocal callback_tail
+        previous = callback_tail
+
+        async def run_ordered() -> None:
+            if previous is not None:
+                # asyncio.gather() still propagates the earlier task's
+                # exception, but later callbacks must not be skipped.
+                with suppress(Exception):
+                    await previous
+            await coro
+
+        task = asyncio.create_task(run_ordered())
+        callback_tail = task
         self.callback_tasks.append(task)
 
     mocker.patch(
@@ -292,9 +312,6 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
         Handles test cases modifying the ip and hostname of the first fixture
         for discover_single testing.
         """
-        finished_event = asyncio.Event()
-        asyncio.create_task(process_callback_queue(finished_event))
-
         for ip, dm in discovery_mocks.items():
             first_ip = list(discovery_mocks.values())[0].ip
             fixture_info = fixture_infos[ip]
@@ -305,13 +322,15 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
             else:
                 host = dm.ip
             # update the protos for any host testing or the test overriding the first ip
-            protos[host] = (
+            protocol = (
                 FakeSmartProtocol(fixture_info.data, fixture_info.name)
                 if fixture_info.protocol in {"SMART", "SMART.CHILD"}
                 else FakeSmartCamProtocol(fixture_info.data, fixture_info.name)
                 if fixture_info.protocol in {"SMARTCAM", "SMARTCAM.CHILD"}
                 else FakeIotProtocol(fixture_info.data, fixture_info.name)
             )
+            protos[host] = protocol
+            protos[dm.ip] = protocol
             port = (
                 dm.port_override
                 if dm.port_override and dm.discovery_port != 20002
@@ -321,8 +340,6 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
                 dm._datagram,
                 (dm.ip, port),
             )
-        # Setting this event will stop the processing of callbacks
-        finished_event.set()
 
     mocker.patch("kasa.discover._DiscoverProtocol.do_discover", mock_discover)
 
@@ -346,7 +363,7 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
     # Mock decrypt so it doesn't error with unencryptable empty data in the
     # fixtures. The discovery result will already contain the decrypted data
     # deserialized from the fixture
-    mocker.patch("kasa.discover.Discover._decrypt_discovery_data")
+    mocker.patch("kasa.discover._TdpDiscovery.decrypt_discovery_data")
 
     # Only return the first discovery mock to be used for testing discover single
     return discovery_mocks[first_ip]

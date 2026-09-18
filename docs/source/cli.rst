@@ -5,13 +5,23 @@ The package is shipped with a console tool named ``kasa``, refer to ``kasa --hel
 The device to which the commands are sent is chosen by ``KASA_HOST`` environment variable or passing ``--host <address>`` as an option.
 To see what is being sent to and received from the device, specify option ``--debug``.
 
-To avoid discovering the devices when executing commands its type can be passed as an option (e.g., ``--type plug`` for plugs, ``--type bulb`` for bulbs, ..).
-If no type is manually given, its type will be discovered automatically which causes a short delay.
-Note that the ``--type`` parameter only works for legacy devices using port 9999.
+To avoid discovery when the connection details are known, pass ``--type`` for
+one of the common connection types. For other connections, pass both
+``-df``/``--device-family`` and ``-e``/``--encrypt-type``. Some devices also
+require values for ``-lv``/``--login-version``, ``-kv``/``--klap-version``, or
+``--https``.
+These advanced options require ``--host`` and cannot be used with the
+``discover`` command.
 
-To avoid discovering the devices for newer KASA or TAPO devices using port 20002 for discovery the ``--device-family``, ``-encrypt-type`` and optional
-``-login-version`` options can be passed and the devices will probably require authentication via ``--username`` and ``--password``.
-Refer to ``kasa --help`` for detailed usage.
+``-lv``/``--login-version`` and ``-kv``/``--klap-version`` are independent
+connection settings and should only be supplied when they are known. Use
+``kasa --host <address> discover config`` to show the connection configuration
+advertised by the device. If no discovery response is received, the command
+falls back to direct connection probing and identifies that fallback in its
+output. A response that was received remains authoritative and is not replaced
+by probing. Devices that require authentication can use ``--username`` and
+``--password``, or ``--credentials-hash`` when an existing credential hash is
+available.
 
 If no command is given, the ``state`` command will be executed to query the device state.
 
@@ -25,15 +35,36 @@ Discovery
 *********
 
 The tool can automatically discover supported devices using a broadcast-based discovery protocol.
-This works by sending an UDP datagram on ports 9999 and 20002 to the broadcast address (defaulting to ``255.255.255.255``).
+This sends discovery queries to UDP port 9999 and TDP ports 20002 and 20004 at
+the broadcast address, which defaults to ``255.255.255.255``. If a device
+responds through both UDP and TDP, the TDP response is used. The global
+``--port`` option changes the UDP discovery and device connection port; the
+TDP discovery ports remain fixed.
 
-Newer devices that respond on port 20002 will require TP-Link cloud credentials to be passed (unless they have never been connected
+Devices that respond using TDP will generally require TP-Link cloud credentials to be passed (unless they have never been connected
 to the TP-Link cloud) or they will report as having failed authentication when trying to query the device.
 Use ``--username`` and ``--password`` options to specify credentials.
 These values can also be set as environment variables via ``KASA_USERNAME`` and ``KASA_PASSWORD``.
 
-On multihomed systems, you can use ``--target`` option to specify the broadcast target.
-For example, if your devices reside in network ``10.0.0.0/24`` you can use ``kasa --target 10.0.0.255 discover`` to discover them.
+The default output and ``discover list`` update supported devices before
+displaying them. The default summary also reports devices that could not be
+queried because of an authentication failure and devices that are not
+supported by the library.
+
+Broadcast routing and multiple interfaces
+-----------------------------------------
+
+The default ``255.255.255.255`` address is a limited broadcast. On systems with
+multiple active network interfaces, the operating system may send it through
+an interface that cannot reach the devices.
+
+Use ``--target`` to send discovery to the subnet-directed broadcast address of the network containing the devices.
+For example, if the devices reside on ``10.0.0.0/24``, use::
+
+    kasa --target 10.0.0.255 discover
+
+If directed discovery works but the default does not, review the host's network
+interface and routing configuration.
 
 .. note::
 

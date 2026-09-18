@@ -19,6 +19,7 @@ from voluptuous import (
 
 from kasa import DeviceType, KasaException, Module
 from kasa.iot import IotDevice
+from kasa.iot.iotdevice import extract_sys_info
 from kasa.iot.iotmodule import _merge_dict
 from tests.conftest import get_device_for_fixture_protocol, handle_turn_on, turn_on
 from tests.device_fixtures import device_iot, has_emeter_iot, no_emeter_iot
@@ -27,6 +28,29 @@ from tests.fakeprotocol_iot import FakeIotProtocol
 TZ_SCHEMA = Schema(
     {"zone_str": str, "dst_offset": int, "index": All(int, Range(min=0)), "tz_str": str}
 )
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        {},
+        {"system": []},
+        {"system": {"get_sysinfo": []}},
+        {"system": {"get_sysinfo": None}},
+    ],
+)
+def test_malformed_sysinfo_is_handled(response: dict) -> None:
+    """Malformed IOT response layers never leak dictionary access errors."""
+    assert extract_sys_info(response) == {}
+    with pytest.raises(KasaException, match="system.*get_sysinfo"):
+        IotDevice._get_device_type_from_sys_info(response)
+
+
+def test_malformed_discovery_initialization_is_handled() -> None:
+    """IOT discovery initialization reports missing sysinfo and model cleanly."""
+    device = IotDevice("127.0.0.1")
+    with pytest.raises(KasaException, match="neither sysinfo nor a device model"):
+        device.update_from_discover_info({"system": []})
 
 
 def check_mac(x):

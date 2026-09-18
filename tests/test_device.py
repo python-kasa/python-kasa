@@ -8,12 +8,22 @@ import pkgutil
 import sys
 import zoneinfo
 from contextlib import AbstractContextManager, nullcontext
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, PropertyMock, patch
 
 import pytest
 
 import kasa
-from kasa import Credentials, Device, DeviceConfig, DeviceType, KasaException, Module
+from kasa import (
+    AuthenticationError,
+    Credentials,
+    Device,
+    DeviceConfig,
+    DeviceType,
+    KasaException,
+    Module,
+    UnsupportedAuthenticationError,
+)
+from kasa.exceptions import SmartErrorCode
 from kasa.iot import (
     IotBulb,
     IotCamera,
@@ -54,6 +64,83 @@ def _get_subclasses(of_class):
 device_classes = pytest.mark.parametrize(
     "device_class_name_obj", _get_subclasses(Device), ids=lambda t: t[0]
 )
+
+
+@pytest.mark.parametrize("device_class", [IotDevice, SmartDevice, SmartCamDevice])
+@pytest.mark.parametrize("onboarding_source", ["amazon", "future-source", "tss"])
+async def test_update_classifies_unsupported_authentication(
+    device_class: type[Device], onboarding_source: str, mocker
+) -> None:
+    """A failed update identifies unsupported onboarding after authentication."""
+    host = "127.0.0.1"
+    device = device_class(
+        host,
+        config=DeviceConfig(host, credentials=Credentials("user", "password")),
+    )
+    discovery_info = {"obd_src": onboarding_source, "device_model": "test"}
+    device._discovery_info = discovery_info
+    authentication_error = AuthenticationError(
+        "Authentication failed",
+        error_code=SmartErrorCode.LOGIN_FAILED_ERROR,
+    )
+    mocker.patch.object(
+        device,
+        "_update_device",
+        new=AsyncMock(side_effect=authentication_error),
+    )
+
+    with pytest.raises(UnsupportedAuthenticationError) as exc_info:
+        await device.update()
+
+    error = exc_info.value
+    assert isinstance(error, AuthenticationError)
+    assert error.host == device.host
+    assert error.discovery_result is discovery_info
+    assert error.onboarding_source == onboarding_source
+    assert error.error_code is SmartErrorCode.LOGIN_FAILED_ERROR
+    assert error.__cause__ is authentication_error
+
+
+@pytest.mark.parametrize("onboarding_source", [None, "", "apple", "matter", "tplink"])
+async def test_update_preserves_supported_authentication_error(
+    onboarding_source: str | None, mocker
+) -> None:
+    """Missing and supported onboarding sources keep normal authentication."""
+    host = "127.0.0.1"
+    device = SmartDevice(
+        host,
+        config=DeviceConfig(host, credentials=Credentials("user", "password")),
+    )
+    device._discovery_info = {"obd_src": onboarding_source}
+    authentication_error = AuthenticationError("Authentication failed")
+    mocker.patch.object(
+        device,
+        "_update_device",
+        new=AsyncMock(side_effect=authentication_error),
+    )
+
+    with pytest.raises(AuthenticationError) as exc_info:
+        await device.update()
+
+    assert exc_info.value is authentication_error
+    assert not isinstance(exc_info.value, UnsupportedAuthenticationError)
+
+
+async def test_missing_credentials_are_not_unsupported_authentication(mocker) -> None:
+    """Onboarding information does not classify before an authentication attempt."""
+    device = SmartDevice("127.0.0.1")
+    device._discovery_info = {"obd_src": "tss"}
+    mocker.patch.object(
+        Device, "credentials", new_callable=PropertyMock, return_value=None
+    )
+    mocker.patch.object(
+        Device, "credentials_hash", new_callable=PropertyMock, return_value=None
+    )
+
+    with pytest.raises(AuthenticationError) as exc_info:
+        await device.update()
+
+    assert not isinstance(exc_info.value, UnsupportedAuthenticationError)
 
 
 async def test_device_id(dev: Device):
