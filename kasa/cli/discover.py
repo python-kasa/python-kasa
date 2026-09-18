@@ -15,6 +15,7 @@ from kasa import (
     Discover,
     UnsupportedDeviceError,
 )
+from kasa.deviceconfig import DeviceConnectionParameters, DeviceEncryptionType
 from kasa.discover import (
     NEW_DISCOVERY_REDACTORS,
     ConnectAttempt,
@@ -57,6 +58,13 @@ def _discover_is_root_cmd(ctx: click.Context) -> bool:
     return (
         root_ctx.invoked_subcommand is None or root_ctx.invoked_subcommand == "discover"
     )
+
+
+def _get_cli_encrypt_type(cparams: DeviceConnectionParameters) -> str:
+    """Return the encryption type value needed to recreate the connection."""
+    if cparams.new_klap:
+        return DeviceEncryptionType.Klapv2.value
+    return cparams.encryption_type.value
 
 
 @discover.command()
@@ -275,10 +283,11 @@ async def config(ctx: click.Context) -> DeviceDict:
     )
     if dev:
         cparams = dev.config.connection_type
+        encrypt_type = _get_cli_encrypt_type(cparams)
         echo("Managed to connect, cli options to connect are:")
         echo(
             f"--device-family {cparams.device_family.value} "
-            f"--encrypt-type {cparams.encryption_type.value} "
+            f"--encrypt-type {encrypt_type} "
             f"{'--https' if cparams.https else '--no-https'}"
         )
         return {host: dev}

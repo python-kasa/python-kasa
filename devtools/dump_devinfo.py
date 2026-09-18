@@ -303,6 +303,7 @@ async def cli(
                 login_version=dr.mgt_encrypt_schm.lv,
                 https=dr.mgt_encrypt_schm.is_support_https,
                 http_port=dr.mgt_encrypt_schm.http_port,
+                new_klap=dr.mgt_encrypt_schm.new_klap,
             )
             dc = DeviceConfig(
                 host=host,
@@ -320,11 +321,16 @@ async def cli(
                 batch_size=batch_size,
             )
         elif device_family and encrypt_type:
+            new_klap = None
+            if encrypt_type == DeviceEncryptionType.Klapv2.value:
+                encrypt_type = DeviceEncryptionType.Klap.value
+                new_klap = True
             ctype = DeviceConnectionParameters(
                 DeviceFamily(device_family),
                 DeviceEncryptionType(encrypt_type),
                 login_version,
                 https,
+                new_klap=new_klap,
             )
             config = DeviceConfig(
                 host=host,
