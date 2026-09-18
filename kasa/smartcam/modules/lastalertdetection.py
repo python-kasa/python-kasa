@@ -5,9 +5,13 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
 from ...feature import Feature
 from ..smartcammodule import SmartCamModule
+
+if TYPE_CHECKING:
+    from ...smart import SmartDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,7 +39,9 @@ class LastAlertDetection(SmartCamModule):
     QUERY_MODULE_NAME = "system"
     QUERY_SECTION_NAMES = "last_alarm_info"
 
-    _logged_unknown_types: set[str] | None = None
+    def __init__(self, device: SmartDevice, module: str) -> None:
+        super().__init__(device, module)
+        self._logged_unknown_types: set[str] = set()
 
     async def _check_supported(self) -> bool:
         """Additional check to see if the module is supported by the device."""
@@ -93,8 +99,6 @@ class LastAlertDetection(SmartCamModule):
         try:
             return LastAlertType(alert_type)
         except ValueError:
-            if self._logged_unknown_types is None:
-                self._logged_unknown_types = set()
             if alert_type not in self._logged_unknown_types:
                 self._logged_unknown_types.add(alert_type)
                 _LOGGER.warning(
