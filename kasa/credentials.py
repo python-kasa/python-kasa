@@ -17,27 +17,27 @@ class Credentials:
     #: Password of the cloud account
     password: str = field(default="", repr=False)
 
+    @classmethod
+    def _from_plaintext_hash(cls, credentials_hash: str) -> Credentials | None:
+        """Recover the credentials from a hash that stores them in plaintext.
 
-def _credentials_from_plaintext_hash(credentials_hash: str) -> Credentials | None:
-    """Recover the credentials from a hash that stores them in plaintext.
-
-    The ssl aes and tpap transports store base64 json of the plaintext
-    credentials, so a transport handed one of those after a device changed its
-    encryption type can derive its own hash rather than failing to
-    authenticate. Klap and aes hashes are one way, so this only works in that
-    direction.
-    """
-    try:
-        decoded = json_loads(base64.b64decode(credentials_hash.encode()))
-    except (ValueError, UnicodeDecodeError):
+        The ssl aes and tpap transports store base64 json of the plaintext
+        credentials, so a transport handed one of those after a device changed
+        its encryption type can derive its own hash rather than failing to
+        authenticate. Klap and aes hashes are one way, so this only works in
+        that direction.
+        """
+        try:
+            decoded = json_loads(base64.b64decode(credentials_hash.encode()))
+        except (ValueError, UnicodeDecodeError):
+            return None
+        if not isinstance(decoded, dict):
+            return None
+        username = decoded.get("un")
+        password = decoded.get("pwd")
+        if isinstance(username, str) and isinstance(password, str):
+            return cls(username, password)
         return None
-    if not isinstance(decoded, dict):
-        return None
-    username = decoded.get("un")
-    password = decoded.get("pwd")
-    if isinstance(username, str) and isinstance(password, str):
-        return Credentials(username, password)
-    return None
 
 
 def get_default_credentials(crdentials: tuple[str, str]) -> Credentials:

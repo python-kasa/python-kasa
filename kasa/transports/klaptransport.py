@@ -59,12 +59,7 @@ from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from yarl import URL
 
-from kasa.credentials import (
-    DEFAULT_CREDENTIALS,
-    Credentials,
-    _credentials_from_plaintext_hash,
-    get_default_credentials,
-)
+from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
 from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import AuthenticationError, KasaException, _RetryableError
 from kasa.httpclient import HttpClient
@@ -123,16 +118,6 @@ class KlapTransport(BaseTransport):
 
         self._http_client = HttpClient(config)
         self._local_seed: bytes | None = None
-        # A hash another transport produced is not a bad password.
-        if self._credentials_hash and not self._is_transport_credentials_hash(
-            self._credentials_hash
-        ):
-            if not self._credentials:
-                self._credentials = _credentials_from_plaintext_hash(
-                    self._credentials_hash
-                )
-            self._credentials_hash = None
-
         if (
             not self._credentials or self._credentials.username is None
         ) and not self._credentials_hash:
@@ -178,11 +163,9 @@ class KlapTransport(BaseTransport):
         return base64.b64encode(self._local_auth_hash).decode()
 
     @classmethod
-    def _is_transport_credentials_hash(cls, credentials_hash: str) -> bool:
+    def is_transport_credentials_hash(cls, credentials_hash: str) -> bool:
         """Whether the hash has the shape this transport produces.
 
-        A device can change its encryption type without the credentials
-        changing, so a stored hash may be one that another transport wrote.
         A klap hash is the base64 of a raw digest, so it is the right length
         and, unlike the json hashes other transports store, not decodable.
         """

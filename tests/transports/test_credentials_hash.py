@@ -164,6 +164,17 @@ async def test_ssl_ignores_a_klap_credentials_hash():
     )
 
 
+async def test_ssl_recovers_credentials_from_a_plaintext_hash():
+    """A TPAP or SSL-AES hash carries plaintext, so ssl can rederive its own."""
+    transport = SslTransport(
+        config=DeviceConfig("127.0.0.1", credentials_hash=plaintext_hash(CREDENTIALS))
+    )
+
+    assert transport._login_params == SslTransport._get_login_params(
+        transport, CREDENTIALS
+    )
+
+
 async def test_klap_ignores_a_malformed_credentials_hash():
     """A hash that is not even base64 is treated as absent."""
     transport = KlapTransportV2(

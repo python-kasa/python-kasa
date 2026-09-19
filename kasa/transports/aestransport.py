@@ -20,12 +20,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from yarl import URL
 
-from kasa.credentials import (
-    DEFAULT_CREDENTIALS,
-    Credentials,
-    _credentials_from_plaintext_hash,
-    get_default_credentials,
-)
+from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
 from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import (
     SMART_AUTHENTICATION_ERRORS,
@@ -91,16 +86,6 @@ class AesTransport(BaseTransport):
         super().__init__(config=config)
 
         self._login_version = config.connection_type.login_version
-        # A hash another transport produced is not a bad password.
-        if self._credentials_hash and not self._is_transport_credentials_hash(
-            self._credentials_hash
-        ):
-            if not self._credentials:
-                self._credentials = _credentials_from_plaintext_hash(
-                    self._credentials_hash
-                )
-            self._credentials_hash = None
-
         if (
             not self._credentials or self._credentials.username is None
         ) and not self._credentials_hash:
@@ -146,8 +131,8 @@ class AesTransport(BaseTransport):
             return None
         return base64.b64encode(json_dumps(self._login_params).encode()).decode()
 
-    @staticmethod
-    def _is_transport_credentials_hash(credentials_hash: str) -> bool:
+    @classmethod
+    def is_transport_credentials_hash(cls, credentials_hash: str) -> bool:
         """Whether the hash has the shape this transport produces."""
         try:
             decoded = json_loads(base64.b64decode(credentials_hash.encode()))

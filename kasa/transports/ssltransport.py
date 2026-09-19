@@ -69,12 +69,6 @@ class SslTransport(BaseTransport):
     ) -> None:
         super().__init__(config=config)
 
-        # A hash another transport produced is not a bad password.
-        if self._credentials_hash and not self._is_transport_credentials_hash(
-            self._credentials_hash
-        ):
-            self._credentials_hash = None
-
         if (
             not self._credentials or self._credentials.username is None
         ) and not self._credentials_hash:
@@ -109,8 +103,8 @@ class SslTransport(BaseTransport):
         """The hashed credentials used by the transport."""
         return base64.b64encode(json_dumps(self._login_params).encode()).decode()
 
-    @staticmethod
-    def _is_transport_credentials_hash(credentials_hash: str) -> bool:
+    @classmethod
+    def is_transport_credentials_hash(cls, credentials_hash: str) -> bool:
         """Whether the hash has the shape this transport produces."""
         try:
             decoded = json_loads(base64.b64decode(credentials_hash.encode()))
