@@ -480,6 +480,12 @@ class FakeSmartTransport(BaseTransport):
                     info["get_on_off_gradually_info"]["off_state"]["duration"] = (
                         off_state["duration"]
                     )
+        elif (change_state := params.get("change_state")) and (
+            "get_on_off_gradually_info" in info
+        ):
+            info["get_on_off_gradually_info"]["change_state"]["enable"] = change_state[
+                "enable"
+            ]
         return {"error_code": 0}
 
     def _set_dynamic_light_effect(self, info, params):
