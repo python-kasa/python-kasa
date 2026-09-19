@@ -162,6 +162,24 @@ class KlapTransport(BaseTransport):
             return None
         return base64.b64encode(self._local_auth_hash).decode()
 
+    @classmethod
+    def is_transport_credentials_hash(cls, credentials_hash: str) -> bool:
+        """Whether the hash has the shape this transport produces.
+
+        A klap hash is the base64 of a raw digest, so it is the right length
+        and, unlike the json hashes other transports store, not decodable.
+        """
+        try:
+            decoded = base64.b64decode(credentials_hash.encode(), validate=True)
+        except ValueError:
+            return False
+        if len(decoded) != len(cls.generate_auth_hash(Credentials())):
+            return False
+        try:
+            return not isinstance(json_loads(decoded), dict)
+        except (ValueError, UnicodeDecodeError):
+            return True
+
     async def perform_handshake1(self) -> tuple[bytes, bytes, bytes]:
         """Perform handshake1."""
         local_seed: bytes = secrets.token_bytes(16)
