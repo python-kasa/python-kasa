@@ -194,6 +194,14 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             "encrypt_type", discovery_result.get("encrypt_info", {}).get("sym_schm")
         )
 
+        if (
+            encrypt_type is None
+            and discovery_result.get("encrypt_type")
+            and "3" in discovery_result.get("encrypt_type")
+            and not discovery_result.get("encrypt_info")
+        ):
+            encrypt_type = "AES"
+
         if not (login_version := discovery_result["mgt_encrypt_schm"].get("lv")) and (
             et := discovery_result.get("encrypt_type")
         ):
