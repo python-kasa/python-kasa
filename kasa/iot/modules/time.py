@@ -35,7 +35,7 @@ class Time(IotModule, TimeInterface):
         If the configured zone is not available on this host, compute the device's
         current UTC offset and choose a best-match available zone, preferring DST-
         observing candidates when the original index implies DST. As a last resort,
-        use a fixed-offset timezone.
+        use a fixed-offset timezone. If the device clock is not set, use UTC.
         """
         if res := self.data.get("get_timezone"):
             idx = res.get("index")
@@ -58,6 +58,11 @@ class Time(IotModule, TimeInterface):
             now_utc = datetime.now(UTC)
             delta = device_local - now_utc.replace(tzinfo=None)
             rounded = timedelta(seconds=60 * round(delta.total_seconds() / 60))
+            # UTC offsets range from -12h to +14h, anything beyond that means the
+            # device clock is not set (e.g. before provisioning).
+            if abs(rounded) > timedelta(hours=14):
+                self._timezone = UTC
+                return
 
             dst_expected = None
             if res := self.data.get("get_timezone"):
