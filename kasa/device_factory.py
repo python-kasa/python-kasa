@@ -104,9 +104,20 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> Device:
     device_class: type[Device] | None
     device: Device | None = None
 
-    if isinstance(protocol, IotProtocol) and isinstance(
-        protocol._transport, XorTransport
-    ):
+    if isinstance(protocol, IotProtocol):
+        # IOT device families (e.g. IOT.SMARTPLUGSWITCH) cover multiple device
+        # classes — a single family may resolve to IotPlug, IotDimmer,
+        # IotWallSwitch, or IotStrip. `get_device_class_from_family` can only
+        # return one class per family, so it always picks IotPlug for the
+        # SMARTPLUGSWITCH family, misclassifying dimmers and wall switches
+        # (which then lose their Light module / brightness support).
+        #
+        # Query sysinfo up front so we can dispatch via
+        # `get_device_class_from_sys_info`, which inspects `dev_name` and
+        # returns the correct DeviceType. This applies to both XOR and KLAP
+        # transports; if authentication fails for KLAP, `protocol.query` will
+        # raise the same error `device.update()` would have raised below, so
+        # no new failure modes are introduced.
         info = await protocol.query(GET_SYSINFO_QUERY)
         _perf_log(True, "get_sysinfo")
         device_class = get_device_class_from_sys_info(info)
