@@ -274,6 +274,20 @@ class SslAesTransport(BaseTransport):
             _LOGGER.debug(msg)
             raise _RetryableError(msg)
 
+        if status_code == 401:
+            # The camera dropped the session (a C220 on 1.4.4 does this about
+            # every ten minutes): handshake again and retry the request.
+            _LOGGER.debug(
+                "Device %s replied with status 401 to passthrough, "
+                "session expired, handshake required",
+                self._host,
+            )
+            self._state = TransportState.HANDSHAKE_REQUIRED
+            raise _RetryableError(
+                f"{self._host} responded with status 401 to passthrough, "
+                "session expired"
+            )
+
         if status_code != 200:
             raise KasaException(
                 f"{self._host} responded with an unexpected "
