@@ -31,6 +31,8 @@ from kasa.device_factory import (
 from kasa.deviceconfig import (
     DeviceConfig,
     DeviceConnectionParameters,
+    DeviceEncryptionType,
+    DeviceFamily,
 )
 from kasa.discover import (
     DiscoveryResult,
@@ -749,3 +751,29 @@ async def test_discovery_device_repr(discovery_mock, mocker):
         assert "update() needed" not in repr_
     else:
         assert "update() needed" in repr_
+
+
+async def test_connection_parameters_from_encrypt_type_list_only():
+    """Cameras that send only the encrypt_type list are treated as AES login."""
+    result = {
+        "device_type": "SMART.IPCAMERA",
+        "device_model": "C460",
+        "device_id": "0000000000000000000000000000000000000000",
+        "ip": "127.0.0.123",
+        "mac": "7C-F1-7E-00-00-00",
+        "mgt_encrypt_schm": {"is_support_https": True},
+        "encrypt_type": ["3"],
+        "firmware_version": "1.2.2 Build 260416 Rel.13928n",
+        "hardware_version": "1.0",
+    }
+    params = Discover._get_connection_parameters(DiscoveryResult.from_dict(result))
+
+    assert params.device_family is DeviceFamily.SmartIpCamera
+    assert params.encryption_type is DeviceEncryptionType.Aes
+    assert params.login_version == 3
+    assert params.https is True
+
+    # Without the "3" hint the device is still reported as unsupported
+    result["encrypt_type"] = ["9"]
+    with pytest.raises(UnsupportedDeviceError, match="no encryption type"):
+        Discover._get_connection_parameters(DiscoveryResult.from_dict(result))
