@@ -104,9 +104,10 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> Device:
     device_class: type[Device] | None
     device: Device | None = None
 
-    if isinstance(protocol, IotProtocol) and isinstance(
-        protocol._transport, XorTransport
-    ):
+    if isinstance(protocol, IotProtocol) and config.connection_type.device_family in {
+        DeviceFamily.IotSmartPlugSwitch,
+        DeviceFamily.IotSmartBulb,
+    }:
         info = await protocol.query(GET_SYSINFO_QUERY)
         _perf_log(True, "get_sysinfo")
         device_class = get_device_class_from_sys_info(info)
@@ -215,6 +216,19 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
         and ctype.encryption_type is DeviceEncryptionType.Aes
     ):
         return SmartProtocol(transport=SslTransport(config=config))
+
+    # Some IOT devices advertise KLAP with login_version >= 2 and require
+    # KlapTransportV2 despite using an IOT device family.
+    if (
+        ctype.device_family
+        in {
+            DeviceFamily.IotSmartPlugSwitch,
+            DeviceFamily.IotSmartBulb,
+        }
+        and ctype.encryption_type is DeviceEncryptionType.Klap
+        and (ctype.login_version or 1) >= 2
+    ):
+        return IotProtocol(transport=KlapTransportV2(config=config))
 
     protocol_transport_key = (
         protocol_name
