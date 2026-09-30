@@ -239,4 +239,10 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
     if not (prot_tran_cls := supported_device_protocols.get(protocol_transport_key)):
         return None
     protocol_cls, transport_cls = prot_tran_cls
+    if (
+        protocol_transport_key == "IOT.KLAP"
+        and ctype.login_version
+        and ctype.login_version >= 2
+    ):
+        transport_cls = KlapTransportV2
     return protocol_cls(transport=transport_cls(config=config))
