@@ -62,6 +62,7 @@ class DeviceEncryptionType(Enum):
     Klap = "KLAP"
     Aes = "AES"
     Xor = "XOR"
+    Dlklap = "DLKLAP"
 
 
 class DeviceFamily(Enum):
@@ -81,6 +82,7 @@ class DeviceFamily(Enum):
     SmartTapoRobovac = "SMART.TAPOROBOVAC"
     SmartTapoChime = "SMART.TAPOCHIME"
     SmartTapoDoorbell = "SMART.TAPODOORBELL"
+    SmartTapoLock = "SMART.TAPOLOCK"
 
 
 class _DeviceConfigBaseMixin(DataClassJSONMixin):

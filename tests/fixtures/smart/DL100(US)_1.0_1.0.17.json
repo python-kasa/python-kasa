@@ -1,0 +1,83 @@
+{
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 2
+            },
+            {
+                "id": "device_local_time",
+                "ver_code": 1
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 1
+            },
+            {
+                "id": "wireless",
+                "ver_code": 1
+            },
+            {
+                "id": "cloud_connect",
+                "ver_code": 1
+            }
+        ]
+    },
+    "discovery_result": {
+        "error_code": 0,
+        "result": {
+            "device_id": "0000000000000000000000000000000000000000",
+            "device_model": "DL100(US)",
+            "device_name": "#MASKED_NAME#",
+            "device_type": "SMART.TAPOLOCK",
+            "factory_default": false,
+            "ip": "127.0.0.123",
+            "is_support_iot_cloud": true,
+            "mac": "50-3D-D1-00-00-00",
+            "mgt_encrypt_schm": {
+                "encrypt_type": "DLKLAP",
+                "http_port": 80,
+                "is_support_https": false
+            },
+            "obd_src": "tplink",
+            "owner": "00000000000000000000000000000000",
+            "protocol_version": 1
+        }
+    },
+    "get_connect_cloud_state": {
+        "status": 0
+    },
+    "get_device_info": {
+        "at_low_battery": false,
+        "battery_percentage": 81,
+        "device_id": "0000000000000000000000000000000000000000",
+        "fw_id": "00000000000000000000000000000000",
+        "fw_ver": "1.0.17 Build 260417 Rel.082002",
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.0",
+        "ip": "127.0.0.123",
+        "lang": "en_US",
+        "lock_status": 0,
+        "mac": "50-3D-D1-00-00-00",
+        "model": "DL100",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
+        "oem_id": "00000000000000000000000000000000",
+        "overheated": false,
+        "region": "America/Los_Angeles",
+        "rssi": -40,
+        "signal_level": 3,
+        "ssid": "I01BU0tFRF9TU0lEIw==",
+        "time_diff": -480,
+        "type": "SMART.TAPOLOCK",
+        "wifi_mode_status": 1
+    },
+    "get_device_time": {
+        "region": "America/Los_Angeles",
+        "time_diff": -480,
+        "timestamp": 1782000000
+    }
+}
