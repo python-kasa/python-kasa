@@ -1,4 +1,5 @@
 import copy
+from datetime import datetime, timedelta
 from json import loads as json_loads
 from warnings import warn
 
@@ -587,6 +588,45 @@ class FakeSmartTransport(BaseTransport):
     def get_child_device_queries(self, method, params):
         return self._get_method_from_info(method, params)
 
+    def _get_energy_data(self, params):
+        """Generate a synthetic get_energy_data response for tests.
+
+        Buckets are calendar-aligned to match device behaviour: interval
+        43200 yields one value per month, 1440 one value per day, within
+        [start_timestamp, end_timestamp). Values are deterministic so tests
+        can assert the mapping: month buckets are ``month * 1000`` Wh and day
+        buckets are ``day_of_year * 10`` Wh.
+        """
+        start = params["start_timestamp"]
+        end = params["end_timestamp"]
+        interval = params["interval"]
+        start_dt = datetime.fromtimestamp(start)
+        end_dt = datetime.fromtimestamp(end)
+
+        data: list[int] = []
+        if interval >= 43200:  # monthly
+            cur = datetime(start_dt.year, start_dt.month, 1)
+            while cur < end_dt:
+                data.append(cur.month * 1000)
+                if cur.month == 12:
+                    cur = datetime(cur.year + 1, 1, 1)
+                else:
+                    cur = datetime(cur.year, cur.month + 1, 1)
+        else:  # daily
+            cur = datetime(start_dt.year, start_dt.month, start_dt.day)
+            while cur < end_dt:
+                data.append(cur.timetuple().tm_yday * 10)
+                cur += timedelta(days=1)
+
+        result = {
+            "start_timestamp": start,
+            "end_timestamp": end,
+            "interval": interval,
+            "data": data,
+            "local_time": start_dt.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        return {"result": result, "error_code": 0}
+
     def _get_method_from_info(self, method, params):
         result = copy.deepcopy(self.info[method])
         if result and "start_index" in result and "sum" in result:
@@ -624,6 +664,15 @@ class FakeSmartTransport(BaseTransport):
 
         params = request_dict.get("params", {})
         if method in {"component_nego", "qs_component_nego"} or method[:3] == "get":
+            # get_energy_data is parameterized (timestamp window + interval) so
+            # it is generated rather than served from a static fixture blob.
+            if (
+                method == "get_energy_data"
+                and not self.verbatim
+                and "energy_monitoring" in self.components
+            ):
+                return self._get_energy_data(params)
+
             # These methods are handled in get_child_device_query so it can be
             # patched for tests to simulate dynamic devices.
             if (

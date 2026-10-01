@@ -43,7 +43,7 @@ from kasa.cli.time import time
 from kasa.cli.usage import energy
 from kasa.cli.wifi import wifi
 from kasa.discover import Discover, DiscoveryResult, redact_data
-from kasa.iot import IotDevice
+from kasa.interfaces.energy import Energy as EnergyInterface
 from kasa.json import dumps as json_dumps
 from kasa.smart import SmartDevice
 from kasa.smartcam import SmartCamDevice
@@ -560,24 +560,21 @@ async def test_emeter(dev: Device, mocker, runner):
             assert "Voltage: 122.066 V" in res.output
             assert child_status.call_count == 2
 
-    if isinstance(dev, IotDevice):
+    supports_stats = energy.supports(EnergyInterface.ModuleFeature.PERIODIC_STATS)
+    if supports_stats:
         monthly = mocker.patch.object(energy, "get_monthly_stats")
         monthly.return_value = {1: 1234}
     res = await runner.invoke(cli, [*base_cmd, "--year", "1900"], obj=dev)
-    if not isinstance(dev, IotDevice):
+    if not supports_stats:
         assert "Device does not support historical statistics" in res.output
         return
     assert "For year" in res.output
     assert "1, 1234" in res.output
     monthly.assert_called_with(year=1900)
 
-    if isinstance(dev, IotDevice):
-        daily = mocker.patch.object(energy, "get_daily_stats")
-        daily.return_value = {1: 1234}
+    daily = mocker.patch.object(energy, "get_daily_stats")
+    daily.return_value = {1: 1234}
     res = await runner.invoke(cli, [*base_cmd, "--month", "1900-12"], obj=dev)
-    if not isinstance(dev, IotDevice):
-        assert "Device has no historical statistics" in res.output
-        return
     assert "For month" in res.output
     assert "1, 1234" in res.output
     daily.assert_called_with(year=1900, month=12)
