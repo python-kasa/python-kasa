@@ -13,7 +13,14 @@ from typing import TYPE_CHECKING, Any, TypeAlias, cast
 from ..device import Device, DeviceInfo, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
+from ..exceptions import (
+    SUPPORTED_OBD_SRCS,
+    AuthenticationError,
+    DeviceError,
+    KasaException,
+    SmartErrorCode,
+    UnsupportedAuthenticationError,
+)
 from ..feature import Feature
 from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
@@ -263,6 +270,20 @@ class SmartDevice(Device):
         if self.credentials is None and self.credentials_hash is None:
             raise AuthenticationError("Tapo plug requires authentication.")
 
+        try:
+            await self._update(update_children)
+        except AuthenticationError as ex:
+            obd_src = self._discovery_info and self._discovery_info.get("obd_src")
+            if obd_src and obd_src not in SUPPORTED_OBD_SRCS:
+                raise UnsupportedAuthenticationError(
+                    f"Device at {self.host} uses unsupported onboarding '{obd_src}'.",
+                    discovery_result=self._discovery_info,
+                    host=self.host,
+                ) from ex
+            raise
+
+    async def _update(self, update_children: bool = True) -> None:
+        """Update implementation."""
         first_update = self._last_update_time is None
         now = time.monotonic()
         self._last_update_time = now
