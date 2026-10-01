@@ -274,9 +274,9 @@ class SslAesTransport(BaseTransport):
             _LOGGER.debug(msg)
             raise _RetryableError(msg)
 
+        # Some devices answer 401 when the session has expired and they
+        # require a new handshake: reauthenticate and retry the request.
         if status_code == 401:
-            # The camera dropped the session (a C220 on 1.4.4 does this about
-            # every ten minutes): handshake again and retry the request.
             _LOGGER.debug(
                 "Device %s replied with status 401 to passthrough, "
                 "session expired, handshake required",
