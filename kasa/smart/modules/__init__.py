@@ -29,6 +29,7 @@ from .light import Light
 from .lighteffect import LightEffect
 from .lightpreset import LightPreset
 from .lightstripeffect import LightStripEffect
+from .lightstripsegment import LightStripSegment
 from .lighttransition import LightTransition
 from .matter import Matter
 from .mop import Mop
@@ -83,6 +84,7 @@ __all__ = [
     "SmartLightEffect",
     "PowerProtection",
     "OverheatProtection",
+    "LightStripSegment",
     "Speaker",
     "HomeKit",
     "Matter",
