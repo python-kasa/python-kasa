@@ -148,6 +148,15 @@ class SslAesTransport(BaseTransport):
         ch = {"un": credentials.username, "pwd": credentials.password}
         return base64.b64encode(json_dumps(ch).encode()).decode()
 
+    @classmethod
+    def is_transport_credentials_hash(cls, credentials_hash: str) -> bool:
+        """Whether the hash has the shape this transport produces."""
+        try:
+            decoded = json_loads(base64.b64decode(credentials_hash.encode()))
+        except (ValueError, UnicodeDecodeError):
+            return False
+        return isinstance(decoded, dict) and "un" in decoded and "pwd" in decoded
+
     @property
     def credentials_hash(self) -> str | None:
         """The hashed credentials used by the transport."""
