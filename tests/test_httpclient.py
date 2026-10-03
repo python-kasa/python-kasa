@@ -1,3 +1,4 @@
+import builtins
 import re
 
 import aiohttp
@@ -35,6 +36,13 @@ from kasa.httpclient import HttpClient
             TimeoutError,
             "Unable to query the device, timed out: ",
         ),
+        # aiohttp raises the builtin TimeoutError when ClientTimeout(total=...)
+        # expires after the connection is established.
+        (
+            builtins.TimeoutError(),
+            TimeoutError,
+            "Unable to query the device, timed out: ",
+        ),
         (Exception(), KasaException, "Unable to query the device: "),
         (
             aiohttp.ServerFingerprintMismatch(b"exp", b"got", "host", 1),
@@ -47,6 +55,7 @@ from kasa.httpclient import HttpClient
         "ClientOSError",
         "ServerTimeoutError",
         "TimeoutError",
+        "BuiltinTimeoutError",
         "Exception",
         "ServerFingerprintMismatch",
     ),
