@@ -274,6 +274,20 @@ class SslAesTransport(BaseTransport):
             _LOGGER.debug(msg)
             raise _RetryableError(msg)
 
+        # Some devices answer 401 when the session has expired and they
+        # require a new handshake: reauthenticate and retry the request.
+        if status_code == 401:
+            _LOGGER.debug(
+                "Device %s replied with status 401 to passthrough, "
+                "session expired, handshake required",
+                self._host,
+            )
+            self._state = TransportState.HANDSHAKE_REQUIRED
+            raise _RetryableError(
+                f"{self._host} responded with status 401 to passthrough, "
+                "session expired"
+            )
+
         if status_code != 200:
             raise KasaException(
                 f"{self._host} responded with an unexpected "

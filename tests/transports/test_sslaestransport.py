@@ -797,3 +797,24 @@ class MockSslAesDevice:
 
     def put_next_response(self, request: dict | bytes) -> None:
         self._next_responses.append(request)
+
+
+async def test_passthrough_401_requires_new_handshake(mocker):
+    """A 401 on passthrough means the session expired: retryable, new handshake."""
+    host = "127.0.0.1"
+    mock_ssl_aes_device = MockSslAesDevice(host)
+    mocker.patch.object(
+        aiohttp.ClientSession, "post", side_effect=mock_ssl_aes_device.post
+    )
+    transport = SslAesTransport(
+        config=DeviceConfig(host, credentials=Credentials(MOCK_USER, MOCK_PWD))
+    )
+    request = {"method": "getDeviceInfo", "params": None}
+
+    await transport.perform_handshake()
+    assert transport._state is TransportState.ESTABLISHED
+
+    mock_ssl_aes_device.status_code = 401
+    with pytest.raises(_RetryableError, match="session expired"):
+        await transport.send(json_dumps(request))
+    assert transport._state is TransportState.HANDSHAKE_REQUIRED
