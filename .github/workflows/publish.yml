@@ -29,7 +29,7 @@ jobs:
     - name: Build Packages
       id: build-packages
       shell: bash
-      run: uv build
+      run: uv build --build-constraints .github/build-constraints.txt
 
     - name: Publish Release on PyPI
       id: publish-release-on-pypi
