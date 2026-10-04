@@ -31,7 +31,7 @@ from .modules import (
 )
 
 
-class BehaviorMode(str, Enum):
+class BehaviorMode(str, Enum):  # noqa: UP042 TODO: revisit, StrEnum changes str() output
     """Enum to present type of turn on behavior."""
 
     #: Return to the last state known state.
