@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import base64
 import logging
+from dataclasses import dataclass
 from datetime import timedelta
-from enum import IntEnum
+from enum import IntEnum, StrEnum
 from typing import Annotated, Literal
 
 from ...feature import Feature
@@ -12,6 +14,13 @@ from ...module import FeatureAttribute
 from ..smartmodule import SmartModule
 
 _LOGGER = logging.getLogger(__name__)
+
+# Only known value for start_type in setSwitchClean; required for
+# targeted cleaning modes (Room) but not for StandardHome.
+_START_TYPE_DEFAULT = 1
+
+# Only known value for the type parameter in getMapData.
+_MAP_DATA_TYPE_DEFAULT = 0
 
 
 class Status(IntEnum):
@@ -56,6 +65,65 @@ class FanSpeed(IntEnum):
     Turbo = 3
     Max = 4
     Ultra = 5
+
+
+class CleanMode(IntEnum):
+    """Clean mode for ``setSwitchClean`` and ``getCleanStatus``.
+
+    Used as ``clean_mode`` in commands and ``clean_status`` in status responses.
+    """
+
+    #: Clean all rooms with uniform settings.
+    StandardHome = 0
+    #: Clean all rooms with per-room settings and custom order.
+    AdvancedHome = 1
+    #: Clean a small area around the vacuum's current position.
+    Spot = 2
+    #: Clean selected rooms only.
+    Room = 3
+    #: Clean user-defined rectangular areas.
+    Zone = 4
+    #: Run a saved custom cleaning preset.
+    Custom = 5
+
+
+@dataclass
+class CleanAreaSettings:
+    """Per-area cleaning settings shared by rooms and zones."""
+
+    #: Suction power level, or ``None`` when not configured per-area.
+    suction: FanSpeed | None = None
+    #: Water level for mopping.
+    cistern: int = 0
+    #: Number of cleaning passes.
+    clean_number: int = 0
+
+
+@dataclass
+class RoomInfo(CleanAreaSettings):
+    """Information about a room on the vacuum's map."""
+
+    #: Room ID used in cleaning commands.
+    id: int = 0
+    #: Human-readable room name (base64-decoded from the device).
+    name: str | None = None
+    #: Color index used for map rendering.
+    color: int = 0
+
+
+class AreaType(StrEnum):
+    """Type of area entry in map data."""
+
+    #: A named room.
+    Room = "room"
+    #: A user-defined rectangular cleaning zone.
+    Area = "area"
+    #: A virtual wall boundary.
+    VirtualWall = "virtual_wall"
+    #: A no-go zone.
+    Forbid = "forbid"
+    #: A detected carpet region.
+    CarpetRectangle = "carpet_rectangle"
 
 
 class AreaUnit(IntEnum):
@@ -263,6 +331,7 @@ class Clean(SmartModule):
             "getBatteryInfo": {},
             "getCleanStatus": {},
             "getCleanAttr": {"type": "global"},
+            "getMapInfo": {},
         }
 
     async def start(self) -> dict:
@@ -275,7 +344,7 @@ class Clean(SmartModule):
         return await self.call(
             "setSwitchClean",
             {
-                "clean_mode": 0,
+                "clean_mode": CleanMode.StandardHome,
                 "clean_on": True,
                 "clean_order": True,
                 "force_clean": False,
@@ -409,3 +478,102 @@ class Clean(SmartModule):
     async def set_clean_count(self, count: int) -> Annotated[dict, FeatureAttribute()]:
         """Set number of times to clean."""
         return await self._change_setting("clean_number", count)
+
+    @property
+    def current_map_id(self) -> int:
+        """Return the ID of the currently active map."""
+        return self.data["getMapInfo"]["current_map_id"]
+
+    @property
+    def current_map_name(self) -> str | None:
+        """Return the name of the currently active map, or ``None``."""
+        map_info = self.data["getMapInfo"]
+        current_id = map_info["current_map_id"]
+        for m in map_info.get("map_list", []):
+            if m.get("map_id") == current_id:
+                if raw_name := m.get("map_name"):
+                    try:
+                        return base64.b64decode(raw_name).decode()
+                    except Exception:
+                        return raw_name
+                return None
+        return None
+
+    @property
+    def clean_type(self) -> CleanMode | None:
+        """Return the active cleaning mode, or ``None`` if unavailable."""
+        cs = self.data.get("getCleanStatus")
+        if cs is None or "clean_status" not in cs:
+            return None
+        return CleanMode(cs["clean_status"])
+
+    async def clean_rooms(
+        self, room_ids: list[int], *, map_id: int | None = None
+    ) -> dict:
+        """Start cleaning specific rooms.
+
+        Per-room settings are not supported; the device uses the global
+        suction / cistern / clean_number values for room cleaning.
+
+        :param room_ids: List of room IDs to clean.
+        :param map_id: Map ID to clean on. Defaults to the current active map.
+        """
+        if not room_ids:
+            raise ValueError("room_ids must not be empty")
+        if map_id is None:
+            map_id = self.current_map_id
+        return await self.call(
+            "setSwitchClean",
+            {
+                "clean_mode": CleanMode.Room,
+                "clean_on": True,
+                "clean_order": True,
+                "force_clean": False,
+                "map_id": map_id,
+                "room_list": list(room_ids),
+                "start_type": _START_TYPE_DEFAULT,
+            },
+        )
+
+    async def get_rooms(self, map_id: int | None = None) -> list[RoomInfo]:
+        """Return the list of rooms for the given map.
+
+        Room names are base64-decoded when present.
+
+        :param map_id: Map ID to query. Defaults to the current active map.
+        """
+        if map_id is None:
+            map_id = self.current_map_id
+        resp = await self.call(
+            "getMapData", {"map_id": map_id, "type": _MAP_DATA_TYPE_DEFAULT}
+        )
+        map_data = resp.get("getMapData", resp)
+
+        rooms: list[RoomInfo] = []
+        for area in map_data.get("area_list", []):
+            if area.get("type") != AreaType.Room:
+                _LOGGER.debug(
+                    "Skipping non-room area: type=%s, id=%s",
+                    area.get("type"),
+                    area.get("id"),
+                )
+                continue
+            name = None
+            if raw_name := area.get("name"):
+                try:
+                    name = base64.b64decode(raw_name).decode()
+                except Exception:
+                    name = raw_name
+
+            suction_val = area.get("suction")
+            rooms.append(
+                RoomInfo(
+                    id=area["id"],
+                    name=name,
+                    color=area.get("color", 0),
+                    suction=FanSpeed(suction_val) if suction_val else None,
+                    cistern=area.get("cistern", 0),
+                    clean_number=area.get("clean_number", 0),
+                )
+            )
+        return rooms

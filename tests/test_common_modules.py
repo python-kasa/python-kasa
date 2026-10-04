@@ -16,6 +16,8 @@ from kasa.module import _get_feature_attribute
 from .device_fixtures import (
     bulb_iot,
     bulb_smart,
+    device_iot,
+    device_smart,
     dimmable_iot,
     dimmer_iot,
     get_parent_and_child_modules,
@@ -63,6 +65,7 @@ light_preset_smart = parametrize(
 light_preset = parametrize_combine([light_preset_smart, bulb_iot])
 
 light = parametrize_combine([bulb_smart, bulb_iot, dimmable])
+time = parametrize_combine([device_smart, device_iot])
 
 temp_control_smart = parametrize(
     "has temp control smart",
@@ -422,6 +425,7 @@ async def test_thermostat(dev: Device, mocker: MockerFixture):
     assert therm_mod.temperature_unit == "fahrenheit"
 
 
+@time
 async def test_set_time(dev: Device):
     """Test setting the device time."""
     time_mod = dev.modules[Module.Time]
@@ -507,6 +511,40 @@ async def test_time_post_update_uses_offset_when_index_missing_unit(
     mock_guess.assert_awaited_once()
     # timezone should be set to a valid tzinfo after fallback
     assert inst.timezone.utcoffset(now) == timedelta(0)
+
+
+@device_iot
+async def test_time_post_update_unsynced_clock_uses_utc(
+    dev: Device, mocker: MockerFixture
+):
+    """Fall back to UTC when the device clock is not set.
+
+    An unprovisioned device can report e.g. year 2000, which is no valid UTC offset
+    away from the host time, so the offset-based guess must not be attempted.
+    """
+    from zoneinfo import ZoneInfoNotFoundError
+
+    proto = dev.protocol._transport.proto  # type: ignore[attr-defined]
+    for target in ("time", "smartlife.iot.common.timesetting"):
+        if target in proto:
+            proto[target]["get_time"] = {
+                "year": 2000,
+                "month": 1,
+                "mday": 1,
+                "hour": 2,
+                "min": 45,
+                "sec": 0,
+            }
+    # Force the offset-based path, as when the zone is not available on the host
+    mocker.patch(
+        "kasa.iot.modules.time.get_timezone",
+        new=AsyncMock(side_effect=ZoneInfoNotFoundError("missing on host")),
+    )
+
+    await dev.update()
+    time_mod = dev.modules[Module.Time]
+    assert time_mod.timezone is UTC
+    assert time_mod.time.year == 2000
 
 
 async def test_time_get_time_exception_returns_none_unit(mocker: MockerFixture):

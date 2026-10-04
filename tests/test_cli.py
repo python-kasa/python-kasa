@@ -481,6 +481,7 @@ async def test_time_sync(dev, mocker, runner):
     assert "New time: " in res.output
 
 
+@parametrize_combine([device_smart, device_iot])
 async def test_time_set(dev: Device, mocker, runner):
     """Test time set command."""
     time_mod = dev.modules[Module.Time]
