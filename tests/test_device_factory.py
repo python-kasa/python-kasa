@@ -300,14 +300,11 @@ async def test_get_protocol(
 
 
 async def test_connect_iot_klap_dimmer_classification(mocker):
-    """IOT dimmers reached via KLAP must resolve to IotDimmer, not IotPlug.
+    """Test that IOT dimmers reached via KLAP initialize IotDimmer.
 
     Regression test for the bug where `_connect` only queried sysinfo for
     IOT devices reached via XorTransport, so KLAP-authenticated
-    IOT.SMARTPLUGSWITCH devices were always classified as IotPlug via
-    `get_device_class_from_family`. That misses dimmers (HS220, HS200 with
-    dimmer firmware), wall switches, and strips, which then load in Home
-    Assistant without their Light / brightness modules.
+    IOT.SMARTPLUGSWITCH devices were always classified incorrectly as IotPlugs.
     """
     dimmer_sysinfo = {
         "system": {
