@@ -5,18 +5,47 @@ from __future__ import annotations
 import base64
 import logging
 from datetime import UTC, datetime, timedelta
+from typing import NotRequired, TypedDict
 from unittest.mock import AsyncMock, PropertyMock, patch
 from zoneinfo import ZoneInfo
 
 import pytest
 from freezegun.api import FrozenDateTimeFactory
 
-from kasa import Device, DeviceType, Module
+from kasa import Credentials, Device, DeviceType, Module
+from kasa.credentials import DEFAULT_CREDENTIALS, get_default_credentials
 from kasa.exceptions import AuthenticationError, DeviceError, KasaException
 from kasa.smartcam import SmartCamDevice
 from kasa.smartcam.modules.time import Time
 
 from ..conftest import device_smartcam, hub_smartcam
+
+
+class _ChangeAdminPasswordPayload(TypedDict):
+    secname: str
+    username: str
+    old_passwd: str
+    passwd: str
+    ciphertext: str
+    encrypt_type: NotRequired[str]
+
+
+class _UserManagementPayload(TypedDict):
+    change_admin_password: _ChangeAdminPasswordPayload
+
+
+class _ChangeAdminPasswordRequest(TypedDict):
+    user_management: _UserManagementPayload
+
+
+class _SmartCamPasswordRequest(TypedDict):
+    changeAdminPassword: _ChangeAdminPasswordRequest
+
+
+def _change_admin_password_payload(
+    payload: _SmartCamPasswordRequest,
+) -> _ChangeAdminPasswordPayload:
+    return payload["changeAdminPassword"]["user_management"]["change_admin_password"]
 
 
 @device_smartcam
@@ -307,3 +336,189 @@ async def test_wifi_join_typeerror_on_non_rsa_key(dev: SmartCamDevice) -> None:
             ),
         ):
             await dev.wifi_join("TestSSID", "password123")
+
+
+@device_smartcam
+async def test_update_credentials_non_lv3_request(dev: SmartCamDevice) -> None:
+    dev.config.connection_type.login_version = 2
+
+    query_mock = AsyncMock(return_value={})
+    with (
+        patch.object(type(dev), "credentials", new_callable=PropertyMock) as cred_mock,
+        patch.object(dev.protocol, "query", query_mock),
+        patch.object(
+            dev, "_encrypt_password", return_value="encrypted-ciphertext"
+        ) as encrypt_mock,
+    ):
+        cred_mock.return_value = Credentials(username="admin", password="old-password")  # noqa: S106
+        result = await dev.update_credentials("new-user", "new-password")
+
+    assert result == {}
+    encrypt_mock.assert_called_once()
+    query_mock.assert_awaited_once()
+    request: _SmartCamPasswordRequest = query_mock.await_args_list[0].args[0]
+    change_password_payload = _change_admin_password_payload(request)
+    assert change_password_payload["secname"] == "root"
+    assert change_password_payload["username"] == "admin"
+    assert change_password_payload["old_passwd"]
+    assert change_password_payload["passwd"]
+    assert change_password_payload["ciphertext"] == "encrypted-ciphertext"
+    assert "encrypt_type" not in change_password_payload
+    encrypt_mock.assert_called_once_with(change_password_payload["passwd"])
+
+
+@device_smartcam
+async def test_update_credentials_lv3_request(dev: SmartCamDevice) -> None:
+    dev.config.connection_type.login_version = 3
+
+    query_mock = AsyncMock(side_effect=[DeviceError("bad default"), {}])
+    with (
+        patch.object(type(dev), "credentials", new_callable=PropertyMock) as cred_mock,
+        patch.object(dev.protocol, "query", query_mock),
+        patch.object(
+            dev, "_encrypt_password", return_value="encrypted-ciphertext"
+        ) as encrypt_mock,
+    ):
+        cred_mock.return_value = Credentials(username="admin", password="old-password")  # noqa: S106
+        result = await dev.update_credentials("new-user", "new-password")
+
+    assert result == {}
+    assert encrypt_mock.call_count == 2
+    assert query_mock.await_count == 2
+    first_request: _SmartCamPasswordRequest = query_mock.await_args_list[0].args[0]
+    second_request: _SmartCamPasswordRequest = query_mock.await_args_list[1].args[0]
+    first_payload = _change_admin_password_payload(first_request)
+    second_payload = _change_admin_password_payload(second_request)
+    for payload in (first_payload, second_payload):
+        assert payload["secname"] == "root"
+        assert payload["username"] == "admin"
+        assert payload["old_passwd"]
+        assert payload["passwd"]
+        assert payload["ciphertext"] == "encrypted-ciphertext"
+        assert payload["encrypt_type"] == "3"
+    assert first_payload["old_passwd"] != second_payload["old_passwd"]
+    assert first_payload["passwd"] == second_payload["passwd"]
+
+
+@device_smartcam
+async def test_update_credentials_falls_back_to_current_password_when_default_fails(
+    dev: SmartCamDevice,
+) -> None:
+    dev.config.connection_type.login_version = 2
+
+    query_mock = AsyncMock(
+        side_effect=[DeviceError("bad default"), DeviceError("bad fallback"), {}]
+    )
+    with (
+        patch.object(type(dev), "credentials", new_callable=PropertyMock) as cred_mock,
+        patch.object(dev.protocol, "query", query_mock),
+        patch.object(dev, "_encrypt_password", return_value="encrypted-ciphertext"),
+    ):
+        cred_mock.return_value = Credentials(username="admin", password="old-password")  # noqa: S106
+        result = await dev.update_credentials("new-user@example.com", "new-password")
+
+    assert result == {}
+    assert query_mock.await_count == 3
+    request: _SmartCamPasswordRequest = query_mock.await_args_list[2].args[0]
+    change_password_payload = _change_admin_password_payload(request)
+    assert change_password_payload["old_passwd"]
+    assert change_password_payload["passwd"]
+
+
+@device_smartcam
+async def test_update_credentials_returns_last_error_after_candidates_fail(
+    dev: SmartCamDevice,
+) -> None:
+    dev.config.connection_type.login_version = 2
+
+    query_mock = AsyncMock(
+        side_effect=[
+            DeviceError("bad default"),
+            DeviceError("bad fallback"),
+            DeviceError("bad current"),
+        ]
+    )
+    with (
+        patch.object(type(dev), "credentials", new_callable=PropertyMock) as cred_mock,
+        patch.object(dev.protocol, "query", query_mock),
+        patch.object(dev, "_encrypt_password", return_value="encrypted-ciphertext"),
+    ):
+        cred_mock.return_value = Credentials(username="admin", password="old-password")  # noqa: S106
+        with pytest.raises(DeviceError, match="bad current"):
+            await dev.update_credentials("new-user@example.com", "new-password")
+
+    assert query_mock.await_count == 3
+
+
+@device_smartcam
+async def test_update_credentials_all_candidates_fail(dev: SmartCamDevice) -> None:
+    dev.config.connection_type.login_version = 2
+    error = DeviceError("always fails")
+    query_mock = AsyncMock(side_effect=error)
+    with (
+        patch.object(type(dev), "credentials", new_callable=PropertyMock) as cred_mock,
+        patch.object(dev.protocol, "query", query_mock),
+        patch.object(dev, "_encrypt_password", return_value="encrypted-ciphertext"),
+    ):
+        cred_mock.return_value = Credentials(username="admin", password="old-password")  # noqa: S106
+        with pytest.raises(DeviceError):
+            await dev.update_credentials("new-user@example.com", "new-password")
+    assert query_mock.await_count == 3
+
+
+@device_smartcam
+async def test_update_credentials_with_no_credentials(dev: SmartCamDevice) -> None:
+    dev.config.connection_type.login_version = 2
+    query_mock = AsyncMock(return_value={})
+    with (
+        patch.object(type(dev), "credentials", new_callable=PropertyMock) as cred_mock,
+        patch.object(dev.protocol, "query", query_mock),
+        patch.object(dev, "_encrypt_password", return_value="encrypted-ciphertext"),
+    ):
+        cred_mock.return_value = None
+        result = await dev.update_credentials("new-user@example.com", "new-password")
+
+    assert result == {}
+    # The matching default succeeds before any fallback candidate is attempted.
+    assert query_mock.await_count == 1
+    request: _SmartCamPasswordRequest = query_mock.await_args_list[0].args[0]
+    payload = _change_admin_password_payload(request)
+    assert payload["old_passwd"]
+
+
+@device_smartcam
+async def test_update_credentials_with_no_password_candidates(
+    dev: SmartCamDevice,
+) -> None:
+    with (
+        patch.object(dev, "_password_candidates", return_value=[]),
+        pytest.raises(
+            KasaException, match="Unable to determine current admin password."
+        ),
+    ):
+        await dev.update_credentials("new-user@example.com", "new-password")
+
+
+@device_smartcam
+async def test_update_credentials_current_password_equals_default(
+    dev: SmartCamDevice,
+) -> None:
+    dev.config.connection_type.login_version = 2
+    default_old_password = get_default_credentials(
+        DEFAULT_CREDENTIALS["TAPOCAMERA"]
+    ).password
+    query_mock = AsyncMock(return_value={})
+    with (
+        patch.object(type(dev), "credentials", new_callable=PropertyMock) as cred_mock,
+        patch.object(dev.protocol, "query", query_mock),
+        patch.object(dev, "_encrypt_password", return_value="encrypted-ciphertext"),
+    ):
+        # current password is same as default — should not be added a second time
+        cred_mock.return_value = Credentials(
+            username="admin", password=default_old_password
+        )
+        result = await dev.update_credentials("new-user@example.com", "new-password")
+
+    assert result == {}
+    # The matching default succeeds before the fallback default is attempted.
+    assert query_mock.await_count == 1
