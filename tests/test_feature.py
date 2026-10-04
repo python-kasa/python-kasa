@@ -86,13 +86,13 @@ def test_feature_value_container(mocker, dummy_feature: Feature):
     mock_dev_prop.assert_not_called()
 
 
-def test_feature_value_callable(dev, dummy_feature: Feature):
+def test_feature_value_callable(dummy_feature: Feature):
     """Verify that callables work as *attribute_getter*."""
     dummy_feature.attribute_getter = lambda x: "dummy value"
     assert dummy_feature.value == "dummy value"
 
 
-async def test_feature_setter(dev, mocker, dummy_feature: Feature):
+async def test_feature_setter(mocker, dummy_feature: Feature):
     """Verify that *set_value* calls the defined method."""
     mock_set_dummy = mocker.patch.object(
         dummy_feature.device, "set_dummy", create=True, new_callable=AsyncMock
