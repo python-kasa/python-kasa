@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import NamedTuple
 
 import pytest
+from pytest_mock import MockerFixture
 
 from kasa.device_type import DeviceType
 from kasa.iot import IotDevice
@@ -105,7 +106,7 @@ FIXTURE_DATA: list[FixtureInfo] = get_fixture_infos()
 
 
 def filter_fixtures(
-    desc,
+    desc: str,
     *,
     data_root_filter: str | None = None,
     protocol_filter: set[str] | None = None,
@@ -129,14 +130,9 @@ def filter_fixtures(
         if isinstance(model_filter, str):
             model_filter = {model_filter}
         assert isinstance(model_filter, set), "model filter must be a set"
-        model_filter_list = [mf for mf in model_filter]
-        if (
-            len(model_filter_list) == 1
-            and (model := model_filter_list[0])
-            and len(model.split("_")) == 3
-        ):
-            # filter string includes hw and fw, return exact match
-            return fixture_data.name == f"{model}.json"
+        fixture_base = fixture_data.name.removesuffix(".json")
+        if fixture_base in model_filter or fixture_data.name in model_filter:
+            return True
         file_model_region = fixture_data.name.split("_")[0]
         file_model = file_model_region.split("(")[0]
         return file_model in model_filter
@@ -226,7 +222,7 @@ def filter_fixtures(
     params=filter_fixtures("all fixture infos"),
     ids=idgenerator,
 )
-def fixture_info(request, mocker):
+def fixture_info(request: pytest.FixtureRequest, mocker: MockerFixture):
     """Return raw discovery file contents as JSON. Used for discovery tests."""
     fixture_info = request.param
     fixture_data = copy.deepcopy(fixture_info.data)

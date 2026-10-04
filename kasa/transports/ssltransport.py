@@ -103,6 +103,15 @@ class SslTransport(BaseTransport):
         """The hashed credentials used by the transport."""
         return base64.b64encode(json_dumps(self._login_params).encode()).decode()
 
+    @classmethod
+    def is_transport_credentials_hash(cls, credentials_hash: str) -> bool:
+        """Whether the hash has the shape this transport produces."""
+        try:
+            decoded = json_loads(base64.b64decode(credentials_hash.encode()))
+        except (ValueError, UnicodeDecodeError):
+            return False
+        return isinstance(decoded, dict) and "username" in decoded
+
     def _get_login_params(self, credentials: Credentials) -> dict[str, str]:
         """Get the login parameters based on the login_version."""
         un, pw = self.hash_credentials(credentials)

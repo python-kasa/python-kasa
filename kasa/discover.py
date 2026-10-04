@@ -831,6 +831,13 @@ class Discover:
             # Reuse the login_version attribute to pass the max to transport
             login_version = max([int(i) for i in et])
 
+        if not encrypt_type and encrypt_schm.is_support_https and login_version == 3:
+            # Some camera firmwares (C460 1.2.2 for one) leave encrypt_type out
+            # of mgt_encrypt_schm and send no encrypt_info, only the top level
+            # encrypt_type list. "3" is the AES login that every other camera
+            # reports as sym_schm AES.
+            encrypt_type = DeviceEncryptionType.Aes.value
+
         if not encrypt_type:
             raise UnsupportedDeviceError(
                 f"Unsupported device {discovery_result.ip} of type {type_} "

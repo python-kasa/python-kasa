@@ -11,6 +11,7 @@ from typing import cast
 
 import aiohttp
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
+from pytest_mock import MockerFixture
 
 from kasa import (
     BaseProtocol,
@@ -24,6 +25,8 @@ from kasa import (
 from kasa.device_factory import (
     Device,
     IotDevice,
+    IotDimmer,
+    IotPlug,
     SmartCamDevice,
     SmartDevice,
     connect,
@@ -55,7 +58,7 @@ from .conftest import DISCOVERY_MOCK_IP
 pytestmark = [pytest.mark.requires_dummy]
 
 
-def _get_connection_type_device_class(discovery_info):
+def _get_connection_type_device_class(discovery_info: dict):
     if "result" in discovery_info:
         device_class = Discover._get_device_class(discovery_info)
         dr = DiscoveryResult.from_dict(discovery_info["result"])
@@ -72,8 +75,8 @@ def _get_connection_type_device_class(discovery_info):
 
 async def test_connect(
     discovery_mock,
-    mocker,
-):
+    mocker: MockerFixture,
+) -> None:
     """Test that if the protocol is passed in it gets set correctly."""
     host = DISCOVERY_MOCK_IP
     ctype, device_class = _get_connection_type_device_class(
@@ -100,7 +103,9 @@ async def test_connect(
 
 
 @pytest.mark.parametrize("custom_port", [123, None])
-async def test_connect_custom_port(discovery_mock, mocker, custom_port):
+async def test_connect_custom_port(
+    discovery_mock, mocker: MockerFixture, custom_port: int | None
+) -> None:
     """Make sure that connect returns an initialized SmartDevice instance."""
     host = DISCOVERY_MOCK_IP
 
@@ -125,7 +130,7 @@ async def test_connect_custom_port(discovery_mock, mocker, custom_port):
 async def test_connect_logs_connect_time(
     discovery_mock,
     caplog: pytest.LogCaptureFixture,
-):
+) -> None:
     """Test that the connect time is logged when debug logging is enabled."""
     discovery_data = discovery_mock.discovery_data
     ctype, _ = _get_connection_type_device_class(discovery_data)
@@ -141,7 +146,7 @@ async def test_connect_logs_connect_time(
     assert "seconds to update" in caplog.text
 
 
-async def test_connect_query_fails(discovery_mock, mocker):
+async def test_connect_query_fails(discovery_mock, mocker: MockerFixture) -> None:
     """Make sure that connect fails when query fails."""
     host = DISCOVERY_MOCK_IP
     discovery_data = discovery_mock.discovery_data
@@ -160,7 +165,7 @@ async def test_connect_query_fails(discovery_mock, mocker):
     assert close_mock.call_count == 1
 
 
-async def test_connect_http_client(discovery_mock, mocker):
+async def test_connect_http_client(discovery_mock, mocker: MockerFixture) -> None:
     """Make sure that discover_single returns an initialized SmartDevice instance."""
     host = DISCOVERY_MOCK_IP
     discovery_data = discovery_mock.discovery_data
@@ -173,7 +178,8 @@ async def test_connect_http_client(discovery_mock, mocker):
     )
     dev = await connect(config=config)
     if ctype.encryption_type != DeviceEncryptionType.Xor:
-        assert dev.protocol._transport._http_client.client != http_client
+        http_client_wrap = dev.protocol._transport._http_client  # type: ignore[attr-defined]
+        assert http_client_wrap.client != http_client
     await dev.disconnect()
 
     config = DeviceConfig(
@@ -184,12 +190,13 @@ async def test_connect_http_client(discovery_mock, mocker):
     )
     dev = await connect(config=config)
     if ctype.encryption_type != DeviceEncryptionType.Xor:
-        assert dev.protocol._transport._http_client.client == http_client
+        http_client_wrap = dev.protocol._transport._http_client  # type: ignore[attr-defined]
+        assert http_client_wrap.client == http_client
     await dev.disconnect()
     await http_client.close()
 
 
-async def test_device_types(dev: Device):
+async def test_device_types(dev: Device) -> None:
     await dev.update()
     if isinstance(dev, SmartCamDevice):
         res = SmartCamDevice._get_device_type_from_sysinfo(dev.sys_info)
@@ -206,7 +213,9 @@ async def test_device_types(dev: Device):
 
 
 @pytest.mark.xdist_group(name="caplog")
-async def test_device_class_from_unknown_family(caplog):
+async def test_device_class_from_unknown_family(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """Verify that unknown SMART devices yield a warning and fallback to SmartDevice."""
     dummy_name = "SMART.foo"
     with caplog.at_level(logging.DEBUG):
@@ -260,6 +269,18 @@ ET = DeviceEncryptionType
             id="iot-klap",
         ),
         pytest.param(
+            CP(DF.IotSmartPlugSwitch, ET.Klap, login_version=1, https=False),
+            IotProtocol,
+            KlapTransport,
+            id="iot-klap-v1",
+        ),
+        pytest.param(
+            CP(DF.IotSmartPlugSwitch, ET.Klap, login_version=2, https=False),
+            IotProtocol,
+            KlapTransportV2,
+            id="iot-klap-v2",
+        ),
+        pytest.param(
             CP(DF.IotSmartPlugSwitch, ET.Xor, https=False),
             IotProtocol,
             XorTransport,
@@ -289,9 +310,69 @@ async def test_get_protocol(
     conn_params: DeviceConnectionParameters,
     expected_protocol: type[BaseProtocol],
     expected_transport: type[BaseTransport],
-):
+) -> None:
     """Test get_protocol returns the right protocol."""
     config = DeviceConfig("127.0.0.1", connection_type=conn_params)
     protocol = get_protocol(config)
     assert isinstance(protocol, expected_protocol)
     assert isinstance(protocol._transport, expected_transport)
+
+
+async def test_connect_iot_klap_dimmer_classification(mocker):
+    """Test that IOT dimmers reached via KLAP initialize IotDimmer.
+
+    Regression test for the bug where `_connect` only queried sysinfo for
+    IOT devices reached via XorTransport, so KLAP-authenticated
+    IOT.SMARTPLUGSWITCH devices were always classified incorrectly as IotPlugs.
+    """
+    dimmer_sysinfo = {
+        "system": {
+            "get_sysinfo": {
+                "sw_ver": "1.1.4 Build 241220 Rel.171050",
+                "hw_ver": "3.0",
+                "model": "HS220(US)",
+                "deviceId": "0" * 40,
+                "hwId": "0" * 32,
+                "fwId": "0" * 32,
+                "oemId": "0" * 32,
+                "alias": "Dimmer under test",
+                "dev_name": "Wi-Fi Smart Dimmer",
+                "mic_type": "IOT.SMARTPLUGSWITCH",
+                "relay_state": 0,
+                "brightness": 25,
+                "on_time": 0,
+                "active_mode": "none",
+                "feature": "TIM",
+                "updating": 0,
+                "rssi": -60,
+                "led_off": 0,
+                "latitude_i": 0,
+                "longitude_i": 0,
+                "err_code": 0,
+            }
+        }
+    }
+
+    mocker.patch("kasa.IotProtocol.query", return_value=dimmer_sysinfo)
+    # Avoid touching the wire on the update() that runs after class selection.
+    mocker.patch.object(IotDevice, "update", return_value=None)
+
+    ctype = DeviceConnectionParameters(
+        device_family=DeviceFamily.IotSmartPlugSwitch,
+        encryption_type=DeviceEncryptionType.Klap,
+        login_version=2,
+        https=False,
+    )
+    config = DeviceConfig(
+        host=DISCOVERY_MOCK_IP,
+        credentials=Credentials("user", "pass"),
+        connection_type=ctype,
+    )
+    dev = await connect(config=config)
+    try:
+        assert isinstance(dev, IotDimmer), (
+            f"HS220 via KLAP must be IotDimmer, got {type(dev).__name__}"
+        )
+        assert not isinstance(dev, IotPlug) or isinstance(dev, IotDimmer)
+    finally:
+        await dev.disconnect()
