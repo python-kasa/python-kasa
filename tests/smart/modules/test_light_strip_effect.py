@@ -82,6 +82,15 @@ async def test_light_effect_brightness(
         return_value=effect_active,
     )
 
+    # Force is_on=True so the asserted payload is deterministic across fixtures
+    # (some fixtures' get_device_info has device_on: false).
+    mocker.patch.object(
+        type(dev),
+        "is_on",
+        new_callable=mocker.PropertyMock,
+        return_value=True,
+    )
+
     await light_module.set_brightness(10)
 
     if effect_active:
@@ -96,4 +105,6 @@ async def test_light_effect_brightness(
         assert not light_effect.is_active
 
         brightness_set_brightness.assert_called_with(10)
-        mock_brightness_call.assert_called_with("set_device_info", {"brightness": 10})
+        mock_brightness_call.assert_called_with(
+            "set_device_info", {"brightness": 10, "device_on": True}
+        )

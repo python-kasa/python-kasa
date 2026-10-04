@@ -95,5 +95,8 @@ class Color(SmartModule):
         # The device errors on invalid brightness values.
         if value is not None:
             request_payload["brightness"] = value
+        # Only re-assert device_on when the device is already on; see Brightness.
+        if self._device.is_on:
+            request_payload["device_on"] = True
 
         return await self.call("set_device_info", {**request_payload})
