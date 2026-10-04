@@ -52,11 +52,12 @@ async def test_set_temperature_turns_heating_on(dev: SmartDevice) -> None:
     assert temp_module.state is False
     assert temp_module.mode is ThermostatState.Off
 
-    await temp_module.set_target_temperature(10)
+    max_temp = temp_module.maximum_target_temperature
+    await temp_module.set_target_temperature(max_temp)
     await dev.update()
     assert temp_module.state is True
     assert temp_module.mode is ThermostatState.Heating
-    assert temp_module.target_temperature == 10
+    assert temp_module.target_temperature == max_temp
 
 
 @thermostats_smart
