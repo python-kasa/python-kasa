@@ -73,7 +73,11 @@ class Energy(SmartModule, EnergyInterface):
         }
         if self.supported_version > 1:
             req["get_current_power"] = None
-            req["get_emeter_data"] = None
+            # P410M returns malformed JSON from get_emeter_data while
+            # reporting reverse/solar-export power. get_energy_usage
+            # provides signed milliwatt current_power instead.
+            if self._device.model != "P410M":
+                req["get_emeter_data"] = None
             req["get_emeter_vgain_igain"] = None
         return req
 
