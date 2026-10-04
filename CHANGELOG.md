@@ -1,10 +1,12 @@
 # Changelog
 
-## [0.11.0](https://github.com/python-kasa/python-kasa/tree/0.11.0) (2026-10-04)
+## [0.11.0.1](https://github.com/python-kasa/python-kasa/tree/0.11.0.1) (2026-10-04)
 
-[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.10.2...0.11.0)
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.10.2...0.11.0.1)
 
 **Release summary:**
+
+*Note: 0.11.0 was tagged but never published to PyPI due to a packaging issue. 0.11.0.1 contains the same changes plus a fix for the release workflow.*
 
 This is a huge and long overdue release, coming more than a year and a half after the previous one.
 Hopefully the next one follows sooner, as the TPAP transport (which did not make it into this release) is used more and more on newer devices.
@@ -135,6 +137,7 @@ Thanks also to our new contributors who provided device fixtures to help future 
 
 **Project maintenance:**
 
+- Fix PyPI publishing for packages with metadata 2.5 [\#1779](https://github.com/python-kasa/python-kasa/pull/1779) (@rytilahti)
 - tests: add type annotations to top-level test files [\#1688](https://github.com/python-kasa/python-kasa/pull/1688) (@ZeliardM)
 - tests: add type annotations to CLI, protocol, and smartcam tests [\#1687](https://github.com/python-kasa/python-kasa/pull/1687) (@ZeliardM)
 - tests: add type annotations to Smart tests [\#1686](https://github.com/python-kasa/python-kasa/pull/1686) (@ZeliardM)
