@@ -403,15 +403,16 @@ async def test_thermostat(dev: Device, mocker: MockerFixture):
     assert therm_mod.state is False
     assert therm_mod.mode is ThermostatState.Off
 
-    await therm_mod.set_target_temperature(10)
+    temp_control = dev.modules.get(Module.TemperatureControl)
+    assert temp_control
+    max_temp = temp_control.maximum_target_temperature
+    await therm_mod.set_target_temperature(max_temp)
     await dev.update()
     assert therm_mod.state is True
     assert therm_mod.mode is ThermostatState.Heating
-    assert therm_mod.target_temperature == 10
+    assert therm_mod.target_temperature == max_temp
 
     target_temperature_feature = therm_mod.get_feature(therm_mod.set_target_temperature)
-    temp_control = dev.modules.get(Module.TemperatureControl)
-    assert temp_control
     allowed_range = temp_control.allowed_temperature_range
     assert target_temperature_feature.minimum_value == allowed_range[0]
     assert target_temperature_feature.maximum_value == allowed_range[1]

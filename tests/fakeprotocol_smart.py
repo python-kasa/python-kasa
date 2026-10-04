@@ -399,6 +399,7 @@ class FakeSmartTransport(BaseTransport):
             return {"result": result, "error_code": 0}
         elif child_method == "set_device_info":
             info.update(child_params)
+            self._update_trv_states(info)
             return {"error_code": 0}
         elif child_method == "set_preset_rules":
             return self._set_child_preset_rules(info, child_params)
@@ -435,6 +436,24 @@ class FakeSmartTransport(BaseTransport):
             return retval
 
         raise NotImplementedError(f"Method {child_method} not implemented for children")
+
+    def _update_trv_states(self, info: dict) -> None:
+        """Simulate TRV heating state after a device info update.
+
+        The device heats when frost protection is off and the target temperature
+        exceeds the current temperature.
+        """
+        if "trv_states" not in info:
+            return
+        should_heat = not info.get("frost_protection_on", False) and info.get(
+            "target_temp", 0
+        ) > info.get("current_temp", 0)
+        trv_states = set(info["trv_states"])
+        if should_heat:
+            trv_states.add("heating")
+        else:
+            trv_states.discard("heating")
+        info["trv_states"] = list(trv_states)
 
     def _get_on_off_gradually_info(self, info, params):
         if self.components["on_off_gradually"] == 1:
@@ -704,6 +723,10 @@ class FakeSmartTransport(BaseTransport):
             "playSelectAudio",  # vacuum special actions
             "resetConsumablesTime",  # vacuum special actions
         ]:
+            return {"error_code": 0}
+        elif method == "set_device_info":
+            info["get_device_info"].update(params)
+            self._update_trv_states(info["get_device_info"])
             return {"error_code": 0}
         elif method[:3] == "set":
             target_method = f"get{method[3:]}"
