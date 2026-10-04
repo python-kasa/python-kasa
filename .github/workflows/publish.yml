@@ -29,8 +29,8 @@ jobs:
     - name: Build Packages
       id: build-packages
       shell: bash
-      run: uv build
+      run: uv build --build-constraints .github/build-constraints.txt
 
     - name: Publish Release on PyPI
       id: publish-release-on-pypi
-      uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # release/v1
+      uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
