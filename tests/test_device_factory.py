@@ -24,6 +24,8 @@ from kasa import (
 from kasa.device_factory import (
     Device,
     IotDevice,
+    IotDimmer,
+    IotPlug,
     SmartCamDevice,
     SmartDevice,
     connect,
@@ -307,3 +309,63 @@ async def test_get_protocol(
     protocol = get_protocol(config)
     assert isinstance(protocol, expected_protocol)
     assert isinstance(protocol._transport, expected_transport)
+
+
+async def test_connect_iot_klap_dimmer_classification(mocker):
+    """Test that IOT dimmers reached via KLAP initialize IotDimmer.
+
+    Regression test for the bug where `_connect` only queried sysinfo for
+    IOT devices reached via XorTransport, so KLAP-authenticated
+    IOT.SMARTPLUGSWITCH devices were always classified incorrectly as IotPlugs.
+    """
+    dimmer_sysinfo = {
+        "system": {
+            "get_sysinfo": {
+                "sw_ver": "1.1.4 Build 241220 Rel.171050",
+                "hw_ver": "3.0",
+                "model": "HS220(US)",
+                "deviceId": "0" * 40,
+                "hwId": "0" * 32,
+                "fwId": "0" * 32,
+                "oemId": "0" * 32,
+                "alias": "Dimmer under test",
+                "dev_name": "Wi-Fi Smart Dimmer",
+                "mic_type": "IOT.SMARTPLUGSWITCH",
+                "relay_state": 0,
+                "brightness": 25,
+                "on_time": 0,
+                "active_mode": "none",
+                "feature": "TIM",
+                "updating": 0,
+                "rssi": -60,
+                "led_off": 0,
+                "latitude_i": 0,
+                "longitude_i": 0,
+                "err_code": 0,
+            }
+        }
+    }
+
+    mocker.patch("kasa.IotProtocol.query", return_value=dimmer_sysinfo)
+    # Avoid touching the wire on the update() that runs after class selection.
+    mocker.patch.object(IotDevice, "update", return_value=None)
+
+    ctype = DeviceConnectionParameters(
+        device_family=DeviceFamily.IotSmartPlugSwitch,
+        encryption_type=DeviceEncryptionType.Klap,
+        login_version=2,
+        https=False,
+    )
+    config = DeviceConfig(
+        host=DISCOVERY_MOCK_IP,
+        credentials=Credentials("user", "pass"),
+        connection_type=ctype,
+    )
+    dev = await connect(config=config)
+    try:
+        assert isinstance(dev, IotDimmer), (
+            f"HS220 via KLAP must be IotDimmer, got {type(dev).__name__}"
+        )
+        assert not isinstance(dev, IotPlug) or isinstance(dev, IotDimmer)
+    finally:
+        await dev.disconnect()
