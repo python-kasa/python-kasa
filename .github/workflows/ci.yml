@@ -45,6 +45,11 @@ jobs:
         run: |
           uv run pre-commit run --all-files --verbose
 
+      # Build the same way as publish.yml to catch packaging issues before a release is tagged.
+      - name: Build and Check Packages
+        id: build-packages
+        uses: ./.github/actions/build-packages
+
   tests:
     name: Python ${{ matrix.python-version}} on ${{ matrix.os }}${{ fromJSON('[" (extras)", ""]')[matrix.extras == ''] }}
     needs: lint
