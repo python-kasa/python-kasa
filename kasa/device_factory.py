@@ -142,7 +142,14 @@ def get_device_class_from_sys_info(sysinfo: dict[str, Any]) -> type[IotDevice]:
         # Disabled until properly implemented
         # DeviceType.Camera: IotCamera,
     }
-    return TYPE_TO_CLASS[IotDevice._get_device_type_from_sys_info(sysinfo)]
+    device_type = IotDevice._get_device_type_from_sys_info(sysinfo)
+    try:
+        return TYPE_TO_CLASS[device_type]
+    except KeyError as ex:
+        raise UnsupportedDeviceError(
+            f"Unsupported device type: {device_type}",
+            discovery_result=sysinfo,
+        ) from ex
 
 
 def get_device_class_from_family(

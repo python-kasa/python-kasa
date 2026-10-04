@@ -21,6 +21,7 @@ from kasa import (
     KasaException,
     SmartCamProtocol,
     SmartProtocol,
+    UnsupportedDeviceError,
 )
 from kasa.device_factory import (
     Device,
@@ -31,6 +32,7 @@ from kasa.device_factory import (
     SmartDevice,
     connect,
     get_device_class_from_family,
+    get_device_class_from_sys_info,
     get_protocol,
 )
 from kasa.deviceconfig import (
@@ -210,6 +212,26 @@ async def test_device_types(dev: Device) -> None:
         res = IotDevice._get_device_type_from_sys_info(dev._last_update)
 
     assert dev.device_type == res
+
+
+def test_device_class_from_unsupported_legacy_camera() -> None:
+    """IOT.IPCAMERA sysinfo raises UnsupportedDeviceError instead of KeyError."""
+    info = {
+        "system": {
+            "get_sysinfo": {
+                "system": {
+                    "type": "IOT.IPCAMERA",
+                    "model": "EC60(US)",
+                    "alias": "Kasa Cam",
+                    "dev_name": "Kasa Spot",
+                }
+            }
+        }
+    }
+    with pytest.raises(UnsupportedDeviceError, match="Unsupported device type"):
+        get_device_class_from_sys_info(info)
+    with pytest.raises(UnsupportedDeviceError, match="Unsupported device type"):
+        Discover._get_device_class(info)
 
 
 @pytest.mark.xdist_group(name="caplog")
