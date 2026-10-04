@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
 from typing import Any, NoReturn
 
 from ...emeterstatus import EmeterStatus
@@ -13,6 +14,10 @@ _OPTIONAL_METHOD_ERRORS = {
     SmartErrorCode.PARAMS_ERROR,
     SmartErrorCode.UNKNOWN_METHOD_ERROR,
 }
+
+# get_energy_data interval values, in minutes.
+_ENERGY_DATA_INTERVAL_DAILY = 1440
+_ENERGY_DATA_INTERVAL_MONTHLY = 43200
 
 
 class Energy(SmartModule, EnergyInterface):
@@ -59,6 +64,14 @@ class Energy(SmartModule, EnergyInterface):
         if "voltage_mv" in data.get("get_emeter_data", {}):
             self._supported = (
                 self._supported | EnergyInterface.ModuleFeature.VOLTAGE_CURRENT
+            )
+
+        # Energy monitoring v2 devices expose historical stats via
+        # get_energy_data. Hardware-verified on KP125M; see PR discussion for
+        # confirmation on other v2 models.
+        if self.supported_version >= 2:
+            self._supported = (
+                self._supported | EnergyInterface.ModuleFeature.PERIODIC_STATS
             )
 
         if (power := self._get_current_power_mw(data)) is not None:
@@ -197,22 +210,96 @@ class Energy(SmartModule, EnergyInterface):
 
     async def erase_stats(self) -> NoReturn:
         """Erase all stats."""
-        raise KasaException("Device does not support periodic statistics")
+        raise KasaException("Device does not support erasing statistics")
+
+    async def _query_energy_data(
+        self, start_timestamp: int, end_timestamp: int, interval: int
+    ) -> list[int]:
+        """Return raw ``get_energy_data`` buckets for a time window.
+
+        The firmware may answer with a response whose ``end_timestamp`` is
+        earlier than requested. In that case it is re-queried starting from
+        that timestamp and the returned ``data`` arrays are concatenated,
+        matching the behaviour of the official app.
+        """
+        cursor = start_timestamp
+        data: list[int] = []
+        while cursor < end_timestamp:
+            res = await self.call(
+                "get_energy_data",
+                {
+                    "start_timestamp": cursor,
+                    "end_timestamp": end_timestamp,
+                    "interval": interval,
+                },
+            )
+            payload = res["get_energy_data"]
+            data.extend(payload["data"])
+            page_end = payload.get("end_timestamp", end_timestamp)
+            # Stop when the window is covered or the cursor stops advancing.
+            if page_end >= end_timestamp or page_end <= cursor:
+                break
+            cursor = page_end
+        return data
 
     async def get_daily_stats(
         self, *, year: int | None = None, month: int | None = None, kwh: bool = True
     ) -> dict:
         """Return daily stats for the given year & month.
 
-        The return value is a dictionary of {day: energy, ...}.
+        The return value is a dictionary of ``{day: energy, ...}`` where energy
+        is in kWh, or Wh when ``kwh`` is ``False``.
         """
-        raise KasaException("Device does not support periodic statistics")
+        now = datetime.now()
+        if year is None:
+            year = now.year
+        if month is None:
+            month = now.month
+
+        # get_energy_data returns daily buckets one quarter at a time, so query
+        # the quarter containing the requested month and keep that month's days.
+        quarter_start_month = ((month - 1) // 3) * 3 + 1
+        start_dt = datetime(year, quarter_start_month, 1)
+        if quarter_start_month == 10:
+            end_dt = datetime(year + 1, 1, 1)
+        else:
+            end_dt = datetime(year, quarter_start_month + 3, 1)
+
+        data = await self._query_energy_data(
+            int(start_dt.timestamp()),
+            int(end_dt.timestamp()),
+            _ENERGY_DATA_INTERVAL_DAILY,
+        )
+
+        scale = 1 / 1_000 if kwh else 1
+        result: dict[int, float] = {}
+        for offset, value in enumerate(data):
+            bucket = start_dt + timedelta(days=offset)
+            if bucket.year == year and bucket.month == month:
+                result[bucket.day] = value * scale
+        return result
 
     async def get_monthly_stats(
         self, *, year: int | None = None, kwh: bool = True
     ) -> dict:
-        """Return monthly stats for the given year."""
-        raise KasaException("Device does not support periodic statistics")
+        """Return monthly stats for the given year.
+
+        The return value is a dictionary of ``{month: energy, ...}`` where
+        energy is in kWh, or Wh when ``kwh`` is ``False``.
+        """
+        if year is None:
+            year = datetime.now().year
+
+        start_dt = datetime(year, 1, 1)
+        end_dt = datetime(year + 1, 1, 1)
+        data = await self._query_energy_data(
+            int(start_dt.timestamp()),
+            int(end_dt.timestamp()),
+            _ENERGY_DATA_INTERVAL_MONTHLY,
+        )
+
+        scale = 1 / 1_000 if kwh else 1
+        return {month: value * scale for month, value in enumerate(data[:12], start=1)}
 
     async def _check_supported(self) -> bool:
         """Additional check to see if the module is supported by the device."""
