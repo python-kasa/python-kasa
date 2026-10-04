@@ -11,7 +11,7 @@ from .conftest import plug, plug_iot, plug_smart, switch_smart, wallswitch_iot
 
 
 @plug_iot
-async def test_plug_sysinfo(dev):
+async def test_plug_sysinfo(dev) -> None:
     assert dev.sys_info is not None
     SYSINFO_SCHEMA(dev.sys_info)
 
@@ -21,7 +21,7 @@ async def test_plug_sysinfo(dev):
 
 
 @wallswitch_iot
-async def test_switch_sysinfo(dev):
+async def test_switch_sysinfo(dev) -> None:
     assert dev.sys_info is not None
     SYSINFO_SCHEMA(dev.sys_info)
 
@@ -31,7 +31,7 @@ async def test_switch_sysinfo(dev):
 
 
 @plug_iot
-async def test_plug_led(dev):
+async def test_plug_led(dev) -> None:
     with pytest.deprecated_call(match="use: Module.Led in device.modules instead"):
         original = dev.led
 
@@ -47,7 +47,7 @@ async def test_plug_led(dev):
 
 
 @wallswitch_iot
-async def test_switch_led(dev):
+async def test_switch_led(dev) -> None:
     with pytest.deprecated_call(match="use: Module.Led in device.modules instead"):
         original = dev.led
 
@@ -63,7 +63,7 @@ async def test_switch_led(dev):
 
 
 @plug_smart
-async def test_plug_device_info(dev):
+async def test_plug_device_info(dev) -> None:
     assert dev._info is not None
     assert dev.model is not None
 
@@ -71,7 +71,7 @@ async def test_plug_device_info(dev):
 
 
 @switch_smart
-async def test_switch_device_info(dev):
+async def test_switch_device_info(dev) -> None:
     assert dev._info is not None
     assert dev.model is not None
 
@@ -81,5 +81,5 @@ async def test_switch_device_info(dev):
 
 
 @plug
-def test_device_type_plug(dev):
+def test_device_type_plug(dev) -> None:
     assert dev.device_type == DeviceType.Plug
