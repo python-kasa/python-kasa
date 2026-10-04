@@ -38,7 +38,7 @@ async def _schedule_list(dev, type):
 async def delete_rule(dev, id):
     """Delete rule from device."""
     schedule = dev.modules["schedule"]
-    rule_to_delete = next(filter(lambda rule: (rule.id == id), schedule.rules), None)
+    rule_to_delete = next(filter(lambda rule: rule.id == id, schedule.rules), None)
     if rule_to_delete:
         echo(f"Deleting rule id {id}")
         return await schedule.delete_rule(rule_to_delete)

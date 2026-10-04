@@ -1,5 +1,157 @@
 # Changelog
 
+## [0.11.0](https://github.com/python-kasa/python-kasa/tree/0.11.0) (2026-10-04)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.10.2...0.11.0)
+
+**Release summary:**
+
+This is a huge and long overdue release, coming more than a year and a half after the previous one.
+Hopefully the next one follows sooner, as the TPAP transport (which did not make it into this release) is used more and more on newer devices.
+
+This release brings broader camera support, new modules for lights, vacuums and cameras, and many connectivity fixes for newer firmware versions. Some other highlights:
+- Improved Tapo camera support: login version 3, presets, wifi handling, last alert detection, and more robust authentication and discovery.
+- Selective room cleaning for robot vacuums.
+- Configurable light strip length via the new strip segment module, and an exposed light transition state change flag.
+- Basic HomeKit module for Kasa (iot) devices.
+- Energy monitoring V2 support (S515D).
+- Better hub and thermostat state reporting (hold, summer mode, low battery).
+- Connection fixes for newer Tapo firmware and older SSL devices, plus KLAP v2 for iot devices.
+- More resilient time handling, with failover and UTC fallback for iot devices.
+- Python 3.14 is now supported.
+- Inclusion of fixtures for 29 devices or firmware versions, including the Tapo C460, C200 and C101 cameras and the KH100 hub with KE100/KE110 thermostats.
+
+**Thank you to all contributors!**
+
+A big thank you to everyone who contributed to this release, whether through code, device fixtures, bug reports or testing.
+
+Special thanks to @ZeliardM for a huge effort on both features and project maintenance, including but not limited to:
+- Features like the HomeKit module for iot devices, iot time module failover, wifi handling and credential improvements for cameras, Tapo login version 3, and V2 energy monitoring for S515D.
+- A lot of necessary maintenance work including type annotations and cleanups throughout the test suite, modernized docstrings, CI hardening with SHA-pinned actions, and many bug fixes. This helps us to keep the library maintainable and open to new contributions.
+
+A warm welcome to our new contributors, with special thanks to those who contributed improvements and fixes:
+- @alams154: discovery on port 20004
+- @bluntman001: iot device classification fix
+- @bm1549: KLAP v2 transport for iot devices
+- @darylldelfin: cipher support for newer Tapo firmware
+- @davidefiocco: vacuum mop water level fix
+- @epg-pers: selective room cleaning for vacuums
+- @freeKC: camera discovery and authentication fixes
+- @gpongelli: extended camera detection
+- @Ikstar: KL420 color temperature range
+- @juherr: last alert detection module for cameras, camera error codes and a C200 fixture
+- @kad: SSL connections to older devices
+- @KaloyanNaumov: multi-request timeout handling
+- @loganrosen: KL400L5 color temperature range
+- @markvanpraet: Tapo C460 support and camera battery fix
+- @monteccarlos: iot timezone mapping fix
+- @mrwogu: preset support for Tapo cameras
+- @nopoz: strip segment module, light transition flag and credentials hash fix
+- @tk1475: UTC fallback for unset iot device clocks
+- @wh1t3f1r3: non-retryable network error handling
+
+Thanks also to our new contributors who provided device fixtures to help future development efforts: @emanueleg, @fantandrea, @HarryPehkonen, @ijaron, @Krotu, @LostLuma, @mjbohr and @TheLinuxGuy.
+
+**This release in numbers:**
+
+- 68 merged pull requests from 29 contributors, 27 of them first-time contributors
+- 8 new modules
+- 29 new device fixtures
+- 203 files changed, with 25,199 lines added and 2,585 removed
+
+
+**Implemented enhancements:**
+
+- \[Feature Request\] C220 camera line crossing detection on-off switch [\#1551](https://github.com/python-kasa/python-kasa/issues/1551)
+- SslAesTransport: handshake again when a camera answers 401 to passthrough [\#1771](https://github.com/python-kasa/python-kasa/pull/1771) (@freeKC)
+- Add LastAlertDetection module for smartcam devices [\#1762](https://github.com/python-kasa/python-kasa/pull/1762) (@juherr)
+- Add KL420 to TPLINK\_KELVIN color temperature ranges [\#1757](https://github.com/python-kasa/python-kasa/pull/1757) (@Ikstar)
+- Do not authenticate with a credentials\_hash from a different transport [\#1749](https://github.com/python-kasa/python-kasa/pull/1749) (@nopoz)
+- Expose the light transition state change flag [\#1745](https://github.com/python-kasa/python-kasa/pull/1745) (@nopoz)
+- Add strip segment module for configurable light strip length [\#1744](https://github.com/python-kasa/python-kasa/pull/1744) (@nopoz)
+- Add KL400L5 color temperature range [\#1719](https://github.com/python-kasa/python-kasa/pull/1719) (@loganrosen)
+- Update smartcam credential handling and tests [\#1664](https://github.com/python-kasa/python-kasa/pull/1664) (@ZeliardM)
+- Add support for V2 Energy Monitoring for S515D [\#1663](https://github.com/python-kasa/python-kasa/pull/1663) (@ZeliardM)
+- Add selective room cleaning to vacuum clean module [\#1660](https://github.com/python-kasa/python-kasa/pull/1660) (@epg-pers)
+- New Wi-Fi handling for SMARTCAM devices [\#1639](https://github.com/python-kasa/python-kasa/pull/1639) (@ZeliardM)
+- Add support for tapo login\_version 3 in sslaestransport [\#1638](https://github.com/python-kasa/python-kasa/pull/1638) (@ZeliardM)
+- Add preset support for Tapo cameras [\#1615](https://github.com/python-kasa/python-kasa/pull/1615) (@mrwogu)
+- Add python 3.14 to supported versions [\#1599](https://github.com/python-kasa/python-kasa/pull/1599) (@rytilahti)
+- Add discovery port 20004 [\#1595](https://github.com/python-kasa/python-kasa/pull/1595) (@alams154)
+- Implement IOT Time Module Failover [\#1583](https://github.com/python-kasa/python-kasa/pull/1583) (@ZeliardM)
+- Add bare bones homekit module for iot devices [\#1566](https://github.com/python-kasa/python-kasa/pull/1566) (@ZeliardM)
+- Extend smartcam detection support [\#1552](https://github.com/python-kasa/python-kasa/pull/1552) (@gpongelli)
+
+**Fixed bugs:**
+
+- Time module unavailable for waterleak sensor [\#1613](https://github.com/python-kasa/python-kasa/issues/1613)
+- 'No time zone found with key EST' in debian 13 [\#1579](https://github.com/python-kasa/python-kasa/issues/1579)
+- Discovery: accept cameras that only send the encrypt\_type list [\#1770](https://github.com/python-kasa/python-kasa/pull/1770) (@freeKC)
+- Classify IOT devices via sysinfo regardless of transport \(fixes \#1740\) [\#1769](https://github.com/python-kasa/python-kasa/pull/1769) (@bluntman001)
+- Fall back to UTC for iot time when the device clock is not set [\#1768](https://github.com/python-kasa/python-kasa/pull/1768) (@tk1475)
+- Add UNKNOWN\_USERNAME \(-60502\) camera error code [\#1761](https://github.com/python-kasa/python-kasa/pull/1761) (@juherr)
+- Disable multi requests on timeout during multi-request [\#1759](https://github.com/python-kasa/python-kasa/pull/1759) (@KaloyanNaumov)
+- Add ECDHE-RSA-AES256 cipher for newer Tapo firmware [\#1755](https://github.com/python-kasa/python-kasa/pull/1755) (@darylldelfin)
+- Map iot timezone index 18 to America/New\_York instead of EST [\#1743](https://github.com/python-kasa/python-kasa/pull/1743) (@monteccarlos)
+- fix: use KLAP v2 transport for IOT devices with login version 2 [\#1731](https://github.com/python-kasa/python-kasa/pull/1731) (@bm1549)
+- Add ENETUNREACH to non-retryable errors in XorTransport [\#1668](https://github.com/python-kasa/python-kasa/pull/1668) (@wh1t3f1r3)
+- Fix mop set\_waterlevel sending setCleanAttr without type field [\#1667](https://github.com/python-kasa/python-kasa/pull/1667) (@davidefiocco)
+- Fix SMARTCAM Time module and update tests [\#1659](https://github.com/python-kasa/python-kasa/pull/1659) (@ZeliardM)
+- Fix camera login version in CLI [\#1658](https://github.com/python-kasa/python-kasa/pull/1658) (@ZeliardM)
+- Allow SSL connections to older devices [\#1654](https://github.com/python-kasa/python-kasa/pull/1654) (@kad)
+- waterleaksensor: use parent's Time for alert timestamp [\#1614](https://github.com/python-kasa/python-kasa/pull/1614) (@rytilahti)
+- Add hold state to thermostatstate [\#1609](https://github.com/python-kasa/python-kasa/pull/1609) (@rytilahti)
+- Fix thermostat idle reporting on low battery [\#1598](https://github.com/python-kasa/python-kasa/pull/1598) (@rytilahti)
+- Add shutdown \(summer mode\) to thermostatstate [\#1588](https://github.com/python-kasa/python-kasa/pull/1588) (@rytilahti)
+- Fix iotstrip child device time handling [\#1584](https://github.com/python-kasa/python-kasa/pull/1584) (@ZeliardM)
+
+**Added support for devices:**
+
+- Add C200 device fixture [\#1760](https://github.com/python-kasa/python-kasa/pull/1760) (@juherr)
+- Add P125M fixture for firmware 1.4.4 [\#1746](https://github.com/python-kasa/python-kasa/pull/1746) (@HarryPehkonen)
+- Add fixtures for KH100, KE100 and KE110 and simulate TRV states [\#1726](https://github.com/python-kasa/python-kasa/pull/1726) (@Krotu)
+- Add L530EA\(EU\) device fixture [\#1694](https://github.com/python-kasa/python-kasa/pull/1694) (@ZeliardM)
+- Add C101 test fixture [\#1673](https://github.com/python-kasa/python-kasa/pull/1673) (@ijaron)
+- Add LB130\(US\) device fixture [\#1669](https://github.com/python-kasa/python-kasa/pull/1669) (@ZeliardM)
+- Add KL110B\(UN\) device fixture [\#1657](https://github.com/python-kasa/python-kasa/pull/1657) (@ZeliardM)
+- Add TS15\(US\) device fixture [\#1649](https://github.com/python-kasa/python-kasa/pull/1649) (@ZeliardM)
+- Add Tapo C460  support [\#1645](https://github.com/python-kasa/python-kasa/pull/1645) (@markvanpraet)
+- Add P105\(US\) device fixture [\#1644](https://github.com/python-kasa/python-kasa/pull/1644) (@ZeliardM)
+- Add L430C\(EU\) device fixture [\#1643](https://github.com/python-kasa/python-kasa/pull/1643) (@ZeliardM)
+- Add L430P\(EU\) device fixture [\#1607](https://github.com/python-kasa/python-kasa/pull/1607) (@LostLuma)
+- Add S500\(US\)\_1.0\_1.2.0 fixture [\#1569](https://github.com/python-kasa/python-kasa/pull/1569) (@ZeliardM)
+- Add device fixture for P316M\(US\) [\#1568](https://github.com/python-kasa/python-kasa/pull/1568) (@TheLinuxGuy)
+- Add L535E\(EU\) 3.0 1.1.8 fixture [\#1545](https://github.com/python-kasa/python-kasa/pull/1545) (@fantandrea)
+- Adding KL400L10\(US\)\_1.0\_1.0.10 fixture [\#1539](https://github.com/python-kasa/python-kasa/pull/1539) (@mjbohr)
+- Add TP10\(IT\) 1.0 1.2.5 fixture [\#1538](https://github.com/python-kasa/python-kasa/pull/1538) (@emanueleg)
+- Add LB100\(US\)\_1.0\_1.8.11 fixture file [\#1515](https://github.com/python-kasa/python-kasa/pull/1515) (@ZeliardM)
+- Add KS225\(US\)\_1.0\_1.1.1 and L930-5\(EU\)\_1.0\_1.2.5 [\#1509](https://github.com/python-kasa/python-kasa/pull/1509) (@ZeliardM)
+
+**Documentation updates:**
+
+- How to hash credentials to make use of --credentials-hash flag? [\#1517](https://github.com/python-kasa/python-kasa/issues/1517)
+- docs: modernize docstrings across the repository [\#1682](https://github.com/python-kasa/python-kasa/pull/1682) (@ZeliardM)
+- Add a note to emeter guide being kasa-only [\#1512](https://github.com/python-kasa/python-kasa/pull/1512) (@rytilahti)
+
+**Project maintenance:**
+
+- tests: add type annotations to top-level test files [\#1688](https://github.com/python-kasa/python-kasa/pull/1688) (@ZeliardM)
+- tests: add type annotations to CLI, protocol, and smartcam tests [\#1687](https://github.com/python-kasa/python-kasa/pull/1687) (@ZeliardM)
+- tests: add type annotations to Smart tests [\#1686](https://github.com/python-kasa/python-kasa/pull/1686) (@ZeliardM)
+- tests: add type annotations to IoT tests [\#1685](https://github.com/python-kasa/python-kasa/pull/1685) (@ZeliardM)
+- tests: add type annotations to transport tests [\#1684](https://github.com/python-kasa/python-kasa/pull/1684) (@ZeliardM)
+- tests: centralize transport and session cleanup in conftest [\#1683](https://github.com/python-kasa/python-kasa/pull/1683) (@ZeliardM)
+- ci: pin all GitHub Actions to SHA hashes and update versions [\#1681](https://github.com/python-kasa/python-kasa/pull/1681) (@ZeliardM)
+- tests: fix typos, child device subtype, CLI patch path, and deprecation test logic [\#1677](https://github.com/python-kasa/python-kasa/pull/1677) (@ZeliardM)
+- Update GitHub Workflows and Actions [\#1622](https://github.com/python-kasa/python-kasa/pull/1622) (@ZeliardM)
+- Use log-level debug for smartdevice query error reporting [\#1587](https://github.com/python-kasa/python-kasa/pull/1587) (@rytilahti)
+- Use Device instead of SmartDevice where feasible [\#1585](https://github.com/python-kasa/python-kasa/pull/1585) (@ZeliardM)
+
+**Closed issues:**
+
+- Python 3.14 Support [\#1597](https://github.com/python-kasa/python-kasa/issues/1597)
+- HS300 Child State - Time Module Error [\#1445](https://github.com/python-kasa/python-kasa/issues/1445)
+
 ## [0.10.2](https://github.com/python-kasa/python-kasa/tree/0.10.2) (2025-02-12)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.10.1...0.10.2)
@@ -64,7 +216,7 @@ Many thanks to testers and new contributors - @steveredden, @DawidPietrykowski, 
 **Breaking changes:**
 
 - `uses_http` is now a readonly property of device config. Consumers that relied on `uses_http` to be persisted with `DeviceConfig.to_dict()` will need to store the value separately.
-- `is_color`, `is_dimmable`, `is_variable_color_temp`, `valid_temperature_range`, and `has_effects` attributes from the `Light` module are deprecated, consumers should use `has_feature("hsv")`, `has_feature("brightness")`, `has_feature("color_temp")`, `get_feature("color_temp").range`, and `Module.LightEffect in dev.modules` respectively. Calling the deprecated attributes will emit a `DeprecationWarning` and type checkers will fail them.
+- `is_color`, `is_dimmable`, `is_variable_color_temp`, `valid_temperate_range`, and `has_effects` attributes from the `Light` module are deprecated, consumers should use `has_feature("hsv")`, `has_feature("brightness")`, `has_feature("color_temp")`, `get_feature("color_temp").range`, and `Module.LightEffect in dev.modules` respectively. Calling the deprecated attributes will emit a `DeprecationWarning` and type checkers will fail them.
 -  `alarm_volume` on the `smart.Alarm` module is changed from `str` to `int`
 
 **Breaking changes:**
