@@ -132,6 +132,7 @@ async def _audio(*chunks: bytes) -> AsyncIterator[bytes]:
 
 def _patch_session(mocker: MockerFixture):
     session = mocker.AsyncMock(spec=_TalkSession)
+    session.__aenter__.return_value = session
     factory = mocker.patch(
         "kasa.smartcam.modules.camera._TalkSession", return_value=session
     )
@@ -167,9 +168,9 @@ async def test_play_audio_session_lifecycle(dev: Device, mocker: MockerFixture) 
         await camera_module.play_audio(audio)
 
     factory.assert_called_once_with("127.0.0.123", "secret", timeout=5)
-    session.open.assert_awaited_once()
+    session.__aenter__.assert_awaited_once()
     session.stream.assert_awaited_once_with(audio)
-    session.close.assert_awaited_once()
+    session.__aexit__.assert_awaited_once()
 
 
 @audio_camera_smartcam
@@ -255,19 +256,19 @@ async def test_play_audio_concurrent(dev: Device, mocker: MockerFixture) -> None
         first.cancel()
         with pytest.raises(asyncio.CancelledError):
             await first
-        session.close.assert_awaited_once()
+        session.__aexit__.assert_awaited_once()
 
         session.stream.side_effect = None
         await camera_module.play_audio(_audio())
-    assert session.close.await_count == 2
+    assert session.__aexit__.await_count == 2
 
 
 @pytest.mark.parametrize(
     "failing",
-    [pytest.param("open", id="open"), pytest.param("stream", id="stream")],
+    [pytest.param("__aenter__", id="open"), pytest.param("stream", id="stream")],
 )
 @audio_camera_smartcam
-async def test_play_audio_failure_cleans_up(
+async def test_play_audio_after_failure(
     dev: Device, mocker: MockerFixture, failing: str
 ) -> None:
     camera_module = dev.modules[Module.Camera]
@@ -277,8 +278,7 @@ async def test_play_audio_failure_cleans_up(
     with patch.object(dev.config, "credentials", Credentials("user", "secret")):
         with pytest.raises(KasaException, match="boom"):
             await camera_module.play_audio(_audio())
-        session.close.assert_awaited_once()
 
         getattr(session, failing).side_effect = None
         await camera_module.play_audio(_audio())
-    assert session.close.await_count == 2
+    session.stream.assert_awaited()

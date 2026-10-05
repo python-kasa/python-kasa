@@ -2,11 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from kasa.smartcam._mpegts import _crc32_mpeg2, _PcmaTsMuxer
-
-PACKET_SIZE = 188
-AUDIO_PID = 0x100
-PMT_PID = 0x1000
+from kasa.smartcam._mpegts import AUDIO_PID, PACKET_SIZE, _crc32_mpeg2, _PcmaTsMuxer
 
 
 def _packets(data: bytes) -> list[bytes]:
@@ -45,25 +41,19 @@ def test_crc32_mpeg2():
     assert _crc32_mpeg2(b"123456789") == 0x0376E6E7
 
 
-def test_header_pat():
-    pat = _packets(_PcmaTsMuxer().header())[0]
+def test_header():
+    pat, pmt = _packets(_PcmaTsMuxer().header())
+
     assert pat[:4] == bytes([0x47, 0x40, 0x00, 0x10])
     section = _section(pat)
     assert section[:-4] == bytes.fromhex("00b00d0001c100000001f000")
     assert _crc32_mpeg2(section) == 0
     assert set(pat[4 + 1 + len(section) :]) == {0xFF}
 
-
-def test_header_pmt():
-    pmt = _packets(_PcmaTsMuxer().header())[1]
     assert pmt[:4] == bytes([0x47, 0x50, 0x00, 0x10])
     section = _section(pmt)
     assert section[:-4] == bytes.fromhex("02b0120001c10000fffff00090e100f000")
     assert _crc32_mpeg2(section) == 0
-
-
-def test_header_size():
-    assert len(_PcmaTsMuxer().header()) == 2 * PACKET_SIZE
 
 
 @pytest.mark.parametrize("size", [1, 160, 170, 171, 176, 184, 1000, 8000])
@@ -83,25 +73,20 @@ def test_audio_roundtrip(size: int):
     assert pes[14:] == payload
 
 
-def test_audio_single_frame_layout():
-    data = _PcmaTsMuxer().audio(b"\xd5" * 160)
+@pytest.mark.parametrize(
+    ("size", "adaptation"),
+    [
+        pytest.param(160, bytes([9, 0x00]) + b"\xff" * 8, id="stuffed"),
+        pytest.param(169, bytes([0]), id="length-only"),
+        pytest.param(170, b"", id="none"),
+    ],
+)
+def test_audio_adaptation_field(size: int, adaptation: bytes):
+    data = _PcmaTsMuxer().audio(b"\xd5" * size)
     assert len(data) == PACKET_SIZE
-    assert data[:4] == bytes([0x47, 0x41, 0x00, 0x30])
-    assert data[4] == 183 - 174
-    assert data[5] == 0x00
-    assert set(data[6 : 5 + data[4]]) == {0xFF}
-
-
-def test_audio_exact_packet_has_no_adaptation():
-    data = _PcmaTsMuxer().audio(b"\xd5" * 170)
-    assert len(data) == PACKET_SIZE
-    assert data[3] & 0x30 == 0x10
-
-
-def test_audio_one_byte_adaptation():
-    data = _PcmaTsMuxer().audio(b"\xd5" * 169)
-    assert data[3] & 0x30 == 0x30
-    assert data[4] == 0
+    assert data[3] == (0x30 if adaptation else 0x10)
+    assert data[4 : 4 + len(adaptation)] == adaptation
+    assert data[4 + len(adaptation) : 4 + len(adaptation) + 4] == b"\x00\x00\x01\xc0"
 
 
 def test_audio_pts_and_continuity():

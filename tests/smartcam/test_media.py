@@ -102,7 +102,6 @@ class FakeClock:
 
 class FakeWriter:
     def __init__(self, clock: FakeClock | None = None) -> None:
-        self.data = bytearray()
         self.writes: list[tuple[float, bytes]] = []
         self.clock = clock
         self.drain_hook: Callable[[], Awaitable[None]] | None = None
@@ -111,8 +110,11 @@ class FakeWriter:
         self.wait_closed_error: Exception | None = None
         self.transport = self
 
+    @property
+    def data(self) -> bytes:
+        return b"".join(d for _, d in self.writes)
+
     def write(self, data: bytes) -> None:
-        self.data += data
         self.writes.append((self.clock.now if self.clock else 0.0, bytes(data)))
 
     async def drain(self) -> None:
@@ -128,6 +130,11 @@ class FakeWriter:
     async def wait_closed(self) -> None:
         if self.wait_closed_error:
             raise self.wait_closed_error
+
+
+@pytest.fixture(autouse=True)
+def _cnonce(mocker: MockerFixture) -> None:
+    mocker.patch("kasa.smartcam.media.secrets.token_hex", return_value=CNONCE)
 
 
 @pytest.fixture
@@ -152,14 +159,9 @@ def _connect(
     )
 
 
-def _session(clock: FakeClock, **kwargs) -> _TalkSession:
+def _session(clock: FakeClock, timeout: float = 5) -> _TalkSession:
     return _TalkSession(
-        HOST,
-        PASSWORD,
-        clock=clock.monotonic,
-        sleep=clock.sleep,
-        cnonce=lambda: CNONCE,
-        **kwargs,
+        HOST, PASSWORD, timeout=timeout, clock=clock.monotonic, sleep=clock.sleep
     )
 
 
@@ -188,7 +190,6 @@ async def _open(
     _connect(mocker, writer, _camera())
     session = _session(clock)
     await session.open()
-    writer.data.clear()
     writer.writes.clear()
     return session
 
@@ -241,7 +242,7 @@ async def test_open_digest(mocker, clock, writer, encrypt_type, password_hash):
         + TALK_REQUEST
         + b"\r\n"
     )
-    assert bytes(writer.data) == FIRST_REQUEST + second_request + talk_part
+    assert writer.data == FIRST_REQUEST + second_request + talk_part
     assert PASSWORD.encode() not in writer.data
     assert password_hash.encode() not in writer.data
     assert session.session_id == SESSION_ID
@@ -254,20 +255,12 @@ async def test_open_digest_opaque(mocker, clock, writer):
     assert b'opaque="xyz"\r\n' in writer.data
 
 
-async def test_open_digest_without_qop(mocker, clock, writer):
-    _connect(mocker, writer, _camera('Digest realm="r", nonce="n"'))
-    await _session(clock).open()
-    password_hash = hashlib.md5(PASSWORD.encode()).hexdigest().upper()  # noqa: S324
-    response = _md5(f"{_md5(f'admin:r:{password_hash}')}:n:{_md5('POST:/stream')}")
-    assert f'uri="/stream", response="{response}"\r\n'.encode() in writer.data
-    assert b"qop" not in writer.data
-
-
 @pytest.mark.parametrize(
     "challenge",
     [
         pytest.param('Basic realm="TP-Link IP-Camera"', id="basic"),
         pytest.param('Digest realm="TP-Link IP-Camera"', id="no-nonce"),
+        pytest.param('Digest realm="r", nonce="n"', id="no-qop"),
         pytest.param('Digest nonce="n"', id="no-realm"),
         pytest.param('Digest realm="r", nonce="n", qop="auth-int"', id="qop"),
         pytest.param('Digest realm="r", nonce="n", algorithm=SHA-256', id="algorithm"),
@@ -314,22 +307,18 @@ async def test_open_rejected_stream(mocker, clock, writer):
     assert not isinstance(exc_info.value, AuthenticationError)
 
 
-async def test_open_session_id_int(mocker, clock, writer):
-    _connect(
-        mocker, writer, _camera(talk=_talk_response({"error_code": 0, "session_id": 7}))
-    )
+@pytest.mark.parametrize(
+    ("talk", "session_id"),
+    [
+        pytest.param(_talk_response({"error_code": 0, "session_id": 7}), "7", id="int"),
+        pytest.param(b"\r\n" + _talk_response({"session_id": "5"}), "5", id="blank"),
+    ],
+)
+async def test_open_session_id(mocker, clock, writer, talk, session_id):
+    _connect(mocker, writer, _camera(talk=talk))
     session = _session(clock)
     await session.open()
-    assert session.session_id == "7"
-
-
-async def test_open_skips_blank_lines(mocker, clock, writer):
-    _connect(
-        mocker, writer, _camera(talk=b"\r\n" + _talk_response({"session_id": "5"}))
-    )
-    session = _session(clock)
-    await session.open()
-    assert session.session_id == "5"
+    assert session.session_id == session_id
 
 
 @pytest.mark.parametrize(
@@ -366,15 +355,16 @@ async def test_open_rejected_talk_session(mocker, clock, writer, code, error_cod
     assert exc_info.value.error_code == error_code
 
 
-async def test_open_connection_refused(mocker, clock):
-    mocker.patch("asyncio.open_connection", side_effect=ConnectionRefusedError)
-    with pytest.raises(KasaException, match="talk session"):
-        await _session(clock).open()
-
-
-async def test_open_connect_timeout(mocker, clock):
-    mocker.patch("asyncio.open_connection", side_effect=TimeoutError)
-    with pytest.raises(KasaTimeoutError):
+@pytest.mark.parametrize(
+    ("side_effect", "exception"),
+    [
+        pytest.param(ConnectionRefusedError, KasaException, id="refused"),
+        pytest.param(TimeoutError, KasaTimeoutError, id="timeout"),
+    ],
+)
+async def test_open_connect_error(mocker, clock, side_effect, exception):
+    mocker.patch("asyncio.open_connection", side_effect=side_effect)
+    with pytest.raises(exception, match="talk session"):
         await _session(clock).open()
 
 
@@ -389,7 +379,7 @@ async def test_stream_wire_format(mocker, clock, writer):
     await session.stream(_chunks(b"\xd5" * 200, 200))
 
     muxer = _PcmaTsMuxer()
-    assert bytes(writer.data) == (
+    assert writer.data == (
         _audio_part(muxer.header())
         + _audio_part(muxer.audio(b"\xd5" * 160))
         + _audio_part(muxer.audio(b"\xd5" * 40))
@@ -405,7 +395,7 @@ async def test_stream_chunk_sizes(mocker, clock, writer, chunk_size):
 
     muxer = _PcmaTsMuxer()
     frames = [audio[i : i + 160] for i in range(0, len(audio), 160)]
-    assert bytes(writer.data) == _audio_part(muxer.header()) + b"".join(
+    assert writer.data == _audio_part(muxer.header()) + b"".join(
         _audio_part(muxer.audio(frame)) for frame in frames
     )
     times = [t - start for t, _ in _audio_writes(writer)]
@@ -416,7 +406,7 @@ async def test_stream_chunk_sizes(mocker, clock, writer, chunk_size):
 async def test_stream_empty(mocker, clock, writer):
     session = await _open(mocker, clock, writer)
     await session.stream(_chunks(b"", 160))
-    assert bytes(writer.data) == _audio_part(_PcmaTsMuxer().header())
+    assert writer.data == _audio_part(_PcmaTsMuxer().header())
     assert clock.sleeps == []
 
 
@@ -570,9 +560,19 @@ async def test_stream_write_timeout(mocker, clock, writer):
         await session.stream(_chunks(b"\xd5" * 160, 160))
 
 
-async def test_stream_requires_open(clock):
-    with pytest.raises(KasaException, match="not open"):
-        await _session(clock).stream(_chunks(b"\xd5", 1))
+async def test_context_manager(mocker, clock, writer):
+    _connect(mocker, writer, _camera())
+    async with _session(clock) as session:
+        assert session.session_id == SESSION_ID
+    assert writer.closed
+
+
+async def test_context_manager_open_failure(mocker, clock, writer):
+    _connect(mocker, writer, _camera(talk=_device_part(b"{not json")))
+    with pytest.raises(KasaException, match="talk session"):
+        async with _session(clock):
+            pass
+    assert writer.aborted
 
 
 async def test_close_after_completion_is_graceful(mocker, clock, writer):

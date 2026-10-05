@@ -162,16 +162,12 @@ class Camera(SmartCamModule):
             raise AuthenticationError("Audio playback requires the cloud credentials")
 
         self._talk_active = True
-        session = _TalkSession(
-            self._device.host,
-            credentials.password,
-            timeout=self._device.config.timeout or DeviceConfig.DEFAULT_TIMEOUT,
-        )
         try:
-            await session.open()
-            await session.stream(audio_stream)
+            async with _TalkSession(
+                self._device.host,
+                credentials.password,
+                timeout=self._device.config.timeout or DeviceConfig.DEFAULT_TIMEOUT,
+            ) as session:
+                await session.stream(audio_stream)
         finally:
-            try:
-                await session.close()
-            finally:
-                self._talk_active = False
+            self._talk_active = False

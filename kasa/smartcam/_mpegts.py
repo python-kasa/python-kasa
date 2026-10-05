@@ -26,24 +26,13 @@ _PES_HEADER_SIZE = 14
 _MAX_PES_PAYLOAD = 0xFFFF - (_PES_HEADER_SIZE - 6)
 
 
-def _make_crc_table() -> list[int]:
-    table = []
-    for i in range(256):
-        crc = i << 24
-        for _ in range(8):
-            crc = (crc << 1) ^ 0x04C11DB7 if crc & 0x80000000 else crc << 1
-        table.append(crc & 0xFFFFFFFF)
-    return table
-
-
-_CRC_TABLE = _make_crc_table()
-
-
 def _crc32_mpeg2(data: bytes) -> int:
     """Return the CRC-32/MPEG-2 checksum used by PSI sections."""
     crc = 0xFFFFFFFF
     for byte in data:
-        crc = ((crc << 8) & 0xFFFFFFFF) ^ _CRC_TABLE[(crc >> 24) ^ byte]
+        crc ^= byte << 24
+        for _ in range(8):
+            crc = (crc << 1) ^ 0x104C11DB7 if crc & 0x80000000 else crc << 1
     return crc
 
 
@@ -96,13 +85,11 @@ class _PcmaTsMuxer:
             + payload
         )
 
-        packets = bytearray()
-        unit_start = True
-        while pes:
-            chunk, pes = pes[: PACKET_SIZE - 4], pes[PACKET_SIZE - 4 :]
-            packets += self._packet(AUDIO_PID, chunk, unit_start=unit_start)
-            unit_start = False
-        return bytes(packets)
+        size = PACKET_SIZE - 4
+        return b"".join(
+            self._packet(AUDIO_PID, pes[i : i + size], unit_start=i == 0)
+            for i in range(0, len(pes), size)
+        )
 
     def _psi_packet(self, pid: int, table_id: int, data: bytes) -> bytes:
         section_length = 5 + len(data) + 4
@@ -115,17 +102,11 @@ class _PcmaTsMuxer:
             + data
         )
         section += _crc32_mpeg2(section).to_bytes(4)
-        payload = b"\x00" + section  # pointer field
-        return self._packet(pid, payload, unit_start=True, psi=True)
+        # Pointer field, then the section padded with 0xFF bytes.
+        payload = (b"\x00" + section).ljust(PACKET_SIZE - 4, b"\xff")
+        return self._packet(pid, payload, unit_start=True)
 
-    def _packet(
-        self,
-        pid: int,
-        payload: bytes,
-        *,
-        unit_start: bool,
-        psi: bool = False,
-    ) -> bytes:
+    def _packet(self, pid: int, payload: bytes, *, unit_start: bool) -> bytes:
         counter = self._counters.get(pid, 0)
         self._counters[pid] = (counter + 1) & 0x0F
         header = bytes(
@@ -136,11 +117,10 @@ class _PcmaTsMuxer:
             ]
         )
         free = PACKET_SIZE - 4 - len(payload)
-        if psi or free == 0:
-            # PSI tables are padded after the section with 0xFF bytes.
-            return header + bytes([0x10 | counter]) + payload + b"\xff" * free
+        if free == 0:
+            return header + bytes([0x10 | counter]) + payload
 
-        # PES packets are padded with an adaptation field before the payload.
+        # Short payloads are padded with an adaptation field.
         adaptation_length = free - 1
         adaptation = bytes([adaptation_length])
         if adaptation_length:

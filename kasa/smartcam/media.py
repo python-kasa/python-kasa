@@ -15,11 +15,17 @@ import re
 import secrets
 import time
 from asyncio import timeout as asyncio_timeout
-from collections.abc import AsyncIterable, Awaitable, Callable, Iterator
+from collections.abc import (
+    AsyncIterable,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Iterable,
+    Iterator,
+)
 from contextlib import contextmanager
 from typing import Any
 
-from ..deviceconfig import DeviceConfig
 from ..exceptions import (
     AuthenticationError,
     DeviceError,
@@ -28,7 +34,6 @@ from ..exceptions import (
 )
 from ..exceptions import TimeoutError as KasaTimeoutError
 from ..json import loads as json_loads
-from ..transports.sslaestransport import _md5_hash, _sha256_hash
 from ._mpegts import _PcmaTsMuxer
 
 _LOGGER = logging.getLogger(__name__)
@@ -64,7 +69,7 @@ def _parse_challenge(header: str) -> dict[str, str]:
         key.lower(): quoted or token
         for key, quoted, token in _CHALLENGE_PARAM.findall(params)
     }
-    qop = {option.strip() for option in challenge.get("qop", "auth").split(",")}
+    qop = {option.strip() for option in challenge.get("qop", "").split(",")}
     if (
         scheme.lower() != "digest"
         or not challenge.get("realm")
@@ -78,30 +83,45 @@ def _parse_challenge(header: str) -> dict[str, str]:
 
 def _digest_password(cloud_password: str, encrypt_type: str | None) -> str:
     """Return the camera media password derived from the cloud password."""
-    if encrypt_type == "3":
-        return _sha256_hash(cloud_password.encode())
-    return _md5_hash(cloud_password.encode())
+    hash_func = hashlib.sha256 if encrypt_type == "3" else hashlib.md5
+    return hash_func(cloud_password.encode()).hexdigest().upper()
 
 
 def _authorization(challenge: dict[str, str], password: str, cnonce: str) -> str:
     """Return the Digest Authorization header value for the stream request."""
-    realm, nonce = challenge["realm"], challenge["nonce"]
+    realm, nonce, nc = challenge["realm"], challenge["nonce"], "00000001"
     ha1 = _md5_hex(f"{_USERNAME}:{realm}:{password}")
     ha2 = _md5_hex(f"POST:{_URI}")
+    response = _md5_hex(f"{ha1}:{nonce}:{nc}:{cnonce}:auth:{ha2}")
     header = (
         f'Digest username="{_USERNAME}", realm="{realm}", nonce="{nonce}", '
-        f'uri="{_URI}", '
+        f'uri="{_URI}", qop=auth, nc={nc}, cnonce="{cnonce}", '
+        f'response="{response}"'
     )
-    if "qop" in challenge:
-        nc = "00000001"
-        response = _md5_hex(f"{ha1}:{nonce}:{nc}:{cnonce}:auth:{ha2}")
-        header += f'qop=auth, nc={nc}, cnonce="{cnonce}", '
-    else:
-        response = _md5_hex(f"{ha1}:{nonce}:{ha2}")
-    header += f'response="{response}"'
     if opaque := challenge.get("opaque"):
         header += f', opaque="{opaque}"'
     return header
+
+
+def _parse_headers(lines: Iterable[str]) -> dict[str, str]:
+    headers = {}
+    for line in lines:
+        key, sep, value = line.partition(":")
+        if sep:
+            headers[key.strip().lower()] = value.strip()
+    return headers
+
+
+async def _frames(audio: AsyncIterable[bytes]) -> AsyncIterator[bytes]:
+    """Regroup chunks of any size into frames of _FRAME_SIZE bytes."""
+    buffer = bytearray()
+    async for chunk in audio:
+        buffer += chunk
+        while len(buffer) >= _FRAME_SIZE:
+            yield bytes(buffer[:_FRAME_SIZE])
+            del buffer[:_FRAME_SIZE]
+    if buffer:
+        yield bytes(buffer)
 
 
 def _part(headers: dict[str, str], body: bytes) -> bytes:
@@ -112,26 +132,22 @@ def _part(headers: dict[str, str], body: bytes) -> bytes:
 
 
 class _TalkSession:
-    """Speaker session on the camera media port."""
+    """Speaker session on the camera media port, opened as a context manager."""
 
     def __init__(
         self,
         host: str,
         cloud_password: str,
         *,
-        port: int = MEDIA_PORT,
-        timeout: float = DeviceConfig.DEFAULT_TIMEOUT,
+        timeout: float,
         clock: Callable[[], float] = time.monotonic,
         sleep: Callable[[float], Awaitable[Any]] = asyncio.sleep,
-        cnonce: Callable[[], str] = lambda: secrets.token_hex(16),
     ) -> None:
         self._host = host
-        self._port = port
         self._cloud_password = cloud_password
         self._timeout = timeout
         self._clock = clock
         self._sleep = sleep
-        self._cnonce = cnonce
         self._reader: asyncio.StreamReader | None = None
         self._writer: asyncio.StreamWriter | None = None
         self._session_id: str | None = None
@@ -142,26 +158,37 @@ class _TalkSession:
         """Return the talk session id assigned by the camera."""
         return self._session_id
 
+    async def __aenter__(self) -> _TalkSession:
+        try:
+            await self.open()
+        except BaseException:
+            await self.close()
+            raise
+        return self
+
+    async def __aexit__(self, *exc_info: object) -> None:
+        await self.close()
+
     @contextmanager
     def _media_errors(self, action: str) -> Iterator[None]:
         try:
             yield
         except TimeoutError as ex:
             raise KasaTimeoutError(
-                f"Timeout {action} talk session with {self._host}:{self._port}"
+                f"Timeout {action} talk session with {self._host}:{MEDIA_PORT}"
             ) from ex
         except (OSError, asyncio.IncompleteReadError, asyncio.LimitOverrunError) as ex:
             raise KasaException(
-                f"Error {action} talk session with {self._host}:{self._port}: {ex!r}"
+                f"Error {action} talk session with {self._host}:{MEDIA_PORT}: {ex!r}"
             ) from ex
 
     async def open(self) -> None:
         """Connect, authenticate and start a talk session."""
-        _LOGGER.debug("Opening talk session with %s:%s", self._host, self._port)
+        _LOGGER.debug("Opening talk session with %s:%s", self._host, MEDIA_PORT)
         with self._media_errors("opening"):
             async with asyncio_timeout(self._timeout):
                 self._reader, self._writer = await asyncio.open_connection(
-                    self._host, self._port
+                    self._host, MEDIA_PORT
                 )
                 await self._authenticate()
                 self._session_id = await self._start_talk()
@@ -171,7 +198,7 @@ class _TalkSession:
         assert self._writer  # noqa: S101
         request = (
             f"POST {_URI} HTTP/1.1\r\n"
-            f"Host: {self._host}:{self._port}\r\n"
+            f"Host: {self._host}:{MEDIA_PORT}\r\n"
             f"Content-Type: multipart/mixed; boundary={_CLIENT_BOUNDARY.decode()}\r\n"
             "Content-Length: 0\r\n"
         )
@@ -183,7 +210,7 @@ class _TalkSession:
             )
         challenge = _parse_challenge(headers["www-authenticate"])
         password = _digest_password(self._cloud_password, challenge.get("encrypt_type"))
-        authorization = _authorization(challenge, password, self._cnonce())
+        authorization = _authorization(challenge, password, secrets.token_hex(16))
         self._writer.write(f"{request}Authorization: {authorization}\r\n\r\n".encode())
         status, _ = await self._read_response()
         if status == 401:
@@ -201,11 +228,7 @@ class _TalkSession:
         status_line, *header_lines = head.decode("latin-1").split("\r\n")
         version, _, rest = status_line.partition(" ")
         status = rest.partition(" ")[0]
-        headers = {}
-        for line in header_lines:
-            key, sep, value = line.partition(":")
-            if sep:
-                headers[key.strip().lower()] = value.strip()
+        headers = _parse_headers(header_lines)
         length = headers.get("content-length", "0")
         if not (version.startswith("HTTP/") and status.isdigit() and length.isdigit()):
             raise KasaException(f"Invalid media response from {self._host}")
@@ -225,10 +248,10 @@ class _TalkSession:
         while (line := (await self._reader.readline()).rstrip(b"\r\n")) != boundary:
             if line or self._reader.at_eof():
                 raise invalid
-        headers = {}
+        lines = []
         while line := (await self._reader.readline()).rstrip(b"\r\n"):
-            key, _, value = line.decode("latin-1").partition(":")
-            headers[key.strip().lower()] = value.strip()
+            lines.append(line.decode("latin-1"))
+        headers = _parse_headers(lines)
         if not (length := headers.get("content-length", "")).isdigit():
             raise invalid
         try:
@@ -256,37 +279,21 @@ class _TalkSession:
 
         Returns once the last sent audio is expected to have been played.
         """
-        if not self._writer or not self._session_id:
-            raise KasaException("Talk session is not open")
         muxer = _PcmaTsMuxer()
         await self._send(muxer.header())
 
-        buffer = bytearray()
-        start: float | None = None
-        sent = 0
-
-        async def send_frame(frame: bytes) -> None:
-            nonlocal start, sent
+        due: float | None = None
+        async for frame in _frames(audio):
             now = self._clock()
-            if start is None or now - (start + sent / _BYTES_PER_SECOND) > (
-                _MAX_LATENESS
-            ):
+            if due is None or now - due > _MAX_LATENESS:
                 # First audio or the producer stalled: restart the schedule
                 # rather than bursting the backlog, which the camera drops.
-                start = now - sent / _BYTES_PER_SECOND
-            await self._wait_until(start + sent / _BYTES_PER_SECOND)
+                due = now
+            await self._wait_until(due)
             await self._send(muxer.audio(frame))
-            sent += len(frame)
-
-        async for chunk in audio:
-            buffer += chunk
-            while len(buffer) >= _FRAME_SIZE:
-                await send_frame(bytes(buffer[:_FRAME_SIZE]))
-                del buffer[:_FRAME_SIZE]
-        if buffer:
-            await send_frame(bytes(buffer))
-        if start is not None:
-            await self._wait_until(start + sent / _BYTES_PER_SECOND)
+            due += len(frame) / _BYTES_PER_SECOND
+        if due is not None:
+            await self._wait_until(due)
         self._finished = True
 
     async def _wait_until(self, deadline: float) -> None:
