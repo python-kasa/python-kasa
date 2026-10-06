@@ -429,6 +429,24 @@ async def test_childdevicewrapper_multiplerequest_error(
     assert res["invalid_command"] == SmartErrorCode(-1001)
 
 
+async def test_smart_protocol_list_response_without_list(
+    dummy_protocol: SmartProtocol, mocker: MockerFixture
+) -> None:
+    """Test a paginated response that carries no list.
+
+    A hub without paired children answers with only start_index and sum.
+    """
+    result = {"start_index": 0, "sum": 0}
+    send_mock = mocker.patch.object(
+        dummy_protocol._transport,
+        "send",
+        return_value={"result": result, "error_code": 0},
+    )
+    resp = await dummy_protocol.query({"get_child_device_list": None})
+    assert resp == {"get_child_device_list": result}
+    assert send_mock.call_count == 1
+
+
 @pytest.mark.parametrize("list_sum", [5, 10, 30])
 @pytest.mark.parametrize("batch_size", [1, 2, 3, 50])
 async def test_smart_protocol_lists_single_request(

@@ -111,13 +111,13 @@ class SmartDevice(Device):
         changed = False
         smart_children_components = {
             child["device_id"]: child
-            for child in child_device_components_resp["child_component_list"]
+            for child in child_device_components_resp.get("child_component_list", [])
         }
         children = self._children
         child_ids: set[str] = set()
         existing_child_ids = set(self._children.keys())
 
-        for info in child_device_resp["child_device_list"]:
+        for info in child_device_resp.get("child_device_list", []):
             if (child_id := info.get("device_id")) and (
                 child_components := smart_children_components.get(child_id)
             ):
@@ -244,7 +244,7 @@ class SmartDevice(Device):
                 child_info, self._last_update["get_child_device_component_list"]
             )
 
-            for info in child_info["child_device_list"]:
+            for info in child_info.get("child_device_list", []):
                 child_id = info.get("device_id")
                 if child_id not in self._children:
                     # _create_delete_children has already logged a message

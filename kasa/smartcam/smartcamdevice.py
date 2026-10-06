@@ -117,7 +117,7 @@ class SmartCamDevice(SmartDevice):
                 child_info, self._last_update["getChildDeviceComponentList"]
             )
 
-            for info in child_info["child_device_list"]:
+            for info in child_info.get("child_device_list", []):
                 child_id = info.get("device_id")
                 if child_id not in self._children:
                     # _create_delete_children has already logged a message

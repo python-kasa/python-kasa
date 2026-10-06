@@ -389,14 +389,12 @@ class SmartProtocol(BaseProtocol):
             return
 
         response_list_name = next(
-            iter(
-                [
-                    key
-                    for key in response_result
-                    if isinstance(response_result[key], list)
-                ]
-            )
+            (key for key, val in response_result.items() if isinstance(val, list)),
+            None,
         )
+        # Hubs without children may omit the list altogether
+        if response_list_name is None:
+            return
         while (list_length := len(response_result[response_list_name])) < list_sum:
             request = self._get_list_request(method, params, list_length)
             response = await self._execute_query(
