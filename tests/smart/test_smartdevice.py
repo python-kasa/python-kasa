@@ -890,6 +890,19 @@ async def test_dynamic_devices(dev: Device, caplog: pytest.LogCaptureFixture) ->
 
     assert len(dev.children) == 0
 
+    # Test a hub that omits the lists when it has no child devices
+    del mock_child_device_info["child_device_list"]
+    del mock_child_device_components["child_component_list"]
+
+    caplog.clear()
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert len(dev.children) == 0
+    assert "Error" not in caplog.text
+
     # Logging tests are only for smartcam hubs as smart hubs do not test categories
     if not isinstance(dev, SmartCamDevice):
         return
