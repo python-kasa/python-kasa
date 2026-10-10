@@ -30,6 +30,7 @@ from .smartcam import SmartCamDevice
 from .transports import (
     AesTransport,
     BaseTransport,
+    DlklapTransport,
     KlapTransport,
     KlapTransportV2,
     LinkieTransportV2,
@@ -232,6 +233,7 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
         "SMART.AES": (SmartProtocol, AesTransport),
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
         "SMART.KLAP.HTTPS": (SmartProtocol, KlapTransportV2),
+        "SMART.DLKLAP": (SmartProtocol, DlklapTransport),
         # H200 is device family SMART.TAPOHUB and uses SmartCamProtocol so use
         # https to distuingish from SmartProtocol devices
         "SMART.AES.HTTPS": (SmartCamProtocol, SslAesTransport),
