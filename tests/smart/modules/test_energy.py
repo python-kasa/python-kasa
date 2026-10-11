@@ -24,6 +24,12 @@ p110_v1_smart = parametrize(
     protocol_filter={"SMART"},
 )
 
+p410m_smart = parametrize(
+    "p410m smart",
+    model_filter={"P410M(EU)_1.0_1.4.4"},
+    protocol_filter={"SMART"},
+)
+
 
 def _get_energy_module(dev: SmartDevice) -> SmartEnergyModule:
     energy_module = dev.modules.get(Module.Energy)
@@ -424,3 +430,17 @@ async def test_s515d_missing_get_current_power_is_optional(dev: SmartDevice) -> 
     assert "get_current_power" not in energy_module.data
     assert energy_module.current_consumption == 0.0
     assert energy_module.status.power == 0.0
+
+
+@p410m_smart
+async def test_p410m_uses_energy_usage_without_legacy_emeter(
+    dev: SmartDevice,
+) -> None:
+    """P410M reports signed solar power via get_energy_usage."""
+    energy_module = _get_v2_energy_module(dev)
+
+    assert "get_energy_usage" in energy_module.query()
+    assert "get_current_power" in energy_module.query()
+    assert "get_emeter_data" not in energy_module.query()
+    assert energy_module.current_consumption == -19.231
+    assert energy_module.status.power == -19.231
