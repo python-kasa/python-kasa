@@ -1,0 +1,58 @@
+---
+name: Draft Release
+
+# Runs when a release PR from a release/* branch (devtools/release.py prepare) is merged.
+# If it fails, re-run it from the Actions tab.
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - master
+      - patch
+
+permissions: {}
+
+jobs:
+  draft-release:
+    name: Create Draft Release
+    # The branch name is used to find the version as the title and labels can be edited.
+    if: >-
+      github.event.pull_request.merged
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && startsWith(github.event.pull_request.head.ref, 'release/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - name: Checkout Source Files
+      id: checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      with:
+        ref: ${{ github.event.pull_request.merge_commit_sha }}
+        persist-credentials: false
+
+    # release.py declares its dependencies inline and is run by uv.
+    - name: Setup uv
+      id: setup-uv
+      uses: astral-sh/setup-uv@d31148d669074a8d0a63714ba94f3201e7020bc3 # v8.3.0
+      with:
+        version-file: uv.lock
+
+    # The draft has no tag yet, GitHub creates it at --target when the release is published.
+    # That in turn starts publish.yml.
+    - name: Create Draft Release
+      id: release
+      env:
+        GH_TOKEN: ${{ github.token }}
+        HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        TARGET_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+      run: |
+        version="${HEAD_REF#release/}"
+        if [[ ! $version =~ ^[0-9]+(\.[0-9]+){2,3}$ ]]; then
+          echo "::error::Invalid version: $version"
+          exit 1
+        fi
+
+        devtools/release.py extract CHANGELOG.md "$version" > notes.md
+        gh release create "$version" --draft --target "$TARGET_SHA" \
+          --title "$version" --notes-file notes.md --latest=true

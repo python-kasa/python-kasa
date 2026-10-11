@@ -107,6 +107,7 @@ exclude_lines = [
 [tool.pytest.ini_options]
 testpaths = [
     "tests",
+    "devtools/release.py",
 ]
 markers = [
     "requires_dummy: test requires dummy data to pass, skipped on real devices",
@@ -176,6 +177,10 @@ convention = "pep257"
 # Temporary ANN disable
 "devtools/*.py" = [
     "ANN",
+]
+# The tests are at the end of the file
+"devtools/release.py" = [
+    "S101",
 ]
 
 
