@@ -99,19 +99,19 @@ async def test_invalid_connection(mocker: MockerFixture, dev: IotDevice) -> None
 
 @has_emeter_iot
 async def test_initial_update_emeter(dev: IotDevice, mocker: MockerFixture) -> None:
-    """Test that the initial update performs second query if emeter is available."""
+    """Test initial sysinfo, HomeKit, and batched energy queries."""
     dev._last_update = {}
     dev._legacy_features = set()
     spy = mocker.spy(dev.protocol, "query")
     await dev.update()
-    # Devices with small buffers may require 3 queries
-    expected_queries = 2 if dev.max_device_response_size > 4096 else 3
+    # Devices with small buffers require an additional batch.
+    expected_queries = 3 if dev.max_device_response_size > 4096 else 4
     assert spy.call_count == expected_queries + len(dev.children)
 
 
 @no_emeter_iot
 async def test_initial_update_no_emeter(dev: IotDevice, mocker: MockerFixture) -> None:
-    """Test that the initial update performs second query if emeter is available."""
+    """Test initial sysinfo, HomeKit, and batched queries without energy data."""
     dev._last_update = {}
     dev._legacy_features = set()
     spy = mocker.spy(dev.protocol, "query")
@@ -123,9 +123,8 @@ async def test_initial_update_no_emeter(dev: IotDevice, mocker: MockerFixture) -
             if module.query():
                 child_calls += 1
                 break
-    # 2 parent are necessary as some devices crash on unexpected modules
-    # See #105, #120, #161
-    assert spy.call_count == 2 + child_calls
+    # Sysinfo and HomeKit each need a separate request from the normal batch.
+    assert spy.call_count == 3 + child_calls
 
 
 @device_iot
