@@ -321,10 +321,10 @@ async def cli(
             )
         elif device_family and encrypt_type:
             ctype = DeviceConnectionParameters(
-                DeviceFamily(device_family),
-                DeviceEncryptionType(encrypt_type),
-                login_version,
-                https,
+                device_family=DeviceFamily(device_family),
+                encryption_type=DeviceEncryptionType(encrypt_type),
+                login_version=login_version,
+                https=https,
             )
             config = DeviceConfig(
                 host=host,

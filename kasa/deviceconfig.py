@@ -92,7 +92,7 @@ class _DeviceConfigBaseMixin(DataClassJSONMixin):
         omit_none = True
 
 
-@dataclass
+@dataclass(kw_only=True)
 class DeviceConnectionParameters(_DeviceConfigBaseMixin):
     """Class to hold the the parameters determining connection type."""
 
@@ -116,10 +116,10 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
             if https is None:
                 https = False
             return DeviceConnectionParameters(
-                DeviceFamily(device_family),
-                DeviceEncryptionType(encryption_type),
-                login_version,
-                https,
+                device_family=DeviceFamily(device_family),
+                encryption_type=DeviceEncryptionType(encryption_type),
+                login_version=login_version,
+                https=https,
                 http_port=http_port,
             )
         except (ValueError, TypeError) as ex:
@@ -151,7 +151,8 @@ class DeviceConfig(_DeviceConfigBaseMixin):
     #: The batch size for protoools supporting multiple request batches.
     connection_type: DeviceConnectionParameters = field(
         default_factory=lambda: DeviceConnectionParameters(
-            DeviceFamily.IotSmartPlugSwitch, DeviceEncryptionType.Xor
+            device_family=DeviceFamily.IotSmartPlugSwitch,
+            encryption_type=DeviceEncryptionType.Xor,
         )
     )
 
@@ -173,7 +174,8 @@ class DeviceConfig(_DeviceConfigBaseMixin):
     def __post_init__(self) -> None:
         if self.connection_type is None:
             self.connection_type = DeviceConnectionParameters(
-                DeviceFamily.IotSmartPlugSwitch, DeviceEncryptionType.Xor
+                device_family=DeviceFamily.IotSmartPlugSwitch,
+                encryption_type=DeviceEncryptionType.Xor,
             )
 
     def to_dict_control_credentials(
