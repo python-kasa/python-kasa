@@ -219,6 +219,8 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 - **P115**
   - Hardware: 1.0 (EU) / Firmware: 1.2.3
   - Hardware: 1.0 (US) / Firmware: 1.1.3
+- **P116M**
+  - Hardware: 1.0 (IN) / Firmware: 1.4.4
 - **P125M**
   - Hardware: 1.0 (US) / Firmware: 1.1.0
   - Hardware: 1.0 (US) / Firmware: 1.4.4
