@@ -40,6 +40,7 @@ from kasa.interfaces.thermostat import Thermostat, ThermostatState
 from kasa.module import Module
 from kasa.protocols import BaseProtocol, IotProtocol, SmartCamProtocol, SmartProtocol
 from kasa.protocols.iotprotocol import _deprecated_TPLinkSmartHomeProtocol  # noqa: F401
+from kasa.registry import load_plugins
 from kasa.smartcam.modules.camera import StreamResolution
 from kasa.transports import BaseTransport
 
@@ -82,6 +83,8 @@ __all__ = [
 
 from . import iot
 from .iot.modules.lightpreset import IotLightPreset
+
+load_plugins()
 
 deprecated_names = ["TPLinkSmartHomeProtocol"]
 deprecated_smart_devices = {

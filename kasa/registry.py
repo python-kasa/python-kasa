@@ -11,11 +11,13 @@ registering the same parameters again replaces the earlier registration::
 from __future__ import annotations
 
 import logging
+import os
 from collections.abc import Callable
 from dataclasses import dataclass
+from importlib.metadata import entry_points
 from typing import TYPE_CHECKING
 
-from .deviceconfig import DeviceConnectionParameters
+from .deviceconfig import DeviceConnectionParameters, DeviceEncryptionType
 
 if TYPE_CHECKING:
     from .protocols import BaseProtocol
@@ -51,6 +53,23 @@ class Entry:
             + 2 * (self.encryption is not None)
             + (self.https is not None)
         )
+
+    def overlaps(self, other: Entry) -> bool:
+        """Return True if some connection parameters match both entries."""
+        return (
+            (
+                self.family in (other.family, other.family.partition(".")[0])
+                or other.family in (self.family, self.family.partition(".")[0])
+            )
+            and (
+                None in (self.encryption, other.encryption)
+                or self.encryption == other.encryption
+            )
+            and (None in (self.https, other.https) or self.https == other.https)
+        )
+
+    def __str__(self) -> str:
+        return f"{self.family} {self.encryption} https={self.https}"
 
 
 _ENTRIES: list[Entry] = []
@@ -94,6 +113,13 @@ def register_transport(
             transport,
         )
         _ENTRIES.remove(existing)
+    enum = DeviceEncryptionType
+    if encryption is not None and encryption not in enum._value2member_map_:
+        member = object.__new__(enum)
+        member._name_ = member._value_ = encryption
+        enum._value2member_map_[encryption] = member
+        enum._member_map_[encryption] = member
+        enum._member_names_.append(encryption)
     _ENTRIES.append(Entry(family, encryption, https, protocol, transport))
 
 
@@ -104,3 +130,37 @@ def lookup(parameters: DeviceConnectionParameters) -> Entry | None:
         key=lambda entry: entry.specificity,
         default=None,
     )
+
+
+def _log_overrides(plugin: str, before: list[Entry]) -> None:
+    """Warn about the entries a plugin takes devices over from."""
+    for new in (entry for entry in _ENTRIES if entry not in before):
+        for old in before:
+            if old.overlaps(new) and old.specificity < new.specificity:
+                _LOGGER.warning(
+                    "Plugin %s overrides %s (%s) with %s (%s)",
+                    plugin,
+                    old.transport,
+                    old,
+                    new.transport,
+                    new,
+                )
+
+
+def load_plugins() -> None:
+    """Load the installed plugins, skipping the ones that fail."""
+    if os.environ.get("KASA_DISABLE_PLUGINS"):
+        return
+
+    for entry_point in entry_points(group="kasa.plugins"):
+        before = list(_ENTRIES)
+        try:
+            entry_point.load()()
+        except KeyboardInterrupt:
+            raise
+        except BaseException:
+            _LOGGER.exception("Unable to load plugin %s", entry_point.name)
+        else:
+            _LOGGER.info("Loaded plugin %s", entry_point.name)
+
+        _log_overrides(entry_point.name, before)
