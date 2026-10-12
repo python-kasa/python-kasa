@@ -152,7 +152,7 @@ def get_device_class_from_sys_info(sysinfo: dict[str, Any]) -> type[IotDevice]:
 
 
 def get_device_class_from_family(
-    device_type: str, *, https: bool, require_exact: bool = False
+    device_type: str, *, https: bool
 ) -> type[Device] | None:
     """Return the device class from the type name."""
     supported_device_types: dict[str, type[Device]] = {
@@ -174,10 +174,8 @@ def get_device_class_from_family(
     }
     lookup_key = f"{device_type}{'.HTTPS' if https else ''}"
     if (
-        (cls := supported_device_types.get(lookup_key)) is None
-        and device_type.startswith("SMART.")
-        and not require_exact
-    ):
+        cls := supported_device_types.get(lookup_key)
+    ) is None and device_type.startswith("SMART."):
         _LOGGER.debug("Unknown SMART device with %s, using SmartDevice", device_type)
         cls = SmartDevice
 
@@ -187,7 +185,7 @@ def get_device_class_from_family(
     return cls
 
 
-def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol | None:
+def get_protocol(config: DeviceConfig) -> BaseProtocol | None:
     """Return the protocol from the device config.
 
     For cameras and vacuums the device family is a simple mapping to
@@ -195,7 +193,6 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
     based on the discovery information.
 
     :param config: Device config to derive protocol
-    :param strict: Require exact match on encrypt type
     """
     _LOGGER.debug("Finding protocol for %s", config.host)
     ctype = config.connection_type
@@ -206,13 +203,9 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
         DeviceFamily.SmartIpCamera,
         DeviceFamily.SmartTapoDoorbell,
     }:
-        if strict and ctype.encryption_type is not DeviceEncryptionType.Aes:
-            return None
         return SmartCamProtocol(transport=SslAesTransport(config=config))
 
     if ctype.device_family is DeviceFamily.IotIpCamera:
-        if strict and ctype.encryption_type is not DeviceEncryptionType.Xor:
-            return None
         return IotProtocol(transport=LinkieTransportV2(config=config))
 
     # Older FW used a different transport

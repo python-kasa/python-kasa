@@ -138,7 +138,6 @@ _LOGGER = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from kasa import BaseProtocol
-    from kasa.transports import BaseTransport
 
 
 class ConnectAttempt(NamedTuple):
@@ -414,6 +413,52 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             self.discover_task.cancel()
 
 
+# The combinations Discover.try_connect_all tries, in order.
+_TRY_CONNECT_PARAMETERS = (
+    DeviceConnectionParameters(
+        device_family=Device.Family.IotSmartPlugSwitch,
+        encryption_type=Device.EncryptionType.Klap,
+    ),
+    DeviceConnectionParameters(
+        device_family=Device.Family.IotSmartPlugSwitch,
+        encryption_type=Device.EncryptionType.Klap,
+        login_version=2,
+    ),
+    DeviceConnectionParameters(
+        device_family=Device.Family.IotSmartPlugSwitch,
+        encryption_type=Device.EncryptionType.Xor,
+    ),
+    DeviceConnectionParameters(
+        device_family=Device.Family.SmartTapoPlug,
+        encryption_type=Device.EncryptionType.Aes,
+        login_version=2,
+    ),
+    DeviceConnectionParameters(
+        device_family=Device.Family.SmartTapoPlug,
+        encryption_type=Device.EncryptionType.Klap,
+        login_version=2,
+    ),
+    DeviceConnectionParameters(
+        device_family=Device.Family.SmartTapoRobovac,
+        encryption_type=Device.EncryptionType.Klap,
+        login_version=2,
+        https=True,
+    ),
+    DeviceConnectionParameters(
+        device_family=Device.Family.SmartTapoRobovac,
+        encryption_type=Device.EncryptionType.Aes,
+        login_version=2,
+        https=True,
+    ),
+    DeviceConnectionParameters(
+        device_family=Device.Family.SmartIpCamera,
+        encryption_type=Device.EncryptionType.Aes,
+        login_version=2,
+        https=True,
+    ),
+)
+
+
 class Discover:
     """Class for discovering devices."""
 
@@ -634,72 +679,46 @@ class Discover:
         """
         from .device_factory import _connect
 
-        main_device_families = {
-            Device.Family.SmartTapoPlug,
-            Device.Family.IotSmartPlugSwitch,
-            Device.Family.SmartIpCamera,
-            Device.Family.SmartTapoRobovac,
-            Device.Family.IotIpCamera,
-        }
-        candidates: dict[
-            tuple[type[BaseProtocol], type[BaseTransport], type[Device], bool],
-            tuple[BaseProtocol, DeviceConfig],
-        ] = {
-            (type(protocol), type(protocol._transport), device_class, https): (
-                protocol,
-                config,
+        for conn_params in _TRY_CONNECT_PARAMETERS:
+            config = DeviceConfig(
+                host=host,
+                connection_type=conn_params,
+                timeout=timeout,
+                port_override=port,
+                credentials=credentials,
+                http_client=http_client,
             )
-            for encrypt in Device.EncryptionType
-            for device_family in main_device_families
-            for https in (True, False)
-            for login_version in (None, 2)
-            if (
-                conn_params := DeviceConnectionParameters(
-                    device_family=device_family,
-                    encryption_type=encrypt,
-                    login_version=login_version,
-                    https=https,
-                )
+            protocol = cast("BaseProtocol", get_protocol(config))
+            device_class = cast(
+                type[Device],
+                get_device_class_from_family(
+                    conn_params.device_family.value, https=conn_params.https
+                ),
             )
-            and (
-                config := DeviceConfig(
-                    host=host,
-                    connection_type=conn_params,
-                    timeout=timeout,
-                    port_override=port,
-                    credentials=credentials,
-                    http_client=http_client,
-                )
+            attempt = ConnectAttempt(
+                type(protocol),
+                type(protocol._transport),
+                device_class,
+                conn_params.https,
             )
-            and (protocol := get_protocol(config, strict=True))
-            and (
-                device_class := get_device_class_from_family(
-                    device_family.value, https=https, require_exact=True
-                )
-            )
-        }
-        for key, val in candidates.items():
             try:
-                prot, config = val
-                _LOGGER.debug("Trying to connect with %s", prot.__class__.__name__)
-                dev = await _connect(config, prot)
+                _LOGGER.debug("Trying to connect with %s", protocol.__class__.__name__)
+                dev = await _connect(config, protocol)
             except Exception as ex:
                 _LOGGER.debug(
                     "Unable to connect with %s: %s",
-                    prot.__class__.__name__,
+                    protocol.__class__.__name__,
                     ex,
                 )
                 if on_attempt:
-                    ca = tuple.__new__(ConnectAttempt, key)
-                    on_attempt(ca, False)
+                    on_attempt(attempt, False)
             else:
                 if on_attempt:
-                    ca = tuple.__new__(ConnectAttempt, key)
-                    on_attempt(ca, True)
-                _LOGGER.debug("Found working protocol %s", prot.__class__.__name__)
+                    on_attempt(attempt, True)
+                _LOGGER.debug("Found working protocol %s", protocol.__class__.__name__)
                 return dev
             finally:
-                await prot.close()
+                await protocol.close()
         return None
 
     @staticmethod
