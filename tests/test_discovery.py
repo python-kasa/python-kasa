@@ -27,7 +27,7 @@ from kasa import (
     SmartProtocol,
 )
 from kasa.device_factory import (
-    get_device_class_from_family,
+    get_device_class,
     get_device_class_from_sys_info,
     get_protocol,
 )
@@ -705,9 +705,6 @@ async def test_discovery_decryption() -> None:
 async def test_discover_try_connect_all(discovery_mock, mocker: MockerFixture) -> None:
     """Test that device update is called on main."""
     if "result" in discovery_mock.discovery_data:
-        dev_class = get_device_class_from_family(
-            discovery_mock.device_type, https=discovery_mock.https
-        )
         cparams = DeviceConnectionParameters.from_values(
             discovery_mock.device_type,
             discovery_mock.encrypt_type,
@@ -715,6 +712,7 @@ async def test_discover_try_connect_all(discovery_mock, mocker: MockerFixture) -
             https=discovery_mock.https,
             http_port=discovery_mock.http_port,
         )
+        dev_class = get_device_class(cparams)
         protocol = get_protocol(
             DeviceConfig(discovery_mock.ip, connection_type=cparams)
         )
@@ -932,3 +930,19 @@ def test_connection_parameters_legacy(sys_info, expected) -> None:
 def test_connection_parameters_legacy_without_type() -> None:
     with pytest.raises(UnsupportedDeviceError, match="type nor mic_type"):
         Discover._get_connection_parameters_legacy({})
+
+
+def test_device_class_without_device_class() -> None:
+    """A device with a transport but no device class is an unknown device type."""
+    info = {
+        "result": {
+            "device_type": "IOT.IPCAMERA",
+            "device_model": "KC200",
+            "device_id": "xx",
+            "ip": "127.0.0.1",
+            "mac": "00-00-00-00-00-00",
+            "mgt_encrypt_schm": {"is_support_https": True, "encrypt_type": "XOR"},
+        }
+    }
+    with pytest.raises(UnsupportedDeviceError, match="Unknown device type"):
+        Discover._get_device_class(info)

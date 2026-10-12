@@ -31,7 +31,6 @@ from kasa.device_factory import (
     SmartCamDevice,
     SmartDevice,
     connect,
-    get_device_class_from_family,
     get_device_class_from_sys_info,
     get_protocol,
 )
@@ -232,17 +231,6 @@ def test_device_class_from_unsupported_legacy_camera() -> None:
         get_device_class_from_sys_info(info)
     with pytest.raises(UnsupportedDeviceError, match="Unsupported device type"):
         Discover._get_device_class(info)
-
-
-@pytest.mark.xdist_group(name="caplog")
-async def test_device_class_from_unknown_family(
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    """Verify that unknown SMART devices yield a warning and fallback to SmartDevice."""
-    dummy_name = "SMART.foo"
-    with caplog.at_level(logging.DEBUG):
-        assert get_device_class_from_family(dummy_name, https=False) == SmartDevice
-    assert f"Unknown SMART device with {dummy_name}" in caplog.text
 
 
 # Aliases to make the test params more readable

@@ -8,7 +8,7 @@ from typing import Any
 
 from .device import Device
 from .device_type import DeviceType
-from .deviceconfig import DeviceConfig, DeviceEncryptionType, DeviceFamily
+from .deviceconfig import DeviceConfig, DeviceConnectionParameters
 from .exceptions import KasaException, UnsupportedDeviceError
 from .iot import (
     IotBulb,
@@ -25,6 +25,7 @@ from .protocols import (
     SmartProtocol,
 )
 from .protocols.smartcamprotocol import SmartCamProtocol
+from .registry import lookup, register_transport
 from .smart import SmartDevice
 from .smartcam import SmartCamDevice
 from .transports import (
@@ -43,6 +44,28 @@ _LOGGER = logging.getLogger(__name__)
 GET_SYSINFO_QUERY: dict[str, dict[str, dict]] = {
     "system": {"get_sysinfo": {}},
 }
+
+
+def _iot_klap_transport(*, config: DeviceConfig) -> BaseTransport:
+    login_version = config.connection_type.login_version
+    transport_cls = (
+        KlapTransportV2 if login_version and login_version >= 2 else KlapTransport
+    )
+    return transport_cls(config=config)
+
+
+register_transport("IOT", "XOR", IotProtocol, XorTransport, https=False)
+register_transport("IOT", "KLAP", IotProtocol, _iot_klap_transport, https=False)
+register_transport("SMART", "AES", SmartProtocol, AesTransport, https=False)
+register_transport("SMART", "KLAP", SmartProtocol, KlapTransportV2)
+# H200 is device family SMART.TAPOHUB and uses SmartCamProtocol so use
+# https to distuingish from SmartProtocol devices
+register_transport("SMART", "AES", SmartCamProtocol, SslAesTransport, https=True)
+register_transport("SMART.IPCAMERA", None, SmartCamProtocol, SslAesTransport)
+register_transport("SMART.TAPODOORBELL", None, SmartCamProtocol, SslAesTransport)
+register_transport("IOT.IPCAMERA", None, IotProtocol, LinkieTransportV2)
+# Older FW used a different transport
+register_transport("SMART.TAPOROBOVAC", "AES", SmartProtocol, SslTransport)
 
 
 async def connect(*, host: str | None = None, config: DeviceConfig) -> Device:
@@ -115,9 +138,7 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> Device:
         await device.update()
         _perf_log(True, "update")
         return device
-    elif device_class := get_device_class_from_family(
-        config.connection_type.device_family.value, https=config.connection_type.https
-    ):
+    elif device_class := get_device_class(config.connection_type):
         device = device_class(host=config.host, protocol=protocol)
         await device.update()
         _perf_log(True, "update")
@@ -151,97 +172,25 @@ def get_device_class_from_sys_info(sysinfo: dict[str, Any]) -> type[IotDevice]:
     return cls
 
 
-def get_device_class_from_family(
-    device_type: str, *, https: bool
+def get_device_class(
+    connection_parameters: DeviceConnectionParameters,
 ) -> type[Device] | None:
-    """Return the device class from the type name."""
-    supported_device_types: dict[str, type[Device]] = {
-        "SMART.TAPOPLUG": SmartDevice,
-        "SMART.TAPOBULB": SmartDevice,
-        "SMART.TAPOSWITCH": SmartDevice,
-        "SMART.KASAPLUG": SmartDevice,
-        "SMART.TAPOHUB": SmartDevice,
-        "SMART.TAPOHUB.HTTPS": SmartCamDevice,
-        "SMART.KASAHUB": SmartDevice,
-        "SMART.KASASWITCH": SmartDevice,
-        "SMART.IPCAMERA.HTTPS": SmartCamDevice,
-        "SMART.TAPODOORBELL.HTTPS": SmartCamDevice,
-        "SMART.TAPOROBOVAC.HTTPS": SmartDevice,
-        "IOT.SMARTPLUGSWITCH": IotPlug,
-        "IOT.SMARTBULB": IotBulb,
-        # Disabled until properly implemented
-        # "IOT.IPCAMERA": IotCamera,
-    }
-    lookup_key = f"{device_type}{'.HTTPS' if https else ''}"
-    if (
-        cls := supported_device_types.get(lookup_key)
-    ) is None and device_type.startswith("SMART."):
-        _LOGGER.debug("Unknown SMART device with %s, using SmartDevice", device_type)
-        cls = SmartDevice
-
-    if cls is not None:
-        _LOGGER.debug("Using %s for %s", cls.__name__, device_type)
-
-    return cls
+    """Return the device class for the connection parameters."""
+    if not (entry := lookup(connection_parameters)):
+        return None
+    if issubclass(entry.protocol, SmartCamProtocol):
+        return SmartCamDevice
+    if issubclass(entry.protocol, SmartProtocol):
+        return SmartDevice
+    # IOT device classes are decided by the sysinfo, discovery only has the family
+    return {"IOT.SMARTPLUGSWITCH": IotPlug, "IOT.SMARTBULB": IotBulb}.get(
+        connection_parameters.device_family.value
+    )
 
 
 def get_protocol(config: DeviceConfig) -> BaseProtocol | None:
-    """Return the protocol from the device config.
-
-    For cameras and vacuums the device family is a simple mapping to
-    the protocol/transport. For other device types the transport varies
-    based on the discovery information.
-
-    :param config: Device config to derive protocol
-    """
+    """Return the protocol from the device config."""
     _LOGGER.debug("Finding protocol for %s", config.host)
-    ctype = config.connection_type
-    protocol_name = ctype.device_family.value.split(".")[0]
-    _LOGGER.debug("Finding protocol for %s", ctype.device_family)
-
-    if ctype.device_family in {
-        DeviceFamily.SmartIpCamera,
-        DeviceFamily.SmartTapoDoorbell,
-    }:
-        return SmartCamProtocol(transport=SslAesTransport(config=config))
-
-    if ctype.device_family is DeviceFamily.IotIpCamera:
-        return IotProtocol(transport=LinkieTransportV2(config=config))
-
-    # Older FW used a different transport
-    if (
-        ctype.device_family is DeviceFamily.SmartTapoRobovac
-        and ctype.encryption_type is DeviceEncryptionType.Aes
-    ):
-        return SmartProtocol(transport=SslTransport(config=config))
-
-    protocol_transport_key = (
-        protocol_name
-        + "."
-        + ctype.encryption_type.value
-        + (".HTTPS" if ctype.https else "")
-    )
-
-    _LOGGER.debug("Finding transport for %s", protocol_transport_key)
-    supported_device_protocols: dict[
-        str, tuple[type[BaseProtocol], type[BaseTransport]]
-    ] = {
-        "IOT.XOR": (IotProtocol, XorTransport),
-        "IOT.KLAP": (IotProtocol, KlapTransport),
-        "SMART.AES": (SmartProtocol, AesTransport),
-        "SMART.KLAP": (SmartProtocol, KlapTransportV2),
-        "SMART.KLAP.HTTPS": (SmartProtocol, KlapTransportV2),
-        # H200 is device family SMART.TAPOHUB and uses SmartCamProtocol so use
-        # https to distuingish from SmartProtocol devices
-        "SMART.AES.HTTPS": (SmartCamProtocol, SslAesTransport),
-    }
-    if not (prot_tran_cls := supported_device_protocols.get(protocol_transport_key)):
+    if not (entry := lookup(config.connection_type)):
         return None
-    protocol_cls, transport_cls = prot_tran_cls
-    if (
-        protocol_transport_key == "IOT.KLAP"
-        and ctype.login_version
-        and ctype.login_version >= 2
-    ):
-        transport_cls = KlapTransportV2
-    return protocol_cls(transport=transport_cls(config=config))
+    return entry.protocol(transport=entry.transport(config=config))

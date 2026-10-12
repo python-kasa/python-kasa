@@ -111,7 +111,7 @@ from mashumaro.types import Alias
 from kasa import Device
 from kasa.credentials import Credentials
 from kasa.device_factory import (
-    get_device_class_from_family,
+    get_device_class,
     get_device_class_from_sys_info,
     get_protocol,
 )
@@ -689,12 +689,7 @@ class Discover:
                 http_client=http_client,
             )
             protocol = cast("BaseProtocol", get_protocol(config))
-            device_class = cast(
-                type[Device],
-                get_device_class_from_family(
-                    conn_params.device_family.value, https=conn_params.https
-                ),
-            )
+            device_class = cast(type[Device], get_device_class(conn_params))
             attempt = ConnectAttempt(
                 type(protocol),
                 type(protocol._transport),
@@ -726,13 +721,8 @@ class Discover:
         """Find SmartDevice subclass for device described by passed data."""
         if "result" in info:
             discovery_result = DiscoveryResult.from_dict(info["result"])
-            https = (
-                discovery_result.mgt_encrypt_schm.is_support_https
-                if discovery_result.mgt_encrypt_schm
-                else False
-            )
-            dev_class = get_device_class_from_family(
-                discovery_result.device_type, https=https
+            dev_class = get_device_class(
+                Discover._get_connection_parameters(discovery_result)
             )
             if not dev_class:
                 raise UnsupportedDeviceError(
@@ -932,16 +922,6 @@ class Discover:
                 host=config.host,
             ) from ex
 
-        if (
-            device_class := get_device_class_from_family(type_, https=conn_params.https)
-        ) is None:
-            _LOGGER.debug("Got unsupported device type: %s", type_)
-            raise UnsupportedDeviceError(
-                f"Unsupported device {config.host} of type {type_}: {info}",
-                discovery_result=discovery_result.to_dict(),
-                host=config.host,
-            )
-
         if (protocol := get_protocol(config)) is None:
             _LOGGER.debug(
                 "Got unsupported connection type: %s", config.connection_type.to_dict()
@@ -949,6 +929,14 @@ class Discover:
             raise UnsupportedDeviceError(
                 f"Unsupported encryption scheme {config.host} of "
                 + f"type {config.connection_type.to_dict()}: {info}",
+                discovery_result=discovery_result.to_dict(),
+                host=config.host,
+            )
+
+        if (device_class := get_device_class(conn_params)) is None:
+            _LOGGER.debug("Got unsupported device type: %s", type_)
+            raise UnsupportedDeviceError(
+                f"Unsupported device {config.host} of type {type_}: {info}",
                 discovery_result=discovery_result.to_dict(),
                 host=config.host,
             )
