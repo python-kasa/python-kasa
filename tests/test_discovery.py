@@ -798,3 +798,42 @@ async def test_connection_parameters_from_encrypt_type_list_only():
     result["encrypt_type"] = ["9"]
     with pytest.raises(UnsupportedDeviceError, match="no encryption type"):
         Discover._get_connection_parameters(DiscoveryResult.from_dict(result))
+
+
+CP = DeviceConnectionParameters
+DF = DeviceFamily
+ET = DeviceEncryptionType
+
+
+@pytest.mark.parametrize(
+    ("sys_info", "expected"),
+    [
+        pytest.param(
+            {"type": "IOT.SMARTPLUGSWITCH"},
+            CP(device_family=DF.IotSmartPlugSwitch, encryption_type=ET.Xor),
+            id="type",
+        ),
+        pytest.param(
+            {"mic_type": "IOT.SMARTBULB", "type": "IOT.SMARTPLUGSWITCH"},
+            CP(device_family=DF.IotSmartBulb, encryption_type=ET.Xor),
+            id="mic_type-before-type",
+        ),
+        pytest.param(
+            {"type": "IOT.IPCAMERA", "stream_version": 2},
+            CP(
+                device_family=DF.IotIpCamera,
+                encryption_type=ET.Xor,
+                login_version=2,
+                https=True,
+            ),
+            id="camera",
+        ),
+    ],
+)
+def test_connection_parameters_legacy(sys_info, expected) -> None:
+    assert Discover._get_connection_parameters_legacy(sys_info) == expected
+
+
+def test_connection_parameters_legacy_without_type() -> None:
+    with pytest.raises(UnsupportedDeviceError, match="type nor mic_type"):
+        Discover._get_connection_parameters_legacy({})

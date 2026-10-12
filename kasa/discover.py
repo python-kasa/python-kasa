@@ -745,21 +745,28 @@ class Discover:
         device_class = cast(type[IotDevice], Discover._get_device_class(info))
         device = device_class(config.host, config=config)
         sys_info = _extract_sys_info(info)
+        config.connection_type = Discover._get_connection_parameters_legacy(sys_info)
+        device.protocol = get_protocol(config)  # type: ignore[assignment]
+        device.update_from_discover_info(info)
+        return device
+
+    @staticmethod
+    def _get_connection_parameters_legacy(
+        sys_info: dict,
+    ) -> DeviceConnectionParameters:
+        """Get connection parameters from the legacy 9999 sysinfo."""
         device_type = sys_info.get("mic_type", sys_info.get("type"))
         if device_type is None:
             raise UnsupportedDeviceError("type nor mic_type found in sysinfo response")
         login_version = (
             sys_info.get("stream_version") if device_type == "IOT.IPCAMERA" else None
         )
-        config.connection_type = DeviceConnectionParameters.from_values(
+        return DeviceConnectionParameters.from_values(
             device_family=device_type,
             encryption_type=DeviceEncryptionType.Xor.value,
             https=device_type == "IOT.IPCAMERA",
             login_version=login_version,
         )
-        device.protocol = get_protocol(config)  # type: ignore[assignment]
-        device.update_from_discover_info(info)
-        return device
 
     @staticmethod
     def _decrypt_discovery_data(discovery_result: DiscoveryResult) -> None:
