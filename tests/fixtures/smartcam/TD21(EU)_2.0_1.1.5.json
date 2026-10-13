@@ -1,6 +1,6 @@
 {
     "discovery_result": {
-        "_comment": "Manually created, NOT a real device response. The TD21 does not answer UDP discovery, so this block is modelled on D130(US)_1.0_1.1.9.json, using the model, hardware and firmware values from getDeviceInfo.",
+        "_comment": "Manually created, not a real device response.",
         "error_code": 0,
         "result": {
             "device_id": "00000000000000000000000000000000",
