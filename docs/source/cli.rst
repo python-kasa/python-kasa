@@ -51,6 +51,27 @@ You can provision your device without any extra apps by using the ``kasa wifi`` 
 
 As with all other commands, you can also pass ``--help`` to both ``join`` and ``scan`` commands to see the available options.
 
+Moving an already provisioned device to another network
+-------------------------------------------------------
+
+Some older devices accept ``wifi join`` while they are connected to a network
+(the command returns successfully) but keep using their current network
+(see `#1359 <https://github.com/python-kasa/python-kasa/issues/1359>`_).
+These devices do change networks reliably when they receive the command in setup mode,
+so put the device back into setup mode first and then follow the provisioning steps above:
+
+* **Keep the device's settings:** press and hold the device's button for about 5 seconds,
+  until the LED blinks (amber/green on plugs and switches).
+  Holding it for about 10 seconds performs a full factory reset instead.
+* **Without touching the device:** while it is still reachable on the current network, run
+  ``kasa --host <current ip> device factory-reset``.
+  This erases the device name, schedules and cloud binding, so save anything you need
+  (e.g., ``kasa --host <current ip> --json state``) before resetting.
+
+Within about 30 seconds the device starts broadcasting its open setup network
+(e.g., ``TP-LINK_Smart Plug_XXXX``, where ``XXXX`` are the last characters of its MAC address).
+The setup network only reaches a few meters, so the computer or phone that joins it needs to be near the device.
+
 .. note::
 
     For devices requiring authentication, the device-stored credentials can be changed using
