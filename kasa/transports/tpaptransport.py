@@ -248,6 +248,22 @@ class TpapEncryptionSession:
                 f"{status} {type(data)}"
             )
 
+        if (
+            step_name == "pake_share"
+            and data.get("error_code") == SmartErrorCode.STAT_ACCESS_ERROR
+        ):
+            # Devices answer a wrong passcode in pake_share with
+            # STAT_ACCESS_ERROR. Raise an authentication error instead of a
+            # retryable one so callers ask for new credentials rather than
+            # repeating failed logins.
+            self._invalidate_session()
+            raise AuthenticationError(
+                f"TPAP {step_name} failed for {self._transport._host}: "
+                "credentials rejected by device "
+                f"({SmartErrorCode.STAT_ACCESS_ERROR.name})",
+                error_code=SmartErrorCode.STAT_ACCESS_ERROR,
+            )
+
         self._handle_response_error_code(data, step_name)
         return self._require_result_dict(data)
 
