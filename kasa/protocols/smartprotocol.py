@@ -103,6 +103,10 @@ class SmartProtocol(BaseProtocol):
 
     BACKOFF_SECONDS_AFTER_TIMEOUT = 1
     DEFAULT_MULTI_REQUEST_BATCH_SIZE = 5
+    # Whether batching may fall back to sending one request at a time when a
+    # device chokes on a batch. The single requests are SMART-style requests,
+    # which smartcam devices reject with PROTOCOL_FORMAT_ERROR.
+    CAN_DISABLE_MULTI_REQUESTS = True
 
     def __init__(
         self,
@@ -248,6 +252,8 @@ class SmartProtocol(BaseProtocol):
             try:
                 response_step = await self._transport.send(smart_request)
             except TimeoutError as ex:
+                if not self.CAN_DISABLE_MULTI_REQUESTS:
+                    raise
                 # P300 does not respond to some batched requests (e.g. both child
                 # list requests together) so disable batching. Batch size is never
                 # 1 here as that case sends single requests above.
@@ -278,6 +284,7 @@ class SmartProtocol(BaseProtocol):
                         SmartErrorCode.INTERNAL_UNKNOWN_ERROR,
                     }
                     and self._multi_request_batch_size != 1
+                    and self.CAN_DISABLE_MULTI_REQUESTS
                 ):
                     self._multi_request_batch_size = 1
                     raise _RetryableError(

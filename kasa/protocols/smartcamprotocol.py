@@ -49,6 +49,10 @@ class SingleRequest:
 class SmartCamProtocol(SmartProtocol):
     """Class for SmartCam Protocol."""
 
+    # A transient timeout must not switch a camera to SMART-style single
+    # requests: it answers every one of them with PROTOCOL_FORMAT_ERROR.
+    CAN_DISABLE_MULTI_REQUESTS = False
+
     def _get_list_request(
         self, method: str, params: dict | None, start_index: int
     ) -> dict:
