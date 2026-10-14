@@ -333,6 +333,39 @@ async def test_smart_device_multiple_request_child_lists_timeout(
     assert send_mock.call_count == 3
 
 
+async def test_smartcam_multiple_request_timeout_keeps_batching(
+    dummy_protocol: SmartProtocol, mocker: MockerFixture
+) -> None:
+    """Test that a timeout does not disable batching for smartcam devices."""
+    protocol = SmartCamProtocol(transport=dummy_protocol._transport)
+    requests = {f"get_method_{i}": {"foo": "bar"} for i in range(3)}
+    batch_response = {
+        "result": {
+            "responses": [
+                {"method": method, "result": {"great": "success"}, "error_code": 0}
+                for method in requests
+            ]
+        },
+        "error_code": 0,
+    }
+
+    send_mock = mocker.patch.object(
+        protocol._transport,
+        "send",
+        side_effect=[TimeoutError("Simulated timeout"), batch_response],
+    )
+    mocker.patch("asyncio.sleep")
+    batch_size = protocol._multi_request_batch_size
+    assert batch_size > 1
+    resp = await protocol.query(requests, retry_count=1)
+    assert resp == {method: {"great": "success"} for method in requests}
+    assert protocol._multi_request_batch_size == batch_size
+    # The timed out batch + the retried batch, no single requests
+    assert send_mock.call_count == 2
+    for call in send_mock.call_args_list:
+        assert json.loads(call.args[0])["method"] == "multipleRequest"
+
+
 async def test_childdevicewrapper_unwrapping(
     dummy_protocol: SmartProtocol, mocker: MockerFixture
 ) -> None:
