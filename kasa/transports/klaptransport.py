@@ -48,7 +48,6 @@ import datetime
 import hashlib
 import logging
 import secrets
-import ssl
 import struct
 import time
 from asyncio import Future
@@ -67,6 +66,7 @@ from kasa.json import loads as json_loads
 from kasa.protocols.protocol import md5
 
 from .basetransport import BaseTransport
+from .sslcontext import get_ssl_context
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -97,17 +97,6 @@ class KlapTransport(BaseTransport):
 
     SESSION_COOKIE_NAME = "TP_SESSIONID"
     TIMEOUT_COOKIE_NAME = "TIMEOUT"
-    # Copy & paste from sslaestransport
-    CIPHERS = ":".join(
-        [
-            "AES256-GCM-SHA384",
-            "AES256-SHA256",
-            "AES128-GCM-SHA256",
-            "AES128-SHA256",
-            "AES256-SHA",
-        ]
-    )
-    _ssl_context: ssl.SSLContext | None = None
 
     def __init__(
         self,
@@ -193,7 +182,7 @@ class KlapTransport(BaseTransport):
         url = self._app_url / "handshake1"
 
         response_status, response_data = await self._http_client.post(
-            url, data=payload, ssl=await self._get_ssl_context()
+            url, data=payload, ssl=await get_ssl_context()
         )
 
         if _LOGGER.isEnabledFor(logging.DEBUG):
@@ -305,7 +294,7 @@ class KlapTransport(BaseTransport):
             url,
             data=payload,
             cookies_dict=self._session_cookie,
-            ssl=await self._get_ssl_context(),
+            ssl=await get_ssl_context(),
         )
 
         if _LOGGER.isEnabledFor(logging.DEBUG):
@@ -380,7 +369,7 @@ class KlapTransport(BaseTransport):
             params={"seq": seq},
             data=payload,
             cookies_dict=self._session_cookie,
-            ssl=await self._get_ssl_context(),
+            ssl=await get_ssl_context(),
         )
 
         msg = (
@@ -456,23 +445,6 @@ class KlapTransport(BaseTransport):
         """Return the MD5 hash of the username in this object."""
         un = creds.username
         return md5(un.encode())
-
-    # Copy & paste from sslaestransport.
-    def _create_ssl_context(self) -> ssl.SSLContext:
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        context.set_ciphers(self.CIPHERS)
-        context.check_hostname = False
-        context.verify_mode = ssl.CERT_NONE
-        return context
-
-    # Copy & paste from sslaestransport.
-    async def _get_ssl_context(self) -> ssl.SSLContext:
-        if not self._ssl_context:
-            loop = asyncio.get_running_loop()
-            self._ssl_context = await loop.run_in_executor(
-                None, self._create_ssl_context
-            )
-        return self._ssl_context
 
 
 class KlapTransportV2(KlapTransport):

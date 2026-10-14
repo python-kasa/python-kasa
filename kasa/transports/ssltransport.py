@@ -31,6 +31,7 @@ from kasa.httpclient import HttpClient
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 from kasa.transports import BaseTransport
+from kasa.transports.sslcontext import get_ssl_context
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -151,6 +152,7 @@ class SslTransport(BaseTransport):
             url,
             json=request,
             headers=self.COMMON_HEADERS,
+            ssl=await get_ssl_context(),
         )
 
         if status_code != 200:
