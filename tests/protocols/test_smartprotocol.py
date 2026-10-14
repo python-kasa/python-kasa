@@ -336,12 +336,7 @@ async def test_smart_device_multiple_request_child_lists_timeout(
 async def test_smartcam_multiple_request_timeout_keeps_batching(
     dummy_protocol: SmartProtocol, mocker: MockerFixture
 ) -> None:
-    """Test that a timeout does not disable batching for smartcam devices.
-
-    Cameras reject the SMART-style single requests sent when batching is
-    disabled with PROTOCOL_FORMAT_ERROR, so after a transient timeout (e.g. a
-    Wi-Fi blip) they must keep sending multipleRequest.
-    """
+    """Test that a timeout does not disable batching for smartcam devices."""
     protocol = SmartCamProtocol(transport=dummy_protocol._transport)
     requests = {f"get_method_{i}": {"foo": "bar"} for i in range(3)}
     batch_response = {
