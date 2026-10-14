@@ -200,6 +200,10 @@ def create_discovery_mock(ip: str, fixture_data: dict):
         ):
             login_version = max([int(i) for i in et])
         https = discovery_result["mgt_encrypt_schm"]["is_support_https"]
+        if not encrypt_type and https and login_version == 3:
+            # Mirrors Discover._get_connection_parameters for cameras that
+            # only send the top level encrypt_type list
+            encrypt_type = "AES"
         http_port = discovery_result["mgt_encrypt_schm"].get("http_port")
         if not http_port:  # noqa: SIM108
             # Not all discovery responses set the http port, i.e. smartcam.

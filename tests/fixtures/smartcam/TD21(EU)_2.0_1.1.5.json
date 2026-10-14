@@ -1,17 +1,13 @@
 {
     "discovery_result": {
-        "_comment": "Manually created, not a real device response.",
         "error_code": 0,
         "result": {
+            "battery_charging": false,
+            "battery_percent": 8,
             "device_id": "00000000000000000000000000000000",
             "device_model": "TD21",
             "device_name": "#MASKED_NAME#",
             "device_type": "SMART.TAPODOORBELL",
-            "encrypt_info": {
-                "data": "",
-                "key": "",
-                "sym_schm": "AES"
-            },
             "encrypt_type": [
                 "3"
             ],
@@ -19,12 +15,19 @@
             "firmware_version": "1.1.5 Build 260423 Rel.6435n",
             "hardware_version": "2.0",
             "ip": "127.0.0.123",
-            "isResetWiFi": false,
-            "is_support_iot_cloud": true,
+            "last_alarm_time": 1791915611,
+            "lens_mask": "off",
+            "low_battery": true,
             "mac": "C0-3A-55-00-00-00",
             "mgt_encrypt_schm": {
                 "is_support_https": true
-            }
+            },
+            "owner": "00000000000000000000000000000000",
+            "power": "BATTERY",
+            "power_save_status": "off",
+            "protocol_version": 1,
+            "sd_status": "normal",
+            "sleep": true
         }
     },
     "getAlertPlan": {
@@ -279,8 +282,8 @@
     "getClockStatus": {
         "system": {
             "clock_status": {
-                "local_time": "2026-10-07 20:57:13",
-                "seconds_from_1970": 1791403033
+                "local_time": "2026-10-13 19:52:21",
+                "seconds_from_1970": 1791917541
             }
         }
     },
@@ -294,8 +297,8 @@
     "getConnectionType": {
         "channel": 0,
         "link_type": "wifi",
-        "rssi": "2",
-        "rssiValue": -64,
+        "rssi": "3",
+        "rssiValue": -61,
         "ssid": "I01BU0tFRF9TU0lEIw=="
     },
     "getDetectionConfig": {
@@ -318,7 +321,7 @@
                 "barcode": "",
                 "battery_charging": "NO",
                 "battery_overheated": false,
-                "battery_percent": 20,
+                "battery_percent": 7,
                 "channel_plan_code": "",
                 "dev_id": "0000000000000000000000000000000000000000",
                 "device_alias": "#MASKED_NAME#",
@@ -369,7 +372,7 @@
     "getLastAlarmInfo": {
         "system": {
             "last_alarm_info": {
-                "last_alarm_time": "1791402993",
+                "last_alarm_time": "1791917500",
                 "last_alarm_type": "motion"
             }
         }
@@ -657,8 +660,8 @@
                         "crossline_total_space_accurate": "0B",
                         "detect_status": "normal",
                         "disk_name": "1",
-                        "free_space": "28.0GB",
-                        "free_space_accurate": "30047127744B",
+                        "free_space": "27.8GB",
+                        "free_space_accurate": "29887174540B",
                         "loop_record_status": "0",
                         "msg_push_free_space": "0B",
                         "msg_push_free_space_accurate": "0B",
@@ -677,8 +680,8 @@
                         "total_space": "29.5GB",
                         "total_space_accurate": "31638716416B",
                         "type": "local",
-                        "video_free_space": "28.0GB",
-                        "video_free_space_accurate": "30047127744B",
+                        "video_free_space": "27.8GB",
+                        "video_free_space_accurate": "29887174540B",
                         "video_total_space": "28.3GB",
                         "video_total_space_accurate": "30333206528B",
                         "write_protect": "0"
@@ -741,7 +744,7 @@
     "getVideoQualities": {
         "video": {
             "main": {
-                "bitrate": "900",
+                "bitrate": "1500",
                 "bitrate_type": "vbr",
                 "codec_switch_trigger": "none",
                 "default_bitrate": "1500",
@@ -980,14 +983,6 @@
             "scan": {
                 "ap_list": [
                     {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "channel": 0,
-                        "encryption": 3,
-                        "rssi": 2,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
                         "auth": 0,
                         "bssid": "000000000000",
                         "channel": 0,
@@ -1000,6 +995,22 @@
                         "bssid": "000000000000",
                         "channel": 0,
                         "encryption": 3,
+                        "rssi": 2,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 3,
+                        "bssid": "000000000000",
+                        "channel": 0,
+                        "encryption": 3,
+                        "rssi": 1,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 3,
+                        "bssid": "000000000000",
+                        "channel": 0,
+                        "encryption": 3,
                         "rssi": 1,
                         "ssid": "I01BU0tFRF9TU0lEIw=="
                     },
@@ -1016,7 +1027,7 @@
                         "bssid": "000000000000",
                         "channel": 0,
                         "encryption": 3,
-                        "rssi": 0,
+                        "rssi": 1,
                         "ssid": "I01BU0tFRF9TU0lEIw=="
                     },
                     {
@@ -1045,22 +1056,6 @@
                     },
                     {
                         "auth": 3,
-                        "bssid": "000000000000",
-                        "channel": 0,
-                        "encryption": 3,
-                        "rssi": 0,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "channel": 0,
-                        "encryption": 3,
-                        "rssi": 0,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 5,
                         "bssid": "000000000000",
                         "channel": 0,
                         "encryption": 3,
