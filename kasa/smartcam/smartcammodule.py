@@ -62,6 +62,8 @@ class SmartCamModule(SmartModule):
         "devicemodule"
     )
 
+    SmartCamFloodLight: Final[ModuleName[modules.FloodLight]] = ModuleName("FloodLight")
+
     #: Module name to be queried
     QUERY_MODULE_NAME: str
     #: Section name or names to be queried
