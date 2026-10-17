@@ -876,6 +876,19 @@ async def test_dynamic_devices(dev: Device, caplog: pytest.LogCaptureFixture) ->
     expected_new_length -= 1
     assert len(dev.children) == expected_new_length
 
+    # Test component list response without the list keeps the known children
+
+    saved_child_device_components = mock_child_device_components
+    mock_child_device_components = {}
+
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert len(dev.children) == expected_new_length
+    mock_child_device_components = saved_child_device_components
+
     # Test no child devices
 
     mock_child_device_info["child_device_list"] = []
@@ -889,6 +902,20 @@ async def test_dynamic_devices(dev: Device, caplog: pytest.LogCaptureFixture) ->
         await dev.update()
 
     assert len(dev.children) == 0
+
+    # Test component list response without the list on a hub without children,
+    # as returned intermittently by some hubs (e.g. H200 firmware 1.7.7)
+
+    saved_child_device_components = mock_child_device_components
+    mock_child_device_components = {}
+
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert len(dev.children) == 0
+    mock_child_device_components = saved_child_device_components
 
     # Logging tests are only for smartcam hubs as smart hubs do not test categories
     if not isinstance(dev, SmartCamDevice):
