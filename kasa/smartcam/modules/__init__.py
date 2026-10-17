@@ -8,6 +8,7 @@ from .camera import Camera
 from .childdevice import ChildDevice
 from .childsetup import ChildSetup
 from .device import DeviceModule
+from .floodlight import FloodLight
 from .glassdetection import GlassDetection
 from .homekit import HomeKit
 from .lastalertdetection import LastAlertDetection
@@ -23,7 +24,6 @@ from .petdetection import PetDetection
 from .tamperdetection import TamperDetection
 from .time import Time
 from .vehicledetection import VehicleDetection
-from .whitelamp import WhiteLamp
 
 __all__ = [
     "Alarm",
@@ -34,6 +34,7 @@ __all__ = [
     "ChildDevice",
     "ChildSetup",
     "DeviceModule",
+    "FloodLight",
     "GlassDetection",
     "LastAlertDetection",
     "Led",
@@ -49,5 +50,4 @@ __all__ = [
     "LensMask",
     "TamperDetection",
     "VehicleDetection",
-    "WhiteLamp",
 ]
