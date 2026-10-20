@@ -403,6 +403,12 @@ class IotDevice(Device):
                 _LOGGER.debug("Module %s not supported, skipping", module)
                 continue
 
+            # Some legacy firmware times out if an unsupported HomeKit query
+            # follows another module in the same request.
+            if isinstance(module, HomeKit):
+                request_list.append(module.query())
+                continue
+
             est_response_size += module.estimated_query_response_size
             if est_response_size > self.max_device_response_size:
                 request_list.append(req)
