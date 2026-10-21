@@ -886,6 +886,8 @@ class SmartDevice(Device):
             return DeviceType.Vacuum
         if "TAPOCHIME" in device_type:
             return DeviceType.Chime
+        if "TAPOLOCK" in device_type:
+            return DeviceType.Lock
         _LOGGER.warning("Unknown device type, falling back to plug")
         return DeviceType.Plug
 
