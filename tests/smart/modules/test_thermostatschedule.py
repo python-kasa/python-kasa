@@ -76,10 +76,57 @@ async def test_get_schedules_pages(dev: SmartDevice) -> None:
     assert len(schedules) == raw["sum"]
     assert schedule.max_slots == raw["day_segment"]
     for day, rules in zip(schedules, raw["schedule_list"], strict=True):
+        assert day.day == rules["id"].split(":")[1]
         assert len(day.slots) == len(rules["rule_list"])
         assert [s.start for s in day.slots] == sorted(s.start for s in day.slots)
         # Every minute of the day is covered by exactly one slot
         assert all(day.slot_at(minute) for minute in range(24 * 60))
+
+
+@thermostat_schedule
+async def test_get_schedules_module_paging(dev: SmartDevice, mocker) -> None:
+    """Test the module fetches further pages itself, keeping schedule_mode.
+
+    Hub children do not page in the protocol, so the module has to.
+    """
+    schedule = dev.modules[Module.ThermostatSchedule]
+    rule = {
+        "start_min": 0,
+        "end_min": 1439,
+        "desired_states": {"target_temp": 20, "temp_unit": "celsius"},
+    }
+
+    def page(start: int, ids: list[str], total: int = 3) -> dict:
+        return {
+            "get_sc_schedule_rules": {
+                "schedule_mode": "weekday_sat_sun",
+                "day_segment": 6,
+                "start_index": start,
+                "sum": total,
+                "schedule_list": [{"id": i, "rule_list": [rule]} for i in ids],
+            }
+        }
+
+    call = mocker.patch.object(
+        schedule,
+        "call",
+        side_effect=[
+            page(0, ["weekday_sat_sun:sunday"]),
+            page(1, ["weekday_sat_sun:weekday", "weekday_sat_sun:saturday"]),
+        ],
+    )
+    schedules = await schedule.get_schedules(ScheduleMode.WeekdaySatSun)
+
+    assert [s.day for s in schedules] == ["sunday", "weekday", "saturday"]
+    assert schedules[0].slots[0].target_temperature == 20
+    assert call.call_args_list[1].args == (
+        "get_sc_schedule_rules",
+        {"schedule_mode": "weekday_sat_sun", "start_index": 1},
+    )
+
+    # An empty page ends the fetch rather than looping forever
+    call.side_effect = [page(0, ["weekday_sat_sun:sunday"]), page(1, [])]
+    assert len(await schedule.get_schedules(ScheduleMode.WeekdaySatSun)) == 1
 
 
 @thermostat_schedule
@@ -96,6 +143,33 @@ async def test_set_schedule(dev: SmartDevice) -> None:
 
 
 @thermostat_schedule
+async def test_set_schedule_detects_float_support(dev: SmartDevice, mocker) -> None:
+    """Test set_schedule fetches the schedules first to pick the temp format."""
+    schedule = dev.modules[Module.ThermostatSchedule]
+    raw = await schedule.call(
+        "get_sc_schedule_rules",
+        {"schedule_mode": schedule.mode.value, "start_index": 0},
+    )
+    first = raw["get_sc_schedule_rules"]["schedule_list"][0]
+    uses_float = any(
+        "target_temp_float" in r["desired_states"] for r in first["rule_list"]
+    )
+    assert schedule._uses_float is None
+    get = mocker.spy(schedule, "get_schedules")
+    call = mocker.spy(schedule, "call")
+
+    await schedule.set_schedule(first["id"], _day((0, 1439, 20.5)))
+
+    get.assert_called_once()
+    edit = next(c for c in call.call_args_list if c.args[0] == "edit_sc_schedule_rule")
+    states = edit.args[1]["rule_list"][0]["desired_states"]
+    if uses_float:
+        assert states["target_temp_float"] == 205
+    else:
+        assert states["target_temp"] == 20
+
+
+@thermostat_schedule
 @pytest.mark.parametrize(
     ("slots", "match"),
     [
@@ -104,6 +178,11 @@ async def test_set_schedule(dev: SmartDevice) -> None:
         pytest.param(_day((0, 1400, 20)), "whole day", id="early-end"),
         pytest.param(_day((0, 600, 20), (602, 1439, 18)), "minute after", id="gap"),
         pytest.param(_day((0, 600, 20), (500, 1439, 18)), "minute after", id="overlap"),
+        pytest.param(
+            _day((0, 100, 20), (101, 100, 19), (101, 1439, 18)),
+            "ends before it starts",
+            id="backwards",
+        ),
         pytest.param(_day((0, 1439, 99)), "outside", id="too-hot"),
         pytest.param(
             _day(*[(i * 200, i * 200 + 199, 20) for i in range(7)], (1400, 1439, 18)),

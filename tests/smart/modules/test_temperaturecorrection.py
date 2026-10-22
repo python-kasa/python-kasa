@@ -68,3 +68,19 @@ async def test_set_external_sensor_validation(dev: SmartDevice, mocker) -> None:
         await correction.set_external_sensor("missing")
     with pytest.raises(ValueError, match="no temperature sensor"):
         await correction.set_external_sensor("no-temp")
+
+
+@temperature_correction
+async def test_set_external_sensor_on_hub(dev: SmartDevice, mocker) -> None:
+    """Test a temperature sensor on the same hub is accepted."""
+    correction = dev.modules[Module.TemperatureCorrection]
+    sensor = mocker.Mock(device_id="sensor-id", modules={Module.TemperatureSensor: 1})
+    parent = mocker.Mock(children=[dev, sensor])
+    mocker.patch.object(
+        type(dev), "parent", new=mocker.PropertyMock(return_value=parent)
+    )
+
+    await correction.set_external_sensor("sensor-id")
+    await dev.update()
+
+    assert correction.external_sensor_id == "sensor-id"
