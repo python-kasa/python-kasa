@@ -39,8 +39,12 @@ from .powerprotection import PowerProtection
 from .reportmode import ReportMode
 from .speaker import Speaker
 from .temperaturecontrol import TemperatureControl
+from .temperaturecorrection import TemperatureCorrection
+from .temperaturehumidityrecords import TemperatureHumidityRecords
+from .temperaturerecords import TemperatureRecords
 from .temperaturesensor import TemperatureSensor
 from .thermostat import Thermostat
+from .thermostatschedule import ThermostatSchedule
 from .time import Time
 from .triggerlogs import TriggerLogs
 from .waterleaksensor import WaterleakSensor
@@ -78,6 +82,10 @@ __all__ = [
     "TriggerLogs",
     "FrostProtection",
     "Thermostat",
+    "ThermostatSchedule",
+    "TemperatureCorrection",
+    "TemperatureRecords",
+    "TemperatureHumidityRecords",
     "Clean",
     "Consumables",
     "CleanRecords",
