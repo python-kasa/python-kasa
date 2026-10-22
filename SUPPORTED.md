@@ -189,8 +189,10 @@ Some newer Kasa devices require authentication. These are marked with [^1] in th
 
 - **KE100**
   - Hardware: 1.0 (EU) / Firmware: 2.4.0[^1]
+  - Hardware: 1.0 (EU) / Firmware: 2.6.0[^1]
   - Hardware: 1.0 (EU) / Firmware: 2.8.0[^1]
   - Hardware: 1.0 (UK) / Firmware: 2.15.0[^1]
+  - Hardware: 1.0 (UK) / Firmware: 2.6.0[^1]
   - Hardware: 1.0 (UK) / Firmware: 2.8.0[^1]
 - **KE110**
   - Hardware: 1.0 (EU) / Firmware: 1.4.0[^1]
