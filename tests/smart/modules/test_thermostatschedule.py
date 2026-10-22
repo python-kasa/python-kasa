@@ -5,6 +5,7 @@ from kasa.smart import SmartDevice
 from kasa.smart.modules.thermostatschedule import ScheduleMode, ScheduleSlot
 
 from ...device_fixtures import parametrize
+from ...fakeprotocol_smart import FakeSmartTransport
 
 thermostat_schedule = parametrize(
     "has thermostat schedule",
@@ -64,11 +65,13 @@ async def test_set_enabled_and_mode(dev: SmartDevice) -> None:
 async def test_get_schedules_pages(dev: SmartDevice) -> None:
     """Test all schedules are fetched across pages."""
     schedule = dev.modules[Module.ThermostatSchedule]
-    dev.protocol._transport.list_return_size = 1
+    transport = dev.protocol._transport
+    assert isinstance(transport, FakeSmartTransport)
+    transport.list_return_size = 1
 
     schedules = await schedule.get_schedules()
 
-    raw = dev.protocol._transport.info["get_sc_schedule_rules"]
+    raw = transport.info["get_sc_schedule_rules"]
     assert [s.id for s in schedules] == [r["id"] for r in raw["schedule_list"]]
     assert len(schedules) == raw["sum"]
     assert schedule.max_slots == raw["day_segment"]
