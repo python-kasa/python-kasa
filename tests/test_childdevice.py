@@ -160,3 +160,37 @@ async def test_child_device_type_unknown(caplog: pytest.LogCaptureFixture) -> No
     assert DummyDevice().device_type is DeviceType.Unknown
     msg = "Unknown child device type foobar for model None, please open issue"
     assert msg in caplog.text
+
+
+@hub_smart
+async def test_child_partial_update_keeps_module_data(dev: SmartDevice) -> None:
+    """Test a child update querying only some modules keeps the others' data.
+
+    Hub children refresh most module queries daily but some, like the
+    temperature records, every 15 minutes, so an update can query just those.
+    """
+    from kasa import Module
+
+    child = next(
+        (
+            c
+            for c in dev.children
+            if Module.TemperatureRecords in c.modules
+            and Module.ThermostatSchedule in c.modules
+        ),
+        None,
+    )
+    if child is None:
+        pytest.skip("No thermostat with schedule and records on this hub")
+    assert isinstance(child, SmartChildDevice)
+
+    schedule = child.modules[Module.ThermostatSchedule]
+    enabled = schedule.enabled
+    for module in child.modules.values():
+        module._last_update_time = 10**9  # Not due
+    child.modules[Module.TemperatureRecords]._last_update_time = None  # Due
+
+    await child.update()
+
+    assert schedule.enabled == enabled
+    assert child.modules[Module.TemperatureRecords].temperatures
