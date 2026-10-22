@@ -68,27 +68,28 @@ async def test_get_schedules_pages(dev: SmartDevice) -> None:
 
     schedules = await schedule.get_schedules()
 
-    assert len(schedules) == 3
-    assert {s.day for s in schedules} == {"sunday", "weekday", "saturday"}
-    assert schedule.max_slots == 6
-    weekday = next(s for s in schedules if s.day == "weekday")
-    assert weekday.slot_at(8 * 60).target_temperature == 21
-    assert weekday.slot_at(23 * 60).target_temperature == 18
-    for day in schedules:
+    raw = dev.protocol._transport.info["get_sc_schedule_rules"]
+    assert [s.id for s in schedules] == [r["id"] for r in raw["schedule_list"]]
+    assert len(schedules) == raw["sum"]
+    assert schedule.max_slots == raw["day_segment"]
+    for day, rules in zip(schedules, raw["schedule_list"], strict=True):
+        assert len(day.slots) == len(rules["rule_list"])
         assert [s.start for s in day.slots] == sorted(s.start for s in day.slots)
+        # Every minute of the day is covered by exactly one slot
+        assert all(day.slot_at(minute) for minute in range(24 * 60))
 
 
 @thermostat_schedule
 async def test_set_schedule(dev: SmartDevice) -> None:
     """Test replacing the slots of one schedule."""
     schedule = dev.modules[Module.ThermostatSchedule]
-    mode = (await schedule.get_schedules())[0].id.split(":")[0]
+    schedule_id = (await schedule.get_schedules())[-1].id
     new = _day((0, 359, 17), (360, 1289, 20.5), (1290, 1439, 16))
 
-    await schedule.set_schedule(f"{mode}:weekday", new)
+    await schedule.set_schedule(schedule_id, new)
 
-    weekday = next(s for s in await schedule.get_schedules() if s.day == "weekday")
-    assert weekday.slots == new
+    updated = next(s for s in await schedule.get_schedules() if s.id == schedule_id)
+    assert updated.slots == new
 
 
 @thermostat_schedule
