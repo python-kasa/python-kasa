@@ -109,15 +109,23 @@ class SmartDevice(Device):
         can't be created to avoid spamming the logs on every update.
         """
         changed = False
+        component_list = child_device_components_resp.get("child_component_list", [])
+        if not isinstance(component_list, list):
+            component_list = []
         smart_children_components = {
             child["device_id"]: child
-            for child in child_device_components_resp["child_component_list"]
+            for child in component_list
+            if isinstance(child, dict) and child.get("device_id")
         }
         children = self._children
         child_ids: set[str] = set()
         existing_child_ids = set(self._children.keys())
 
-        for info in child_device_resp["child_device_list"]:
+        device_list = child_device_resp.get("child_device_list", [])
+        if not isinstance(device_list, list):
+            device_list = []
+
+        for info in device_list:
             if (child_id := info.get("device_id")) and (
                 child_components := smart_children_components.get(child_id)
             ):

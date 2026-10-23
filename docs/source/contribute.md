@@ -81,6 +81,12 @@ The script will run queries against the device, and prompt at the end if you wan
 If you choose to do so, it will save the fixture files directly in their correct place to make it easy to create a pull request.
 
 ```{note}
+Some Tapo hubs (notably H500) report paired children in ``getDeviceInfo.child_num`` but
+return an empty ``getChildDeviceList`` over LAN. ``dump_devinfo`` will save a
+hub-only fixture in that case — see {ref}`Tapo / Kasa hubs and child devices <topics-hub-children>`.
+```
+
+```{note}
 When adding new fixture files, you should run `pre-commit run -a` to re-generate the list of supported devices.
 You may need to adjust `device_fixtures.py` to add a new model into the correct device categories.  Verify that test pass by executing `uv run pytest kasa`.
 ```
