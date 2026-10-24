@@ -320,6 +320,25 @@ async def test_plugin_overrides_existing_transport(
     assert message in caplog.text
 
 
+async def test_plugin_override_warns_once_for_the_replaced_entry(
+    plugins, caplog
+) -> None:
+    """Entries already shadowed for the overridden devices are not reported."""
+
+    def register_camera() -> None:
+        registry.register_transport(
+            "SMART.IPCAMERA", "AES", SmartCamProtocol, XorTransport
+        )
+
+    plugins(register_camera)
+
+    with caplog.at_level(logging.WARNING):
+        registry.load_plugins()
+
+    [record] = caplog.records
+    assert "(SMART.IPCAMERA None https=None)" in record.getMessage()
+
+
 async def test_plugin_without_override_does_not_warn(plugins, caplog) -> None:
     """A new encryption type or a less specific entry does not take over devices."""
 

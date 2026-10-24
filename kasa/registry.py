@@ -17,7 +17,11 @@ from dataclasses import dataclass
 from importlib.metadata import entry_points
 from typing import TYPE_CHECKING
 
-from .deviceconfig import DeviceConnectionParameters, DeviceEncryptionType
+from .deviceconfig import (
+    DeviceConnectionParameters,
+    DeviceEncryptionType,
+    DeviceFamily,
+)
 
 if TYPE_CHECKING:
     from .protocols import BaseProtocol
@@ -52,20 +56,6 @@ class Entry:
             4 * ("." in self.family)
             + 2 * (self.encryption is not None)
             + (self.https is not None)
-        )
-
-    def overlaps(self, other: Entry) -> bool:
-        """Return True if some connection parameters match both entries."""
-        return (
-            (
-                self.family in (other.family, other.family.partition(".")[0])
-                or other.family in (self.family, self.family.partition(".")[0])
-            )
-            and (
-                None in (self.encryption, other.encryption)
-                or self.encryption == other.encryption
-            )
-            and (None in (self.https, other.https) or self.https == other.https)
         )
 
     def __str__(self) -> str:
@@ -132,19 +122,38 @@ def lookup(parameters: DeviceConnectionParameters) -> Entry | None:
     )
 
 
-def _log_overrides(plugin: str, before: list[Entry]) -> None:
+def _all_parameters() -> list[DeviceConnectionParameters]:
+    """Return every combination of the parameters entries are chosen by."""
+    return [
+        DeviceConnectionParameters(
+            device_family=family, encryption_type=encryption, https=https
+        )
+        for family in DeviceFamily
+        for encryption in DeviceEncryptionType
+        for https in (False, True)
+    ]
+
+
+def _log_overrides(
+    plugin: str,
+    parameters: list[DeviceConnectionParameters],
+    before: list[Entry | None],
+) -> None:
     """Warn about the entries a plugin takes devices over from."""
-    for new in (entry for entry in _ENTRIES if entry not in before):
-        for old in before:
-            if old.overlaps(new) and old.specificity < new.specificity:
-                _LOGGER.warning(
-                    "Plugin %s overrides %s (%s) with %s (%s)",
-                    plugin,
-                    old.transport,
-                    old,
-                    new.transport,
-                    new,
-                )
+    overrides = dict.fromkeys(
+        (old, new)
+        for params, old in zip(parameters, before, strict=True)
+        if old is not None and (new := lookup(params)) is not None and new != old
+    )
+    for old, new in overrides:
+        _LOGGER.warning(
+            "Plugin %s overrides %s (%s) with %s (%s)",
+            plugin,
+            old.transport,
+            old,
+            new.transport,
+            new,
+        )
 
 
 def load_plugins() -> None:
@@ -153,15 +162,16 @@ def load_plugins() -> None:
         return
 
     for entry_point in entry_points(group="kasa.plugins"):
-        before = list(_ENTRIES)
+        entries = list(_ENTRIES)
+        parameters = _all_parameters()
+        before = [lookup(params) for params in parameters]
         try:
             entry_point.load()()
         except KeyboardInterrupt:
             raise
         except BaseException:
-            _ENTRIES[:] = before  # drop what the plugin registered before failing
+            _ENTRIES[:] = entries  # drop what the plugin registered before failing
             _LOGGER.exception("Unable to load plugin %s", entry_point.name)
         else:
             _LOGGER.info("Loaded plugin %s", entry_point.name)
-
-        _log_overrides(entry_point.name, before)
+            _log_overrides(entry_point.name, parameters, before)
