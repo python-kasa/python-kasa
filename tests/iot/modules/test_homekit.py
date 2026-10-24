@@ -1,14 +1,11 @@
 from unittest.mock import PropertyMock, patch
 
 import pytest
-from pytest_mock import MockerFixture
 
 from kasa import Module
-from kasa.exceptions import TimeoutError
 from kasa.iot import IotDevice
 from kasa.iot.modules.homekit import HomeKit
 
-from ...conftest import get_device_for_fixture_protocol
 from ...device_fixtures import device_iot
 
 HOMEKIT = "smartlife.iot.homekit"
@@ -66,41 +63,4 @@ def test_initialize_features_skips_when_no_data(dev: IotDevice) -> None:
         homekit._initialize_features()
     # Since there was no data, no features should be added
     assert "homekit_setup_code" not in homekit._all_features
-
-
-@pytest.mark.requires_dummy
-@device_iot
-async def test_update_does_not_query_homekit(dev, mocker: MockerFixture) -> None:
-    spy = mocker.spy(dev.protocol, "query")
-    await dev.update()
-    assert not [call for call in spy.call_args_list if HOMEKIT in call.args[0]]
-
-
-@pytest.mark.requires_dummy
-@pytest.mark.parametrize(
-    ("fixture", "supported"),
-    [("EP25(US)_1.0_1.0.14.json", True), ("HS100(US)_2.0_1.5.6.json", False)],
-)
-async def test_supports_module(
-    mocker: MockerFixture, fixture: str, supported: bool
-) -> None:
-    dev = await get_device_for_fixture_protocol(fixture, "IOT")
-    spy = mocker.spy(dev.protocol, "query")
-
-    assert await dev.supports_module(Module.IotHomeKit) is supported
-    assert await dev.supports_module(Module.IotHomeKit) is supported
-    assert spy.call_count == 1
-
-
-@pytest.mark.requires_dummy
-async def test_timeout_is_not_supported_and_not_remembered(
-    mocker: MockerFixture,
-) -> None:
-    dev = await get_device_for_fixture_protocol("EP25(US)_1.0_1.0.14.json", "IOT")
-    query = dev.protocol.query
-
-    mocker.patch.object(dev.protocol, "query", side_effect=TimeoutError("timeout"))
-    assert await dev.supports_module(Module.IotHomeKit) is False
-
-    mocker.patch.object(dev.protocol, "query", side_effect=query)
-    assert await dev.supports_module(Module.IotHomeKit) is True
+    assert homekit.info == {}

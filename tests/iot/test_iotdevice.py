@@ -18,11 +18,14 @@ from voluptuous import (
 )
 
 from kasa import DeviceType, KasaException, Module
+from kasa.exceptions import AuthenticationError, TimeoutError
 from kasa.iot import IotDevice
 from kasa.iot.iotmodule import _merge_dict
 from tests.conftest import get_device_for_fixture_protocol, handle_turn_on, turn_on
 from tests.device_fixtures import device_iot, has_emeter_iot, no_emeter_iot
 from tests.fakeprotocol_iot import FakeIotProtocol
+
+HOMEKIT = "smartlife.iot.homekit"
 
 TZ_SCHEMA = Schema(
     {"zone_str": str, "dst_offset": int, "index": All(int, Range(min=0)), "tz_str": str}
@@ -310,3 +313,66 @@ def test_merge_dict() -> None:
             "get_daystat": {"month": 8, "year": 2024},
         }
     }
+
+
+@pytest.mark.requires_dummy
+@device_iot
+async def test_update_does_not_query_homekit(dev, mocker: MockerFixture) -> None:
+    spy = mocker.spy(dev.protocol, "query")
+    await dev.update()
+    assert not [call for call in spy.call_args_list if HOMEKIT in call.args[0]]
+
+
+@pytest.mark.requires_dummy
+@pytest.mark.parametrize(
+    ("fixture", "supported"),
+    [("EP25(US)_1.0_1.0.14.json", True), ("HS100(US)_2.0_1.5.6.json", False)],
+)
+async def test_supports_module(
+    mocker: MockerFixture, fixture: str, supported: bool
+) -> None:
+    dev = await get_device_for_fixture_protocol(fixture, "IOT")
+    spy = mocker.spy(dev.protocol, "query")
+
+    assert await dev.supports_module(Module.IotHomeKit) is supported
+
+    # The answer is remembered, so the second call does not query the device
+    assert await dev.supports_module(Module.IotHomeKit) is supported
+    assert spy.call_count == 1
+
+
+@pytest.mark.requires_dummy
+async def test_timeout_is_not_supported_and_not_remembered(
+    mocker: MockerFixture,
+) -> None:
+    dev = await get_device_for_fixture_protocol("EP25(US)_1.0_1.0.14.json", "IOT")
+    query = dev.protocol.query
+
+    mocker.patch.object(dev.protocol, "query", side_effect=TimeoutError("timeout"))
+    assert await dev.supports_module(Module.IotHomeKit) is False
+
+    mocker.patch.object(dev.protocol, "query", side_effect=query)
+    assert await dev.supports_module(Module.IotHomeKit) is True
+
+
+@pytest.mark.requires_dummy
+async def test_unsupported_answer_is_remembered(mocker: MockerFixture) -> None:
+    dev = await get_device_for_fixture_protocol("HS100(US)_2.0_1.5.6.json", "IOT")
+    query = mocker.patch.object(
+        dev.protocol,
+        "query",
+        return_value={HOMEKIT: {"err_code": -1, "err_msg": "module not support"}},
+    )
+
+    assert await dev.supports_module(Module.IotHomeKit) is False
+    assert await dev.supports_module(Module.IotHomeKit) is False
+    assert query.call_count == 1
+
+
+@pytest.mark.requires_dummy
+async def test_other_errors_propagate(mocker: MockerFixture) -> None:
+    dev = await get_device_for_fixture_protocol("EP25(US)_1.0_1.0.14.json", "IOT")
+    mocker.patch.object(dev.protocol, "query", side_effect=AuthenticationError("auth"))
+
+    with pytest.raises(AuthenticationError):
+        await dev.supports_module(Module.IotHomeKit)
