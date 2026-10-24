@@ -249,6 +249,8 @@ async def test_plugin_adds_encryption_type(plugins) -> None:
 )
 async def test_failing_plugin_is_skipped(exception, plugins, caplog) -> None:
     def register_broken() -> None:
+        registry.register_transport("SMART", "BAR", SmartProtocol, XorTransport)
+        registry.register_transport("SMART", "KLAP", SmartProtocol, XorTransport)
         raise exception
 
     plugins(register_broken, register_foo)
@@ -258,6 +260,14 @@ async def test_failing_plugin_is_skipped(exception, plugins, caplog) -> None:
 
     assert "register_broken" in caplog.text
     assert ET("FOO").value == "FOO"
+    assert not any(entry.encryption == "BAR" for entry in registry._ENTRIES)
+    config = DeviceConfig(
+        "127.0.0.1",
+        connection_type=CP(
+            device_family=DF.SmartTapoPlug, encryption_type=ET.Klap, login_version=2
+        ),
+    )
+    assert transport_type(config) is KlapTransportV2
 
 
 async def test_interrupt_is_not_swallowed(plugins) -> None:

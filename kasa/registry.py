@@ -159,6 +159,7 @@ def load_plugins() -> None:
         except KeyboardInterrupt:
             raise
         except BaseException:
+            _ENTRIES[:] = before  # drop what the plugin registered before failing
             _LOGGER.exception("Unable to load plugin %s", entry_point.name)
         else:
             _LOGGER.info("Loaded plugin %s", entry_point.name)
