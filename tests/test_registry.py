@@ -121,6 +121,7 @@ def _restore_registry():
 async def test_most_specific_entry_wins(conn_params, protocol, transport) -> None:
     """The family, then the encryption, then https decide which entry matches."""
     protocol_obj = get_protocol(DeviceConfig("127.0.0.1", connection_type=conn_params))
+    assert protocol_obj is not None
     assert type(protocol_obj) is protocol
     assert type(protocol_obj._transport) is transport
 
@@ -190,6 +191,13 @@ async def test_no_entry(conn_params) -> None:
 )
 def test_get_device_class(conn_params, device_class) -> None:
     assert get_device_class(conn_params) is device_class
+
+
+def transport_type(config: DeviceConfig) -> type:
+    """Return the type of the transport chosen for the config."""
+    protocol = get_protocol(config)
+    assert protocol is not None
+    return type(protocol._transport)
 
 
 def register_foo() -> None:
@@ -297,8 +305,8 @@ async def test_plugin_overrides_existing_transport(
             device_family=DF.SmartTapoBulb, encryption_type=ET.Klap, login_version=2
         ),
     )
-    assert type(get_protocol(plug)._transport) is XorTransport
-    assert type(get_protocol(bulb)._transport) is bulb_transport
+    assert transport_type(plug) is XorTransport
+    assert transport_type(bulb) is bulb_transport
     assert message in caplog.text
 
 
@@ -320,7 +328,7 @@ async def test_plugin_without_override_does_not_warn(plugins, caplog) -> None:
             device_family=DF.SmartTapoPlug, encryption_type=ET.Aes, login_version=2
         ),
     )
-    assert type(get_protocol(config)._transport) is AesTransport
+    assert transport_type(config) is AesTransport
 
 
 async def test_disable_plugins(plugins, monkeypatch) -> None:
@@ -348,4 +356,4 @@ async def test_registration_replaces_same_parameters(caplog) -> None:
             https=True,
         ),
     )
-    assert type(get_protocol(config)._transport) is XorTransport
+    assert transport_type(config) is XorTransport
