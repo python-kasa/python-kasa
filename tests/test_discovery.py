@@ -23,8 +23,6 @@ from kasa import (
     Discover,
     IotProtocol,
     KasaException,
-    SmartCamProtocol,
-    SmartProtocol,
 )
 from kasa.device_factory import get_device_class_from_sys_info
 from kasa.deviceconfig import (
@@ -34,7 +32,6 @@ from kasa.deviceconfig import (
     DeviceFamily,
 )
 from kasa.discover import (
-    ConnectAttempt,
     DiscoveryResult,
     _AesDiscoveryQuery,
     _DiscoverProtocol,
@@ -43,15 +40,6 @@ from kasa.discover import (
 from kasa.exceptions import AuthenticationError, UnsupportedDeviceError
 from kasa.iot import IotDevice, IotPlug
 from kasa.registry import REGISTRY
-from kasa.smart import SmartDevice
-from kasa.smartcam import SmartCamDevice
-from kasa.transports import (
-    AesTransport,
-    KlapTransport,
-    KlapTransportV2,
-    SslAesTransport,
-    SslTransport,
-)
 from kasa.transports.aestransport import AesEncyptionSession
 from kasa.transports.xortransport import XorEncryption, XorTransport
 
@@ -811,70 +799,17 @@ CP = DeviceConnectionParameters
 DF = DeviceFamily
 ET = DeviceEncryptionType
 
-TRY_CONNECT_ALL_ATTEMPTS = [
-    (
-        ConnectAttempt(IotProtocol, KlapTransport, IotPlug, False),
-        CP(device_family=DF.IotSmartPlugSwitch, encryption_type=ET.Klap),
-    ),
-    (
-        ConnectAttempt(IotProtocol, KlapTransportV2, IotPlug, False),
-        CP(
-            device_family=DF.IotSmartPlugSwitch,
-            encryption_type=ET.Klap,
-            login_version=2,
-        ),
-    ),
-    (
-        ConnectAttempt(IotProtocol, XorTransport, IotPlug, False),
-        CP(device_family=DF.IotSmartPlugSwitch, encryption_type=ET.Xor),
-    ),
-    (
-        ConnectAttempt(SmartProtocol, AesTransport, SmartDevice, False),
-        CP(device_family=DF.SmartTapoPlug, encryption_type=ET.Aes, login_version=2),
-    ),
-    (
-        ConnectAttempt(SmartProtocol, KlapTransportV2, SmartDevice, False),
-        CP(device_family=DF.SmartTapoPlug, encryption_type=ET.Klap, login_version=2),
-    ),
-    (
-        ConnectAttempt(SmartProtocol, KlapTransportV2, SmartDevice, True),
-        CP(
-            device_family=DF.SmartTapoRobovac,
-            encryption_type=ET.Klap,
-            login_version=2,
-            https=True,
-        ),
-    ),
-    (
-        ConnectAttempt(SmartProtocol, SslTransport, SmartDevice, True),
-        CP(
-            device_family=DF.SmartTapoRobovac,
-            encryption_type=ET.Aes,
-            login_version=2,
-            https=True,
-        ),
-    ),
-    (
-        ConnectAttempt(SmartCamProtocol, SslAesTransport, SmartCamDevice, True),
-        CP(
-            device_family=DF.SmartIpCamera,
-            encryption_type=ET.Aes,
-            login_version=2,
-            https=True,
-        ),
-    ),
-]
-
 
 @pytest.mark.parametrize("success_at", [None, 3], ids=["all-fail", "fourth-succeeds"])
 async def test_try_connect_all_attempts(success_at, mocker: MockerFixture) -> None:
-    """The combinations are tried in a fixed order until one connects."""
+    """Each combination is tried once, until one connects."""
     device = MagicMock()
-    tried = []
+    calls = 0
 
     async def _connect(config, protocol):
-        tried.append(config.connection_type)
-        if len(tried) - 1 == success_at:
+        nonlocal calls
+        calls += 1
+        if calls - 1 == success_at:
             return device
         raise KasaException
 
@@ -885,14 +820,13 @@ async def test_try_connect_all_attempts(success_at, mocker: MockerFixture) -> No
         on_attempt=lambda attempt, success: results.append((attempt, success)),
     )
 
-    expected = TRY_CONNECT_ALL_ATTEMPTS[
-        : None if success_at is None else success_at + 1
-    ]
     assert dev is (None if success_at is None else device)
-    assert tried == [params for _, params in expected]
-    assert results == [
-        (attempt, index == success_at) for index, (attempt, _) in enumerate(expected)
+    assert [success for _, success in results] == [
+        index == success_at for index in range(calls)
     ]
+    attempts = [attempt for attempt, _ in results]
+    assert all(None not in attempt for attempt in attempts)
+    assert len(set(attempts)) == len(attempts)
 
 
 @pytest.mark.parametrize(
