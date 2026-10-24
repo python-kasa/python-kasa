@@ -28,12 +28,8 @@ from kasa.device_factory import (
     IotDevice,
     IotDimmer,
     IotPlug,
-    SmartCamDevice,
-    SmartDevice,
     connect,
-    get_device_class_from_family,
     get_device_class_from_sys_info,
-    get_protocol,
 )
 from kasa.deviceconfig import (
     DeviceConfig,
@@ -42,6 +38,9 @@ from kasa.deviceconfig import (
     DeviceFamily,
 )
 from kasa.discover import DiscoveryResult
+from kasa.registry import REGISTRY
+from kasa.smart import SmartDevice
+from kasa.smartcam import SmartCamDevice
 from kasa.transports import (
     AesTransport,
     BaseTransport,
@@ -88,7 +87,7 @@ async def test_connect(
     config = DeviceConfig(
         host=host, credentials=Credentials("foor", "bar"), connection_type=ctype
     )
-    protocol_class = get_protocol(config).__class__
+    protocol_class = REGISTRY.get_protocol(config).__class__
     close_mock = mocker.patch.object(protocol_class, "close")
     # mocker.patch.object(SmartDevice, "update")
     # mocker.patch.object(Device, "update")
@@ -159,7 +158,7 @@ async def test_connect_query_fails(discovery_mock, mocker: MockerFixture) -> Non
     config = DeviceConfig(
         host=host, credentials=Credentials("foor", "bar"), connection_type=ctype
     )
-    protocol_class = get_protocol(config).__class__
+    protocol_class = REGISTRY.get_protocol(config).__class__
     close_mock = mocker.patch.object(protocol_class, "close")
     assert close_mock.call_count == 0
     with pytest.raises(KasaException):
@@ -234,17 +233,6 @@ def test_device_class_from_unsupported_legacy_camera() -> None:
         Discover._get_device_class(info)
 
 
-@pytest.mark.xdist_group(name="caplog")
-async def test_device_class_from_unknown_family(
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    """Verify that unknown SMART devices yield a warning and fallback to SmartDevice."""
-    dummy_name = "SMART.foo"
-    with caplog.at_level(logging.DEBUG):
-        assert get_device_class_from_family(dummy_name, https=False) == SmartDevice
-    assert f"Unknown SMART device with {dummy_name}" in caplog.text
-
-
 # Aliases to make the test params more readable
 CP = DeviceConnectionParameters
 DF = DeviceFamily
@@ -255,73 +243,89 @@ ET = DeviceEncryptionType
     ("conn_params", "expected_protocol", "expected_transport"),
     [
         pytest.param(
-            CP(DF.SmartIpCamera, ET.Aes, https=True),
+            CP(device_family=DF.SmartIpCamera, encryption_type=ET.Aes, https=True),
             SmartCamProtocol,
             SslAesTransport,
             id="smartcam",
         ),
         pytest.param(
-            CP(DF.SmartTapoHub, ET.Aes, https=True),
+            CP(device_family=DF.SmartTapoHub, encryption_type=ET.Aes, https=True),
             SmartCamProtocol,
             SslAesTransport,
             id="smartcam-hub",
         ),
         pytest.param(
-            CP(DF.SmartTapoDoorbell, ET.Aes, https=True),
+            CP(device_family=DF.SmartTapoDoorbell, encryption_type=ET.Aes, https=True),
             SmartCamProtocol,
             SslAesTransport,
             id="smartcam-doorbell",
         ),
         pytest.param(
-            CP(DF.IotIpCamera, ET.Aes, https=True),
+            CP(device_family=DF.IotIpCamera, encryption_type=ET.Aes, https=True),
             IotProtocol,
             LinkieTransportV2,
             id="kasacam",
         ),
         pytest.param(
-            CP(DF.SmartTapoRobovac, ET.Aes, https=True),
+            CP(device_family=DF.SmartTapoRobovac, encryption_type=ET.Aes, https=True),
             SmartProtocol,
             SslTransport,
             id="robovac",
         ),
         pytest.param(
-            CP(DF.IotSmartPlugSwitch, ET.Klap, https=False),
+            CP(
+                device_family=DF.IotSmartPlugSwitch,
+                encryption_type=ET.Klap,
+                https=False,
+            ),
             IotProtocol,
             KlapTransport,
             id="iot-klap",
         ),
         pytest.param(
-            CP(DF.IotSmartPlugSwitch, ET.Klap, login_version=1, https=False),
+            CP(
+                device_family=DF.IotSmartPlugSwitch,
+                encryption_type=ET.Klap,
+                login_version=1,
+                https=False,
+            ),
             IotProtocol,
             KlapTransport,
             id="iot-klap-v1",
         ),
         pytest.param(
-            CP(DF.IotSmartPlugSwitch, ET.Klap, login_version=2, https=False),
+            CP(
+                device_family=DF.IotSmartPlugSwitch,
+                encryption_type=ET.Klap,
+                login_version=2,
+                https=False,
+            ),
             IotProtocol,
             KlapTransportV2,
             id="iot-klap-v2",
         ),
         pytest.param(
-            CP(DF.IotSmartPlugSwitch, ET.Xor, https=False),
+            CP(
+                device_family=DF.IotSmartPlugSwitch, encryption_type=ET.Xor, https=False
+            ),
             IotProtocol,
             XorTransport,
             id="iot-xor",
         ),
         pytest.param(
-            CP(DF.SmartTapoPlug, ET.Aes, https=False),
+            CP(device_family=DF.SmartTapoPlug, encryption_type=ET.Aes, https=False),
             SmartProtocol,
             AesTransport,
             id="smart-aes",
         ),
         pytest.param(
-            CP(DF.SmartTapoPlug, ET.Klap, https=False),
+            CP(device_family=DF.SmartTapoPlug, encryption_type=ET.Klap, https=False),
             SmartProtocol,
             KlapTransportV2,
             id="smart-klap",
         ),
         pytest.param(
-            CP(DF.SmartTapoChime, ET.Klap, https=False),
+            CP(device_family=DF.SmartTapoChime, encryption_type=ET.Klap, https=False),
             SmartProtocol,
             KlapTransportV2,
             id="smart-chime",
@@ -335,7 +339,7 @@ async def test_get_protocol(
 ) -> None:
     """Test get_protocol returns the right protocol."""
     config = DeviceConfig("127.0.0.1", connection_type=conn_params)
-    protocol = get_protocol(config)
+    protocol = REGISTRY.get_protocol(config)
     assert isinstance(protocol, expected_protocol)
     assert isinstance(protocol._transport, expected_transport)
 

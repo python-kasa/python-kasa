@@ -494,7 +494,9 @@ async def test_login_version_default_credentials(
         host,
         credentials=Credentials("foo", "bar"),
         connection_type=DeviceConnectionParameters(
-            tapo_family, aes_type, login_version=login_version
+            device_family=tapo_family,
+            encryption_type=aes_type,
+            login_version=login_version,
         ),
     )
     transport = SslAesTransport(config=config)
