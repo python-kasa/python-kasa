@@ -1,5 +1,7 @@
+import importlib.util
 import json
 import re
+import sys
 from datetime import datetime
 from unittest.mock import ANY, PropertyMock, patch
 from zoneinfo import ZoneInfo
@@ -1552,3 +1554,17 @@ async def test_discover_config_invalid(
     )
     assert res.exit_code == 1
     assert "--target is not a valid option for single host discovery" in res.output
+
+
+def test_echo_strips_rich_tags_without_rich(monkeypatch, capsys):
+    """Multi-word rich tags are stripped when rich is not installed."""
+    monkeypatch.setitem(sys.modules, "rich", None)
+    spec = importlib.util.find_spec("kasa.cli.common")
+    assert spec
+    assert spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    module._echo("[bold red]Only discover is available[/bold red] [ABC]")
+
+    assert capsys.readouterr().out == "Only discover is available [ABC]\n"
