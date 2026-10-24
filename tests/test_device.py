@@ -11,6 +11,7 @@ from contextlib import AbstractContextManager, nullcontext
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from pytest_mock import MockerFixture
 
 import kasa
 from kasa import Credentials, Device, DeviceConfig, DeviceType, KasaException, Module
@@ -75,6 +76,16 @@ async def test_alias(dev: Device) -> None:
     await dev.set_alias(original or "")
     await dev.update()
     assert dev.alias == original
+
+
+async def test_supports_module(dev: Device, mocker: MockerFixture) -> None:
+    """Test modules of the device are supported without querying the device."""
+    spy = mocker.spy(dev.protocol, "query")
+
+    assert await dev.supports_module("not_a_module") is False
+    for name in dev.modules:
+        assert await dev.supports_module(name) is True
+    spy.assert_not_called()
 
 
 @device_classes

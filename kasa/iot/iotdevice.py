@@ -19,13 +19,13 @@ import inspect
 import logging
 from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime, timedelta, tzinfo
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 from warnings import warn
 
 from ..device import Device, DeviceInfo, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..exceptions import KasaException, UnsupportedDeviceError
+from ..exceptions import KasaException, TimeoutError, UnsupportedDeviceError
 from ..feature import Feature
 from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
@@ -182,6 +182,13 @@ class IotDevice(Device):
 
     emeter_type = "emeter"
 
+    #: Modules that are only queried by supports_module(), not by update().
+    _OPTIONAL_MODULES: ClassVar[
+        dict[str | ModuleName[Any], tuple[type[IotModule], str]]
+    ] = {
+        Module.IotHomeKit: (HomeKit, "smartlife.iot.homekit"),
+    }
+
     def __init__(
         self,
         host: str,
@@ -198,6 +205,7 @@ class IotDevice(Device):
         self._children: Mapping[str, IotDevice] = {}
         self._modules: dict[str | ModuleName[Module], IotModule] = {}
         self._on_since: datetime | None = None
+        self._optional_module_support: dict[str | ModuleName[Module], bool] = {}
 
     @property
     def children(self) -> Sequence[IotDevice]:
@@ -330,8 +338,6 @@ class IotDevice(Device):
 
     async def _initialize_modules(self) -> None:
         """Initialize modules not added in init."""
-        self.add_module(Module.IotHomeKit, HomeKit(self, "smartlife.iot.homekit"))
-
         if self.has_emeter:
             _LOGGER.debug(
                 "The device has emeter, querying its information along sysinfo"
@@ -443,6 +449,27 @@ class IotDevice(Device):
                     supported[module_name] = module
 
             self._supported_modules = supported
+
+    async def supports_module(self, module: ModuleName[Module] | str) -> bool:
+        """Return True if the device supports the module.
+
+        Optional modules are checked with a separate query, the result is remembered.
+        """
+        if (optional := self._OPTIONAL_MODULES.get(module)) is None:
+            return await super().supports_module(module)
+
+        if module not in self._optional_module_support:
+            module_class, key = optional
+            query = module_class(self, key).query()
+            try:
+                response = await self.protocol.query(query, retry_count=0)
+            except TimeoutError:
+                return False
+            data = response.get(key)
+            self._optional_module_support[module] = (
+                isinstance(data, dict) and "err_code" not in data
+            )
+        return self._optional_module_support[module]
 
     def update_from_discover_info(self, info: dict[str, Any]) -> None:
         """Update state from info from the discover call."""
