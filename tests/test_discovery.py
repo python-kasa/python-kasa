@@ -26,11 +26,7 @@ from kasa import (
     SmartCamProtocol,
     SmartProtocol,
 )
-from kasa.device_factory import (
-    get_device_class,
-    get_device_class_from_sys_info,
-    get_protocol,
-)
+from kasa.device_factory import get_device_class_from_sys_info
 from kasa.deviceconfig import (
     DeviceConfig,
     DeviceConnectionParameters,
@@ -46,6 +42,7 @@ from kasa.discover import (
 )
 from kasa.exceptions import AuthenticationError, UnsupportedDeviceError
 from kasa.iot import IotDevice, IotPlug
+from kasa.registry import REGISTRY
 from kasa.smart import SmartDevice
 from kasa.smartcam import SmartCamDevice
 from kasa.transports import (
@@ -712,8 +709,8 @@ async def test_discover_try_connect_all(discovery_mock, mocker: MockerFixture) -
             https=discovery_mock.https,
             http_port=discovery_mock.http_port,
         )
-        dev_class = get_device_class(cparams)
-        protocol = get_protocol(
+        dev_class = REGISTRY.get_device_class(cparams)
+        protocol = REGISTRY.get_protocol(
             DeviceConfig(discovery_mock.ip, connection_type=cparams)
         )
         protocol_class = protocol.__class__

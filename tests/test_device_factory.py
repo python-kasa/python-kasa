@@ -28,11 +28,8 @@ from kasa.device_factory import (
     IotDevice,
     IotDimmer,
     IotPlug,
-    SmartCamDevice,
-    SmartDevice,
     connect,
     get_device_class_from_sys_info,
-    get_protocol,
 )
 from kasa.deviceconfig import (
     DeviceConfig,
@@ -41,6 +38,9 @@ from kasa.deviceconfig import (
     DeviceFamily,
 )
 from kasa.discover import DiscoveryResult
+from kasa.registry import REGISTRY
+from kasa.smart import SmartDevice
+from kasa.smartcam import SmartCamDevice
 from kasa.transports import (
     AesTransport,
     BaseTransport,
@@ -87,7 +87,7 @@ async def test_connect(
     config = DeviceConfig(
         host=host, credentials=Credentials("foor", "bar"), connection_type=ctype
     )
-    protocol_class = get_protocol(config).__class__
+    protocol_class = REGISTRY.get_protocol(config).__class__
     close_mock = mocker.patch.object(protocol_class, "close")
     # mocker.patch.object(SmartDevice, "update")
     # mocker.patch.object(Device, "update")
@@ -158,7 +158,7 @@ async def test_connect_query_fails(discovery_mock, mocker: MockerFixture) -> Non
     config = DeviceConfig(
         host=host, credentials=Credentials("foor", "bar"), connection_type=ctype
     )
-    protocol_class = get_protocol(config).__class__
+    protocol_class = REGISTRY.get_protocol(config).__class__
     close_mock = mocker.patch.object(protocol_class, "close")
     assert close_mock.call_count == 0
     with pytest.raises(KasaException):
@@ -339,7 +339,7 @@ async def test_get_protocol(
 ) -> None:
     """Test get_protocol returns the right protocol."""
     config = DeviceConfig("127.0.0.1", connection_type=conn_params)
-    protocol = get_protocol(config)
+    protocol = REGISTRY.get_protocol(config)
     assert isinstance(protocol, expected_protocol)
     assert isinstance(protocol._transport, expected_transport)
 

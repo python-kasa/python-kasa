@@ -110,11 +110,7 @@ from mashumaro.types import Alias
 
 from kasa import Device
 from kasa.credentials import Credentials
-from kasa.device_factory import (
-    get_device_class,
-    get_device_class_from_sys_info,
-    get_protocol,
-)
+from kasa.device_factory import get_device_class_from_sys_info
 from kasa.deviceconfig import (
     DeviceConfig,
     DeviceConnectionParameters,
@@ -131,6 +127,7 @@ from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 from kasa.protocols.iotprotocol import REDACTORS as IOT_REDACTORS
 from kasa.protocols.protocol import mask_mac, redact_data
+from kasa.registry import REGISTRY
 from kasa.transports.aestransport import AesEncyptionSession, KeyPair
 from kasa.transports.xortransport import XorEncryption
 
@@ -688,8 +685,8 @@ class Discover:
                 credentials=credentials,
                 http_client=http_client,
             )
-            protocol = cast("BaseProtocol", get_protocol(config))
-            device_class = cast(type[Device], get_device_class(conn_params))
+            protocol = cast("BaseProtocol", REGISTRY.get_protocol(config))
+            device_class = cast(type[Device], REGISTRY.get_device_class(conn_params))
             attempt = ConnectAttempt(
                 type(protocol),
                 type(protocol._transport),
@@ -721,7 +718,7 @@ class Discover:
         """Find SmartDevice subclass for device described by passed data."""
         if "result" in info:
             discovery_result = DiscoveryResult.from_dict(info["result"])
-            dev_class = get_device_class(
+            dev_class = REGISTRY.get_device_class(
                 Discover._get_connection_parameters(discovery_result)
             )
             if not dev_class:
@@ -755,7 +752,7 @@ class Discover:
         device = device_class(config.host, config=config)
         sys_info = _extract_sys_info(info)
         config.connection_type = Discover._get_connection_parameters_legacy(sys_info)
-        device.protocol = get_protocol(config)  # type: ignore[assignment]
+        device.protocol = REGISTRY.get_protocol(config)  # type: ignore[assignment]
         device.update_from_discover_info(info)
         return device
 
@@ -922,7 +919,7 @@ class Discover:
                 host=config.host,
             ) from ex
 
-        if (protocol := get_protocol(config)) is None:
+        if (protocol := REGISTRY.get_protocol(config)) is None:
             _LOGGER.debug(
                 "Got unsupported connection type: %s", config.connection_type.to_dict()
             )
@@ -933,7 +930,7 @@ class Discover:
                 host=config.host,
             )
 
-        if (device_class := get_device_class(conn_params)) is None:
+        if (device_class := REGISTRY.get_device_class(conn_params)) is None:
             _LOGGER.debug("Got unsupported device type: %s", type_)
             raise UnsupportedDeviceError(
                 f"Unsupported device {config.host} of type {type_}: {info}",

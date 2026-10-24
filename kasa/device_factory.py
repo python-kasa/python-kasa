@@ -5,10 +5,11 @@ from __future__ import annotations
 import logging
 import time
 from typing import Any
+from warnings import warn
 
 from .device import Device
 from .device_type import DeviceType
-from .deviceconfig import DeviceConfig, DeviceConnectionParameters
+from .deviceconfig import DeviceConfig
 from .exceptions import KasaException, UnsupportedDeviceError
 from .iot import (
     IotBulb,
@@ -19,53 +20,14 @@ from .iot import (
     IotStrip,
     IotWallSwitch,
 )
-from .protocols import (
-    BaseProtocol,
-    IotProtocol,
-    SmartProtocol,
-)
-from .protocols.smartcamprotocol import SmartCamProtocol
-from .registry import lookup, register_transport
-from .smart import SmartDevice
-from .smartcam import SmartCamDevice
-from .transports import (
-    AesTransport,
-    BaseTransport,
-    KlapTransport,
-    KlapTransportV2,
-    LinkieTransportV2,
-    SslTransport,
-    XorTransport,
-)
-from .transports.sslaestransport import SslAesTransport
+from .protocols import BaseProtocol, IotProtocol
+from .registry import REGISTRY
 
 _LOGGER = logging.getLogger(__name__)
 
 GET_SYSINFO_QUERY: dict[str, dict[str, dict]] = {
     "system": {"get_sysinfo": {}},
 }
-
-
-def _iot_klap_transport(*, config: DeviceConfig) -> BaseTransport:
-    login_version = config.connection_type.login_version
-    transport_cls = (
-        KlapTransportV2 if login_version and login_version >= 2 else KlapTransport
-    )
-    return transport_cls(config=config)
-
-
-register_transport("IOT", "XOR", IotProtocol, XorTransport, https=False)
-register_transport("IOT", "KLAP", IotProtocol, _iot_klap_transport, https=False)
-register_transport("SMART", "AES", SmartProtocol, AesTransport, https=False)
-register_transport("SMART", "KLAP", SmartProtocol, KlapTransportV2)
-# H200 is device family SMART.TAPOHUB and uses SmartCamProtocol so use
-# https to distuingish from SmartProtocol devices
-register_transport("SMART", "AES", SmartCamProtocol, SslAesTransport, https=True)
-register_transport("SMART.IPCAMERA", None, SmartCamProtocol, SslAesTransport)
-register_transport("SMART.TAPODOORBELL", None, SmartCamProtocol, SslAesTransport)
-register_transport("IOT.IPCAMERA", None, IotProtocol, LinkieTransportV2)
-# Older FW used a different transport
-register_transport("SMART.TAPOROBOVAC", "AES", SmartProtocol, SslTransport)
 
 
 async def connect(*, host: str | None = None, config: DeviceConfig) -> Device:
@@ -92,7 +54,7 @@ async def connect(*, host: str | None = None, config: DeviceConfig) -> Device:
     if host:
         config = DeviceConfig(host=host)
 
-    if (protocol := get_protocol(config=config)) is None:
+    if (protocol := REGISTRY.get_protocol(config)) is None:
         raise UnsupportedDeviceError(
             f"Unsupported device for {config.host}: "
             + f"{config.connection_type.device_family.value}",
@@ -138,7 +100,7 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> Device:
         await device.update()
         _perf_log(True, "update")
         return device
-    elif device_class := get_device_class(config.connection_type):
+    elif device_class := REGISTRY.get_device_class(config.connection_type):
         device = device_class(host=config.host, protocol=protocol)
         await device.update()
         _perf_log(True, "update")
@@ -172,25 +134,8 @@ def get_device_class_from_sys_info(sysinfo: dict[str, Any]) -> type[IotDevice]:
     return cls
 
 
-def get_device_class(
-    connection_parameters: DeviceConnectionParameters,
-) -> type[Device] | None:
-    """Return the device class for the connection parameters."""
-    if not (entry := lookup(connection_parameters)):
-        return None
-    if issubclass(entry.protocol, SmartCamProtocol):
-        return SmartCamDevice
-    if issubclass(entry.protocol, SmartProtocol):
-        return SmartDevice
-    # IOT device classes are decided by the sysinfo, discovery only has the family
-    return {"IOT.SMARTPLUGSWITCH": IotPlug, "IOT.SMARTBULB": IotBulb}.get(
-        connection_parameters.device_family.value
-    )
-
-
 def get_protocol(config: DeviceConfig) -> BaseProtocol | None:
     """Return the protocol from the device config."""
-    _LOGGER.debug("Finding protocol for %s", config.host)
-    if not (entry := lookup(config.connection_type)):
-        return None
-    return entry.protocol(transport=entry.transport(config=config))
+    msg = "get_protocol is deprecated, use kasa.registry.REGISTRY.get_protocol instead"
+    warn(msg, DeprecationWarning, stacklevel=2)
+    return REGISTRY.get_protocol(config)

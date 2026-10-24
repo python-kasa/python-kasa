@@ -12,9 +12,7 @@ from kasa import (
     KasaException,
     SmartCamProtocol,
     SmartProtocol,
-    registry,
 )
-from kasa.device_factory import get_device_class, get_protocol
 from kasa.deviceconfig import (
     DeviceConfig,
     DeviceConnectionParameters,
@@ -22,6 +20,7 @@ from kasa.deviceconfig import (
     DeviceFamily,
 )
 from kasa.iot import IotBulb, IotPlug
+from kasa.registry import Registry
 from kasa.smart import SmartDevice
 from kasa.smartcam import SmartCamDevice
 from kasa.transports import (
@@ -40,21 +39,24 @@ ET = DeviceEncryptionType
 
 
 @pytest.fixture(autouse=True)
-def _restore_registry():
-    """Plugins change global state: the entries and the encryption type enum."""
-    entries = list(registry._ENTRIES)
+def _restore_encryption_types():
+    """Plugins add encryption types to the enum, which is shared by registries."""
     maps = (
         dict(ET._value2member_map_),
         dict(ET._member_map_),
         list(ET._member_names_),
     )
     yield
-    registry._ENTRIES[:] = entries
     ET._value2member_map_.clear()
     ET._value2member_map_.update(maps[0])
     ET._member_map_.clear()
     ET._member_map_.update(maps[1])
     ET._member_names_[:] = maps[2]
+
+
+@pytest.fixture
+def registry() -> Registry:
+    return Registry()
 
 
 @pytest.mark.parametrize(
@@ -118,9 +120,13 @@ def _restore_registry():
         ),
     ],
 )
-async def test_most_specific_entry_wins(conn_params, protocol, transport) -> None:
+async def test_most_specific_entry_wins(
+    registry, conn_params, protocol, transport
+) -> None:
     """The family, then the encryption, then https decide which entry matches."""
-    protocol_obj = get_protocol(DeviceConfig("127.0.0.1", connection_type=conn_params))
+    protocol_obj = registry.get_protocol(
+        DeviceConfig("127.0.0.1", connection_type=conn_params)
+    )
     assert protocol_obj is not None
     assert type(protocol_obj) is protocol
     assert type(protocol_obj._transport) is transport
@@ -138,10 +144,10 @@ async def test_most_specific_entry_wins(conn_params, protocol, transport) -> Non
         ),
     ],
 )
-async def test_no_entry(conn_params) -> None:
+async def test_no_entry(registry, conn_params) -> None:
     config = DeviceConfig("127.0.0.1", connection_type=conn_params)
-    assert get_protocol(config) is None
-    assert get_device_class(conn_params) is None
+    assert registry.get_protocol(config) is None
+    assert registry.get_device_class(conn_params) is None
 
 
 @pytest.mark.parametrize(
@@ -189,18 +195,18 @@ async def test_no_entry(conn_params) -> None:
         ),
     ],
 )
-def test_get_device_class(conn_params, device_class) -> None:
-    assert get_device_class(conn_params) is device_class
+def test_get_device_class(registry, conn_params, device_class) -> None:
+    assert registry.get_device_class(conn_params) is device_class
 
 
-def transport_type(config: DeviceConfig) -> type:
+def transport_type(registry: Registry, config: DeviceConfig) -> type:
     """Return the type of the transport chosen for the config."""
-    protocol = get_protocol(config)
+    protocol = registry.get_protocol(config)
     assert protocol is not None
     return type(protocol._transport)
 
 
-def register_foo() -> None:
+def register_foo(registry: Registry) -> None:
     registry.register_transport("SMART", "FOO", SmartProtocol, KlapTransportV2)
 
 
@@ -219,7 +225,7 @@ def plugins(mocker):
     return _install
 
 
-async def test_plugin_adds_encryption_type(plugins) -> None:
+async def test_plugin_adds_encryption_type(registry, plugins) -> None:
     entry_points = plugins(register_foo)
 
     with pytest.raises(KasaException, match="Invalid connection parameters"):
@@ -236,10 +242,10 @@ async def test_plugin_adds_encryption_type(plugins) -> None:
     config = DeviceConfig("127.0.0.1", connection_type=ctype)
     assert DeviceConfig.from_dict(config.to_dict()) == config
 
-    protocol = get_protocol(config)
+    protocol = registry.get_protocol(config)
     assert type(protocol) is SmartProtocol
     assert type(protocol._transport) is KlapTransportV2
-    assert get_device_class(ctype) is SmartDevice
+    assert registry.get_device_class(ctype) is SmartDevice
 
 
 @pytest.mark.parametrize(
@@ -247,8 +253,8 @@ async def test_plugin_adds_encryption_type(plugins) -> None:
     [RuntimeError("boom"), SystemExit(1)],
     ids=["exception", "system-exit"],
 )
-async def test_failing_plugin_is_skipped(exception, plugins, caplog) -> None:
-    def register_broken() -> None:
+async def test_failing_plugin_is_skipped(registry, exception, plugins, caplog) -> None:
+    def register_broken(registry: Registry) -> None:
         registry.register_transport("SMART", "BAR", SmartProtocol, XorTransport)
         registry.register_transport("SMART", "KLAP", SmartProtocol, XorTransport)
         raise exception
@@ -260,18 +266,18 @@ async def test_failing_plugin_is_skipped(exception, plugins, caplog) -> None:
 
     assert "register_broken" in caplog.text
     assert ET("FOO").value == "FOO"
-    assert not any(entry.encryption == "BAR" for entry in registry._ENTRIES)
+    assert not any(entry.encryption == "BAR" for entry in registry._entries)
     config = DeviceConfig(
         "127.0.0.1",
         connection_type=CP(
             device_family=DF.SmartTapoPlug, encryption_type=ET.Klap, login_version=2
         ),
     )
-    assert transport_type(config) is KlapTransportV2
+    assert transport_type(registry, config) is KlapTransportV2
 
 
-async def test_interrupt_is_not_swallowed(plugins) -> None:
-    def register_interrupted() -> None:
+async def test_interrupt_is_not_swallowed(registry, plugins) -> None:
+    def register_interrupted(registry: Registry) -> None:
         raise KeyboardInterrupt
 
     plugins(register_interrupted, register_foo)
@@ -281,21 +287,16 @@ async def test_interrupt_is_not_swallowed(plugins) -> None:
 
 
 @pytest.mark.parametrize(
-    ("family", "bulb_transport", "message"),
+    ("family", "bulb_transport"),
     [
-        pytest.param("SMART", XorTransport, "Replacing", id="same-parameters"),
-        pytest.param(
-            "SMART.TAPOPLUG",
-            KlapTransportV2,
-            "Plugin register_override overrides",
-            id="more-specific",
-        ),
+        pytest.param("SMART", XorTransport, id="same-parameters"),
+        pytest.param("SMART.TAPOPLUG", KlapTransportV2, id="more-specific"),
     ],
 )
 async def test_plugin_overrides_existing_transport(
-    family, bulb_transport, message, plugins, caplog
+    registry, family, bulb_transport, plugins, caplog
 ) -> None:
-    def register_override() -> None:
+    def register_override(registry: Registry) -> None:
         registry.register_transport(family, "KLAP", SmartProtocol, XorTransport)
 
     plugins(register_override)
@@ -315,17 +316,17 @@ async def test_plugin_overrides_existing_transport(
             device_family=DF.SmartTapoBulb, encryption_type=ET.Klap, login_version=2
         ),
     )
-    assert transport_type(plug) is XorTransport
-    assert transport_type(bulb) is bulb_transport
-    assert message in caplog.text
+    assert transport_type(registry, plug) is XorTransport
+    assert transport_type(registry, bulb) is bulb_transport
+    assert "Plugin register_override overrides" in caplog.text
 
 
 async def test_plugin_override_warns_once_for_the_replaced_entry(
-    plugins, caplog
+    registry, plugins, caplog
 ) -> None:
     """Entries already shadowed for the overridden devices are not reported."""
 
-    def register_camera() -> None:
+    def register_camera(registry: Registry) -> None:
         registry.register_transport(
             "SMART.IPCAMERA", "AES", SmartCamProtocol, XorTransport
         )
@@ -339,10 +340,10 @@ async def test_plugin_override_warns_once_for_the_replaced_entry(
     assert "(SMART.IPCAMERA None https=None)" in record.getMessage()
 
 
-async def test_plugin_without_override_does_not_warn(plugins, caplog) -> None:
+async def test_plugin_without_override_does_not_warn(registry, plugins, caplog) -> None:
     """A new encryption type or a less specific entry does not take over devices."""
 
-    def register_less_specific() -> None:
+    def register_less_specific(registry: Registry) -> None:
         registry.register_transport("SMART", "AES", SmartProtocol, XorTransport)
 
     plugins(register_foo, register_less_specific)
@@ -357,10 +358,10 @@ async def test_plugin_without_override_does_not_warn(plugins, caplog) -> None:
             device_family=DF.SmartTapoPlug, encryption_type=ET.Aes, login_version=2
         ),
     )
-    assert transport_type(config) is AesTransport
+    assert transport_type(registry, config) is AesTransport
 
 
-async def test_disable_plugins(plugins, monkeypatch) -> None:
+async def test_disable_plugins(registry, plugins, monkeypatch) -> None:
     entry_points = plugins(register_foo)
     monkeypatch.setenv("KASA_DISABLE_PLUGINS", "1")
 
@@ -371,12 +372,10 @@ async def test_disable_plugins(plugins, monkeypatch) -> None:
         ET("FOO")
 
 
-async def test_registration_replaces_same_parameters(caplog) -> None:
+async def test_registration_replaces_same_parameters(registry) -> None:
     registry.register_transport("IOT", "XOR", IotProtocol, KlapTransport, https=True)
-    with caplog.at_level(logging.WARNING):
-        registry.register_transport("IOT", "XOR", IotProtocol, XorTransport, https=True)
+    registry.register_transport("IOT", "XOR", IotProtocol, XorTransport, https=True)
 
-    assert "Replacing" in caplog.text
     config = DeviceConfig(
         "127.0.0.1",
         connection_type=CP(
@@ -385,4 +384,4 @@ async def test_registration_replaces_same_parameters(caplog) -> None:
             https=True,
         ),
     )
-    assert transport_type(config) is XorTransport
+    assert transport_type(registry, config) is XorTransport
