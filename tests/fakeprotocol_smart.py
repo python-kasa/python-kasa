@@ -96,6 +96,10 @@ class FakeSmartTransport(BaseTransport):
         return self._credentials.username + self._credentials.password + "hash"
 
     FIXTURE_MISSING_MAP = {
+        "get_temperature_records": (
+            "temp_record",
+            {"temp_data": [-1000] * 88 + [253, 254, 256, 255, 252, 249, 247, 245]},
+        ),
         "get_wireless_scan_info": ("wireless", {"ap_list": [], "wep_supported": False}),
         "get_auto_off_config": ("auto_off", {"delay_min": 10, "enable": False}),
         "get_led_info": (
