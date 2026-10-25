@@ -96,6 +96,17 @@ class FakeSmartTransport(BaseTransport):
         return self._credentials.username + self._credentials.password + "hash"
 
     FIXTURE_MISSING_MAP = {
+        "get_temp_humidity_records": (
+            "temp_humidity_record",
+            {
+                "local_time": 1713550233,
+                "past24h_temp": [-1000] * 92 + [195, 196, 194, 193],
+                "past24h_temp_exception": [0] * 96,
+                "past24h_humidity": [-1000] * 92 + [58, 57, 55, 54],
+                "past24h_humidity_exception": [0] * 96,
+                "temp_unit": "celsius",
+            },
+        ),
         "get_temperature_records": (
             "temp_record",
             {"temp_data": [-1000] * 88 + [253, 254, 256, 255, 252, 249, 247, 245]},
