@@ -41,6 +41,7 @@ from .speaker import Speaker
 from .temperaturecontrol import TemperatureControl
 from .temperaturesensor import TemperatureSensor
 from .thermostat import Thermostat
+from .thermostatschedule import ThermostatSchedule
 from .time import Time
 from .triggerlogs import TriggerLogs
 from .waterleaksensor import WaterleakSensor
@@ -78,6 +79,7 @@ __all__ = [
     "TriggerLogs",
     "FrostProtection",
     "Thermostat",
+    "ThermostatSchedule",
     "Clean",
     "Consumables",
     "CleanRecords",
