@@ -2,6 +2,9 @@
 
 ## [0.12.0](https://github.com/python-kasa/python-kasa/tree/0.12.0) (2026-10-25)
 
+This release include several compatibility fixes (updated accepted SSL ciphers, removal of Homekit from the default update cycle).
+The new API `Device.supports_module()` provide a way to find out if the device supports some specific module, e.g., HomeKit, without including it in the default update cycle.
+
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.11.0.1...0.12.0)
 
 **Fixed bugs:**
