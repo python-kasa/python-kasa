@@ -1,12 +1,13 @@
 import inspect
 import logging
+import time
 from datetime import UTC, datetime
 
 import pytest
 from freezegun.api import FrozenDateTimeFactory
 from pytest_mock import MockerFixture
 
-from kasa import Device, DeviceUnavailableError
+from kasa import Device, DeviceUnavailableError, Module
 from kasa.device_type import DeviceType
 from kasa.protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 from kasa.smart.smartchilddevice import SmartChildDevice
@@ -260,3 +261,37 @@ async def test_child_device_type_unknown(caplog: pytest.LogCaptureFixture) -> No
     assert DummyDevice().device_type is DeviceType.Unknown
     msg = "Unknown child device type foobar for model None, please open issue"
     assert msg in caplog.text
+
+
+@parametrize(
+    "hub with cloud-connected sensor",
+    model_filter={"H100(EU)_1.0_1.5.10", "KH100(UK)_1.0_1.5.6"},
+    protocol_filter={"SMART"},
+)
+@pytest.mark.requires_dummy
+async def test_child_partial_update_keeps_module_data(
+    dev: SmartDevice, mocker: MockerFixture
+) -> None:
+    """Keep cached module data when only another child module is queried."""
+    child = next(
+        child
+        for child in dev.children
+        if Module.Cloud in child.modules and Module.TriggerLogs in child.modules
+    )
+    assert isinstance(child, SmartChildDevice)
+    cached = child.modules[Module.TriggerLogs]
+    cached_data = cached.data.copy()
+    cached_logs = cached.logs
+    for module in child.modules.values():
+        module._last_update_time = time.monotonic()
+    due = child.modules[Module.Cloud]
+    due._last_update_time = None
+    query = mocker.spy(child.protocol, "query")
+
+    await child.update()
+
+    query.assert_called_once_with(due.query())
+    assert cached.data == cached_data
+    assert cached.logs == cached_logs
+    assert due.data
+    assert cached._last_update_error is None
