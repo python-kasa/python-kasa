@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.12.0](https://github.com/python-kasa/python-kasa/tree/0.12.0) (2026-10-25)
+
+This release include several compatibility fixes (updated accepted SSL ciphers, removal of Homekit from the default update cycle).
+The new API `Device.supports_module()` provide a way to find out if the device supports some specific module, e.g., HomeKit, without including it in the default update cycle.
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.11.0.1...0.12.0)
+
+**Fixed bugs:**
+
+- Keep hub children when the child component list is missing [\#1797](https://github.com/python-kasa/python-kasa/pull/1797) (@Richardtristan)
+- Strip multi-word rich tags when rich is not installed [\#1807](https://github.com/python-kasa/python-kasa/pull/1807) (@wolfgang-aura)
+- Add Device.supports_module() and stop querying HomeKit for iot devices [\#1808](https://github.com/python-kasa/python-kasa/pull/1808) (@rytilahti)
+- Keep multi requests for smartcam devices after a timeout [\#1802](https://github.com/python-kasa/python-kasa/pull/1802) (@hugaraujo)
+- Consolidate SSL ciphers and use them in SslTransport [\#1798](https://github.com/python-kasa/python-kasa/pull/1798) (@rytilahti)
+- Raise UnsupportedDeviceError instead of crashing on unknown device types [\#1781](https://github.com/python-kasa/python-kasa/pull/1781) (@GhostCoder6969)
+
+**Added support for devices:**
+
+- Add TD21(EU) device fixture [\#1786](https://github.com/python-kasa/python-kasa/pull/1786) (@Smugaski)
+- Add P116M(IN) fixture [\#1795](https://github.com/python-kasa/python-kasa/pull/1795) (@Partha-dev01)
+
+**Project maintenance:**
+
+- Add Python 3.15 to supported versions and update pins [\#1793](https://github.com/python-kasa/python-kasa/pull/1793) (@rytilahti)
+- Generate the changelog with git-cliff and draft releases in CI [\#1809](https://github.com/python-kasa/python-kasa/pull/1809) (@rytilahti)
+- Build and check packages in CI and publish workflows [\#1782](https://github.com/python-kasa/python-kasa/pull/1782) (@rytilahti)
+
+**Other changes:**
+
+- Use the real discovery reply in the TD21 fixture [\#1800](https://github.com/python-kasa/python-kasa/pull/1800) (@Smugaski)
+
 ## [0.11.0.1](https://github.com/python-kasa/python-kasa/tree/0.11.0.1) (2026-10-04)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.10.2...0.11.0.1)
