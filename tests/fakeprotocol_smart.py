@@ -96,6 +96,42 @@ class FakeSmartTransport(BaseTransport):
         return self._credentials.username + self._credentials.password + "hash"
 
     FIXTURE_MISSING_MAP = {
+        "get_sc_schedule_info": (
+            "smart_control_schedule",
+            {"enable": True, "mode": "weekday_sat_sun"},
+        ),
+        "get_sc_schedule_rules": (
+            "smart_control_schedule",
+            {
+                "schedule_mode": "weekday_sat_sun",
+                "day_segment": 6,
+                "start_index": 0,
+                "sum": 3,
+                "schedule_list": [
+                    {
+                        "id": f"weekday_sat_sun:{day}",
+                        "rule_list": [
+                            {
+                                "start_min": start,
+                                "end_min": end,
+                                "desired_states": {
+                                    "target_temp": temp,
+                                    "target_temp_float": temp * 10,
+                                    "frost_protection_on": False,
+                                    "temp_unit": "celsius",
+                                },
+                            }
+                            # Devices may return slots out of order
+                            for start, end, temp in sorted(
+                                ((0, 419, 18), (420, 1319, 21), (1320, 1439, 18)),
+                                reverse=day == "saturday",
+                            )
+                        ],
+                    }
+                    for day in ("sunday", "weekday", "saturday")
+                ],
+            },
+        ),
         "get_wireless_scan_info": ("wireless", {"ap_list": [], "wep_supported": False}),
         "get_auto_off_config": ("auto_off", {"delay_min": 10, "enable": False}),
         "get_led_info": (
@@ -571,6 +607,20 @@ class FakeSmartTransport(BaseTransport):
             ]
         return {"error_code": 0}
 
+    def _edit_sc_schedule_rule(self, info: dict, params: dict):
+        """Replace the rules of one thermostat schedule."""
+        rules = info["get_sc_schedule_rules"]
+        # Devices only accept edits to the schedules of the active mode.
+        if params["schedule_mode"] != info["get_sc_schedule_info"]["mode"]:
+            return {"error_code": SmartErrorCode.UNSPECIFIC_ERROR.value}
+        if rules["schedule_mode"] != params["schedule_mode"]:
+            return {"error_code": SmartErrorCode.PARAMS_ERROR.value}
+        for schedule in rules["schedule_list"]:
+            if schedule["id"] == params["id"]:
+                schedule["rule_list"] = params["rule_list"]
+                return {"error_code": 0}
+        return {"error_code": SmartErrorCode.PARAMS_ERROR.value}
+
     def _set_child_preset_rules(self, info: dict, params: dict):
         """Set or remove values as per the device behaviour."""
         # So far the only child device with light preset (KS240) has the
@@ -730,6 +780,8 @@ class FakeSmartTransport(BaseTransport):
             return self._set_on_off_gradually_info(info, params)
         elif method == "set_child_protection":
             return self._update_sysinfo_key(info, "child_protection", params["enable"])
+        elif method == "edit_sc_schedule_rule":
+            return self._edit_sc_schedule_rule(info, params)
         elif method == "remove_child_device_list":
             return self._hub_remove_device(info, params)
         # actions
