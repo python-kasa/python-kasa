@@ -160,6 +160,12 @@ class Module(ABC):
     )
     ChildLock: Final[ModuleName[smart.ChildLock]] = ModuleName("ChildLock")
     TriggerLogs: Final[ModuleName[smart.TriggerLogs]] = ModuleName("TriggerLogs")
+    TemperatureHumidityRecords: Final[ModuleName[smart.TemperatureHumidityRecords]] = (
+        ModuleName("TemperatureHumidityRecords")
+    )
+    TemperatureRecords: Final[ModuleName[smart.TemperatureRecords]] = ModuleName(
+        "TemperatureRecords"
+    )
     PowerProtection: Final[ModuleName[smart.PowerProtection]] = ModuleName(
         "PowerProtection"
     )
