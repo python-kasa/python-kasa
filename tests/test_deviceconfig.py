@@ -22,13 +22,17 @@ PLUG_XOR_CONFIG = DeviceConfig(host="127.0.0.1")
 PLUG_KLAP_CONFIG = DeviceConfig(
     host="127.0.0.1",
     connection_type=DeviceConnectionParameters(
-        DeviceFamily.SmartTapoPlug, DeviceEncryptionType.Klap, login_version=2
+        device_family=DeviceFamily.SmartTapoPlug,
+        encryption_type=DeviceEncryptionType.Klap,
+        login_version=2,
     ),
 )
 CAMERA_AES_CONFIG = DeviceConfig(
     host="127.0.0.1",
     connection_type=DeviceConnectionParameters(
-        DeviceFamily.SmartIpCamera, DeviceEncryptionType.Aes, https=True
+        device_family=DeviceFamily.SmartIpCamera,
+        encryption_type=DeviceEncryptionType.Aes,
+        https=True,
     ),
 )
 

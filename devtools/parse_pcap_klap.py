@@ -234,7 +234,8 @@ def main(
     creds = Credentials(username, password)
 
     fake_connection = DeviceConnectionParameters(
-        DeviceFamily.SmartTapoBulb, DeviceEncryptionType.Klap
+        device_family=DeviceFamily.SmartTapoBulb,
+        encryption_type=DeviceEncryptionType.Klap,
     )
     fake_device = DeviceConfig(
         device_ip, connection_type=fake_connection, credentials=creds

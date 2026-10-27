@@ -24,11 +24,7 @@ from kasa import (
     IotProtocol,
     KasaException,
 )
-from kasa.device_factory import (
-    get_device_class_from_family,
-    get_device_class_from_sys_info,
-    get_protocol,
-)
+from kasa.device_factory import get_device_class_from_sys_info
 from kasa.deviceconfig import (
     DeviceConfig,
     DeviceConnectionParameters,
@@ -43,6 +39,7 @@ from kasa.discover import (
 )
 from kasa.exceptions import AuthenticationError, UnsupportedDeviceError
 from kasa.iot import IotDevice, IotPlug
+from kasa.registry import REGISTRY
 from kasa.transports.aestransport import AesEncyptionSession
 from kasa.transports.xortransport import XorEncryption, XorTransport
 
@@ -693,9 +690,6 @@ async def test_discovery_decryption() -> None:
 async def test_discover_try_connect_all(discovery_mock, mocker: MockerFixture) -> None:
     """Test that device update is called on main."""
     if "result" in discovery_mock.discovery_data:
-        dev_class = get_device_class_from_family(
-            discovery_mock.device_type, https=discovery_mock.https
-        )
         cparams = DeviceConnectionParameters.from_values(
             discovery_mock.device_type,
             discovery_mock.encrypt_type,
@@ -703,7 +697,8 @@ async def test_discover_try_connect_all(discovery_mock, mocker: MockerFixture) -
             https=discovery_mock.https,
             http_port=discovery_mock.http_port,
         )
-        protocol = get_protocol(
+        dev_class = REGISTRY.get_device_class(cparams)
+        protocol = REGISTRY.get_protocol(
             DeviceConfig(discovery_mock.ip, connection_type=cparams)
         )
         protocol_class = protocol.__class__
@@ -798,3 +793,87 @@ async def test_connection_parameters_from_encrypt_type_list_only():
     result["encrypt_type"] = ["9"]
     with pytest.raises(UnsupportedDeviceError, match="no encryption type"):
         Discover._get_connection_parameters(DiscoveryResult.from_dict(result))
+
+
+CP = DeviceConnectionParameters
+DF = DeviceFamily
+ET = DeviceEncryptionType
+
+
+@pytest.mark.parametrize("success_at", [None, 3], ids=["all-fail", "fourth-succeeds"])
+async def test_try_connect_all_attempts(success_at, mocker: MockerFixture) -> None:
+    """Each combination is tried once, until one connects."""
+    device = MagicMock()
+    calls = 0
+
+    async def _connect(config, protocol):
+        nonlocal calls
+        calls += 1
+        if calls - 1 == success_at:
+            return device
+        raise KasaException
+
+    mocker.patch("kasa.device_factory._connect", _connect)
+    results = []
+    dev = await Discover.try_connect_all(
+        "127.0.0.1",
+        on_attempt=lambda attempt, success: results.append((attempt, success)),
+    )
+
+    assert dev is (None if success_at is None else device)
+    assert [success for _, success in results] == [
+        index == success_at for index in range(calls)
+    ]
+    attempts = [attempt for attempt, _ in results]
+    assert all(None not in attempt for attempt in attempts)
+    assert len(set(attempts)) == len(attempts)
+
+
+@pytest.mark.parametrize(
+    ("sys_info", "expected"),
+    [
+        pytest.param(
+            {"type": "IOT.SMARTPLUGSWITCH"},
+            CP(device_family=DF.IotSmartPlugSwitch, encryption_type=ET.Xor),
+            id="type",
+        ),
+        pytest.param(
+            {"mic_type": "IOT.SMARTBULB", "type": "IOT.SMARTPLUGSWITCH"},
+            CP(device_family=DF.IotSmartBulb, encryption_type=ET.Xor),
+            id="mic_type-before-type",
+        ),
+        pytest.param(
+            {"type": "IOT.IPCAMERA", "stream_version": 2},
+            CP(
+                device_family=DF.IotIpCamera,
+                encryption_type=ET.Xor,
+                login_version=2,
+                https=True,
+            ),
+            id="camera",
+        ),
+    ],
+)
+def test_connection_parameters_legacy(sys_info, expected) -> None:
+    assert Discover._get_connection_parameters_legacy(sys_info) == expected
+
+
+def test_connection_parameters_legacy_without_type() -> None:
+    with pytest.raises(UnsupportedDeviceError, match="type nor mic_type"):
+        Discover._get_connection_parameters_legacy({})
+
+
+def test_device_class_without_device_class() -> None:
+    """A device with a transport but no device class is an unknown device type."""
+    info = {
+        "result": {
+            "device_type": "IOT.IPCAMERA",
+            "device_model": "KC200",
+            "device_id": "xx",
+            "ip": "127.0.0.1",
+            "mac": "00-00-00-00-00-00",
+            "mgt_encrypt_schm": {"is_support_https": True, "encrypt_type": "XOR"},
+        }
+    }
+    with pytest.raises(UnsupportedDeviceError, match="Unknown device type"):
+        Discover._get_device_class(info)
