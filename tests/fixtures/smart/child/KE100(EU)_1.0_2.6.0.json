@@ -1,0 +1,322 @@
+{
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 2
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "device_local_time",
+                "ver_code": 1
+            },
+            {
+                "id": "schedule",
+                "ver_code": 2
+            },
+            {
+                "id": "countdown",
+                "ver_code": 2
+            },
+            {
+                "id": "account",
+                "ver_code": 1
+            },
+            {
+                "id": "synchronize",
+                "ver_code": 1
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "cloud_connect",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "frost_protection",
+                "ver_code": 1
+            },
+            {
+                "id": "child_protection",
+                "ver_code": 1
+            },
+            {
+                "id": "temperature",
+                "ver_code": 1
+            },
+            {
+                "id": "remove_scale",
+                "ver_code": 1
+            },
+            {
+                "id": "early_start",
+                "ver_code": 1
+            },
+            {
+                "id": "screen_setting",
+                "ver_code": 1
+            },
+            {
+                "id": "night_mode",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 1
+            },
+            {
+                "id": "battery_detect",
+                "ver_code": 1
+            },
+            {
+                "id": "temp_record",
+                "ver_code": 1
+            },
+            {
+                "id": "progress_calibration",
+                "ver_code": 1
+            },
+            {
+                "id": "temperature_correction",
+                "ver_code": 1
+            },
+            {
+                "id": "window_open_detect",
+                "ver_code": 2
+            },
+            {
+                "id": "shutdown_mode",
+                "ver_code": 1
+            },
+            {
+                "id": "smart_control_schedule",
+                "ver_code": 1
+            },
+            {
+                "id": "temp_control",
+                "ver_code": 1
+            }
+        ]
+    },
+    "get_connect_cloud_state": {
+        "status": 0
+    },
+    "get_device_info": {
+        "at_low_battery": false,
+        "avatar": "",
+        "battery_percentage": 100,
+        "bind_count": 1,
+        "category": "subg.trv",
+        "child_protection": false,
+        "current_temp": 23.9,
+        "device_id": "SCRUBBED_CHILD_DEVICE_ID_4",
+        "frost_protection_on": false,
+        "fw_ver": "2.6.0 Build 231027 Rel.121035",
+        "hidden": false,
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.0",
+        "jamming_rssi": -121,
+        "jamming_signal_level": 1,
+        "lastOnboardingTimestamp": 1792686811,
+        "location": "",
+        "mac": "B8FBB3000000",
+        "max_control_temp": 30,
+        "min_control_temp": 5,
+        "model": "KE100",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
+        "oem_id": "00000000000000000000000000000000",
+        "parent_device_id": "0000000000000000000000000000000000000000",
+        "region": "Europe/London",
+        "rssi": -43,
+        "signal_level": 3,
+        "specs": "EU",
+        "status": "online",
+        "target_temp": 20.0,
+        "temp_offset": 0,
+        "temp_unit": "celsius",
+        "trv_states": [],
+        "type": "SMART.KASAENERGY"
+    },
+    "get_fw_download_state": {
+        "cloud_cache_seconds": 1,
+        "download_progress": 0,
+        "reboot_time": 5,
+        "status": 0,
+        "upgrade_time": 5
+    },
+    "get_latest_fw": {
+        "fw_ver": "2.15.0 Build 260212 Rel.072732",
+        "hw_id": "00000000000000000000000000000000",
+        "need_to_upgrade": true,
+        "oem_id": "00000000000000000000000000000000",
+        "release_date": "2026-03-12",
+        "release_note": "Modifications and Bug Fixes:\n1. Added support for Standard, Powerful and Gentle valve control modes in Device Settings -> Valve Control, for better adaptation to various usage scenarios.\n2. Added support for 0.5 degrees Celsius precise temperature adjustment.\n3. Optimized device performance.",
+        "type": 2
+    },
+    "get_sc_schedule_info": {
+        "enable": true,
+        "mode": "everyday"
+    },
+    "get_sc_schedule_rules": {
+        "day_segment": 6,
+        "schedule_list": [
+            {
+                "id": "everyday:everyday",
+                "rule_list": [
+                    {
+                        "desired_states": {
+                            "frost_protection_on": false,
+                            "target_temp": 18,
+                            "target_temp_float": 180,
+                            "temp_unit": "celsius"
+                        },
+                        "end_min": 419,
+                        "start_min": 0
+                    },
+                    {
+                        "desired_states": {
+                            "frost_protection_on": false,
+                            "target_temp": 20,
+                            "target_temp_float": 200,
+                            "temp_unit": "celsius"
+                        },
+                        "end_min": 1319,
+                        "start_min": 420
+                    },
+                    {
+                        "desired_states": {
+                            "frost_protection_on": false,
+                            "target_temp": 18,
+                            "target_temp_float": 180,
+                            "temp_unit": "celsius"
+                        },
+                        "end_min": 1439,
+                        "start_min": 1320
+                    }
+                ]
+            }
+        ],
+        "schedule_mode": "everyday",
+        "start_index": 0,
+        "sum": 1
+    },
+    "get_temperature_correction": {
+        "offset": 0,
+        "temp_sensor_device_id": "SCRUBBED_CHILD_DEVICE_ID_4",
+        "use_other_temp_sensor": false,
+        "using_other_temp_sensor": false
+    },
+    "get_temperature_records": {
+        "temp_data": [
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            -1000,
+            267,
+            266,
+            256,
+            241,
+            229,
+            237,
+            243,
+            240,
+            230,
+            236,
+            242,
+            243
+        ]
+    }
+}
