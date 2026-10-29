@@ -119,6 +119,7 @@ from kasa.deviceconfig import (
     DeviceConfig,
     DeviceConnectionParameters,
     DeviceEncryptionType,
+    TpapParameters,
 )
 from kasa.exceptions import (
     KasaException,
@@ -847,10 +848,12 @@ class Discover:
             # reports as sym_schm AES.
             encrypt_type = DeviceEncryptionType.Aes.value
 
+        tpap = None
         if discovery_result.tpap is not None:
             # The tpap object is what makes the Tapo app use TPAP, for every
             # family. Cameras still advertise AES in encrypt_type.
             encrypt_type = DeviceEncryptionType.Tpap.value
+            tpap = Discover._get_tpap_parameters(discovery_result)
 
         if not encrypt_type:
             raise UnsupportedDeviceError(
@@ -865,6 +868,31 @@ class Discover:
             login_version=login_version,
             https=encrypt_schm.is_support_https,
             http_port=encrypt_schm.http_port,
+            tpap=tpap,
+        )
+
+    @staticmethod
+    def _get_tpap_parameters(discovery_result: DiscoveryResult) -> TpapParameters:
+        """Get the TPAP login from the discovery tpap object.
+
+        Values of the wrong type are left at their defaults, so that a
+        malformed object does not make the device unsupported.
+        """
+        tpap = discovery_result.tpap or {}
+
+        def as_int(value: Any) -> int | None:
+            return value if isinstance(value, int) else None
+
+        pake = tpap.get("pake")
+        if not isinstance(pake, list):
+            pake = []
+        return TpapParameters(
+            tls=as_int(tpap.get("tls")) or 0,
+            port=as_int(tpap.get("port")),
+            pake=[value for value in pake if isinstance(value, int)],
+            dac=bool(tpap.get("dac")),
+            user_hash_type=as_int(tpap.get("user_hash_type")),
+            mac=discovery_result.mac,
         )
 
     @staticmethod
@@ -997,7 +1025,7 @@ class DiscoveryResult(_DiscoveryBaseMixin):
     ip: str
     mac: str
     mgt_encrypt_schm: EncryptionScheme | None = None
-    # Only its presence is used, the transport asks the device for the values
+    # Kept as sent, Discover._get_tpap_parameters reads it leniently
     tpap: dict | None = None
     device_name: str | None = None
     encrypt_info: EncryptionInfo | None = None

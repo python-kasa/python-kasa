@@ -93,6 +93,28 @@ class _DeviceConfigBaseMixin(DataClassJSONMixin):
         omit_none = True
 
 
+@dataclass(kw_only=True)
+class TpapParameters(_DeviceConfigBaseMixin):
+    """The TPAP login a device announces in its discovery reply.
+
+    Like the Tapo app, the transport logs in with these rather than asking
+    the device again with the in-band discover.
+    """
+
+    #: 0 for http, 1 for TLS without verification, 2 for verified TLS
+    tls: int = 0
+    #: Port of the TPAP endpoint, the transport default if not set
+    port: int | None = None
+    #: Passcode types the device accepts, 2 is the account password
+    pake: list[int] = field(default_factory=list)
+    #: Whether the device proves itself with its attestation certificate
+    dac: bool = False
+    #: Camera user name hash: 0 for MD5, 1 for SHA-256
+    user_hash_type: int | None = None
+    #: Device MAC, which the default passcode is derived from
+    mac: str | None = None
+
+
 @dataclass
 class DeviceConnectionParameters(_DeviceConfigBaseMixin):
     """Class to hold the the parameters determining connection type."""
@@ -102,6 +124,8 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
     login_version: int | None = None
     https: bool = False
     http_port: int | None = None
+    #: The TPAP login from discovery, if the device announced one
+    tpap: TpapParameters | None = None
 
     @staticmethod
     def from_values(
@@ -111,6 +135,7 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
         login_version: int | None = None,
         https: bool | None = None,
         http_port: int | None = None,
+        tpap: TpapParameters | None = None,
     ) -> DeviceConnectionParameters:
         """Return connection parameters from string values."""
         try:
@@ -122,6 +147,7 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
                 login_version,
                 https,
                 http_port=http_port,
+                tpap=tpap,
             )
         except (ValueError, TypeError) as ex:
             raise KasaException(

@@ -26,6 +26,7 @@ from kasa.deviceconfig import (
     DeviceConnectionParameters,
     DeviceEncryptionType,
     DeviceFamily,
+    TpapParameters,
 )
 from kasa.exceptions import (
     AuthenticationError,
@@ -3185,3 +3186,213 @@ async def test_login_not_refused_by_local_or_early_errors() -> None:
         await session._perform_auth_handshake()
     assert transport.login_refused is False
     await transport.close()
+
+
+# --------------------------
+# TPAP parameters from discovery
+# --------------------------
+
+
+def _make_discovered_transport(
+    tpap: TpapParameters,
+    *,
+    family: DeviceFamily = DeviceFamily.SmartTapoPlug,
+    https: bool = False,
+    http_port: int | None = None,
+) -> tp.TpapTransport:
+    config = DeviceConfig(
+        "disc-host",
+        credentials=Credentials("user", "pass"),
+        connection_type=DeviceConnectionParameters(
+            device_family=family,
+            encryption_type=DeviceEncryptionType.Tpap,
+            login_version=2,
+            https=https,
+            http_port=http_port,
+            tpap=tpap,
+        ),
+    )
+    return tp.TpapTransport(config=config)
+
+
+async def _no_post(*args: Any, **kwargs: Any) -> Any:
+    raise AssertionError("the in-band discover must not be sent")
+
+
+@pytest.mark.parametrize(
+    ("family", "https", "http_port", "tpap", "expected"),
+    [
+        pytest.param(
+            DeviceFamily.SmartTapoPlug,
+            False,
+            80,
+            TpapParameters(tls=0, pake=[2], port=80),
+            ("http", 80, 0),
+            id="p115-plug",
+        ),
+        pytest.param(
+            DeviceFamily.SmartTapoPlug,
+            False,
+            80,
+            TpapParameters(tls=1, pake=[2]),
+            ("https", 4433, 1),
+            id="plug-tls-without-port",
+        ),
+        pytest.param(
+            DeviceFamily.SmartTapoRobovac,
+            True,
+            4433,
+            TpapParameters(tls=2, pake=[2], port=4433),
+            ("https", 4433, 2),
+            id="rv50-robovac",
+        ),
+        pytest.param(
+            DeviceFamily.SmartIpCamera,
+            True,
+            None,
+            TpapParameters(tls=1, pake=[2], port=443),
+            ("https", 443, 1),
+            id="c510w-camera",
+        ),
+        pytest.param(
+            DeviceFamily.SmartIpCamera,
+            True,
+            None,
+            TpapParameters(tls=1, pake=[2]),
+            ("https", 443, 1),
+            id="camera-without-port",
+        ),
+        pytest.param(
+            DeviceFamily.IotSmartBulb,
+            False,
+            80,
+            TpapParameters(tls=0, dac=True, pake=[2], port=80),
+            ("http", 80, 0),
+            id="kl420l5-kasa-iot",
+        ),
+        pytest.param(
+            DeviceFamily.IotSmartBulb,
+            False,
+            9999,
+            TpapParameters(tls=1, pake=[2]),
+            ("https", 80, 1),
+            id="kasa-iot-tls-without-port",
+        ),
+    ],
+)
+async def test_discovered_parameters_skip_in_band_discover(
+    monkeypatch: pytest.MonkeyPatch,
+    family: DeviceFamily,
+    https: bool,
+    http_port: int | None,
+    tpap: TpapParameters,
+    expected: tuple[str, int, int],
+) -> None:
+    """With the discovery tpap object the transport logs in straight away."""
+    transport = _make_discovered_transport(
+        tpap, family=family, https=https, http_port=http_port
+    )
+    session = transport._encryption_session
+    transport._http_client.post = _no_post  # type: ignore[assignment]
+    captured_register: dict[str, Any] = {}
+    monkeypatch.setattr(
+        session,
+        "_login",
+        _make_handshake_login(session, capture_register=captured_register),
+        raising=True,
+    )
+
+    await session.perform_handshake()
+
+    url = transport._app_url
+    assert (url.scheme, url.port, session.tls_mode) == expected
+    assert captured_register["passcode_type"] == "userpw"
+    # A dropped session logs in again without the in-band discover either
+    session._invalidate_session()
+    await session.perform_handshake()
+    url = transport._app_url
+    assert (url.scheme, url.port, session.tls_mode) == expected
+    await transport.close()
+
+
+async def test_discovered_dac_sends_dac_nonce(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Dac from discovery asks the device for its attestation, as on KP125M."""
+    transport = _make_discovered_transport(
+        TpapParameters(tls=0, dac=True, pake=[2], port=80),
+        family=DeviceFamily.SmartKasaPlug,
+    )
+    session = transport._encryption_session
+    transport._http_client.post = _no_post  # type: ignore[assignment]
+    shares: list[dict[str, Any]] = []
+
+    async def fake_login(params: dict[str, Any], *, step_name: str) -> dict[str, Any]:
+        if step_name == "pake_register":
+            return _register_result()
+        shares.append(params)
+        raise AuthenticationError("stop after the share request")
+
+    monkeypatch.setattr(session, "_login", fake_login, raising=True)
+
+    with pytest.raises(AuthenticationError):
+        await session.perform_handshake()
+    assert "dac_nonce" in shares[0]
+    await transport.close()
+
+
+async def test_discovered_user_hash_type_on_camera(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A camera announcing user_hash_type 1 registers with SHA-256 of admin."""
+    transport = _make_discovered_transport(
+        TpapParameters(tls=1, pake=[2], port=443, user_hash_type=1),
+        family=DeviceFamily.SmartIpCamera,
+        https=True,
+    )
+    session = transport._encryption_session
+    transport._http_client.post = _no_post  # type: ignore[assignment]
+    captured_register: dict[str, Any] = {}
+    monkeypatch.setattr(
+        session,
+        "_login",
+        _make_handshake_login(session, capture_register=captured_register),
+        raising=True,
+    )
+
+    await session.perform_handshake()
+
+    assert captured_register["username"] == (
+        tp.TpapEncryptionSession._sha256_hex_upper("admin")
+    )
+    await transport.close()
+
+
+async def test_discovered_mac_gives_default_passcode() -> None:
+    """The MAC from discovery derives the default passcode without discover."""
+    transport = _make_discovered_transport(
+        TpapParameters(tls=0, pake=[0], port=80, mac="AA-BB-CC-DD-EE-FF")
+    )
+    session = transport._encryption_session
+
+    assert session._get_passcode_type() == "default_userpw"
+    assert session._get_candidate_secrets() == [
+        tp.TpapEncryptionSession._mac_pass_from_device_mac("AA:BB:CC:DD:EE:FF")
+    ]
+    await transport.close()
+
+
+async def test_stored_config_keeps_discovered_parameters() -> None:
+    """A config stored after discovery reconnects without the in-band discover."""
+    tpap = TpapParameters(
+        tls=1, port=443, pake=[2], user_hash_type=1, mac="AA-BB-CC-DD-EE-FF"
+    )
+    transport = _make_discovered_transport(
+        tpap, family=DeviceFamily.SmartIpCamera, https=True
+    )
+    restored = tp.TpapTransport(
+        config=DeviceConfig.from_dict(transport._config.to_dict())
+    )
+
+    assert restored._has_discovery_tpap is True
+    assert restored._config.connection_type.tpap == tpap
+    await transport.close()
+    await restored.close()

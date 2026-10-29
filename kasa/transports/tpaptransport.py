@@ -207,7 +207,10 @@ class TpapEncryptionSession:
                 self._transport._host,
             )
 
-            if self._uses_camera_auth:
+            if self._transport._has_discovery_tpap:
+                # Like the Tapo app, log in with what UDP discovery announced
+                self._update_transport_url()
+            elif self._uses_camera_auth:
                 # Cameras refuse the in-band discover (-40209); the app never
                 # sends it to them
                 self._apply_default_params()
@@ -1379,6 +1382,15 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
         self._known_tpap_dac = False
         self._known_tpap_pake: list[int] = []
         self._known_tpap_user_hash_type: int | None = None
+        self._has_discovery_tpap = False
+        if (tpap := config.connection_type.tpap) is not None:
+            self._has_discovery_tpap = True
+            self._known_device_mac = tpap.mac or ""
+            self._known_tpap_tls = tpap.tls
+            self._known_tpap_port = tpap.port
+            self._known_tpap_dac = tpap.dac
+            self._known_tpap_pake = list(tpap.pake)
+            self._known_tpap_user_hash_type = tpap.user_hash_type
         self._login_refused = False
         self._send_lock: asyncio.Lock = asyncio.Lock()
         self._encryption_session = TpapEncryptionSession(self)

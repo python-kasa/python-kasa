@@ -34,6 +34,7 @@ from kasa.deviceconfig import (
     DeviceConnectionParameters,
     DeviceEncryptionType,
     DeviceFamily,
+    TpapParameters,
 )
 from kasa.discover import (
     DiscoveryResult,
@@ -177,6 +178,7 @@ async def test_discover_single(
         login_version=discovery_mock.login_version,
         https=discovery_mock.https,
         http_port=discovery_mock.http_port,
+        tpap=discovery_mock.tpap,
     )
     config = DeviceConfig(
         host=host,
@@ -314,6 +316,7 @@ async def test_discover_tpap_object_routes_to_tpap() -> None:
         login_version=2,
         https=False,
         http_port=80,
+        tpap=TpapParameters(tls=0, port=80, pake=[2], mac="60-15-6F-00-00-00"),
     )
     await dev.disconnect()
 
@@ -386,6 +389,9 @@ async def test_discover_camera_with_tpap_object_ignores_aes(info: dict) -> None:
     ctype = dev.config.connection_type
     assert ctype.encryption_type is DeviceEncryptionType.Tpap
     assert ctype.https is True
+    assert ctype.tpap == TpapParameters(
+        tls=1, port=443, pake=[2], mac=info["result"]["mac"]
+    )
     await dev.disconnect()
 
 
@@ -412,6 +418,46 @@ async def test_discover_iot_device_with_tpap() -> None:
     assert isinstance(dev, IotDevice)
     assert isinstance(dev.protocol, IotProtocol)
     assert isinstance(dev.protocol._transport, TpapTransport)
+    assert dev.config.connection_type.tpap == TpapParameters(
+        tls=0, port=80, pake=[2], dac=True, mac="48-22xxx"
+    )
+    await dev.disconnect()
+
+
+async def test_discover_tpap_object_with_unexpected_values() -> None:
+    """Values of the wrong type fall back to defaults, the device stays usable."""
+    info = _p115_reply(
+        tpap={"tls": "2", "port": "80", "pake": 2, "user_hash_type": None},
+        encrypt_type="TPAP",
+        preferred=True,
+    )
+    dev = Discover._get_device_instance(info, DeviceConfig("127.0.0.1"))
+
+    assert dev.config.connection_type.tpap == TpapParameters(mac="60-15-6F-00-00-00")
+    await dev.disconnect()
+
+
+async def test_discover_stored_tpap_config_round_trips() -> None:
+    """HA stores the config and reconnects from it without rediscovering."""
+    info = _p115_reply(
+        tpap={"tls": 0, "dac": 1, "noc": 1, "pake": [2], "port": 80},
+        encrypt_type="TPAP",
+        preferred=True,
+    )
+    dev = Discover._get_device_instance(info, DeviceConfig("127.0.0.1"))
+    stored = dev.config.to_dict()
+
+    assert stored["connection_type"]["tpap"] == {
+        "tls": 0,
+        "port": 80,
+        "pake": [2],
+        "dac": True,
+        "mac": "60-15-6F-00-00-00",
+    }
+    assert DeviceConfig.from_dict(stored) == dev.config
+    # Configs stored before the tpap field still load
+    del stored["connection_type"]["tpap"]
+    assert DeviceConfig.from_dict(stored).connection_type.tpap is None
     await dev.disconnect()
 
 

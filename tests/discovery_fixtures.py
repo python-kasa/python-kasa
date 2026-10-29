@@ -10,6 +10,7 @@ from typing import Any, TypedDict
 import pytest
 from pytest_mock import MockerFixture
 
+from kasa.deviceconfig import TpapParameters
 from kasa.transports.xortransport import XorEncryption
 
 from .fakeprotocol_iot import FakeIotProtocol
@@ -165,6 +166,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
         login_version: int | None = None
         port_override: int | None = None
         http_port: int | None = None
+        tpap: TpapParameters | None = None
 
         @property
         def model(self) -> str:
@@ -204,10 +206,19 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             # Mirrors Discover._get_connection_parameters for cameras that
             # only send the top level encrypt_type list
             encrypt_type = "AES"
-        if "tpap" in discovery_result:
+        tpap = None
+        if tpap_info := discovery_result.get("tpap"):
             # Mirrors Discover._get_connection_parameters, the tpap object
             # selects TPAP whatever encrypt_type says
             encrypt_type = "TPAP"
+            tpap = TpapParameters(
+                tls=tpap_info.get("tls", 0),
+                port=tpap_info.get("port"),
+                pake=tpap_info.get("pake", []),
+                dac=bool(tpap_info.get("dac")),
+                user_hash_type=tpap_info.get("user_hash_type"),
+                mac=discovery_result["mac"],
+            )
         http_port = discovery_result["mgt_encrypt_schm"].get("http_port")
         if not http_port:  # noqa: SIM108
             # Not all discovery responses set the http port, i.e. smartcam.
@@ -225,6 +236,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             https,
             login_version,
             http_port=http_port,
+            tpap=tpap,
         )
     else:
         sys_info = fixture_data["system"]["get_sysinfo"]
