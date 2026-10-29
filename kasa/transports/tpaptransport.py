@@ -57,8 +57,8 @@ class TpapEncryptionSession:
     # response is otherwise unbounded and runs synchronously on the event loop;
     # cap it well above any realistic device value to prevent a pre-auth DoS.
     MAX_PAKE_ITERATIONS = 100_000
-    # passwd_rounds comes from the same unauthenticated reply and is hashed on
-    # the event loop; crypt() itself allows up to 999,999,999 rounds.
+    # The rounds in passwd_prefix come from the same unauthenticated reply and
+    # are hashed on the event loop; crypt() itself allows up to 999,999,999.
     MAX_PASSWD_ROUNDS = 100_000
     CIPHER_PARAMETERS = {
         "aes_128_ccm": (
@@ -485,9 +485,6 @@ class TpapEncryptionSession:
         # The app writes w0 at the byte length of the curve order, so a value
         # with leading zero bytes must keep them (BigIntegers.asUnsignedByteArray).
         return value.to_bytes(length, "big")
-        if unsigned[0] & 0x80:
-            return b"\x00" + unsigned
-        return unsigned
 
     @staticmethod
     def _hash(algorithm: str, data: bytes) -> bytes:
@@ -606,13 +603,12 @@ class TpapEncryptionSession:
         return f"$1${salt}${encoded}{cls._crypt_b64(final[11], 2)}"
 
     @classmethod
-    def _sha256_crypt(
-        cls, password: str, prefix: str, rounds_from_params: int | None = None
-    ) -> str | None:
+    def _sha256_crypt(cls, password: str, prefix: str) -> str | None:
         """Return glibc's crypt() of the password for a ``$5$`` (SHA-256) prefix.
 
         Without a round count it uses 5000 rounds and leaves them out of the
-        result, see https://www.akkadia.org/drepper/SHA-crypt.txt.
+        result, see https://www.akkadia.org/drepper/SHA-crypt.txt. Like the app,
+        only the prefix sets the rounds; ``passwd_rounds`` is not used.
         """
         if not prefix:
             return None
@@ -629,15 +625,9 @@ class TpapEncryptionSession:
                 rounds = default_rounds
         salt = spec.split("$", 1)[0][:16]
 
-        if rounds_from_params is not None:
-            try:
-                rounds = int(rounds_from_params)
-            except (TypeError, ValueError):
-                rounds = default_rounds
-
         if rounds is not None and rounds > cls.MAX_PASSWD_ROUNDS:
             raise KasaException(
-                f"TPAP register response has invalid passwd_rounds: {rounds}"
+                f"TPAP register response has too many passwd_prefix rounds: {rounds}"
             )
         rounds_spec = ""
         if rounds is not None:
@@ -711,14 +701,7 @@ class TpapEncryptionSession:
             if passwd_id == 3:
                 return cls._sha1_username_mac_shadow(username, mac_no_colon, passcode)
             if passwd_id == 5:
-                return (
-                    cls._sha256_crypt(
-                        passcode,
-                        prefix,
-                        rounds_from_params=params.get("passwd_rounds"),
-                    )
-                    or passcode
-                )
+                return cls._sha256_crypt(passcode, prefix) or passcode
             return passcode
 
         if crypt_type == "password_authkey":
