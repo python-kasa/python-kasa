@@ -1072,6 +1072,38 @@ async def test_discover_parses_invalid_numeric_fields_as_none() -> None:
 
 
 @pytest.mark.asyncio
+async def test_discover_tls0_over_https_does_not_downgrade_to_http() -> None:
+    """RV50 Pro Omni answers the in-band discover over TLS with tls=0."""
+    config = DeviceConfig("tpap-host")
+    config.connection_type.https = True
+    config.connection_type.http_port = 4433
+    transport = tp.TpapTransport(config=config)
+    session = transport._encryption_session
+
+    async def post(
+        url: URL,
+        *,
+        json: dict[str, Any] | None = None,
+        data: bytes | None = None,
+        headers: dict[str, str] | None = None,
+        ssl: ssl.SSLContext | bool | None = None,
+    ) -> tuple[int, dict[str, Any]]:
+        del url, json, data, headers, ssl
+        return 200, _discover_response(tls=0, port=4433, pake=[2], dac=True)
+
+    transport._http_client.post = post  # type: ignore[assignment]
+
+    await session._discover()
+    session._update_transport_url()
+
+    assert transport._app_url == URL("https://tpap-host:4433")
+    assert session.tls_mode == 2
+    assert transport._known_tpap_tls == 2
+    assert not session._use_dac_certification()
+    await transport.close()
+
+
+@pytest.mark.asyncio
 async def test_discover_propagates_device_error_codes() -> None:
     transport = tp.TpapTransport(config=DeviceConfig("discover-host"))
     session = transport._encryption_session
@@ -2098,3 +2130,63 @@ async def test_transport_close_resets_and_closes_http_client(
 def test_transport_response_helpers_validate_json_payloads() -> None:
     with pytest.raises(KasaException, match="Unexpected TPAP JSON response body type"):
         tp.TpapTransport._load_json_dict(b"[]")
+
+
+class _NotAnInt:
+    """An integer that is not an int, like the gmpy2.mpz ecdsa returns when gmpy2 is installed."""
+
+    def __init__(self, value: int) -> None:
+        self._value = value
+
+    def __index__(self) -> int:
+        return self._value
+
+    __int__ = __index__
+
+
+def test_xy_to_uncompressed_accepts_non_int_coordinates() -> None:
+    curve = ec.SECP256R1()
+    numbers = ec.generate_private_key(curve).public_key().public_numbers()
+    expected = numbers.public_key().public_bytes(
+        serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint
+    )
+    encoded = tp.TpapEncryptionSession._xy_to_uncompressed(
+        _NotAnInt(numbers.x), _NotAnInt(numbers.y), curve
+    )
+    assert encoded == expected
+
+
+class _GeneratorWithNonIntOrder:
+    """A generator whose order() is not an int, as with ecdsa on gmpy2."""
+
+    def __init__(self, generator: Any) -> None:
+        self._generator = generator
+
+    def order(self) -> _NotAnInt:
+        return _NotAnInt(int(self._generator.order()))
+
+    def __rmul__(self, other: int) -> Any:
+        return other * self._generator
+
+
+async def test_build_share_params_accepts_non_int_curve_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    m_comp, n_comp, nist, crypto_curve = tp.TpapEncryptionSession._suite_parameters(2)
+    fake_nist = SimpleNamespace(
+        curve=nist.curve, generator=_GeneratorWithNonIntOrder(nist.generator)
+    )
+    monkeypatch.setattr(
+        tp.TpapEncryptionSession,
+        "_suite_parameters",
+        staticmethod(lambda suite_type: (m_comp, n_comp, fake_nist, crypto_curve)),
+    )
+    transport = _make_tpap_transport()
+    session = transport._encryption_session
+    session._user_random = base64.b64encode(b"\x01" * 16).decode()
+
+    share_params = session._build_share_params_from_register(
+        _register_result(), "secret"
+    )
+
+    assert share_params["user_confirm"]
