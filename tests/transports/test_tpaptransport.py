@@ -1590,13 +1590,44 @@ async def test_private_handle_response_error_code_covers_invalid_retry_auth_and_
 
 
 def test_encode_w_and_hash_helpers_cover_edge_cases() -> None:
-    assert tp.TpapEncryptionSession._encode_w(0) == b"\x00"
-    assert tp.TpapEncryptionSession._encode_w(0x80) == b"\x00\x80"
+    assert tp.TpapEncryptionSession._encode_w(0, 32) == bytes(32)
+    assert tp.TpapEncryptionSession._encode_w(0x80, 32) == bytes(31) + b"\x80"
+    # 31 significant bytes with the top bit clear: the old minimal encoding
+    # dropped the leading zero byte here.
+    assert tp.TpapEncryptionSession._encode_w(1 << 240, 32) == (1 << 240).to_bytes(
+        32, "big"
+    )
     assert (
         tp.TpapEncryptionSession._hash("SHA512", b"data")
         == hashlib.sha512(b"data").digest()
     )
     assert len(tp.TpapEncryptionSession._cmac_aes(b"\x00" * 16, b"data")) == 16
+
+
+async def test_share_params_encode_w0_at_curve_length(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """w0 keeps its leading zero bytes in the transcript, as the app writes it."""
+    transport = _make_tpap_transport()
+    session = transport._encryption_session
+    session._user_random = session._base64(b"\x01" * 32)
+    small_w0 = 0x1234
+    monkeypatch.setattr(session, "_derive_ab", lambda *args, **kwargs: (small_w0, 7))
+    hashed: list[bytes] = []
+    real_hash = tp.TpapEncryptionSession._hash
+
+    def capture(algorithm: str, data: bytes) -> bytes:
+        hashed.append(data)
+        return real_hash(algorithm, data)
+
+    monkeypatch.setattr(session, "_hash", capture)
+
+    session._build_share_params_from_register(
+        _register_result(cipher_suites=1), "secret"
+    )
+
+    w0_element = (32).to_bytes(8, "little") + small_w0.to_bytes(32, "big")
+    assert any(data.endswith(w0_element) for data in hashed)
 
 
 def test_authkey_shadow_and_crypt_helpers() -> None:

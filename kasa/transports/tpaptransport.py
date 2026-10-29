@@ -481,11 +481,10 @@ class TpapEncryptionSession:
         return len(value).to_bytes(8, "little") + value
 
     @staticmethod
-    def _encode_w(value: int) -> bytes:
-        minimal_length = 1 if value == 0 else (value.bit_length() + 7) // 8
-        unsigned = value.to_bytes(minimal_length, "big", signed=False)
-        if minimal_length % 2 == 0:
-            return unsigned
+    def _encode_w(value: int, length: int) -> bytes:
+        # The app writes w0 at the byte length of the curve order, so a value
+        # with leading zero bytes must keep them (BigIntegers.asUnsignedByteArray).
+        return value.to_bytes(length, "big")
         if unsigned[0] & 0x80:
             return b"\x00" + unsigned
         return unsigned
@@ -998,7 +997,7 @@ class TpapEncryptionSession:
             + self._unbase64(self._user_random)
             + self._unbase64(dev_random),
         )
-        w_encoded = self._encode_w(w_value)
+        w_encoded = self._encode_w(w_value, (order.bit_length() + 7) // 8)
 
         transcript = (
             self._len8le(context_hash)
