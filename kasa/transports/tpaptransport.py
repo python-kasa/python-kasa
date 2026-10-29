@@ -814,6 +814,9 @@ class TpapEncryptionSession:
             )
         creds = self._transport._config.credentials
         password = (creds.password if creds else "") or ""
+        if not password:
+            # Each candidate is a login the device counts toward its lockout
+            return []
         if not self._uses_camera_auth:
             return [password]
         if passcode_type == "shared_token":
@@ -1354,7 +1357,12 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
                 "pwd": self._credentials.password,
             }
             return base64.b64encode(json_dumps(credentials_hash).encode()).decode()
-        return self._config.credentials_hash
+        return self._credentials_hash
+
+    @classmethod
+    def is_transport_credentials_hash(cls, credentials_hash: str) -> bool:
+        """Whether the hash has the shape this transport produces."""
+        return Credentials._from_plaintext_hash(credentials_hash) is not None
 
     def _build_app_url(self, *, tls_mode: int | None, port: int | None) -> URL:
         scheme = "https" if tls_mode in (1, 2) else "http"

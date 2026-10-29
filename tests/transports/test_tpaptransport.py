@@ -9,6 +9,7 @@ import struct
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import Any, cast
+from unittest.mock import AsyncMock
 
 import pytest
 from cryptography import x509
@@ -30,6 +31,8 @@ from kasa.exceptions import (
     _RetryableError,
 )
 from kasa.protocols import SmartProtocol
+from kasa.smart import SmartDevice
+from kasa.transports import KlapTransportV2, SslAesTransport
 
 
 def _discover_response(
@@ -2443,7 +2446,8 @@ async def test_transport_properties_and_initial_url_helpers() -> None:
     transport._known_tpap_tls = 2
 
     assert transport.default_port == 8080
-    assert transport.credentials_hash == "hash"
+    # Not the shape TPAP stores, so it is dropped
+    assert transport.credentials_hash is None
     assert transport._get_initial_app_url() == URL("https://tpap-host:4433")
     await transport.close()
 
@@ -2495,7 +2499,87 @@ async def test_transport_ignores_malformed_credentials_hash() -> None:
 
     assert transport._credentials is None
     assert transport._config.credentials is None
-    assert transport.credentials_hash == "not-valid-base64-json"
+    assert transport.credentials_hash is None
+    await transport.close()
+
+
+@pytest.mark.asyncio
+async def test_transport_drops_credentials_hash_from_klap() -> None:
+    """A KLAP hash is one way, so TPAP is left without credentials."""
+    klap = KlapTransportV2(
+        config=DeviceConfig("tpap-host", credentials=Credentials("user", "pass"))
+    )
+    klap_hash = klap.credentials_hash
+    assert klap_hash
+    transport = tp.TpapTransport(
+        config=DeviceConfig("tpap-host", credentials_hash=klap_hash)
+    )
+
+    assert transport._credentials is None
+    assert transport.credentials_hash is None
+    await klap.close()
+    await transport.close()
+
+
+@pytest.mark.asyncio
+async def test_transport_takes_credentials_from_ssl_aes_hash() -> None:
+    """A camera moving from SslAesTransport to TPAP keeps its credentials."""
+    config = DeviceConfig("cam-host", credentials=Credentials("user", "pass"))
+    config.connection_type.device_family = DeviceFamily.SmartIpCamera
+    config.connection_type.https = True
+    ssl_aes = SslAesTransport(config=config)
+    ssl_aes_hash = ssl_aes.credentials_hash
+    assert ssl_aes_hash
+    transport = tp.TpapTransport(
+        config=DeviceConfig("cam-host", credentials_hash=ssl_aes_hash)
+    )
+
+    assert transport._credentials == Credentials("user", "pass")
+    await ssl_aes.close()
+    await transport.close()
+
+
+@pytest.mark.asyncio
+async def test_update_without_credentials_does_not_log_in(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """With the KLAP hash dropped, update() refuses before any request."""
+    klap = KlapTransportV2(
+        config=DeviceConfig("tpap-host", credentials=Credentials("user", "pass"))
+    )
+    klap_hash = klap.credentials_hash
+    assert klap_hash
+    transport = tp.TpapTransport(
+        config=DeviceConfig("tpap-host", credentials_hash=klap_hash)
+    )
+    post = AsyncMock()
+    monkeypatch.setattr(transport._http_client, "post", post)
+    dev = SmartDevice("tpap-host", protocol=SmartProtocol(transport=transport))
+
+    with pytest.raises(AuthenticationError):
+        await dev.update()
+
+    post.assert_not_called()
+    await klap.close()
+    await dev.disconnect()
+
+
+@pytest.mark.parametrize(
+    "family",
+    [
+        pytest.param(None, id="iot"),
+        pytest.param(DeviceFamily.SmartIpCamera, id="camera"),
+    ],
+)
+async def test_no_password_gives_no_candidates(family: DeviceFamily | None) -> None:
+    """An empty password is never sent; every candidate is a counted login."""
+    transport = _make_tpap_transport(family=family, credentials=Credentials("user", ""))
+    session = transport._encryption_session
+    session._tpap_pake = [2]
+
+    assert session._get_candidate_secrets() == []
+    with pytest.raises(AuthenticationError, match="no credential candidates"):
+        await session._perform_auth_handshake()
     await transport.close()
 
 
