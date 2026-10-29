@@ -455,6 +455,12 @@ async def test_discover_stored_tpap_config_round_trips() -> None:
         "mac": "60-15-6F-00-00-00",
     }
     assert DeviceConfig.from_dict(stored) == dev.config
+    # Home Assistant stores the config with the credentials hash only
+    ha_stored = dev.config.to_dict_control_credentials(credentials_hash="hash")
+    assert ha_stored["connection_type"]["tpap"] == stored["connection_type"]["tpap"]
+    assert DeviceConfig.from_dict(ha_stored).connection_type == (
+        dev.config.connection_type
+    )
     # Configs stored before the tpap field still load
     del stored["connection_type"]["tpap"]
     assert DeviceConfig.from_dict(stored).connection_type.tpap is None
