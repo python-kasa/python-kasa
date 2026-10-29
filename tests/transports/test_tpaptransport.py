@@ -2421,7 +2421,9 @@ def test_xy_to_uncompressed_accepts_non_int_coordinates() -> None:
         serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint
     )
     encoded = tp.TpapEncryptionSession._xy_to_uncompressed(
-        _NotAnInt(numbers.x), _NotAnInt(numbers.y), curve
+        _NotAnInt(numbers.x),  # type: ignore[arg-type]
+        _NotAnInt(numbers.y),  # type: ignore[arg-type]
+        curve,
     )
     assert encoded == expected
 
