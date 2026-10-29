@@ -1228,6 +1228,82 @@ async def test_login_propagates_error_code_handling() -> None:
         await session._login({}, step_name="pake_register")
 
 
+@pytest.mark.parametrize(
+    ("step_name", "expected"),
+    [
+        pytest.param("pake_share", AuthenticationError, id="share-auth-error"),
+        pytest.param("pake_register", _RetryableError, id="register-retryable"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_login_stat_access_error_on_share_is_authentication_error(
+    step_name: str, expected: type[Exception]
+) -> None:
+    transport = tp.TpapTransport(config=DeviceConfig("login-host"))
+    session = transport._encryption_session
+
+    async def post(
+        url: URL,
+        *,
+        json: dict[str, Any] | None = None,
+        data: bytes | None = None,
+        headers: dict[str, str] | None = None,
+        ssl: ssl.SSLContext | bool | None = None,
+    ) -> tuple[int, dict[str, Any]]:
+        del url, json, data, headers, ssl
+        return 200, {"error_code": SmartErrorCode.STAT_ACCESS_ERROR.value}
+
+    transport._http_client.post = post  # type: ignore[assignment]
+
+    with pytest.raises(expected) as exc_info:
+        await session._login({}, step_name=step_name)
+    assert exc_info.value.error_code is SmartErrorCode.STAT_ACCESS_ERROR  # type: ignore[attr-defined]
+
+
+@pytest.mark.asyncio
+async def test_send_wrong_password_fails_once_without_retry() -> None:
+    """A rejected passcode must not trigger the live-session retry."""
+    transport = _make_tpap_transport(
+        "hub-host",
+        family=DeviceFamily.SmartKasaHub,
+        credentials=Credentials("user@example.com", "wrong"),
+    )
+    share_attempts = 0
+
+    async def post(
+        url: URL,
+        *,
+        json: dict[str, Any] | None = None,
+        data: bytes | None = None,
+        headers: dict[str, str] | None = None,
+        ssl: ssl.SSLContext | bool | None = None,
+    ) -> tuple[int, dict[str, Any]]:
+        nonlocal share_attempts
+        del url, data, headers, ssl
+        assert json is not None
+        sub_method = json["params"]["sub_method"]
+        if sub_method == "discover":
+            return 200, _discover_response(tls=0, port=80, pake=[2])
+        if sub_method == "pake_register":
+            return 200, {
+                "error_code": 0,
+                "result": _register_result(
+                    extra_crypt={"type": "password_shadow", "params": {"passwd_id": 2}},
+                    cipher_suites=1,
+                ),
+            }
+        assert sub_method == "pake_share"
+        share_attempts += 1
+        return 200, {"error_code": SmartErrorCode.STAT_ACCESS_ERROR.value}
+
+    transport._http_client.post = post  # type: ignore[assignment]
+
+    with pytest.raises(AuthenticationError, match="credentials rejected"):
+        await transport.send('{"method": "get_device_info"}')
+    assert share_attempts == 1
+    assert not transport._encryption_session.is_established
+
+
 @pytest.mark.asyncio
 async def test_login_tls2_uses_post() -> None:
     transport = tp.TpapTransport(config=DeviceConfig("login-host"))
