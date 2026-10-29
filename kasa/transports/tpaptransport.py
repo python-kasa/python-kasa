@@ -1386,16 +1386,9 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
         """Create the transport."""
         super().__init__(config=config)
         if self._credentials is None and self._credentials_hash:
-            try:
-                decoded_hash = json_loads(
-                    base64.b64decode(self._credentials_hash.encode()).decode()
-                )
-                username = decoded_hash["un"]
-                password = decoded_hash["pwd"]
-                self._credentials = Credentials(username, password)
-                self._config.credentials = self._credentials
-            except Exception as ex:
-                _LOGGER.debug("Unable to decode stored TPAP credentials_hash: %s", ex)
+            # BaseTransport kept the hash only if it has this transport's shape
+            self._credentials = Credentials._from_plaintext_hash(self._credentials_hash)
+            self._config.credentials = self._credentials
         self._http_client: HttpClient = HttpClient(self._config)
         self._ssl_context: ssl.SSLContext | bool | None = None
         protocol = "https" if config.connection_type.https else "http"
