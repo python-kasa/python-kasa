@@ -14,6 +14,7 @@ import pytest
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.x509.oid import NameOID
 from yarl import URL
 
@@ -1766,6 +1767,31 @@ async def test_share_params_default_iterations(
     session._build_share_params_from_register(register_result, "secret")
 
     assert used == [10000]
+
+
+async def test_session_keys_use_sha256_for_sha512_suites() -> None:
+    """The session key and nonce use HKDF-SHA256 even when the suite hash is SHA512."""
+    transport = _make_tpap_transport()
+    session = transport._encryption_session
+    session._hkdf_hash = "SHA512"
+    session._cipher_id = "aes_128_ccm"
+    session._shared_key = b"shared-key"
+    session._expected_dev_confirm = "expected"
+
+    session._establish_session_from_share_result(
+        {"dev_confirm": "expected", "stok": "STOK", "start_seq": 1}
+    )
+
+    def hkdf(algorithm: hashes.HashAlgorithm, salt: bytes, info: bytes, n: int):
+        return HKDF(algorithm=algorithm, length=n, salt=salt, info=info).derive(
+            b"shared-key"
+        )
+
+    key_labels = (b"tp-kdf-salt-aes128-key", b"tp-kdf-info-aes128-key", 16)
+    iv_labels = (b"tp-kdf-salt-aes128-iv", b"tp-kdf-info-aes128-iv", 12)
+    assert session._key == hkdf(hashes.SHA256(), *key_labels)
+    assert session._base_nonce == hkdf(hashes.SHA256(), *iv_labels)
+    assert session._key != hkdf(hashes.SHA512(), *key_labels)
 
 
 async def test_share_params_encode_w0_at_curve_length(

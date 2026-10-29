@@ -1093,7 +1093,7 @@ class TpapEncryptionSession:
             raise KasaException("Invalid session fields from device") from exc
 
         self._key, self._base_nonce = self.key_nonce_from_shared(
-            self._shared_key, self._cipher_id, hkdf_hash=self._hkdf_hash
+            self._shared_key, self._cipher_id
         )
         self._session_id = session_id
         self._sequence = sequence
@@ -1132,9 +1132,14 @@ class TpapEncryptionSession:
 
     @classmethod
     def key_nonce_from_shared(
-        cls, shared_key: bytes, cipher_id: str, hkdf_hash: str = "SHA256"
+        cls, shared_key: bytes, cipher_id: str
     ) -> tuple[bytes, bytes]:
-        """Derive the session key and base nonce."""
+        """Derive the session key and base nonce.
+
+        The app derives both with HKDF-SHA256 whatever the cipher suite
+        (SecEncryptor.keyDerive); only the SPAKE2+ transcript and its keys use
+        the suite's hash.
+        """
         key_salt, key_info, nonce_salt, nonce_info, key_len = cls._cipher_parameters(
             cipher_id
         )
@@ -1144,14 +1149,12 @@ class TpapEncryptionSession:
                 salt=key_salt,
                 info=key_info,
                 length=key_len,
-                algo=hkdf_hash,
             ),
             cls._hkdf(
                 shared_key,
                 salt=nonce_salt,
                 info=nonce_info,
                 length=cls.NONCE_LEN,
-                algo=hkdf_hash,
             ),
         )
 
