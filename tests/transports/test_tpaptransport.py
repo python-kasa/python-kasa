@@ -1636,6 +1636,64 @@ def test_authkey_shadow_and_crypt_helpers() -> None:
 
 
 @pytest.mark.parametrize(
+    ("prefix", "rounds_from_params", "expected"),
+    [
+        pytest.param(
+            "$5$saltstring$",
+            None,
+            "$5$saltstring$5B8vYYiY.CVt1RlTTf8KbXBH3hsxY/GNooZaBBGWEc5",
+            id="default-rounds",
+        ),
+        pytest.param(
+            "$5$rounds=10000$saltstringsaltstring$",
+            None,
+            "$5$rounds=10000$saltstringsaltst$3xv.VbSHBb41AL9AvLeujZkZRBAwqFMz2.opqey6IcA",
+            id="rounds-in-prefix",
+        ),
+        pytest.param(
+            "$5$saltstringsaltstring",
+            10000,
+            "$5$rounds=10000$saltstringsaltst$3xv.VbSHBb41AL9AvLeujZkZRBAwqFMz2.opqey6IcA",
+            id="rounds-from-params",
+        ),
+    ],
+)
+def test_sha256_crypt_shadow(
+    prefix: str, rounds_from_params: int | None, expected: str
+) -> None:
+    assert (
+        tp.TpapEncryptionSession._sha256_crypt(
+            "Hello world!", prefix, rounds_from_params=rounds_from_params
+        )
+        == expected
+    )
+
+
+def test_md5_crypt_shadow() -> None:
+    assert (
+        tp.TpapEncryptionSession._md5_crypt("pass", "$1$saltsalt$")
+        == "$1$saltsalt$hZR.9zfJXcVTsa9iTxnQR1"
+    )
+
+
+@pytest.mark.parametrize(
+    ("prefix", "rounds_from_params"),
+    [
+        pytest.param("$5$salt$", 999_999_999, id="params"),
+        pytest.param("$5$rounds=100001$salt$", None, id="prefix"),
+    ],
+)
+def test_sha256_crypt_rejects_too_many_rounds(
+    prefix: str, rounds_from_params: int | None
+) -> None:
+    """The rounds come from an unauthenticated reply and are hashed on the loop."""
+    with pytest.raises(KasaException, match="invalid passwd_rounds"):
+        tp.TpapEncryptionSession._sha256_crypt(
+            "pass", prefix, rounds_from_params=rounds_from_params
+        )
+
+
+@pytest.mark.parametrize(
     ("extra_crypt", "username", "passcode", "mac_no_colon", "expected"),
     [
         (None, "user", "pass", "AABBCCDDEEFF", "user/pass"),

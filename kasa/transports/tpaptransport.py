@@ -24,7 +24,6 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from ecdsa import NIST256p, NIST384p, NIST521p, ellipticcurve
 from ecdsa.curves import Curve
 from ecdsa.ellipticcurve import CurveFp, PointJacobi
-from passlib.hash import md5_crypt, sha256_crypt
 from yarl import URL
 
 from kasa.credentials import Credentials
@@ -43,6 +42,7 @@ from kasa.httpclient import HttpClient
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 
+from ._unixcrypt import md5_crypt, sha256_crypt
 from .basetransport import BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
@@ -58,6 +58,9 @@ class TpapEncryptionSession:
     # response is otherwise unbounded and runs synchronously on the event loop;
     # cap it well above any realistic device value to prevent a pre-auth DoS.
     MAX_PAKE_ITERATIONS = 100_000
+    # passwd_rounds comes from the same unauthenticated reply and is hashed on
+    # the event loop; crypt() itself allows up to 999,999,999 rounds.
+    MAX_PASSWD_ROUNDS = 100_000
     CIPHER_PARAMETERS = {
         "aes_128_ccm": (
             b"tp-kdf-salt-aes128-key",
@@ -563,7 +566,7 @@ class TpapEncryptionSession:
         spec = prefix[3:]
         if "$" in spec:
             spec = spec.split("$", 1)[0]
-        return md5_crypt.using(salt=spec[:8]).hash(password)
+        return md5_crypt(password.encode(), spec.encode())
 
     @classmethod
     def _sha256_crypt(
@@ -573,34 +576,28 @@ class TpapEncryptionSession:
             return None
 
         default_rounds = 5000
-        min_rounds = 1000
-        max_rounds = 999_999_999
-
         spec = prefix[3:] if prefix.startswith("$5$") else prefix
         rounds: int | None = None
 
         if spec.startswith("rounds="):
-            rounds_part, _, salt_part = spec.partition("$")
+            rounds_part, _, spec = spec.partition("$")
             try:
                 rounds = int(rounds_part.split("=", 1)[1])
             except ValueError:
                 rounds = default_rounds
-            rounds = max(min_rounds, min(max_rounds, rounds))
-            salt = salt_part
-        else:
-            salt = spec.split("$", 1)[0] if "$" in spec else spec
+        salt = spec.split("$", 1)[0]
 
         if rounds_from_params is not None:
             try:
-                parsed_rounds = int(rounds_from_params)
+                rounds = int(rounds_from_params)
             except (TypeError, ValueError):
-                parsed_rounds = default_rounds
-            rounds = max(min_rounds, min(max_rounds, parsed_rounds))
+                rounds = default_rounds
 
-        salt = salt[:16]
-        if rounds is not None:
-            return sha256_crypt.using(rounds=rounds, salt=salt).hash(password)
-        return sha256_crypt.using(salt=salt).hash(password)
+        if rounds is not None and rounds > cls.MAX_PASSWD_ROUNDS:
+            raise KasaException(
+                f"TPAP register response has invalid passwd_rounds: {rounds}"
+            )
+        return sha256_crypt(password.encode(), salt.encode(), rounds)
 
     @classmethod
     def _build_credentials(
