@@ -42,7 +42,6 @@ from kasa.httpclient import HttpClient
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 
-from ._unixcrypt import md5_crypt, sha256_crypt
 from .basetransport import BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
@@ -558,20 +557,56 @@ class TpapEncryptionSession:
         mac = ":".join(mac12hex[index : index + 2] for index in range(0, 12, 2)).upper()
         return cls._sha1_hex(cls._md5_hex(username) + "_" + mac)
 
+    @staticmethod
+    def _crypt_repeat(data: bytes, length: int) -> bytes:
+        return (data * (length // len(data) + 1))[:length]
+
+    @staticmethod
+    def _crypt_b64(value: int, length: int) -> str:
+        alphabet = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+        return "".join(alphabet[(value >> 6 * index) & 0x3F] for index in range(length))
+
     @classmethod
     def _md5_crypt(cls, password: str, prefix: str) -> str | None:
+        """Return glibc's crypt() of the password for a ``$1$`` (MD5) prefix."""
         if not prefix or not prefix.startswith("$1$") or len(password) > 30000:
             return None
 
-        spec = prefix[3:]
-        if "$" in spec:
-            spec = spec.split("$", 1)[0]
-        return md5_crypt(password.encode(), spec.encode())
+        salt = prefix[3:].split("$", 1)[0][:8]
+        secret, salt_bytes = password.encode(), salt.encode()
+        alternate = hashlib.md5(secret + salt_bytes + secret).digest()  # noqa: S324
+        data = secret + b"$1$" + salt_bytes + cls._crypt_repeat(alternate, len(secret))
+        length = len(secret)
+        while length:
+            data += b"\x00" if length & 1 else secret[:1]
+            length >>= 1
+        final = hashlib.md5(data).digest()  # noqa: S324
+
+        for round_ in range(1000):
+            data = secret if round_ & 1 else final
+            if round_ % 3:
+                data += salt_bytes
+            if round_ % 7:
+                data += secret
+            data += final if round_ & 1 else secret
+            final = hashlib.md5(data).digest()  # noqa: S324
+
+        order = ((0, 6, 12), (1, 7, 13), (2, 8, 14), (3, 9, 15), (4, 10, 5))
+        encoded = "".join(
+            cls._crypt_b64(final[a] << 16 | final[b] << 8 | final[c], 4)
+            for a, b, c in order
+        )
+        return f"$1${salt}${encoded}{cls._crypt_b64(final[11], 2)}"
 
     @classmethod
     def _sha256_crypt(
         cls, password: str, prefix: str, rounds_from_params: int | None = None
     ) -> str | None:
+        """Return glibc's crypt() of the password for a ``$5$`` (SHA-256) prefix.
+
+        Without a round count it uses 5000 rounds and leaves them out of the
+        result, see https://www.akkadia.org/drepper/SHA-crypt.txt.
+        """
         if not prefix:
             return None
 
@@ -585,7 +620,7 @@ class TpapEncryptionSession:
                 rounds = int(rounds_part.split("=", 1)[1])
             except ValueError:
                 rounds = default_rounds
-        salt = spec.split("$", 1)[0]
+        salt = spec.split("$", 1)[0][:16]
 
         if rounds_from_params is not None:
             try:
@@ -597,7 +632,55 @@ class TpapEncryptionSession:
             raise KasaException(
                 f"TPAP register response has invalid passwd_rounds: {rounds}"
             )
-        return sha256_crypt(password.encode(), salt.encode(), rounds)
+        rounds_spec = ""
+        if rounds is not None:
+            rounds = max(1000, rounds)
+            rounds_spec = f"rounds={rounds}$"
+
+        secret, salt_bytes = password.encode(), salt.encode()
+        alternate = hashlib.sha256(secret + salt_bytes + secret).digest()
+        context = hashlib.sha256(
+            secret + salt_bytes + cls._crypt_repeat(alternate, len(secret))
+        )
+        length = len(secret)
+        while length:
+            context.update(alternate if length & 1 else secret)
+            length >>= 1
+        final = context.digest()
+        p_bytes = cls._crypt_repeat(
+            hashlib.sha256(secret * len(secret)).digest(), len(secret)
+        )
+        s_bytes = cls._crypt_repeat(
+            hashlib.sha256(salt_bytes * (16 + final[0])).digest(), len(salt_bytes)
+        )
+
+        for round_ in range(rounds or default_rounds):
+            data = p_bytes if round_ & 1 else final
+            if round_ % 3:
+                data += s_bytes
+            if round_ % 7:
+                data += p_bytes
+            data += final if round_ & 1 else p_bytes
+            final = hashlib.sha256(data).digest()
+
+        order = (
+            (0, 10, 20),
+            (21, 1, 11),
+            (12, 22, 2),
+            (3, 13, 23),
+            (24, 4, 14),
+            (15, 25, 5),
+            (6, 16, 26),
+            (27, 7, 17),
+            (18, 28, 8),
+            (9, 19, 29),
+        )
+        encoded = "".join(
+            cls._crypt_b64(final[a] << 16 | final[b] << 8 | final[c], 4)
+            for a, b, c in order
+        )
+        tail = cls._crypt_b64(final[31] << 8 | final[30], 3)
+        return f"$5${rounds_spec}{salt}${encoded}{tail}"
 
     @classmethod
     def _build_credentials(

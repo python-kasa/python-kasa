@@ -1635,45 +1635,91 @@ def test_authkey_shadow_and_crypt_helpers() -> None:
     )
 
 
+# The test vectors of https://www.akkadia.org/drepper/SHA-crypt.txt, which
+# `openssl passwd -5` also produces.
 @pytest.mark.parametrize(
-    ("prefix", "rounds_from_params", "expected"),
+    ("password", "prefix", "rounds_from_params", "expected"),
     [
         pytest.param(
-            "$5$saltstring$",
+            "Hello world!",
+            "$5$saltstring",
             None,
             "$5$saltstring$5B8vYYiY.CVt1RlTTf8KbXBH3hsxY/GNooZaBBGWEc5",
             id="default-rounds",
         ),
         pytest.param(
-            "$5$rounds=10000$saltstringsaltstring$",
+            "Hello world!",
+            "$5$rounds=10000$saltstringsaltstring",
             None,
             "$5$rounds=10000$saltstringsaltst$3xv.VbSHBb41AL9AvLeujZkZRBAwqFMz2.opqey6IcA",
             id="rounds-in-prefix",
         ),
         pytest.param(
-            "$5$saltstringsaltstring",
+            "Hello world!",
+            "$5$saltstringsaltstring$",
             10000,
             "$5$rounds=10000$saltstringsaltst$3xv.VbSHBb41AL9AvLeujZkZRBAwqFMz2.opqey6IcA",
             id="rounds-from-params",
         ),
+        pytest.param(
+            "This is just a test",
+            "$5$rounds=5000$toolongsaltstring",
+            None,
+            "$5$rounds=5000$toolongsaltstrin$Un/5jzAHMgOGZ5.mWJpuVolil07guHPvOW8mGRcvxa5",
+            id="explicit-default-rounds-kept",
+        ),
+        pytest.param(
+            "a very much longer text to encrypt.  "
+            "This one even stretches over morethan one line.",
+            "$5$rounds=1400$anotherlongsaltstring",
+            None,
+            "$5$rounds=1400$anotherlongsalts$Rx.j8H.h8HjEDGomFU8bDkXm3XIUnzyxf12oP84Bnq1",
+            id="long-password",
+        ),
+        pytest.param(
+            "we have a short salt string but not a short password",
+            "$5$rounds=77777$short",
+            None,
+            "$5$rounds=77777$short$JiO1O3ZpDAxGJeaDIuqCoEFysAe1mZNJRs3pw0KQRd/",
+            id="short-salt",
+        ),
+        pytest.param(
+            "the minimum number is still observed",
+            "$5$rounds=10$roundstoolow",
+            None,
+            "$5$rounds=1000$roundstoolow$yfvwcWrQ8l/K0DAWyuPMDNHpIVlTQebY9l/gL972bIC",
+            id="rounds-below-minimum",
+        ),
     ],
 )
 def test_sha256_crypt_shadow(
-    prefix: str, rounds_from_params: int | None, expected: str
+    password: str, prefix: str, rounds_from_params: int | None, expected: str
 ) -> None:
     assert (
         tp.TpapEncryptionSession._sha256_crypt(
-            "Hello world!", prefix, rounds_from_params=rounds_from_params
+            password, prefix, rounds_from_params=rounds_from_params
         )
         == expected
     )
 
 
-def test_md5_crypt_shadow() -> None:
-    assert (
-        tp.TpapEncryptionSession._md5_crypt("pass", "$1$saltsalt$")
-        == "$1$saltsalt$hZR.9zfJXcVTsa9iTxnQR1"
-    )
+# Produced by `openssl passwd -1`.
+@pytest.mark.parametrize(
+    ("password", "prefix", "expected"),
+    [
+        pytest.param("pass", "$1$saltsalt$", "$1$saltsalt$hZR.9zfJXcVTsa9iTxnQR1"),
+        pytest.param("pass", "$1$salt", "$1$salt$M6xQvx9eSlM4zTu69di5B/"),
+        pytest.param(
+            "correct horse battery staple",
+            "$1$longersaltstring$",
+            "$1$longersa$COeekwSWUn4OO9X02U7s21",
+            id="salt-truncated",
+        ),
+        pytest.param("", "$1$TFsy6I", "$1$TFsy6I$uDeFAJQ.oIhIuUsAK14Zf1", id="empty"),
+    ],
+)
+def test_md5_crypt_shadow(password: str, prefix: str, expected: str) -> None:
+    assert tp.TpapEncryptionSession._md5_crypt(password, prefix) == expected
 
 
 @pytest.mark.parametrize(
