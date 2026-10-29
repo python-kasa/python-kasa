@@ -271,6 +271,32 @@ async def test_discover_single_unsupported(
         await Discover.discover_single(host)
 
 
+async def test_discover_iot_device_with_tpap() -> None:
+    """KL420L5 fw 1.4.2 announces TPAP and gets the IOT protocol over TPAP."""
+    info = {
+        "result": {
+            **UNSUPPORTED["result"],
+            "device_type": "IOT.SMARTBULB",
+            "device_model": "KL420L5(US)",
+            "tpap_preferred": True,
+            "tpap": {"tls": 0, "dac": 1, "noc": 1, "pake": [2], "port": 80},
+            "mgt_encrypt_schm": {
+                "is_support_https": False,
+                "encrypt_type": "TPAP",
+                "http_port": 80,
+                "lv": 2,
+            },
+        },
+        "error_code": 0,
+    }
+    dev = Discover._get_device_instance(info, DeviceConfig("127.0.0.1"))
+    # Discovery only has the family; connect() picks the class from sysinfo
+    assert isinstance(dev, IotDevice)
+    assert isinstance(dev.protocol, IotProtocol)
+    assert isinstance(dev.protocol._transport, TpapTransport)
+    await dev.disconnect()
+
+
 async def test_discover_single_no_response(mocker: MockerFixture) -> None:
     """Make sure that discover_single handles no response correctly."""
     host = "127.0.0.1"

@@ -246,6 +246,9 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
     ] = {
         "IOT.XOR": (IotProtocol, XorTransport),
         "IOT.KLAP": (IotProtocol, KlapTransport),
+        # Newer Kasa firmware (e.g. KL420L5 1.4.2) keeps the IOT payload
+        # but only accepts it inside a TPAP session.
+        "IOT.TPAP": (IotProtocol, TpapTransport),
         "SMART.AES": (SmartProtocol, AesTransport),
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
         "SMART.KLAP.HTTPS": (SmartProtocol, KlapTransportV2),
