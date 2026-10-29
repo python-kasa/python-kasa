@@ -691,7 +691,8 @@ class TpapEncryptionSession:
         crypt_type = (extra_crypt.get("type") or "").lower()
         params = extra_crypt.get("params")
         if not isinstance(params, dict):
-            params = {}
+            # Like the app, a type without params falls back to user/password.
+            return f"{username}/{passcode}" if username else passcode
 
         if crypt_type == "password_shadow":
             try:

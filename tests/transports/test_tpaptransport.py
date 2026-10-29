@@ -2010,8 +2010,19 @@ def test_build_credentials_variants(
         ),
         pytest.param(
             {"type": "password_shadow", "params": "not-a-dict"},
-            "pass",
+            "user/pass",
             id="shadow-invalid-params",
+        ),
+        pytest.param(
+            {"type": "password_shadow"}, "user/pass", id="shadow-without-params"
+        ),
+        pytest.param(
+            {"type": "password_authkey"}, "user/pass", id="authkey-without-params"
+        ),
+        pytest.param(
+            {"type": "password_sha_with_salt"},
+            "user/pass",
+            id="sha-with-salt-without-params",
         ),
         pytest.param(
             {"type": "password_shadow", "params": {"passwd_id": "bad"}},
@@ -2044,6 +2055,16 @@ def test_build_credentials_fallback_paths(
         assert result is not None
     else:
         assert result == expected
+
+
+def test_build_credentials_without_params_or_username() -> None:
+    """Without params and without a username the app uses the password alone."""
+    assert (
+        tp.TpapEncryptionSession._build_credentials(
+            {"type": "password_shadow"}, "", "pass", "AABBCCDDEEFF"
+        )
+        == "pass"
+    )
 
 
 def test_mac_pass_from_device_mac_validates_input() -> None:
