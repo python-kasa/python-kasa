@@ -1102,6 +1102,7 @@ async def test_send_gives_up_when_session_dropped_twice(
     [
         pytest.param(b'{"error_code": -1}', id="other-code"),
         pytest.param(b"<html>bad gateway</html>", id="not-json"),
+        pytest.param(b"[]", id="json-not-an-object"),
         pytest.param(b"", id="empty"),
     ],
 )
