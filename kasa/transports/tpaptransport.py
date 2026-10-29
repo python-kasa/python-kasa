@@ -61,6 +61,8 @@ class TpapEncryptionSession:
     # response is otherwise unbounded and runs synchronously on the event loop;
     # cap it well above any realistic device value to prevent a pre-auth DoS.
     MAX_PAKE_ITERATIONS = 100_000
+    # The app's default when pake_register leaves iterations out.
+    DEFAULT_PAKE_ITERATIONS = 10_000
     # The rounds in passwd_prefix come from the same unauthenticated reply and
     # are hashed on the event loop; crypt() itself allows up to 999,999,999.
     MAX_PASSWD_ROUNDS = 100_000
@@ -920,7 +922,7 @@ class TpapEncryptionSession:
 
         iterations_value = register_result.get("iterations")
         if iterations_value is None:
-            raise KasaException("TPAP register response has invalid iterations")
+            iterations_value = self.DEFAULT_PAKE_ITERATIONS
         try:
             iterations = int(iterations_value)
         except (TypeError, ValueError) as exc:

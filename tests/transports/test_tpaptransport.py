@@ -1736,6 +1736,36 @@ def test_encode_w_and_hash_helpers_cover_edge_cases() -> None:
     assert len(tp.TpapEncryptionSession._cmac_aes(b"\x00" * 16, b"data")) == 16
 
 
+@pytest.mark.parametrize(
+    "register_overrides",
+    [
+        pytest.param({"iterations": None}, id="null"),
+        pytest.param({}, id="absent"),
+    ],
+)
+async def test_share_params_default_iterations(
+    monkeypatch: pytest.MonkeyPatch, register_overrides: dict[str, Any]
+) -> None:
+    """Without iterations, PBKDF2 uses the app's default of 10000."""
+    transport = _make_tpap_transport()
+    session = transport._encryption_session
+    session._user_random = session._base64(b"\x01" * 32)
+    used: list[int] = []
+
+    def derive_ab(credentials: bytes, salt: bytes, iterations: int, hash_len: int):
+        used.append(iterations)
+        return 5, 7
+
+    monkeypatch.setattr(session, "_derive_ab", derive_ab)
+    register_result = _register_result(cipher_suites=1)
+    register_result.pop("iterations")
+    register_result.update(register_overrides)
+
+    session._build_share_params_from_register(register_result, "secret")
+
+    assert used == [10000]
+
+
 async def test_share_params_encode_w0_at_curve_length(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -2074,11 +2104,6 @@ async def test_build_share_params_from_register_requires_user_random() -> None:
         ),
         pytest.param(
             {"iterations": 0}, "has invalid iterations", id="invalid-iterations-0"
-        ),
-        pytest.param(
-            {"iterations": None},
-            "has invalid iterations",
-            id="invalid-iterations-none",
         ),
         pytest.param(
             {"iterations": "bad"},
