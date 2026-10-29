@@ -204,6 +204,10 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             # Mirrors Discover._get_connection_parameters for cameras that
             # only send the top level encrypt_type list
             encrypt_type = "AES"
+        if "tpap" in discovery_result:
+            # Mirrors Discover._get_connection_parameters, the tpap object
+            # selects TPAP whatever encrypt_type says
+            encrypt_type = "TPAP"
         http_port = discovery_result["mgt_encrypt_schm"].get("http_port")
         if not http_port:  # noqa: SIM108
             # Not all discovery responses set the http port, i.e. smartcam.

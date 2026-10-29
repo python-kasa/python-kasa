@@ -43,6 +43,10 @@ from kasa.discover import (
 )
 from kasa.exceptions import AuthenticationError, UnsupportedDeviceError
 from kasa.iot import IotDevice, IotPlug
+from kasa.protocols import SmartCamProtocol
+from kasa.smart import SmartDevice
+from kasa.smartcam import SmartCamDevice
+from kasa.transports import KlapTransportV2
 from kasa.transports.aestransport import AesEncyptionSession
 from kasa.transports.tpaptransport import TpapTransport
 from kasa.transports.xortransport import XorEncryption, XorTransport
@@ -51,6 +55,7 @@ from .conftest import (
     bulb_iot,
     dimmer_iot,
     lightstrip_iot,
+    load_fixture,
     new_discovery,
     plug_iot,
     strip_iot,
@@ -269,6 +274,119 @@ async def test_discover_single_unsupported(
         UnsupportedDeviceError,
     ):
         await Discover.discover_single(host)
+
+
+def _p115_reply(*, tpap: dict | None, encrypt_type: str, preferred: bool) -> dict:
+    """P115(EU) fw 1.4.8 reply as posted on #1592, identifiers masked."""
+    result = {
+        **UNSUPPORTED["result"],
+        "device_type": "SMART.TAPOPLUG",
+        "device_model": "P115(EU)",
+        "mac": "60-15-6F-00-00-00",
+        "tpap_preferred": preferred,
+        "protocol_version": 1,
+        "mgt_encrypt_schm": {
+            "is_support_https": False,
+            "http_port": 80,
+            "encrypt_type": encrypt_type,
+            "lv": 2,
+        },
+    }
+    if tpap is not None:
+        result["tpap"] = tpap
+    return {"result": result, "error_code": 0}
+
+
+async def test_discover_tpap_object_routes_to_tpap() -> None:
+    """The tpap object gives TPAP (P115 fw 1.4.8, compatibility switch off)."""
+    info = _p115_reply(
+        tpap={"tls": 0, "dac": 0, "noc": 0, "pake": [2], "port": 80},
+        encrypt_type="TPAP",
+        preferred=True,
+    )
+    dev = Discover._get_device_instance(info, DeviceConfig("127.0.0.1"))
+
+    assert isinstance(dev, SmartDevice)
+    assert isinstance(dev.protocol._transport, TpapTransport)
+    assert dev.config.connection_type == DeviceConnectionParameters(
+        device_family=DeviceFamily.SmartTapoPlug,
+        encryption_type=DeviceEncryptionType.Tpap,
+        login_version=2,
+        https=False,
+        http_port=80,
+    )
+    await dev.disconnect()
+
+
+async def test_discover_without_tpap_object_ignores_tpap_preferred() -> None:
+    """With the compatibility switch on, the P115 announces KLAP and no object."""
+    info = _p115_reply(tpap=None, encrypt_type="KLAP", preferred=False)
+    dev = Discover._get_device_instance(info, DeviceConfig("127.0.0.1"))
+
+    assert dev.config.connection_type.encryption_type is DeviceEncryptionType.Klap
+    assert isinstance(dev.protocol._transport, KlapTransportV2)
+    await dev.disconnect()
+
+
+async def test_discover_tpap_without_tpap_object_stays_on_tpap() -> None:
+    """encrypt_type TPAP alone keeps TPAP."""
+    info = _p115_reply(tpap=None, encrypt_type="TPAP", preferred=True)
+    dev = Discover._get_device_instance(info, DeviceConfig("127.0.0.1"))
+
+    assert dev.config.connection_type.encryption_type is DeviceEncryptionType.Tpap
+    assert isinstance(dev.protocol._transport, TpapTransport)
+    await dev.disconnect()
+
+
+def _c510w_reply() -> dict:
+    """C510W hw 2.0 fw 1.3.4 reply as posted on #1592, identifiers masked."""
+    return {
+        "result": {
+            "device_id": "REDACTED",
+            "device_name": "#MASKED_NAME#",
+            "device_type": "SMART.IPCAMERA",
+            "device_model": "C510W",
+            "ip": "127.0.0.1",
+            "mac": "00-00-00-00-00-00",
+            "hardware_version": "2.0",
+            "firmware_version": "1.3.4 Build 260523 Rel.33481n",
+            "factory_default": False,
+            "is_support_iot_cloud": True,
+            "isResetWiFi": False,
+            "encrypt_type": ["4"],
+            "tpap": {"pake": [2], "tls": 1, "noc": 1, "port": 443},
+            "mgt_encrypt_schm": {"is_support_https": True},
+            "protocol_version": 1,
+            "sv": 1,
+            "encrypt_info": {"sym_schm": "AES", "key": "", "data": ""},
+        },
+        "error_code": 0,
+    }
+
+
+def _c101_reply() -> dict:
+    fixture = json.loads(load_fixture("smartcam", "C101(US)_5.0_1.4.3.json"))
+    return {"result": fixture["discovery_result"]["result"], "error_code": 0}
+
+
+@pytest.mark.parametrize(
+    "info",
+    [
+        pytest.param(_c101_reply(), id="C101-fw-1.4.3"),
+        pytest.param(_c510w_reply(), id="C510W-fw-1.3.4"),
+    ],
+)
+async def test_discover_camera_with_tpap_object_ignores_aes(info: dict) -> None:
+    """Cameras advertise AES next to the tpap object; the tpap object wins."""
+    dev = Discover._get_device_instance(info, DeviceConfig("127.0.0.1"))
+
+    assert isinstance(dev, SmartCamDevice)
+    assert isinstance(dev.protocol, SmartCamProtocol)
+    assert isinstance(dev.protocol._transport, TpapTransport)
+    ctype = dev.config.connection_type
+    assert ctype.encryption_type is DeviceEncryptionType.Tpap
+    assert ctype.https is True
+    await dev.disconnect()
 
 
 async def test_discover_iot_device_with_tpap() -> None:

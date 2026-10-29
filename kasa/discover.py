@@ -847,6 +847,11 @@ class Discover:
             # reports as sym_schm AES.
             encrypt_type = DeviceEncryptionType.Aes.value
 
+        if discovery_result.tpap is not None:
+            # The tpap object is what makes the Tapo app use TPAP, for every
+            # family. Cameras still advertise AES in encrypt_type.
+            encrypt_type = DeviceEncryptionType.Tpap.value
+
         if not encrypt_type:
             raise UnsupportedDeviceError(
                 f"Unsupported device {discovery_result.ip} of type {type_} "
@@ -992,6 +997,8 @@ class DiscoveryResult(_DiscoveryBaseMixin):
     ip: str
     mac: str
     mgt_encrypt_schm: EncryptionScheme | None = None
+    # Only its presence is used, the transport asks the device for the values
+    tpap: dict | None = None
     device_name: str | None = None
     encrypt_info: EncryptionInfo | None = None
     encrypt_type: list[str] | None = None
