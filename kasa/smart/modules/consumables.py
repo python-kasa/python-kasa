@@ -100,9 +100,9 @@ class Consumables(SmartModule):
                     id=f"{c_meta.id}_used",
                     name=f"{c_meta.name} used",
                     container=self,
-                    attribute_getter=lambda _, c_id=c_meta.id: self._consumables[
-                        c_id
-                    ].used,
+                    attribute_getter=lambda _, c_id=c_meta.id: (
+                        self._consumables[c_id].used
+                    ),
                     category=Feature.Category.Debug,
                     type=Feature.Type.Sensor,
                 )
@@ -114,9 +114,9 @@ class Consumables(SmartModule):
                     id=f"{c_meta.id}_remaining",
                     name=f"{c_meta.name} remaining",
                     container=self,
-                    attribute_getter=lambda _, c_id=c_meta.id: self._consumables[
-                        c_id
-                    ].remaining,
+                    attribute_getter=lambda _, c_id=c_meta.id: (
+                        self._consumables[c_id].remaining
+                    ),
                     category=Feature.Category.Info,
                     type=Feature.Type.Sensor,
                 )

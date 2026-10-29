@@ -109,9 +109,23 @@ class SmartDevice(Device):
         can't be created to avoid spamming the logs on every update.
         """
         changed = False
+        if (
+            child_component_list := child_device_components_resp.get(
+                "child_component_list"
+            )
+        ) is None:
+            # Some hubs intermittently return the component list without the
+            # list itself, e.g. an H200 without children. Keep the known children
+            # instead of deleting them, the next update will reconcile.
+            _LOGGER.debug(
+                "No child component list for device %s, response: %s",
+                self.host,
+                child_device_components_resp,
+            )
+            return changed
+
         smart_children_components = {
-            child["device_id"]: child
-            for child in child_device_components_resp["child_component_list"]
+            child["device_id"]: child for child in child_component_list
         }
         children = self._children
         child_ids: set[str] = set()

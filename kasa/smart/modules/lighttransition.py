@@ -39,6 +39,7 @@ class LightTransition(SmartModule):
     _on_state: _State
     _off_state: _State
     _enabled: bool
+    _change_transition: bool | None = None
 
     def __init__(self, device: SmartDevice, module: str) -> None:
         super().__init__(device, module)
@@ -91,12 +92,29 @@ class LightTransition(SmartModule):
                 )
             )
 
+        # Fading between states while the light is already on is a separate
+        # flag from the on/off fades, and only v4 reports it.
+        if self._change_transition is not None:
+            self._add_feature(
+                Feature(
+                    self._device,
+                    id="smooth_transition_change",
+                    name="Smooth transition on change",
+                    container=self,
+                    attribute_getter="change_transition",
+                    attribute_setter="set_change_transition",
+                    icon=icon,
+                    type=Feature.Type.Switch,
+                )
+            )
+
     async def _post_update_hook(self) -> None:
         """Update the states."""
         # Assumes any device with state in sysinfo supports on and off and
         # has maximum values for both.
         # v2 adds separate on & off states
         # v3 adds max_duration except for ks240 which is v2 but supports it
+        # v4 adds change_state
         if not self._supports_on_and_off:
             self._enabled = self.data["enable"]
             return
@@ -138,6 +156,9 @@ class LightTransition(SmartModule):
             "max_duration": off_max,
         }
 
+        if (change_state := self.data.get("change_state")) is not None:
+            self._change_transition = change_state["enable"]
+
     @allow_update_after
     async def set_enabled(self, enable: bool) -> dict:
         """Enable gradual on/off."""
@@ -168,6 +189,23 @@ class LightTransition(SmartModule):
     def enabled(self) -> bool:
         """Return True if gradual on/off is enabled."""
         return self._enabled
+
+    @property
+    def change_transition(self) -> bool:
+        """Return True if fading between states is enabled."""
+        if self._change_transition is None:
+            raise KasaException(
+                f"Device does not support state change transitions for "
+                f"{self.REQUIRED_COMPONENT} v{self.supported_version}"
+            )
+        return self._change_transition
+
+    @allow_update_after
+    async def set_change_transition(self, enable: bool) -> dict:
+        """Enable fading between states while the light is on."""
+        return await self.call(
+            "set_on_off_gradually_info", {"change_state": {"enable": enable}}
+        )
 
     @property
     def turn_on_transition(self) -> int:

@@ -29,7 +29,7 @@ uv run pytest --fixture-set all
 ```
 
 `all` is the local default so an unqualified `uv run pytest` remains exhaustive.
-CI runs this tier once on the canonical Ubuntu/Python 3.14 environment with all
+CI runs this tier once on the canonical Ubuntu/Python 3.15 environment with all
 optional dependencies installed.
 
 ## Marker overrides

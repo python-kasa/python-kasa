@@ -49,6 +49,8 @@ class SingleRequest:
 class SmartCamProtocol(SmartProtocol):
     """Class for SmartCam Protocol."""
 
+    REQUIRES_MULTIREQUESTS = True
+
     def _get_list_request(
         self, method: str, params: dict | None, start_index: int
     ) -> dict:

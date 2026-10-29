@@ -135,6 +135,9 @@ class SmartErrorCode(IntEnum):
     # Camera error codes
     SESSION_EXPIRED = -40401
     BAD_USERNAME = -40411  # determined from testing
+    # determined from testing, returned by secure-login devices (C200, H200)
+    # for an unaccepted username
+    UNKNOWN_USERNAME = -60502
     HOMEKIT_LOGIN_FAIL = -40412
     DEVICE_BLOCKED = -40404
     DEVICE_FACTORY = -40405

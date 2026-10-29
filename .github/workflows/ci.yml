@@ -25,11 +25,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.14]
+        python-version: [3.15]
     steps:
       - name: Checkout Source Files
         id: checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Environment
         id: setup-environment
@@ -45,20 +45,25 @@ jobs:
         run: |
           uv run pre-commit run --all-files --verbose
 
+      # Build the same way as publish.yml to catch packaging issues before a release is tagged.
+      - name: Build and Check Packages
+        id: build-packages
+        uses: ./.github/actions/build-packages
+
   full-fixture-tests:
-    name: Preform Full Test Suite (3.14)
+    name: Perform Full Test Suite (3.15)
     needs: lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source Files
         id: checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Environment
         id: setup-environment
         uses: ./.github/actions/setup
         with:
-          python-version: 3.14
+          python-version: 3.15
           uv-install-options: --all-extras
 
       - name: Run Full PyTest Suite with Code Coverage
@@ -69,7 +74,7 @@ jobs:
 
       - name: Upload Code Coverage to Codecov
         id: upload-code-coverage-to-codecov
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
@@ -82,7 +87,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         extras: [false, true]
-        python-version: [3.11, 3.12, 3.13, 3.14]
+        python-version: [3.11, 3.12, 3.13, 3.14, 3.15]
         exclude:
           - os: macos-latest
             extras: true
@@ -91,7 +96,7 @@ jobs:
     steps:
       - name: Checkout Source Files
         id: checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Environment
         id: setup-environment
@@ -108,6 +113,6 @@ jobs:
 
       - name: Upload Code Coverage to Codecov
         id: upload-code-coverage-to-codecov
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
