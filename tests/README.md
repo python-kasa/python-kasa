@@ -39,16 +39,14 @@ not be sampled in representative mode:
 
 ```python
 @pytest.mark.all_fixtures
-async def test_fixture_contract(dev):
-    ...
+async def test_fixture_contract(dev): ...
 ```
 
 Use `fixture_representatives(limit)` when a broad test needs a different maximum:
 
 ```python
 @pytest.mark.fixture_representatives(20)
-async def test_behavior_across_more_capabilities(dev):
-    ...
+async def test_behavior_across_more_capabilities(dev): ...
 ```
 
 Prefer a small explicit `@pytest.mark.parametrize` list for a regression tied to
