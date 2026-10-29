@@ -111,6 +111,8 @@ testpaths = [
     "devtools/release.py",
 ]
 markers = [
+    "all_fixtures: always run every parametrized device fixture",
+    "fixture_representatives(limit): override the representative fixture limit for a test",
     "requires_dummy: test requires dummy data to pass, skipped on real devices",
 ]
 asyncio_mode = "auto"
