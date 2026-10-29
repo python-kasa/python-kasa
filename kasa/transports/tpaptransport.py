@@ -502,9 +502,10 @@ class TpapEncryptionSession:
         return cls._sha256(value.encode()).hex().upper()
 
     def _get_register_username(self) -> str:
+        # Only cameras hash the user name as user_hash_type says
         return (
             self._sha256_hex_upper("admin")
-            if self._tpap_user_hash_type == 1
+            if self._uses_camera_auth and self._tpap_user_hash_type == 1
             else self._md5_hex("admin")
         )
 

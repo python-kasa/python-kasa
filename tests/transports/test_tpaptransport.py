@@ -301,12 +301,12 @@ async def test_session_encrypt_and_decrypt_roundtrip() -> None:
         pytest.param(
             None,
             _discover_response(pake=[2], user_hash_type=1),
-            tp.TpapEncryptionSession._sha256_hex_upper("admin"),
+            tp.TpapEncryptionSession._md5_hex("admin"),
             "userpw",
             2,
             "https",
             4567,
-            id="iot-sha256",
+            id="iot-ignores-user-hash-type",
         ),
         pytest.param(
             None,
@@ -337,6 +337,16 @@ async def test_session_encrypt_and_decrypt_roundtrip() -> None:
             "https",
             4567,
             id="camera-admin",
+        ),
+        pytest.param(
+            DeviceFamily.SmartIpCamera,
+            _discover_response(pake=[2], user_hash_type=1),
+            tp.TpapEncryptionSession._sha256_hex_upper("admin"),
+            "userpw",
+            2,
+            "https",
+            4567,
+            id="camera-sha256",
         ),
     ],
 )
