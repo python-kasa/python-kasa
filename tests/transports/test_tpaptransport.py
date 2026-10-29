@@ -78,7 +78,7 @@ def _share_result(
 ) -> dict[str, Any]:
     assert session._expected_dev_confirm is not None
     return {
-        "dev_confirm": session._expected_dev_confirm.lower(),
+        "dev_confirm": session._expected_dev_confirm,
         "sessionId": session_id,
         "start_seq": start_seq,
     }
@@ -2207,6 +2207,12 @@ async def test_establish_session_from_share_result_error_paths(
     # compare_digest rejects non-ASCII str with a TypeError
     with pytest.raises(KasaException, match="confirmation mismatch"):
         session._establish_session_from_share_result({"dev_confirm": "wröng"})
+
+    # base64 is case-sensitive: a value differing only in case does not match
+    session._expected_dev_confirm = "AbCdEf=="
+    with pytest.raises(KasaException, match="confirmation mismatch"):
+        session._establish_session_from_share_result({"dev_confirm": "abcdef=="})
+    session._expected_dev_confirm = "expected"
 
     monkeypatch.setattr(session, "_use_dac_certification", lambda: True, raising=True)
     verified: list[dict[str, Any]] = []

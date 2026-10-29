@@ -1062,11 +1062,12 @@ class TpapEncryptionSession:
     def _establish_session_from_share_result(
         self, share_result: dict[str, Any]
     ) -> None:
-        dev_confirm = str(share_result.get("dev_confirm") or "").lower()
+        dev_confirm = str(share_result.get("dev_confirm") or "")
         if not dev_confirm:
             raise KasaException("TPAP share response missing dev_confirm")
+        # base64 is case-sensitive; the app compares the strings exactly
         if not hmac.compare_digest(
-            dev_confirm.encode(), (self._expected_dev_confirm or "").lower().encode()
+            dev_confirm.encode(), (self._expected_dev_confirm or "").encode()
         ):
             raise KasaException("TPAP confirmation mismatch")
 
