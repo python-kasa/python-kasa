@@ -207,56 +207,35 @@ class TpapEncryptionSession:
                 self._transport._host,
             )
 
-            await self._discover()
+            if self._uses_camera_auth:
+                # Cameras refuse the in-band discover (-40209); the app never
+                # sends it to them
+                self._apply_default_params()
+            else:
+                await self._discover()
             await self._perform_auth_handshake()
 
             _LOGGER.debug("TPAP: handshake complete with %s", self._transport._host)
 
     async def _discover(self) -> None:
         body = {"method": "login", "params": {"sub_method": "discover"}}
-        try:
-            status, data = await self._transport._http_client.post(
-                self._transport._app_url.with_path("/"),
-                json=body,
-                headers=self._transport.COMMON_HEADERS,
-                ssl=await self._transport.get_ssl_context(),
+        status, data = await self._transport._http_client.post(
+            self._transport._app_url.with_path("/"),
+            json=body,
+            headers=self._transport.COMMON_HEADERS,
+            ssl=await self._transport.get_ssl_context(),
+        )
+        if status != 200 or not isinstance(data, dict):
+            raise KasaException(
+                f"TPAP discover failed for {self._transport._host}: "
+                f"{status} {type(data)}"
             )
-            if status != 200 or not isinstance(data, dict):
-                raise KasaException(
-                    f"TPAP discover failed for {self._transport._host}: "
-                    f"{status} {type(data)}"
-                )
 
-            self._handle_login_error_code(data, "discover")
-            result = self._require_result_dict(data)
-        except (_RetryableError, _ConnectionError, AuthenticationError):
-            raise
-        except KasaException as exc:
-            if (
-                not self._uses_camera_auth
-                or getattr(exc, "error_code", None) is SmartErrorCode.DEVICE_BLOCKED
-            ):
-                raise
-            # Cameras (C510W fw 1.3.4 for example) refuse the in-band discover
-            # with -40209 and only announce TPAP in the UDP discovery.
-            _LOGGER.debug(
-                "TPAP: in-band discover not supported by %s (%s), using defaults",
-                self._transport._host,
-                exc,
-            )
-            self._apply_default_params()
-            return
-
+        self._handle_login_error_code(data, "discover")
+        result = self._require_result_dict(data)
         tpap = result.get("tpap")
         if not isinstance(tpap, dict):
-            if not self._uses_camera_auth:
-                raise KasaException("TPAP discover response missing tpap object")
-            _LOGGER.debug(
-                "TPAP: discover response from %s has no tpap object, using defaults",
-                self._transport._host,
-            )
-            self._apply_default_params(str(result.get("mac") or ""))
-            return
+            raise KasaException("TPAP discover response missing tpap object")
 
         self._device_mac = str(result.get("mac") or "")
         self._tpap_tls = self._parse_optional_int(tpap.get("tls"))
@@ -281,15 +260,15 @@ class TpapEncryptionSession:
         # Discover runs before we know the real TLS mode, so rebuild for auth.
         self._transport._ssl_context = None
 
-    def _apply_default_params(self, mac: str = "") -> None:
-        """Set up the session when the device does not describe its TPAP mode.
+    def _apply_default_params(self) -> None:
+        """Set up a camera session without the in-band discover.
 
         Password login, no DAC attestation, and TLS when the connection is
         https. That matches what the C101 and C510W cameras announce in UDP
         discovery (``tpap: {pake: [2], tls: 1, port: 443}``).
         """
         transport = self._transport
-        self._device_mac = mac or transport._known_device_mac or ""
+        self._device_mac = transport._known_device_mac
         self._tpap_tls = 1 if transport._config.connection_type.https else 0
         self._tpap_port = transport._port
         self._tpap_dac = False

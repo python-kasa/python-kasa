@@ -328,26 +328,6 @@ async def test_session_encrypt_and_decrypt_roundtrip() -> None:
             80,
             id="tapo-hub-http-userpw",
         ),
-        pytest.param(
-            DeviceFamily.SmartIpCamera,
-            _discover_response(pake=[2], user_hash_type=0),
-            tp.TpapEncryptionSession._md5_hex("admin"),
-            "userpw",
-            2,
-            "https",
-            4567,
-            id="camera-admin",
-        ),
-        pytest.param(
-            DeviceFamily.SmartIpCamera,
-            _discover_response(pake=[2], user_hash_type=1),
-            tp.TpapEncryptionSession._sha256_hex_upper("admin"),
-            "userpw",
-            2,
-            "https",
-            4567,
-            id="camera-sha256",
-        ),
     ],
 )
 async def test_session_perform_handshake_registers_expected_auth_values(
@@ -1601,7 +1581,9 @@ async def test_rejected_login_is_sent_once_per_candidate(
     assert type(exc_info.value) is expected
     assert exc_info.value.error_code is error_code  # type: ignore[attr-defined]
     assert counts["pake_share"] == logins
-    assert counts["discover"] == 1
+    # Cameras go straight to pake_register, like the app
+    is_camera = family in tp.TpapTransport.CAMERA_AUTH_DEVICE_FAMILIES
+    assert counts["discover"] == (0 if is_camera else 1)
 
 
 async def test_rejected_login_reports_attempts_left() -> None:
@@ -2944,11 +2926,10 @@ async def test_camera_is_always_https() -> None:
     """Like the app, a camera's TPAP endpoint is https whatever tls says."""
     transport = _make_https_camera_tpap_transport()
     session = transport._encryption_session
-    transport._http_client.post = _make_discover_post(  # type: ignore[assignment]
-        _discover_response(tls=0, port=443, pake=[2])
-    )
+    session._tpap_tls = 0
+    session._tpap_port = 443
 
-    await session._discover()
+    session._update_transport_url()
 
     assert transport._app_url.scheme == "https"
     assert transport._app_url.port == 443
@@ -3055,50 +3036,74 @@ def _make_error_post(response: dict[str, Any]) -> Any:
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "response",
-    [
-        pytest.param(
-            {"error_code": SmartErrorCode.INVALID_ARGUMENTS.value}, id="refused"
-        ),
-        pytest.param({"error_code": 0, "result": {}}, id="no_tpap_object"),
-    ],
-)
-async def test_camera_discover_falls_back_to_udp_advertised_values(
-    response: dict[str, Any],
+async def test_camera_handshake_skips_in_band_discover(
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Cameras reject the in-band discover, so the session uses camera defaults."""
+    """Cameras refuse the in-band discover, so it is not sent; defaults apply."""
     transport = _make_https_camera_tpap_transport()
     session = transport._encryption_session
-    transport._http_client.post = _make_error_post(response)  # type: ignore[assignment]
+    posts: list[Any] = []
 
-    await session._discover()
+    async def post(*args: Any, **kwargs: Any) -> Any:
+        posts.append(kwargs.get("json"))
+        raise AssertionError("no request expected besides the login")
 
+    transport._http_client.post = post  # type: ignore[assignment]
+    captured_register: dict[str, Any] = {}
+    monkeypatch.setattr(
+        session,
+        "_login",
+        _make_handshake_login(session, capture_register=captured_register),
+        raising=True,
+    )
+
+    await session.perform_handshake()
+
+    assert posts == []
     assert transport._port == 443
     assert session._tpap_pake == [2]
     assert session._tpap_tls == 1
     assert session._tpap_port == 443
     assert session._tpap_dac is False
-    assert session._get_passcode_type() == "userpw"
     assert transport._app_url.scheme == "https"
     assert transport._app_url.port == 443
+    assert captured_register["passcode_type"] == "userpw"
+    assert captured_register["username"] == tp.TpapEncryptionSession._md5_hex("admin")
+    await transport.close()
 
 
-@pytest.mark.asyncio
-async def test_camera_discover_does_not_hide_a_lockout() -> None:
-    """A locked camera is reported as blocked, not replaced by defaults."""
-    transport = _make_https_camera_tpap_transport()
+@pytest.mark.parametrize(
+    ("family", "user_hash_type", "expected"),
+    [
+        pytest.param(
+            DeviceFamily.SmartIpCamera,
+            1,
+            tp.TpapEncryptionSession._sha256_hex_upper("admin"),
+            id="camera-sha256",
+        ),
+        pytest.param(
+            DeviceFamily.SmartIpCamera,
+            0,
+            tp.TpapEncryptionSession._md5_hex("admin"),
+            id="camera-md5",
+        ),
+        pytest.param(
+            DeviceFamily.SmartTapoPlug,
+            1,
+            tp.TpapEncryptionSession._md5_hex("admin"),
+            id="iot-ignores-user-hash-type",
+        ),
+    ],
+)
+async def test_register_username_follows_user_hash_type_on_cameras(
+    family: DeviceFamily, user_hash_type: int, expected: str
+) -> None:
+    transport = _make_tpap_transport(family=family)
     session = transport._encryption_session
-    transport._http_client.post = _make_error_post(  # type: ignore[assignment]
-        {
-            "error_code": SmartErrorCode.INVALID_ARGUMENTS.value,
-            "error_info": {"lockedMinute": 30, "remainAttempts": 0},
-        }
-    )
+    session._tpap_user_hash_type = user_hash_type
 
-    with pytest.raises(DeviceError) as exc_info:
-        await session._discover()
-    assert exc_info.value.error_code is SmartErrorCode.DEVICE_BLOCKED
+    assert session._get_register_username() == expected
+    await transport.close()
 
 
 @pytest.mark.asyncio
