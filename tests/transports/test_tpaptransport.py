@@ -710,10 +710,53 @@ async def test_use_dac_certification_uses_discovered_dac_support(
             "userpw",
             id="camera-pake-two-before-zero",
         ),
-        pytest.param(None, [0], "default_userpw", id="default-pake-zero"),
-        pytest.param(None, [1], "default_userpw", id="iot-pake-one"),
-        pytest.param(None, [5], "userpw", id="iot-pake-five"),
-        pytest.param(None, [2, 3], "userpw", id="iot-userpw-before-shared-token"),
+        pytest.param(
+            DeviceFamily.SmartTapoPlug, [0], "default_userpw", id="default-pake-zero"
+        ),
+        pytest.param(
+            DeviceFamily.SmartTapoPlug, [1], "default_userpw", id="iot-pake-one"
+        ),
+        pytest.param(DeviceFamily.SmartTapoPlug, [5], "userpw", id="iot-pake-five"),
+        pytest.param(
+            DeviceFamily.SmartTapoPlug,
+            [2, 3],
+            "userpw",
+            id="iot-userpw-before-shared-token",
+        ),
+        pytest.param(
+            DeviceFamily.SmartTapoPlug,
+            [0, 2],
+            "default_userpw",
+            id="iot-default-before-userpw",
+        ),
+        pytest.param(DeviceFamily.IotSmartBulb, [2], "userpw", id="kasa-iot-pake-two"),
+        pytest.param(
+            DeviceFamily.IotSmartPlugSwitch,
+            [0, 2],
+            "userpw",
+            id="kasa-iot-userpw-before-default",
+        ),
+        pytest.param(
+            DeviceFamily.IotSmartBulb,
+            [2, 3],
+            "userpw",
+            id="kasa-iot-userpw-before-shared-token",
+        ),
+        pytest.param(
+            DeviceFamily.IotSmartBulb, [3], "shared_token", id="kasa-iot-shared-token"
+        ),
+        pytest.param(
+            DeviceFamily.IotSmartBulb, [0], "default_userpw", id="kasa-iot-pake-zero"
+        ),
+        pytest.param(
+            DeviceFamily.IotSmartBulb, [1], "default_userpw", id="kasa-iot-pake-one"
+        ),
+        pytest.param(
+            DeviceFamily.IotSmartBulb, [5], "default_userpw", id="kasa-iot-pake-five"
+        ),
+        pytest.param(
+            DeviceFamily.IotSmartBulb, [], "default_userpw", id="kasa-iot-no-pake"
+        ),
         pytest.param(DeviceFamily.SmartTapoHub, [2], "userpw", id="hub-userpw"),
         pytest.param(
             DeviceFamily.SmartTapoRobovac,
@@ -740,7 +783,9 @@ async def test_use_dac_certification_uses_discovered_dac_support(
             "shared_token",
             id="camera-shared-token",
         ),
-        pytest.param(None, [], "default_userpw", id="default-missing-pake"),
+        pytest.param(
+            DeviceFamily.SmartTapoPlug, [], "default_userpw", id="default-missing-pake"
+        ),
         pytest.param(DeviceFamily.SmartIpCamera, [], None, id="camera-missing-pake"),
     ],
 )
@@ -1653,7 +1698,7 @@ async def test_send_does_not_retry_failed_handshake() -> None:
 
 @pytest.mark.asyncio
 async def test_login_tls2_uses_post() -> None:
-    transport = tp.TpapTransport(config=DeviceConfig("login-host"))
+    transport = _make_tpap_transport("login-host", family=DeviceFamily.SmartTapoPlug)
     session = transport._encryption_session
     session._tpap_tls = 2
     session._update_transport_url()
@@ -1681,7 +1726,7 @@ async def test_login_tls2_uses_post() -> None:
 
 @pytest.mark.asyncio
 async def test_update_transport_url_uses_https_default_or_bootstrap_port() -> None:
-    transport = tp.TpapTransport(config=DeviceConfig("tpap-host"))
+    transport = _make_tpap_transport(family=DeviceFamily.SmartTapoPlug)
     session = transport._encryption_session
 
     session._tpap_tls = 1
@@ -2455,6 +2500,7 @@ def test_verify_dac_certificate_chain_variants(
 @pytest.mark.asyncio
 async def test_transport_properties_and_initial_url_helpers() -> None:
     config = DeviceConfig("tpap-host")
+    config.connection_type.device_family = DeviceFamily.SmartTapoPlug
     config.credentials_hash = "hash"
     config.connection_type.http_port = 8080
     transport = tp.TpapTransport(config=config)
@@ -2905,6 +2951,77 @@ async def test_camera_is_always_https() -> None:
 
     assert transport._app_url.scheme == "https"
     assert transport._app_url.port == 443
+    await transport.close()
+
+
+@pytest.mark.parametrize(
+    ("tls", "port", "expected_scheme", "expected_port"),
+    [
+        pytest.param(0, 80, "http", 80, id="kl420l5"),
+        pytest.param(0, None, "http", 80, id="http-default-80"),
+        pytest.param(1, None, "https", 80, id="tls1-default-80"),
+        pytest.param(2, 4433, "https", 4433, id="tls2-port"),
+        pytest.param(3, None, "https", 80, id="any-tls-but-0-is-https"),
+        pytest.param(None, None, "http", 80, id="no-tls"),
+    ],
+)
+async def test_kasa_iot_url(
+    tls: int | None, port: int | None, expected_scheme: str, expected_port: int
+) -> None:
+    """Kasa IOT devices follow the app's Kasa client, not its IoT client."""
+    transport = _make_tpap_transport(family=DeviceFamily.IotSmartBulb)
+    transport._config.connection_type.http_port = 9999
+    session = transport._encryption_session
+    session._tpap_tls = tls
+    session._tpap_port = port
+
+    session._update_transport_url()
+
+    assert transport._app_url.scheme == expected_scheme
+    assert transport._app_url.port == expected_port
+    await transport.close()
+
+
+async def test_kasa_iot_url_keeps_port_override() -> None:
+    """A port forward set by the user still applies when tpap has no port."""
+    transport = _make_tpap_transport(family=DeviceFamily.IotSmartPlugSwitch)
+    transport._config.port_override = 8080
+    session = transport._encryption_session
+    session._tpap_tls = 1
+    session._tpap_port = None
+
+    session._update_transport_url()
+
+    assert transport._app_url.scheme == "https"
+    assert transport._app_url.port == 8080
+    await transport.close()
+
+
+async def test_kasa_iot_handshake_from_in_band_discover(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The in-band discover drives the Kasa IOT URL and passcode."""
+    transport = _make_tpap_transport(
+        family=DeviceFamily.IotSmartBulb, credentials=Credentials("user", "pass")
+    )
+    session = transport._encryption_session
+    captured_register: dict[str, Any] = {}
+    transport._http_client.post = _make_discover_post(  # type: ignore[assignment]
+        _discover_response(tls=1, port=0, pake=[0, 2], dac=True)
+    )
+    monkeypatch.setattr(
+        session,
+        "_login",
+        _make_handshake_login(session, capture_register=captured_register),
+        raising=True,
+    )
+
+    await session.perform_handshake()
+
+    assert transport._app_url.scheme == "https"
+    assert transport._app_url.port == 80
+    assert captured_register["passcode_type"] == "userpw"
+    assert captured_register["username"] == tp.TpapEncryptionSession._md5_hex("admin")
     await transport.close()
 
 

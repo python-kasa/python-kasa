@@ -123,6 +123,11 @@ class TpapEncryptionSession:
         return device_family in self._transport.ROBOT_TPAP_DEVICE_FAMILIES
 
     @property
+    def _uses_kasa_iot_auth(self) -> bool:
+        device_family = self._transport._config.connection_type.device_family
+        return device_family in self._transport.KASA_IOT_DEVICE_FAMILIES
+
+    @property
     def tls_mode(self) -> int | None:
         """The discovered TLS mode."""
         return self._tpap_tls
@@ -841,6 +846,14 @@ class TpapEncryptionSession:
                 ((3,), "shared_token"),
             )
             default_passcode_type = "default_userpw"
+        elif self._uses_kasa_iot_auth:
+            # The app's Kasa client logs in with the password whenever pake
+            # has 2, so 2 wins over 0, and anything else gets the default
+            passcode_type_order = (
+                ((2,), "userpw"),
+                ((3,), "shared_token"),
+            )
+            default_passcode_type = "default_userpw"
         else:
             passcode_type_order = (
                 ((0,), "default_userpw"),
@@ -1330,6 +1343,11 @@ class TpapTransport(BaseTransport):
         DeviceFamily.SmartTapoDoorbell,
     )
     ROBOT_TPAP_DEVICE_FAMILIES = {DeviceFamily.SmartTapoRobovac}
+    # Kasa IOT devices use the Tapo app's Kasa TPAP client, not its IoT one
+    KASA_IOT_DEVICE_FAMILIES = {
+        DeviceFamily.IotSmartPlugSwitch,
+        DeviceFamily.IotSmartBulb,
+    }
     CIPHERS = ":".join(
         [
             "ECDHE-ECDSA-AES256-GCM-SHA384",
@@ -1431,8 +1449,18 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
         return self._login_refused
 
     def _build_app_url(self, *, tls_mode: int | None, port: int | None) -> URL:
-        # Like the Tapo app, cameras are always https on their own port
         family = self._config.connection_type.device_family
+        if family in self.KASA_IOT_DEVICE_FAMILIES:
+            # The app's Kasa client: https for any tls but 0, and the tpap
+            # port or else 80, whatever the scheme
+            scheme = "https" if tls_mode else "http"
+            resolved_port = (
+                port
+                if port and port > 0
+                else self._config.port_override or self.DEFAULT_PORT
+            )
+            return URL.build(scheme=scheme, host=self._host, port=resolved_port)
+        # Like the Tapo app, cameras are always https on their own port
         is_camera = family in self.CAMERA_AUTH_DEVICE_FAMILIES
         scheme = "https" if is_camera or tls_mode in (1, 2) else "http"
         if port and port > 0:
