@@ -44,6 +44,7 @@ from kasa.discover import (
 from kasa.exceptions import AuthenticationError, UnsupportedDeviceError
 from kasa.iot import IotDevice, IotPlug
 from kasa.transports.aestransport import AesEncyptionSession
+from kasa.transports.tpaptransport import TpapTransport
 from kasa.transports.xortransport import XorEncryption, XorTransport
 
 from .conftest import (
@@ -798,3 +799,42 @@ async def test_connection_parameters_from_encrypt_type_list_only():
     result["encrypt_type"] = ["9"]
     with pytest.raises(UnsupportedDeviceError, match="no encryption type"):
         Discover._get_connection_parameters(DiscoveryResult.from_dict(result))
+
+
+async def test_try_connect_all_stops_tpap_after_refused_login(
+    mocker: MockerFixture,
+) -> None:
+    """Once the device rejects a TPAP login, no other TPAP attempt logs in."""
+    tried = []
+
+    async def _connect(config, protocol):
+        tried.append(type(protocol._transport))
+        if isinstance(protocol._transport, TpapTransport):
+            protocol._transport._login_refused = True
+        raise KasaException("not this one")
+
+    mocker.patch("kasa.device_factory._connect", _connect)
+    credentials = Credentials("user", "pass")
+    assert await Discover.try_connect_all("127.0.0.1", credentials=credentials) is None
+
+    assert tried.count(TpapTransport) == 1
+    assert tried[-1] is TpapTransport
+
+
+async def test_try_connect_all_tries_every_tpap_attempt_on_other_errors(
+    mocker: MockerFixture,
+) -> None:
+    """A TPAP attempt that fails without a rejected login moves on."""
+    tried = []
+
+    async def _connect(config, protocol):
+        tried.append(type(protocol._transport))
+        raise KasaException("not this one")
+
+    mocker.patch("kasa.device_factory._connect", _connect)
+    credentials = Credentials("user", "pass")
+    assert await Discover.try_connect_all("127.0.0.1", credentials=credentials) is None
+
+    assert tried.count(TpapTransport) > 1
+    first_tpap = tried.index(TpapTransport)
+    assert set(tried[first_tpap:]) == {TpapTransport}

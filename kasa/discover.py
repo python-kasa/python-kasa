@@ -132,6 +132,7 @@ from kasa.json import loads as json_loads
 from kasa.protocols.iotprotocol import REDACTORS as IOT_REDACTORS
 from kasa.protocols.protocol import mask_mac, redact_data
 from kasa.transports.aestransport import AesEncyptionSession, KeyPair
+from kasa.transports.tpaptransport import TpapTransport
 from kasa.transports.xortransport import XorEncryption
 
 _LOGGER = logging.getLogger(__name__)
@@ -678,9 +679,14 @@ class Discover:
                 )
             )
         }
+        tpap_refused = False
         for key, val in candidates.items():
             try:
                 prot, config = val
+                if tpap_refused and isinstance(prot._transport, TpapTransport):
+                    # A device that refused the credentials over TPAP would
+                    # count each further attempt toward its lockout
+                    continue
                 _LOGGER.debug("Trying to connect with %s", prot.__class__.__name__)
                 dev = await _connect(config, prot)
             except Exception as ex:
@@ -689,6 +695,9 @@ class Discover:
                     prot.__class__.__name__,
                     ex,
                 )
+                transport = prot._transport
+                if isinstance(transport, TpapTransport) and transport.login_refused:
+                    tpap_refused = True
                 if on_attempt:
                     ca = tuple.__new__(ConnectAttempt, key)
                     on_attempt(ca, False)

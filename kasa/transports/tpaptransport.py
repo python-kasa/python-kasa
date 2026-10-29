@@ -305,6 +305,7 @@ class TpapEncryptionSession:
         remain_attempts = self._parse_optional_int(error_info.get("remainAttempts"))
         host = self._transport._host
         if (locked_minutes or 0) > 0 or remain_attempts == 0:
+            self._transport._login_refused = True
             self._invalidate_session()
             msg = f"TPAP {step} failed for {host}: device blocked after failed logins"
             if locked_minutes:
@@ -312,6 +313,7 @@ class TpapEncryptionSession:
             raise DeviceError(msg, error_code=SmartErrorCode.DEVICE_BLOCKED)
 
         if step == "pake_share":
+            self._transport._login_refused = True
             self._invalidate_session()
             attempts_left = (
                 f", {remain_attempts} attempts left before the device locks"
@@ -1335,6 +1337,7 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
         self._known_tpap_dac = False
         self._known_tpap_pake: list[int] = []
         self._known_tpap_user_hash_type: int | None = None
+        self._login_refused = False
         self._send_lock: asyncio.Lock = asyncio.Lock()
         self._encryption_session = TpapEncryptionSession(self)
 
@@ -1363,6 +1366,15 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
     def is_transport_credentials_hash(cls, credentials_hash: str) -> bool:
         """Whether the hash has the shape this transport produces."""
         return Credentials._from_plaintext_hash(credentials_hash) is not None
+
+    @property
+    def login_refused(self) -> bool:
+        """True once the device rejected a login or reported a lockout.
+
+        The device counts each rejected login toward its lockout, whatever
+        error code it answers with.
+        """
+        return self._login_refused
 
     def _build_app_url(self, *, tls_mode: int | None, port: int | None) -> URL:
         scheme = "https" if tls_mode in (1, 2) else "http"

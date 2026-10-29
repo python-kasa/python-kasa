@@ -2870,3 +2870,56 @@ async def test_build_share_params_accepts_non_int_curve_order(
     )
 
     assert share_params["user_confirm"]
+
+
+@pytest.mark.parametrize(
+    ("step", "response"),
+    [
+        pytest.param(
+            "pake_share",
+            {"error_code": SmartErrorCode.SESSION_EXPIRED.value},
+            id="share-session-expired",
+        ),
+        pytest.param(
+            "pake_share",
+            {"error_code": SmartErrorCode.STAT_ACCESS_ERROR.value},
+            id="share-credentials-illegal",
+        ),
+        pytest.param(
+            "discover",
+            {
+                "error_code": SmartErrorCode.ACCOUNT_ERROR.value,
+                "error_info": {"lockedMinute": 30, "remainAttempts": 0},
+            },
+            id="discover-locked",
+        ),
+    ],
+)
+async def test_login_refused_after_device_rejection(
+    step: str, response: dict[str, Any]
+) -> None:
+    """Any rejected pake_share, or a lockout, marks the login as refused."""
+    transport = _make_tpap_transport(credentials=Credentials("user", "pass"))
+    session = transport._encryption_session
+
+    assert transport.login_refused is False
+    with pytest.raises(KasaException):
+        session._handle_login_error_code(response, step)
+    assert transport.login_refused is True
+    await transport.close()
+
+
+async def test_login_not_refused_by_local_or_early_errors() -> None:
+    """Errors before pake_share, and refusing locally, send no counted login."""
+    transport = _make_tpap_transport(credentials=Credentials("user", ""))
+    session = transport._encryption_session
+    session._tpap_pake = [2]
+
+    with pytest.raises(DeviceError):
+        session._handle_login_error_code(
+            {"error_code": SmartErrorCode.INVALID_ARGUMENTS.value}, "pake_register"
+        )
+    with pytest.raises(AuthenticationError, match="no credential candidates"):
+        await session._perform_auth_handshake()
+    assert transport.login_refused is False
+    await transport.close()
