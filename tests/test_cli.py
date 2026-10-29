@@ -1209,7 +1209,16 @@ async def test_features_all(
     """Test feature command on all fixtures."""
     res = await runner.invoke(
         cli,
-        ["--host", "127.0.0.123", "--debug", "feature"],
+        [
+            "--host",
+            "127.0.0.123",
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+            "--debug",
+            "feature",
+        ],
         catch_exceptions=False,
     )
     assert "== Primary features ==" in res.output
