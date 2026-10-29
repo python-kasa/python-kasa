@@ -54,6 +54,10 @@ class TpapEncryptionSession:
     PAKE_CONTEXT_TAG = b"PAKE V1"
     TAG_LEN = 16
     NONCE_LEN = 12
+    # PBKDF2-HMAC-SHA256 iteration count from an unauthenticated pake_register
+    # response is otherwise unbounded and runs synchronously on the event loop;
+    # cap it well above any realistic device value to prevent a pre-auth DoS.
+    MAX_PAKE_ITERATIONS = 100_000
     CIPHER_PARAMETERS = {
         "aes_128_ccm": (
             b"tp-kdf-salt-aes128-key",
@@ -802,7 +806,7 @@ class TpapEncryptionSession:
                 "TPAP register response has invalid iterations"
             ) from exc
 
-        if iterations <= 0:
+        if iterations <= 0 or iterations > self.MAX_PAKE_ITERATIONS:
             raise KasaException("TPAP register response has invalid iterations")
 
         encryption = str(register_result.get("encryption") or "")
@@ -939,7 +943,9 @@ class TpapEncryptionSession:
         dev_confirm = str(share_result.get("dev_confirm") or "").lower()
         if not dev_confirm:
             raise KasaException("TPAP share response missing dev_confirm")
-        if dev_confirm != (self._expected_dev_confirm or "").lower():
+        if not hmac.compare_digest(
+            dev_confirm, (self._expected_dev_confirm or "").lower()
+        ):
             raise KasaException("TPAP confirmation mismatch")
 
         if self._use_dac_certification():
