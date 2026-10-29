@@ -1,0 +1,2 @@
+# Pin the build backend for reproducible release builds.
+hatchling==1.32.4

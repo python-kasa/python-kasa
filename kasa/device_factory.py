@@ -105,9 +105,9 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> Device:
     device_class: type[Device] | None
     device: Device | None = None
 
-    if isinstance(protocol, IotProtocol) and isinstance(
-        protocol._transport, XorTransport
-    ):
+    # For IOT devices, we need to obtain the initial sysinfo in order decide
+    # on the device class to initialize.
+    if isinstance(protocol, IotProtocol):
         info = await protocol.query(GET_SYSINFO_QUERY)
         _perf_log(True, "get_sysinfo")
         device_class = get_device_class_from_sys_info(info)
@@ -143,7 +143,13 @@ def get_device_class_from_sys_info(sysinfo: dict[str, Any]) -> type[IotDevice]:
         # Disabled until properly implemented
         # DeviceType.Camera: IotCamera,
     }
-    return TYPE_TO_CLASS[IotDevice._get_device_type_from_sys_info(sysinfo)]
+    device_type = IotDevice._get_device_type_from_sys_info(sysinfo)
+    if (cls := TYPE_TO_CLASS.get(device_type)) is None:
+        raise UnsupportedDeviceError(
+            f"Unsupported device type: {device_type}",
+            discovery_result=sysinfo,
+        )
+    return cls
 
 
 def get_device_class_from_family(
@@ -253,4 +259,10 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
     if not (prot_tran_cls := supported_device_protocols.get(protocol_transport_key)):
         return None
     protocol_cls, transport_cls = prot_tran_cls
+    if (
+        protocol_transport_key == "IOT.KLAP"
+        and ctype.login_version
+        and ctype.login_version >= 2
+    ):
+        transport_cls = KlapTransportV2
     return protocol_cls(transport=transport_cls(config=config))

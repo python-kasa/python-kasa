@@ -163,6 +163,9 @@ class Module(ABC):
     PowerProtection: Final[ModuleName[smart.PowerProtection]] = ModuleName(
         "PowerProtection"
     )
+    LightStripSegment: Final[ModuleName[smart.LightStripSegment]] = ModuleName(
+        "LightStripSegment"
+    )
 
     HomeKit: Final[ModuleName[smart.HomeKit]] = ModuleName("HomeKit")
     Matter: Final[ModuleName[smart.Matter]] = ModuleName("Matter")

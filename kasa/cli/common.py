@@ -34,7 +34,7 @@ except ImportError:
     # but only lower case tags to avoid stripping out
     # raw data from the device that is printed from
     # the device state.
-    rich_formatting = re.compile(r"\[/?[a-z]+]")
+    rich_formatting = re.compile(r"\[/?[a-z]+(?: [a-z]+)*]")
 
     def _strip_rich_formatting(echo_func):
         """Strip rich formatting from messages."""

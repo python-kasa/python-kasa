@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import asyncio
 import base64
 import hashlib
 import logging
 import secrets
-import ssl
 from contextlib import suppress
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, cast
@@ -29,6 +27,7 @@ from ..httpclient import HttpClient
 from ..json import dumps as json_dumps
 from ..json import loads as json_loads
 from . import AesEncyptionSession, BaseTransport
+from .sslcontext import get_ssl_context
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -71,16 +70,6 @@ class SslAesTransport(BaseTransport):
         "Accept-Encoding": "gzip, deflate",
         "User-Agent": "Tapo CameraClient Android",
     }
-    CIPHERS = ":".join(
-        [
-            "ECDHE-RSA-AES128-GCM-SHA256",
-            "AES256-GCM-SHA384",
-            "AES256-SHA256",
-            "AES128-GCM-SHA256",
-            "AES128-SHA256",
-            "AES256-SHA",
-        ]
-    )
     DEFAULT_TIMEOUT = 10
 
     def __init__(
@@ -112,7 +101,6 @@ class SslAesTransport(BaseTransport):
         self._host_port = f"{self._host}:{self._port}"
         self._app_url = URL(f"https://{self._host_port}")
         self._token_url: URL | None = None
-        self._ssl_context: ssl.SSLContext | None = None
         ref = str(self._token_url) if self._token_url else str(self._app_url)
         self._headers = {
             **self.COMMON_HEADERS,
@@ -146,6 +134,15 @@ class SslAesTransport(BaseTransport):
     def _create_b64_credentials(credentials: Credentials) -> str:
         ch = {"un": credentials.username, "pwd": credentials.password}
         return base64.b64encode(json_dumps(ch).encode()).decode()
+
+    @classmethod
+    def is_transport_credentials_hash(cls, credentials_hash: str) -> bool:
+        """Whether the hash has the shape this transport produces."""
+        try:
+            decoded = json_loads(base64.b64decode(credentials_hash.encode()))
+        except (ValueError, UnicodeDecodeError):
+            return False
+        return isinstance(decoded, dict) and "un" in decoded and "pwd" in decoded
 
     @property
     def credentials_hash(self) -> str | None:
@@ -200,21 +197,6 @@ class SslAesTransport(BaseTransport):
             raise AuthenticationError(msg, error_code=error_code)
         raise DeviceError(msg, error_code=error_code)
 
-    def _create_ssl_context(self) -> ssl.SSLContext:
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        context.set_ciphers(self.CIPHERS)
-        context.check_hostname = False
-        context.verify_mode = ssl.CERT_NONE
-        return context
-
-    async def _get_ssl_context(self) -> ssl.SSLContext:
-        if not self._ssl_context:
-            loop = asyncio.get_running_loop()
-            self._ssl_context = await loop.run_in_executor(
-                None, self._create_ssl_context
-            )
-        return self._ssl_context
-
     async def send_secure_passthrough(self, request: str) -> dict[str, Any]:
         """Send encrypted message as passthrough."""
         if self._state is TransportState.ESTABLISHED and self._token_url:
@@ -245,7 +227,7 @@ class SslAesTransport(BaseTransport):
             url,
             json=passthrough_request_str,
             headers=headers,
-            ssl=await self._get_ssl_context(),
+            ssl=await get_ssl_context(),
         )
 
         if TYPE_CHECKING:
@@ -272,6 +254,20 @@ class SslAesTransport(BaseTransport):
 
             _LOGGER.debug(msg)
             raise _RetryableError(msg)
+
+        # Some devices answer 401 when the session has expired and they
+        # require a new handshake: reauthenticate and retry the request.
+        if status_code == 401:
+            _LOGGER.debug(
+                "Device %s replied with status 401 to passthrough, "
+                "session expired, handshake required",
+                self._host,
+            )
+            self._state = TransportState.HANDSHAKE_REQUIRED
+            raise _RetryableError(
+                f"{self._host} responded with status 401 to passthrough, "
+                "session expired"
+            )
 
         if status_code != 200:
             raise KasaException(
@@ -323,7 +319,7 @@ class SslAesTransport(BaseTransport):
             url,
             json=request,
             headers=self._headers,
-            ssl=await self._get_ssl_context(),
+            ssl=await get_ssl_context(),
         )
 
         if status_code != 200:
@@ -409,7 +405,7 @@ class SslAesTransport(BaseTransport):
             self._app_url,
             json=body,
             headers=self._headers,
-            ssl=await self._get_ssl_context(),
+            ssl=await get_ssl_context(),
         )
         if status_code != 200:
             raise KasaException(
@@ -453,7 +449,7 @@ class SslAesTransport(BaseTransport):
             self._app_url,
             json=body,
             headers=self._headers,
-            ssl=await self._get_ssl_context(),
+            ssl=await get_ssl_context(),
         )
         if status_code != 200:
             raise KasaException(
@@ -636,7 +632,7 @@ class SslAesTransport(BaseTransport):
             self._app_url,
             json=body,
             headers=self._headers,
-            ssl=await self._get_ssl_context(),
+            ssl=await get_ssl_context(),
         )
 
         _LOGGER.debug("Device responded with status %s: %s", status_code, resp_dict)

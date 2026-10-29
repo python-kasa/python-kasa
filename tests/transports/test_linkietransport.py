@@ -3,6 +3,7 @@ from unittest.mock import ANY
 
 import aiohttp
 import pytest
+from pytest_mock import MockerFixture
 from yarl import URL
 
 from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
@@ -18,7 +19,7 @@ KASACAM_RESPONSE_ERROR = '{"smartlife.cam.ipcamera.cloud": {"get_inf": {"err_cod
 KASA_DEFAULT_CREDENTIALS_HASH = "YWRtaW46MjEyMzJmMjk3YTU3YTVhNzQzODk0YTBlNGE4MDFmYzM="
 
 
-async def test_working(mocker):
+async def test_working(mocker: MockerFixture) -> None:
     """No errors with an expected request/response."""
     host = "127.0.0.1"
     mock_linkie_device = MockLinkieDevice(host)
@@ -35,7 +36,7 @@ async def test_working(mocker):
     }
 
 
-async def test_credentials_hash(mocker):
+async def test_credentials_hash(mocker: MockerFixture) -> None:
     """Ensure the default credentials are always passed as Basic Auth."""
     # Test without credentials input
 
@@ -92,7 +93,9 @@ async def test_credentials_hash(mocker):
         (200, KASACAM_RESPONSE_ERROR, "Unsupported API call"),
     ],
 )
-async def test_exceptions(mocker, return_status, return_data, expected):
+async def test_exceptions(
+    mocker: MockerFixture, return_status: int, return_data: str, expected: str
+) -> None:
     """Test a variety of possible responses from the device."""
     host = "127.0.0.1"
     transport = LinkieTransportV2(config=DeviceConfig(host))
@@ -107,7 +110,7 @@ async def test_exceptions(mocker, return_status, return_data, expected):
         await transport.send(KASACAM_REQUEST_PLAINTEXT)
 
 
-def _generate_kascam_basic_auth():
+def _generate_kascam_basic_auth() -> str:
     creds = get_default_credentials(DEFAULT_CREDENTIALS["KASACAMERA"])
     creds_combined = f"{creds.username}:{creds.password}"
     return base64.b64encode(creds_combined.encode()).decode()

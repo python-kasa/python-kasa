@@ -31,7 +31,7 @@ from .modules import (
 )
 
 
-class BehaviorMode(str, Enum):
+class BehaviorMode(str, Enum):  # noqa: UP042 TODO: revisit, StrEnum changes str() output
     """Enum to present type of turn on behavior."""
 
     #: Return to the last state known state.
@@ -90,6 +90,8 @@ TPLINK_KELVIN = {
     "KL135": ColorTempRange(2500, 9000),
     r"KL120\(EU\)": ColorTempRange(2700, 6500),
     r"KL120\(US\)": ColorTempRange(2700, 5000),
+    r"KL400L5": ColorTempRange(2500, 9000),
+    r"KL420": ColorTempRange(2500, 9000),
     r"KL430": ColorTempRange(2500, 9000),
 }
 

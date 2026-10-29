@@ -14,7 +14,7 @@ def test_expected_dst_behavior_for_index_cases() -> None:
     assert _expected_dst_behavior_for_index(13) is True  # CST6CDT
     # Fixed-offset or fixed-abbreviation zones
     assert _expected_dst_behavior_for_index(34) is False  # Etc/GMT+2
-    assert _expected_dst_behavior_for_index(18) is False  # EST
+    assert _expected_dst_behavior_for_index(18) is None  # America/New_York
     # Invalid index should raise KeyError
     with pytest.raises(KeyError):
         _expected_dst_behavior_for_index(999)

@@ -8,13 +8,23 @@ from kasa.iot.modules.homekit import HomeKit
 
 from ...device_fixtures import device_iot
 
+HOMEKIT = "smartlife.iot.homekit"
+
+
+async def _homekit_module(dev: IotDevice) -> HomeKit:
+    """Create the module with the data from the device, skip if not supported."""
+    if not await dev.supports_module(Module.IotHomeKit):
+        pytest.skip("HomeKit module not present on this device")
+    homekit = HomeKit(dev, HOMEKIT)
+    dev._last_update.update(await dev.protocol.query(homekit.query()))
+    homekit._initialize_features()
+    return homekit
+
 
 @device_iot
-def test_homekit_getters(dev: IotDevice) -> None:
+async def test_homekit_getters(dev: IotDevice) -> None:
     # HomeKit can be present on any IOT device
-    if Module.IotHomeKit not in dev.modules:
-        pytest.skip("HomeKit module not present on this device")
-    homekit: HomeKit = dev.modules[Module.IotHomeKit]
+    homekit = await _homekit_module(dev)
     info = homekit.info
     if not info:
         pytest.skip("No HomeKit data present for this fixture")
@@ -31,10 +41,8 @@ def test_homekit_getters(dev: IotDevice) -> None:
 
 
 @device_iot
-def test_homekit_feature(dev: IotDevice) -> None:
-    if Module.IotHomeKit not in dev.modules:
-        pytest.skip("HomeKit module not present on this device")
-    homekit: HomeKit = dev.modules[Module.IotHomeKit]
+async def test_homekit_feature(dev: IotDevice) -> None:
+    homekit = await _homekit_module(dev)
     if not homekit.info:
         pytest.skip("No HomeKit data present for this device")
     feature = homekit._all_features.get("homekit_setup_code")
@@ -46,9 +54,7 @@ def test_homekit_feature(dev: IotDevice) -> None:
 
 @device_iot
 def test_initialize_features_skips_when_no_data(dev: IotDevice) -> None:
-    if Module.IotHomeKit not in dev.modules:
-        pytest.skip("HomeKit module not present on this device")
-    homekit: HomeKit = dev.modules[Module.IotHomeKit]
+    homekit = HomeKit(dev, HOMEKIT)
     if "homekit_setup_code" in homekit._all_features:
         pytest.skip("HomeKit feature already present on this device")
     # Patch .data so it looks like no homekit data is present
@@ -57,3 +63,4 @@ def test_initialize_features_skips_when_no_data(dev: IotDevice) -> None:
         homekit._initialize_features()
     # Since there was no data, no features should be added
     assert "homekit_setup_code" not in homekit._all_features
+    assert homekit.info == {}
