@@ -927,6 +927,138 @@ async def test_transport_send_retries_live_session_failures(
     assert session._sequence == start_seq + 1
 
 
+def _dropping_post(
+    replies: list[tuple[int, Any]],
+) -> tuple[Any, list[int]]:
+    """Answer /ds requests with the given replies, then echo the payload."""
+    calls: list[int] = []
+
+    async def post(
+        url: URL,
+        *,
+        json: dict[str, Any] | None = None,
+        data: bytes | None = None,
+        headers: dict[str, str] | None = None,
+        ssl: ssl.SSLContext | bool | None = None,
+    ) -> tuple[int, Any]:
+        del url, json, headers, ssl
+        calls.append(len(calls))
+        if len(calls) <= len(replies):
+            return replies[len(calls) - 1]
+        return 200, data
+
+    return post, calls
+
+
+@pytest.mark.parametrize(
+    ("status", "body"),
+    [
+        pytest.param(500, b'{"error_code": -40420}', id="http-40420"),
+        pytest.param(500, b'{"error_code": -40421}', id="http-40421"),
+        pytest.param(500, b'{"err_code": -2402}', id="http-err_code-2402"),
+        pytest.param(500, b'{"error_code": -2101}', id="http-2101"),
+        pytest.param(200, {"error_code": -2402}, id="reply-2402"),
+    ],
+)
+async def test_send_logs_in_again_once_when_session_dropped(
+    monkeypatch: pytest.MonkeyPatch, status: int, body: Any
+) -> None:
+    """Like the app, a dropped session gets one new login and one resend."""
+    transport, session = _make_established_transport()
+    handshakes = 0
+
+    async def fake_handshake() -> None:
+        nonlocal handshakes
+        handshakes += 1
+        _establish_session(transport, session, session_id="SID-NEW", start_seq=40)
+
+    post, calls = _dropping_post([(status, body)])
+    transport._http_client.post = post  # type: ignore[assignment]
+    monkeypatch.setattr(session, "perform_handshake", fake_handshake, raising=True)
+
+    out = await transport.send('{"result": {"ok": true}}')
+
+    assert out["result"]["ok"] is True
+    assert len(calls) == 2
+    assert handshakes == 1
+    assert session._session_id == "SID-NEW"
+
+
+async def test_send_logs_in_again_when_fresh_session_dropped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The retry also applies when this call made the first login."""
+    transport, session = _make_established_transport()
+    await transport.reset()
+    handshakes = 0
+
+    async def fake_handshake() -> None:
+        nonlocal handshakes
+        handshakes += 1
+        _establish_session(transport, session, session_id=f"SID-{handshakes}")
+
+    post, calls = _dropping_post([(500, b'{"error_code": -2402}')])
+    transport._http_client.post = post  # type: ignore[assignment]
+    monkeypatch.setattr(session, "perform_handshake", fake_handshake, raising=True)
+
+    out = await transport.send('{"result": {"ok": true}}')
+
+    assert out["result"]["ok"] is True
+    assert (len(calls), handshakes) == (2, 2)
+
+
+async def test_send_gives_up_when_session_dropped_twice(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The new login and resend happen once only."""
+    transport, session = _make_established_transport()
+    handshakes = 0
+
+    async def fake_handshake() -> None:
+        nonlocal handshakes
+        handshakes += 1
+        _establish_session(transport, session)
+
+    dropped = (500, b'{"error_code": -2402}')
+    post, calls = _dropping_post([dropped, dropped, dropped])
+    transport._http_client.post = post  # type: ignore[assignment]
+    monkeypatch.setattr(session, "perform_handshake", fake_handshake, raising=True)
+
+    with pytest.raises(DeviceError, match="device dropped the session"):
+        await transport.send('{"result": {"ok": true}}')
+
+    assert (len(calls), handshakes) == (2, 1)
+    assert not session.is_established
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        pytest.param(b'{"error_code": -1}', id="other-code"),
+        pytest.param(b"<html>bad gateway</html>", id="not-json"),
+        pytest.param(b"", id="empty"),
+    ],
+)
+async def test_send_does_not_log_in_again_for_other_http_errors(
+    monkeypatch: pytest.MonkeyPatch, body: bytes
+) -> None:
+    transport, session = _make_established_transport()
+    handshakes = 0
+
+    async def fake_handshake() -> None:
+        nonlocal handshakes
+        handshakes += 1
+
+    post, calls = _dropping_post([(500, body)])
+    transport._http_client.post = post  # type: ignore[assignment]
+    monkeypatch.setattr(session, "perform_handshake", fake_handshake, raising=True)
+
+    with pytest.raises(KasaException, match="status 500"):
+        await transport.send('{"result": {"ok": true}}')
+
+    assert (len(calls), handshakes) == (1, 0)
+
+
 @pytest.mark.asyncio
 async def test_transport_reset_clears_session_state() -> None:
     transport, session = _make_established_transport()

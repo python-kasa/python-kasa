@@ -47,6 +47,10 @@ from .basetransport import BaseTransport
 _LOGGER = logging.getLogger(__name__)
 
 
+class _SessionLostError(DeviceError):
+    """The device dropped the session of a request; log in again once and resend."""
+
+
 class TpapEncryptionSession:
     """Class for a TPAP encryption session."""
 
@@ -1253,6 +1257,10 @@ class TpapTransport(BaseTransport):
     """Implementation of the TPAP encryption protocol."""
 
     DEFAULT_PORT: int = 80
+    # Errors on a /ds request after which the app logs in again and resends
+    # once: -2402 (invalid argument, also what -40420 and -40421 in an HTTP
+    # error body become) and -2101 (auth attempts limit).
+    SESSION_LOST_ERROR_CODES = frozenset({-2402, -2101, -40420, -40421})
     DEFAULT_HTTPS_PORT: int = 4433
     CAMERA_AUTH_DEVICE_FAMILIES = (
         DeviceFamily.SmartIpCamera,
@@ -1510,11 +1518,15 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
         """Send the request."""
         # Only a session that was already up is retried: retrying a failed
         # handshake would repeat a login that the device counts toward its lockout.
+        # A dropped session comes from the request after a successful login, so
+        # logging in again once cannot repeat a rejected login.
         was_established = self._encryption_session.is_established
         try:
             return await self._send_once(request)
         except Exception as exc:
-            if not was_established or not self._should_retry_live_session(exc):
+            if not isinstance(exc, _SessionLostError) and (
+                not was_established or not self._should_retry_live_session(exc)
+            ):
                 raise
 
             _LOGGER.debug(
@@ -1544,6 +1556,7 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
                 ssl=ssl_context,
             )
             if status != 200:
+                self._raise_if_session_lost(data)
                 raise KasaException(
                     f"TPAP secure request failed for {self._host}: status {status}"
                 )
@@ -1553,10 +1566,34 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
             return self._load_json_dict(plaintext)
 
         if isinstance(data, dict):
+            self._raise_if_session_lost(data)
             self._encryption_session._handle_response_error_code(data, "request")
             return data
 
         raise KasaException("Unexpected TPAP response body type")
+
+    def _raise_if_session_lost(self, data: Any) -> None:
+        """Raise _SessionLostError if a /ds reply says the session is gone."""
+        if isinstance(data, bytes | bytearray):
+            try:
+                data = json_loads(bytes(data).decode())
+            except (UnicodeDecodeError, ValueError):
+                return
+        if not isinstance(data, dict):
+            return
+        error_code = data.get("error_code", data.get("err_code"))
+        if error_code not in self.SESSION_LOST_ERROR_CODES:
+            return
+        self._encryption_session.reset()
+        try:
+            smart_error_code = SmartErrorCode.from_int(error_code)
+        except ValueError:
+            smart_error_code = SmartErrorCode.INTERNAL_UNKNOWN_ERROR
+        raise _SessionLostError(
+            f"TPAP request failed for {self._host}: device dropped the session "
+            f"({error_code})",
+            error_code=smart_error_code,
+        )
 
     async def close(self) -> None:
         """Close the http client and reset internal state."""
