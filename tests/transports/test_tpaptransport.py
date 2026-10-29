@@ -2022,6 +2022,10 @@ async def test_establish_session_from_share_result_error_paths(
     with pytest.raises(KasaException, match="confirmation mismatch"):
         session._establish_session_from_share_result({"dev_confirm": "wrong"})
 
+    # compare_digest rejects non-ASCII str with a TypeError
+    with pytest.raises(KasaException, match="confirmation mismatch"):
+        session._establish_session_from_share_result({"dev_confirm": "wröng"})
+
     monkeypatch.setattr(session, "_use_dac_certification", lambda: True, raising=True)
     verified: list[dict[str, Any]] = []
     monkeypatch.setattr(

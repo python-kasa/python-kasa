@@ -995,7 +995,7 @@ class TpapEncryptionSession:
         if not dev_confirm:
             raise KasaException("TPAP share response missing dev_confirm")
         if not hmac.compare_digest(
-            dev_confirm, (self._expected_dev_confirm or "").lower()
+            dev_confirm.encode(), (self._expected_dev_confirm or "").lower().encode()
         ):
             raise KasaException("TPAP confirmation mismatch")
 
