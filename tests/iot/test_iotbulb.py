@@ -102,6 +102,17 @@ async def test_unknown_temp_range(
     assert "Unknown color temperature range, fallback to 2700-5000" in caplog.text
 
 
+@variable_temp_iot
+@pytest.mark.xdist_group(name="caplog")
+async def test_known_temp_range(dev: IotBulb, caplog: pytest.LogCaptureFixture) -> None:
+    light = dev.modules.get(Module.Light)
+    assert light
+    color_temp_feat = light.get_feature("color_temp")
+    assert color_temp_feat
+    assert color_temp_feat.range
+    assert "Unknown color temperature range" not in caplog.text
+
+
 @dimmable_iot
 @turn_on
 async def test_dimmable_brightness(dev: IotBulb, turn_on: bool) -> None:
