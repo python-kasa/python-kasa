@@ -385,7 +385,6 @@ class TpapEncryptionSession:
                 "cipher_suites": [1],
                 "encryption": ["aes_128_ccm"],
                 "passcode_type": passcode_type,
-                "stok": None,
             }
 
             try:

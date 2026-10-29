@@ -364,6 +364,8 @@ async def test_session_perform_handshake_registers_expected_auth_values(
     assert captured_register["username"] == expected_username
     assert captured_register["encryption"] == ["aes_128_ccm"]
     assert captured_register["passcode_type"] == expected_passcode_type
+    # Like the app, no stok is sent when there is no session to reuse
+    assert "stok" not in captured_register
     assert session.is_established is True
     assert session.tls_mode == expected_tls_mode
     assert transport._app_url.scheme == expected_scheme
