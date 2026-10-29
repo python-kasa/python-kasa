@@ -213,7 +213,7 @@ class TpapEncryptionSession:
                 f"{status} {type(data)}"
             )
 
-        self._handle_response_error_code(data, "discover")
+        self._handle_login_error_code(data, "discover")
         result = self._require_result_dict(data)
         tpap = result.get("tpap")
         if not isinstance(tpap, dict):
@@ -257,23 +257,7 @@ class TpapEncryptionSession:
                 f"{status} {type(data)}"
             )
 
-        if (
-            step_name == "pake_share"
-            and data.get("error_code") == SmartErrorCode.STAT_ACCESS_ERROR
-        ):
-            # Devices answer a wrong passcode in pake_share with
-            # STAT_ACCESS_ERROR. Raise an authentication error instead of a
-            # retryable one so callers ask for new credentials rather than
-            # repeating failed logins.
-            self._invalidate_session()
-            raise AuthenticationError(
-                f"TPAP {step_name} failed for {self._transport._host}: "
-                "credentials rejected by device "
-                f"({SmartErrorCode.STAT_ACCESS_ERROR.name})",
-                error_code=SmartErrorCode.STAT_ACCESS_ERROR,
-            )
-
-        self._handle_response_error_code(data, step_name)
+        self._handle_login_error_code(data, step_name)
         return self._require_result_dict(data)
 
     def _update_transport_url(self) -> None:
@@ -282,21 +266,73 @@ class TpapEncryptionSession:
             port=self._tpap_port,
         )
 
-    def _handle_response_error_code(
-        self, response: dict[str, Any], action: str
-    ) -> None:
-        """Handle response errors to request reauth etc."""
+    def _get_error_code(self, response: dict[str, Any]) -> SmartErrorCode:
         error_code_raw = response.get("error_code")
         try:
-            error_code = SmartErrorCode.from_int(error_code_raw)
+            return SmartErrorCode.from_int(error_code_raw)
         except (TypeError, ValueError):
             _LOGGER.warning(
                 "Device %s received unknown error code: %s",
                 self._transport._host,
                 error_code_raw,
             )
-            error_code = SmartErrorCode.INTERNAL_UNKNOWN_ERROR
+            return SmartErrorCode.INTERNAL_UNKNOWN_ERROR
 
+    def _handle_login_error_code(self, response: dict[str, Any], step: str) -> None:
+        """Handle the error code of a login step.
+
+        The device counts every rejected pake_share toward a lockout (15 on a
+        KH100), so a failed pake_share is never raised as retryable. A locked
+        device answers every step, even discover, with ``error_info`` holding
+        ``lockedMinute`` and ``remainAttempts``.
+        """
+        error_code = self._get_error_code(response)
+        if error_code is SmartErrorCode.SUCCESS:
+            return
+
+        error_info = response.get("error_info")
+        if not isinstance(error_info, dict):
+            error_info = {}
+        locked_minutes = self._parse_optional_int(error_info.get("lockedMinute"))
+        remain_attempts = self._parse_optional_int(error_info.get("remainAttempts"))
+        host = self._transport._host
+        if (locked_minutes or 0) > 0 or remain_attempts == 0:
+            self._invalidate_session()
+            msg = f"TPAP {step} failed for {host}: device blocked after failed logins"
+            if locked_minutes:
+                msg += f", retry in {locked_minutes} minutes"
+            raise DeviceError(msg, error_code=SmartErrorCode.DEVICE_BLOCKED)
+
+        if step == "pake_share":
+            self._invalidate_session()
+            attempts_left = (
+                f", {remain_attempts} attempts left before the device locks"
+                if remain_attempts is not None
+                else ""
+            )
+            if (
+                error_code is SmartErrorCode.STAT_ACCESS_ERROR
+                or error_code in SMART_AUTHENTICATION_ERRORS
+            ):
+                raise AuthenticationError(
+                    f"TPAP {step} failed for {host}: credentials rejected by device "
+                    f"({error_code.name}){attempts_left}",
+                    error_code=error_code,
+                )
+            raise DeviceError(
+                f"TPAP {step} failed for {host}: "
+                f"{error_code.name}({error_code.value}){attempts_left}",
+                error_code=error_code,
+            )
+
+        # Nothing has been proven before pake_share, so these steps may be retried.
+        self._handle_response_error_code(response, step)
+
+    def _handle_response_error_code(
+        self, response: dict[str, Any], action: str
+    ) -> None:
+        """Handle response errors to request reauth etc."""
+        error_code = self._get_error_code(response)
         if error_code is SmartErrorCode.SUCCESS:
             return
 
@@ -366,6 +402,8 @@ class TpapEncryptionSession:
             except (_RetryableError, _ConnectionError):
                 raise
             except KasaException as exc:
+                if getattr(exc, "error_code", None) is SmartErrorCode.DEVICE_BLOCKED:
+                    raise
                 last_error = exc
                 if attempt < candidate_count:
                     _LOGGER.debug(
@@ -1376,7 +1414,6 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
             SmartErrorCode.SESSION_EXPIRED,
             SmartErrorCode.INVALID_NONCE,
             SmartErrorCode.TRANSPORT_NOT_AVAILABLE_ERROR,
-            SmartErrorCode.STAT_ACCESS_ERROR,
         }
 
     async def get_ssl_context(self) -> ssl.SSLContext | bool:
@@ -1407,10 +1444,13 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
 
     async def send(self, request: str) -> dict[str, Any]:
         """Send the request."""
+        # Only a session that was already up is retried: retrying a failed
+        # handshake would repeat a login that the device counts toward its lockout.
+        was_established = self._encryption_session.is_established
         try:
             return await self._send_once(request)
         except Exception as exc:
-            if not self._should_retry_live_session(exc):
+            if not was_established or not self._should_retry_live_session(exc):
                 raise
 
             _LOGGER.debug(

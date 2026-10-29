@@ -28,6 +28,7 @@ from kasa.exceptions import (
     _ConnectionError,
     _RetryableError,
 )
+from kasa.protocols import SmartProtocol
 
 
 def _discover_response(
@@ -1232,7 +1233,7 @@ async def test_login_propagates_error_code_handling() -> None:
     ("step_name", "expected"),
     [
         pytest.param("pake_share", AuthenticationError, id="share-auth-error"),
-        pytest.param("pake_register", _RetryableError, id="register-retryable"),
+        pytest.param("pake_register", DeviceError, id="register-device-error"),
     ],
 )
 @pytest.mark.asyncio
@@ -1304,6 +1305,199 @@ async def test_send_wrong_password_fails_once_without_retry() -> None:
     assert not transport._encryption_session.is_established
 
 
+def _fake_login_device(
+    transport: tp.TpapTransport,
+    *,
+    discover: dict[str, Any] | None = None,
+    pake_register: dict[str, Any] | None = None,
+    pake_share: dict[str, Any] | None = None,
+) -> dict[str, int]:
+    """Answer the login steps with the given replies and count each step."""
+    counts = {"discover": 0, "pake_register": 0, "pake_share": 0}
+    replies = {
+        "discover": discover or _discover_response(tls=0, port=80, pake=[2]),
+        "pake_register": pake_register
+        or {
+            "error_code": 0,
+            "result": _register_result(
+                extra_crypt={"type": "password_shadow", "params": {"passwd_id": 2}},
+                cipher_suites=1,
+            ),
+        },
+        "pake_share": pake_share or {"error_code": 0},
+    }
+
+    async def post(
+        url: URL,
+        *,
+        json: dict[str, Any] | None = None,
+        data: bytes | None = None,
+        headers: dict[str, str] | None = None,
+        ssl: ssl.SSLContext | bool | None = None,
+    ) -> tuple[int, dict[str, Any]]:
+        del url, data, headers, ssl
+        assert json is not None
+        sub_method = json["params"]["sub_method"]
+        counts[sub_method] += 1
+        return 200, replies[sub_method]
+
+    transport._http_client.post = post  # type: ignore[assignment]
+    return counts
+
+
+@pytest.mark.parametrize(
+    ("family", "error_code", "expected", "logins"),
+    [
+        pytest.param(
+            DeviceFamily.SmartKasaHub,
+            SmartErrorCode.STAT_ACCESS_ERROR,
+            AuthenticationError,
+            1,
+            id="hub-wrong-password",
+        ),
+        pytest.param(
+            DeviceFamily.SmartKasaHub,
+            SmartErrorCode.SESSION_EXPIRED,
+            DeviceError,
+            1,
+            id="hub-retryable-code",
+        ),
+        pytest.param(
+            DeviceFamily.SmartIpCamera,
+            SmartErrorCode.STAT_ACCESS_ERROR,
+            AuthenticationError,
+            2,
+            id="camera-wrong-password",
+        ),
+        pytest.param(
+            DeviceFamily.SmartIpCamera,
+            SmartErrorCode.SESSION_EXPIRED,
+            DeviceError,
+            2,
+            id="camera-retryable-code",
+        ),
+    ],
+)
+async def test_rejected_login_is_sent_once_per_candidate(
+    mocker: Any,
+    family: DeviceFamily,
+    error_code: SmartErrorCode,
+    expected: type[KasaException],
+    logins: int,
+) -> None:
+    """A rejected pake_share is not repeated by the transport or the protocol.
+
+    Cameras try two password hashes, every other device one password.
+    """
+    mocker.patch("asyncio.sleep")
+    transport = _make_tpap_transport(
+        "login-host", family=family, credentials=Credentials("user", "wrong")
+    )
+    counts = _fake_login_device(transport, pake_share={"error_code": error_code.value})
+    protocol = SmartProtocol(transport=transport)
+
+    with pytest.raises(expected) as exc_info:
+        await protocol.query({"get_device_info": None})
+
+    assert type(exc_info.value) is expected
+    assert exc_info.value.error_code is error_code  # type: ignore[attr-defined]
+    assert counts["pake_share"] == logins
+    assert counts["discover"] == 1
+
+
+async def test_rejected_login_reports_attempts_left() -> None:
+    transport = _make_tpap_transport(
+        "login-host",
+        family=DeviceFamily.SmartKasaHub,
+        credentials=Credentials("user", "wrong"),
+    )
+    _fake_login_device(
+        transport,
+        pake_share={
+            "error_code": SmartErrorCode.STAT_ACCESS_ERROR.value,
+            "error_info": {
+                "lockedMinute": 0,
+                "failedAttempts": 3,
+                "remainAttempts": 12,
+            },
+        },
+    )
+
+    with pytest.raises(AuthenticationError, match="12 attempts left"):
+        await transport.send('{"method": "get_device_info"}')
+
+
+@pytest.mark.parametrize(
+    ("family", "step", "error_info", "message"),
+    [
+        pytest.param(
+            DeviceFamily.SmartKasaHub,
+            "discover",
+            {"lockedMinute": 25, "failedAttempts": 15, "remainAttempts": 0},
+            "retry in 25 minutes",
+            id="discover-locked",
+        ),
+        pytest.param(
+            DeviceFamily.SmartIpCamera,
+            "pake_share",
+            {"lockedMinute": 30, "failedAttempts": 5, "remainAttempts": 0},
+            "retry in 30 minutes",
+            id="share-locked",
+        ),
+        pytest.param(
+            DeviceFamily.SmartKasaHub,
+            "pake_register",
+            {"failedAttempts": 15, "remainAttempts": 0},
+            r"device blocked after failed logins \(",
+            id="register-no-attempts-left",
+        ),
+    ],
+)
+async def test_locked_device_is_reported_as_blocked(
+    mocker: Any,
+    family: DeviceFamily,
+    step: str,
+    error_info: dict[str, int],
+    message: str,
+) -> None:
+    """A locked device stops the login at once and is not retried.
+
+    A locked KH100 answers every step, even discover, with ACCOUNT_ERROR and
+    error_info.
+    """
+    mocker.patch("asyncio.sleep")
+    transport = _make_tpap_transport(
+        "login-host", family=family, credentials=Credentials("user", "pw")
+    )
+    reply = {"error_code": SmartErrorCode.ACCOUNT_ERROR.value, "error_info": error_info}
+    counts = _fake_login_device(transport, **{step: reply})
+    protocol = SmartProtocol(transport=transport)
+
+    with pytest.raises(DeviceError, match=message) as exc_info:
+        await protocol.query({"get_device_info": None})
+
+    assert exc_info.value.error_code is SmartErrorCode.DEVICE_BLOCKED
+    assert counts[step] == 1
+    assert counts["pake_share"] == (1 if step == "pake_share" else 0)
+
+
+async def test_send_does_not_retry_failed_handshake() -> None:
+    """send() retries a live session, not a handshake that never completed."""
+    transport = _make_tpap_transport(
+        "login-host",
+        family=DeviceFamily.SmartKasaHub,
+        credentials=Credentials("user", "pw"),
+    )
+    counts = _fake_login_device(
+        transport, pake_register={"error_code": SmartErrorCode.SESSION_EXPIRED.value}
+    )
+
+    with pytest.raises(_RetryableError):
+        await transport.send('{"method": "get_device_info"}')
+
+    assert counts == {"discover": 1, "pake_register": 1, "pake_share": 0}
+
+
 @pytest.mark.asyncio
 async def test_login_tls2_uses_post() -> None:
     transport = tp.TpapTransport(config=DeviceConfig("login-host"))
@@ -1368,7 +1562,7 @@ async def test_private_handle_response_error_code_covers_invalid_retry_auth_and_
         session._handle_response_error_code(
             {"error_code": SmartErrorCode.SESSION_EXPIRED.value}, "retry"
         )
-    with pytest.raises(_RetryableError):
+    with pytest.raises(DeviceError):
         session._handle_response_error_code(
             {"error_code": SmartErrorCode.STAT_ACCESS_ERROR.value}, "retry"
         )
@@ -2002,7 +2196,7 @@ async def test_transport_ignores_malformed_credentials_hash() -> None:
         ),
         pytest.param(
             _RetryableError("x", error_code=SmartErrorCode.STAT_ACCESS_ERROR),
-            True,
+            False,
             id="stat-access-error",
         ),
     ],
