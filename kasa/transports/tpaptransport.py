@@ -429,12 +429,20 @@ class TpapEncryptionSession:
         )
 
     @staticmethod
-    def _md5_hex(value: str) -> str:
-        return hashlib.md5(value.encode()).hexdigest()  # noqa: S324
+    def _md5(data: bytes) -> bytes:
+        return hashlib.md5(data).digest()  # noqa: S324
 
     @staticmethod
-    def _sha256_hex_upper(value: str) -> str:
-        return hashlib.sha256(value.encode()).hexdigest().upper()  # noqa: S324
+    def _sha256(data: bytes) -> bytes:
+        return hashlib.sha256(data).digest()
+
+    @classmethod
+    def _md5_hex(cls, value: str) -> str:
+        return cls._md5(value.encode()).hex()
+
+    @classmethod
+    def _sha256_hex_upper(cls, value: str) -> str:
+        return cls._sha256(value.encode()).hex().upper()
 
     def _get_register_username(self) -> str:
         return (
@@ -574,13 +582,13 @@ class TpapEncryptionSession:
 
         salt = prefix[3:].split("$", 1)[0][:8]
         secret, salt_bytes = password.encode(), salt.encode()
-        alternate = hashlib.md5(secret + salt_bytes + secret).digest()  # noqa: S324
+        alternate = cls._md5(secret + salt_bytes + secret)
         data = secret + b"$1$" + salt_bytes + cls._crypt_repeat(alternate, len(secret))
         length = len(secret)
         while length:
             data += b"\x00" if length & 1 else secret[:1]
             length >>= 1
-        final = hashlib.md5(data).digest()  # noqa: S324
+        final = cls._md5(data)
 
         for round_ in range(1000):
             data = secret if round_ & 1 else final
@@ -589,7 +597,7 @@ class TpapEncryptionSession:
             if round_ % 7:
                 data += secret
             data += final if round_ & 1 else secret
-            final = hashlib.md5(data).digest()  # noqa: S324
+            final = cls._md5(data)
 
         order = ((0, 6, 12), (1, 7, 13), (2, 8, 14), (3, 9, 15), (4, 10, 5))
         encoded = "".join(
@@ -638,20 +646,16 @@ class TpapEncryptionSession:
             rounds_spec = f"rounds={rounds}$"
 
         secret, salt_bytes = password.encode(), salt.encode()
-        alternate = hashlib.sha256(secret + salt_bytes + secret).digest()
-        context = hashlib.sha256(
-            secret + salt_bytes + cls._crypt_repeat(alternate, len(secret))
-        )
+        alternate = cls._sha256(secret + salt_bytes + secret)
+        data = secret + salt_bytes + cls._crypt_repeat(alternate, len(secret))
         length = len(secret)
         while length:
-            context.update(alternate if length & 1 else secret)
+            data += alternate if length & 1 else secret
             length >>= 1
-        final = context.digest()
-        p_bytes = cls._crypt_repeat(
-            hashlib.sha256(secret * len(secret)).digest(), len(secret)
-        )
+        final = cls._sha256(data)
+        p_bytes = cls._crypt_repeat(cls._sha256(secret * len(secret)), len(secret))
         s_bytes = cls._crypt_repeat(
-            hashlib.sha256(salt_bytes * (16 + final[0])).digest(), len(salt_bytes)
+            cls._sha256(salt_bytes * (16 + final[0])), len(salt_bytes)
         )
 
         for round_ in range(rounds or default_rounds):
@@ -661,7 +665,7 @@ class TpapEncryptionSession:
             if round_ % 7:
                 data += p_bytes
             data += final if round_ & 1 else p_bytes
-            final = hashlib.sha256(data).digest()
+            final = cls._sha256(data)
 
         order = (
             (0, 10, 20),
@@ -738,9 +742,7 @@ class TpapEncryptionSession:
             except Exception:
                 _LOGGER.debug("TPAP: invalid base64 salt, using passcode")
                 return passcode
-            return hashlib.sha256(
-                (username_hint + decoded_salt + passcode).encode()
-            ).hexdigest()
+            return cls._sha256((username_hint + decoded_salt + passcode).encode()).hex()
 
         return f"{username}/{passcode}" if username else passcode
 
