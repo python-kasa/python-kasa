@@ -1,4 +1,5 @@
 import builtins
+import logging
 import re
 
 import aiohttp
@@ -114,3 +115,37 @@ async def test_httpclient_errors(
         assert mock_response.call_count == 1
     else:
         assert conn.call_count == 1
+
+
+class _OkResponse:
+    status = 200
+    connection = None
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_t, exc_v, exc_tb) -> None:
+        pass
+
+    async def read(self) -> bytes:
+        return b"{}"
+
+
+async def test_httpclient_debug_log_hides_session_token(
+    mocker: MockerFixture, caplog: pytest.LogCaptureFixture
+) -> None:
+    """The /stok=<token>/ds session token of TPAP and camera logins is not logged."""
+
+    async def _post(url, *_, **__):
+        return _OkResponse()
+
+    mocker.patch.object(aiohttp.ClientSession, "post", side_effect=_post)
+    client = HttpClient(DeviceConfig("127.0.0.1"))
+
+    with caplog.at_level(logging.DEBUG, logger="kasa.httpclient"):
+        await client.post(URL("https://127.0.0.1:4433/stok=S3cr3tT0k3n/ds"), data=b"x")
+        await client.post(URL("http://127.0.0.1/app/handshake1"), data=b"x")
+
+    assert "S3cr3tT0k3n" not in caplog.text
+    assert "Posting to https://127.0.0.1:4433/stok=REDACTED/ds" in caplog.text
+    assert "Posting to http://127.0.0.1/app/handshake1" in caplog.text
