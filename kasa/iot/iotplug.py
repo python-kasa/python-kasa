@@ -102,12 +102,3 @@ class IotWallSwitch(IotPlug):
             self.add_module(
                 Module.IotAmbientLight, AmbientLight(self, "smartlife.iot.LAS")
             )
-
-    @property
-    def max_device_response_size(self) -> int:
-        """Returns the maximum response size the device can safely construct."""
-        # Some KS200M units answer a large combined update with a plain
-        # "200 OK" html page instead of a response, see #1828
-        if self._sys_info and self._sys_info.get("model", "").startswith("KS200M"):
-            return 2048
-        return super().max_device_response_size

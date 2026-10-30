@@ -18,6 +18,7 @@ import functools
 import inspect
 import logging
 from collections.abc import Callable, Mapping, Sequence
+from copy import deepcopy
 from datetime import datetime, timedelta, tzinfo
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 from warnings import warn
@@ -25,7 +26,12 @@ from warnings import warn
 from ..device import Device, DeviceInfo, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..exceptions import KasaException, TimeoutError, UnsupportedDeviceError
+from ..exceptions import (
+    KasaException,
+    TimeoutError,
+    UnsupportedDeviceError,
+    _InvalidResponseError,
+)
 from ..feature import Feature
 from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
@@ -206,6 +212,7 @@ class IotDevice(Device):
         self._modules: dict[str | ModuleName[Module], IotModule] = {}
         self._on_since: datetime | None = None
         self._optional_module_support: dict[str | ModuleName[Module], bool] = {}
+        self._query_modules_separately = False
 
     @property
     def children(self) -> Sequence[IotDevice]:
@@ -402,27 +409,27 @@ class IotDevice(Device):
 
     async def _modular_update(self, req: dict) -> None:
         """Execute an update query."""
-        request_list = []
-        est_response_size = 1024 if "system" in req else 0
-        for module in self._modules.values():
-            if not module.is_supported:
-                _LOGGER.debug("Module %s not supported, skipping", module)
-                continue
-
-            est_response_size += module.estimated_query_response_size
-            if est_response_size > self.max_device_response_size:
-                request_list.append(req)
-                req = {}
-                est_response_size = module.estimated_query_response_size
-
-            q = module.query()
-            _LOGGER.debug("Adding query for %s: %s", module, q)
-            req = merge(req, q)
-        request_list.append(req)
-
-        responses = [
-            await self.protocol.query(request) for request in request_list if request
-        ]
+        # Children are queried over the connection of their parent.
+        device = cast("IotDevice", self._parent) if self._parent is not None else self
+        try:
+            # The module queries are merged into the request in place,
+            # so keep the original for a retry.
+            responses = await self._query_modules(
+                deepcopy(req), separately=device._query_modules_separately
+            )
+        except _InvalidResponseError as ex:
+            if device._query_modules_separately:
+                raise
+            # Some devices answer a large combined request with a plain html
+            # page instead of a response, but answer each module on its own.
+            _LOGGER.debug(
+                "Device %s rejected the update request, "
+                "querying modules separately from now on: %s",
+                self.host,
+                ex,
+            )
+            device._query_modules_separately = True
+            responses = await self._query_modules(req, separately=True)
 
         # Preserve the last update and merge
         # responses on top of it so we remember
@@ -449,6 +456,31 @@ class IotDevice(Device):
                     supported[module_name] = module
 
             self._supported_modules = supported
+
+    async def _query_modules(self, req: dict, *, separately: bool) -> list[dict]:
+        """Query the modules, split into requests the device can answer."""
+        max_response_size = 0 if separately else self.max_device_response_size
+        request_list = []
+        est_response_size = 1024 if "system" in req else 0
+        for module in self._modules.values():
+            if not module.is_supported:
+                _LOGGER.debug("Module %s not supported, skipping", module)
+                continue
+
+            est_response_size += module.estimated_query_response_size
+            if est_response_size > max_response_size:
+                request_list.append(req)
+                req = {}
+                est_response_size = module.estimated_query_response_size
+
+            q = module.query()
+            _LOGGER.debug("Adding query for %s: %s", module, q)
+            req = merge(req, q)
+        request_list.append(req)
+
+        return [
+            await self.protocol.query(request) for request in request_list if request
+        ]
 
     async def supports_module(self, module: ModuleName[Module] | str) -> bool:
         """Return True if the device supports the module.
