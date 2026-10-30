@@ -833,7 +833,15 @@ class TpapEncryptionSession:
         return suite_type in (8, 9)
 
     def _use_dac_certification(self) -> bool:
-        return self._tpap_tls == 0 and self._tpap_dac
+        # Like the Tapo app: with tls 0 and dac, for the default passcode
+        # (pake 0), and on Tapo IoT devices also pake 5; never on cameras
+        if self._tpap_tls != 0 or not self._tpap_dac or self._uses_camera_auth:
+            return False
+        pake = self._tpap_pake or []
+        if 0 in pake:
+            return True
+        kasa_or_robot = self._uses_kasa_iot_auth or self._uses_robot_tpap_auth
+        return 5 in pake and not kasa_or_robot
 
     @staticmethod
     def _mac_pass_from_device_mac(mac_colon: str) -> str:

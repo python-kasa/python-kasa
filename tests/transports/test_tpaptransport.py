@@ -658,17 +658,42 @@ async def test_iot_session_adds_dac_nonce_when_required(
 
 
 @pytest.mark.parametrize(
-    ("tls", "dac", "pake", "expected"),
+    ("family", "tls", "dac", "pake", "expected"),
     [
-        pytest.param(0, True, [2], True, id="plain-tpap-dac"),
-        pytest.param(0, False, [2], False, id="plain-tpap-no-dac"),
-        pytest.param(1, True, [2], False, id="tls-tpap-dac"),
+        pytest.param(DeviceFamily.SmartTapoPlug, 0, True, [0], True, id="tapo-pake-0"),
+        pytest.param(DeviceFamily.SmartTapoPlug, 0, True, [5], True, id="tapo-pake-5"),
+        pytest.param(
+            DeviceFamily.SmartKasaPlug, 0, True, [2], False, id="tapo-pake-2-kp125m"
+        ),
+        pytest.param(
+            DeviceFamily.SmartTapoPlug, 0, True, [0, 2], True, id="tapo-pake-0-2"
+        ),
+        pytest.param(DeviceFamily.SmartTapoPlug, 0, False, [0], False, id="no-dac"),
+        pytest.param(DeviceFamily.SmartTapoPlug, 1, True, [0], False, id="tls"),
+        pytest.param(DeviceFamily.IotSmartBulb, 0, True, [0], True, id="kasa-pake-0"),
+        pytest.param(DeviceFamily.IotSmartBulb, 0, True, [5], False, id="kasa-pake-5"),
+        pytest.param(
+            DeviceFamily.IotSmartBulb, 0, True, [2], False, id="kasa-pake-2-kl420l5"
+        ),
+        pytest.param(
+            DeviceFamily.SmartTapoRobovac, 0, True, [0], True, id="robot-pake-0"
+        ),
+        pytest.param(
+            DeviceFamily.SmartTapoRobovac, 0, True, [5], False, id="robot-pake-5"
+        ),
+        pytest.param(DeviceFamily.SmartIpCamera, 0, True, [0], False, id="camera"),
+        pytest.param(DeviceFamily.SmartTapoPlug, 0, True, None, False, id="no-pake"),
     ],
 )
 async def test_use_dac_certification_uses_discovered_dac_support(
-    tls: int, dac: bool, pake: list[int], expected: bool
+    family: DeviceFamily,
+    tls: int,
+    dac: bool,
+    pake: list[int] | None,
+    expected: bool,
 ) -> None:
-    transport = _make_tpap_transport("tpap-host")
+    """DAC is requested only where the Tapo app requests it."""
+    transport = _make_tpap_transport("tpap-host", family=family)
     session = transport._encryption_session
     session._tpap_pake = pake
     session._tpap_tls = tls
@@ -3326,10 +3351,19 @@ async def test_discovered_parameters_skip_in_band_discover(
     await transport.close()
 
 
-async def test_discovered_dac_sends_dac_nonce(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Dac from discovery asks the device for its attestation, as on KP125M."""
+@pytest.mark.parametrize(
+    ("pake", "asked"),
+    [
+        pytest.param([0], True, id="default-passcode"),
+        pytest.param([2], False, id="password-kp125m"),
+    ],
+)
+async def test_discovered_dac_sends_dac_nonce(
+    monkeypatch: pytest.MonkeyPatch, pake: list[int], asked: bool
+) -> None:
+    """The discovery dac asks for the attestation only where the app does."""
     transport = _make_discovered_transport(
-        TpapParameters(tls=0, dac=True, pake=[2], port=80),
+        TpapParameters(tls=0, dac=True, pake=pake, port=80, mac="AA-BB-CC-DD-EE-FF"),
         family=DeviceFamily.SmartKasaPlug,
     )
     session = transport._encryption_session
@@ -3346,7 +3380,7 @@ async def test_discovered_dac_sends_dac_nonce(monkeypatch: pytest.MonkeyPatch) -
 
     with pytest.raises(AuthenticationError):
         await session.perform_handshake()
-    assert "dac_nonce" in shares[0]
+    assert ("dac_nonce" in shares[0]) is asked
     await transport.close()
 
 
