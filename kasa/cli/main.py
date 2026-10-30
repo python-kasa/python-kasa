@@ -64,6 +64,18 @@ def _legacy_type_to_class(_type: str) -> Any:
     return TYPE_TO_CLASS[_type]
 
 
+def _parse_tpap(ctx: click.Context, param: click.Parameter, value: str | None):
+    """Parse the --tpap JSON into TPAP parameters."""
+    if value is None:
+        return None
+    from kasa.deviceconfig import TpapParameters
+
+    try:
+        return TpapParameters.from_dict(json.loads(value))
+    except Exception as ex:
+        raise click.BadParameter(f"not valid TPAP parameters: {ex}") from ex
+
+
 @click.group(
     invoke_without_command=True,
     cls=CatchAllExceptions(LazyGroup),
@@ -187,6 +199,15 @@ def _legacy_type_to_class(_type: str) -> Any:
     help="Set flag if the device encryption uses https.",
 )
 @click.option(
+    "--tpap",
+    envvar="KASA_TPAP",
+    default=None,
+    callback=_parse_tpap,
+    help="TPAP login from the device's discovery reply, as JSON, to connect "
+    "over TPAP without discovery, e.g. "
+    '\'{"tls": 1, "port": 443, "pake": [2]}\'. Implies --encrypt-type TPAP.',
+)
+@click.option(
     "--timeout",
     envvar="KASA_TIMEOUT",
     default=5,
@@ -236,6 +257,7 @@ async def cli(
     type,
     encrypt_type,
     https,
+    tpap,
     device_family,
     login_version,
     json,
@@ -279,6 +301,16 @@ async def cli(
     if alias is not None and host is not None:
         raise click.BadOptionUsage("alias", "Use either --alias or --host, not both.")
 
+    if tpap is not None:
+        # The TPAP values mean a TPAP connection, so they cannot be ignored
+        if type is not None and type not in {"smart", "camera"}:
+            raise click.BadOptionUsage("tpap", f"--tpap is not used with --type {type}")
+        if encrypt_type and encrypt_type.upper() != "TPAP":
+            raise click.BadOptionUsage(
+                "tpap", "--tpap is only used with --encrypt-type TPAP"
+            )
+        encrypt_type = "TPAP"
+
     if bool(password) != bool(username):
         raise click.BadOptionUsage(
             "username", "Using authentication requires both --username and --password"
@@ -310,7 +342,8 @@ async def cli(
         dev = _legacy_type_to_class(type)(host, config=config)
     elif type in {"smart", "camera"} or (device_family and encrypt_type):
         if type == "camera":
-            encrypt_type = "AES"
+            # An explicit --encrypt-type is kept: newer cameras use TPAP
+            encrypt_type = encrypt_type or "AES"
             https = True
             device_family = "SMART.IPCAMERA"
 
@@ -330,6 +363,7 @@ async def cli(
             DeviceEncryptionType(encrypt_type),
             login_version,
             https,
+            tpap=tpap,
         )
         config = DeviceConfig(
             host=host,

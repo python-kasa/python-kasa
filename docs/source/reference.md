@@ -53,6 +53,12 @@
 ```
 
 ```{eval-rst}
+.. autoclass:: kasa.deviceconfig.TpapParameters
+    :members:
+    :undoc-members:
+```
+
+```{eval-rst}
 .. autoclass:: DeviceEncryptionType
     :members:
     :undoc-members:

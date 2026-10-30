@@ -124,6 +124,7 @@ class SmartErrorCode(IntEnum):
     ACCOUNT_ERROR = -2101
     STAT_ERROR = -2201
     STAT_SAVE_ERROR = -2202
+    STAT_ACCESS_ERROR = -2203
     DST_ERROR = -2301
     DST_SAVE_ERROR = -2302
 
