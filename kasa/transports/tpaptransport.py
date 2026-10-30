@@ -202,23 +202,34 @@ class TpapEncryptionSession:
                 return
 
             self.reset()
-            _LOGGER.debug(
-                "TPAP: starting handshake with %s",
-                self._transport._host,
-            )
+            _LOGGER.debug("Starting handshake with %s", self._transport._host)
 
             if self._transport._has_discovery_tpap:
                 # Like the Tapo app, log in with what UDP discovery announced
                 self._update_transport_url()
+                source = "discovery"
             elif self._uses_camera_auth:
                 # Cameras refuse the in-band discover (-40209); the app never
                 # sends it to them
                 self._apply_default_params()
+                source = "the camera defaults"
             else:
                 await self._discover()
+                source = "the in-band discover"
+            _LOGGER.debug(
+                "Using the TPAP login from %s for %s: tls %s, port %s, pake %s, "
+                "dac %s, url %s",
+                source,
+                self._transport._host,
+                self._tpap_tls,
+                self._tpap_port,
+                self._tpap_pake,
+                self._tpap_dac,
+                self._transport._app_url,
+            )
             await self._perform_auth_handshake()
 
-            _LOGGER.debug("TPAP: handshake complete with %s", self._transport._host)
+            _LOGGER.debug("Handshake with %s complete", self._transport._host)
 
     async def _discover(self) -> None:
         body = {"method": "login", "params": {"sub_method": "discover"}}
@@ -227,6 +238,12 @@ class TpapEncryptionSession:
             json=body,
             headers=self._transport.COMMON_HEADERS,
             ssl=await self._transport.get_ssl_context(),
+        )
+        _LOGGER.debug(
+            "Discover posted at %s. Host is %s, Response status is %s",
+            datetime.now(),
+            self._transport._host,
+            status,
         )
         if status != 200 or not isinstance(data, dict):
             raise KasaException(
@@ -295,6 +312,13 @@ class TpapEncryptionSession:
             json=body,
             headers=self._transport.COMMON_HEADERS,
             ssl=ssl_context,
+        )
+        _LOGGER.debug(
+            "%s posted at %s. Host is %s, Response status is %s",
+            step_name,
+            datetime.now(),
+            self._transport._host,
+            status,
         )
         if status != 200 or not isinstance(data, dict):
             raise KasaException(
@@ -430,6 +454,14 @@ class TpapEncryptionSession:
                 register_result = await self._login(
                     register_params, step_name="pake_register"
                 )
+                _LOGGER.debug(
+                    "pake_register success at %s. Host is %s, passcode type is %s, "
+                    "credential encoding is %s",
+                    datetime.now(),
+                    self._transport._host,
+                    passcode_type,
+                    self._describe_extra_crypt(register_result),
+                )
                 credentials_string = self._resolve_credentials(
                     register_result,
                     candidate_secret,
@@ -444,6 +476,12 @@ class TpapEncryptionSession:
 
                 share_result = await self._login(share_params, step_name="pake_share")
                 self._establish_session_from_share_result(share_result)
+                _LOGGER.debug(
+                    "pake_share confirmation matches the expected credentials "
+                    "(candidate %d/%d)",
+                    attempt,
+                    candidate_count,
+                )
                 return
             except (_RetryableError, _ConnectionError):
                 raise
@@ -453,7 +491,7 @@ class TpapEncryptionSession:
                 last_error = exc
                 if attempt < candidate_count:
                     _LOGGER.debug(
-                        "TPAP: credential candidate %d/%d failed for %s: %s",
+                        "credential candidate %d/%d failed for %s: %s",
                         attempt,
                         candidate_count,
                         self._transport._host,
@@ -463,7 +501,7 @@ class TpapEncryptionSession:
         if last_error is not None:
             if self._uses_camera_auth and 2 in self._tpap_pake:
                 _LOGGER.debug(
-                    "TPAP: all password-based camera candidates failed for %s",
+                    "all password-based camera candidates failed for %s",
                     self._transport._host,
                 )
             raise last_error
@@ -471,6 +509,18 @@ class TpapEncryptionSession:
         raise KasaException(  # pragma: no cover
             "TPAP: handshake did not produce a session"
         )
+
+    @staticmethod
+    def _describe_extra_crypt(register_result: dict[str, Any]) -> str:
+        """Describe how the device wants the password encoded, for the log."""
+        extra_crypt = register_result.get("extra_crypt")
+        if not isinstance(extra_crypt, dict) or not extra_crypt.get("type"):
+            return "none"
+        params = extra_crypt.get("params")
+        passwd_id = params.get("passwd_id") if isinstance(params, dict) else None
+        if passwd_id is None:
+            return str(extra_crypt.get("type"))
+        return f"{extra_crypt.get('type')} passwd_id {passwd_id}"
 
     @staticmethod
     def _md5(data: bytes) -> bytes:
@@ -737,7 +787,7 @@ class TpapEncryptionSession:
             try:
                 passwd_id = int(params.get("passwd_id", 0))
             except (TypeError, ValueError):
-                _LOGGER.debug("TPAP: invalid passwd_id, using passcode")
+                _LOGGER.debug("invalid passwd_id, using passcode")
                 return passcode
             prefix = str(params.get("passwd_prefix", "") or "")
             if passwd_id == 1:
@@ -761,14 +811,14 @@ class TpapEncryptionSession:
             try:
                 sha_name = int(params.get("sha_name", -1))
             except (TypeError, ValueError):
-                _LOGGER.debug("TPAP: invalid sha_name, using passcode")
+                _LOGGER.debug("invalid sha_name, using passcode")
                 return passcode
             sha_salt_b64 = str(params.get("sha_salt", "") or "")
             username_hint = "admin" if sha_name == 0 else "user"
             try:
                 decoded_salt = base64.b64decode(sha_salt_b64).decode()
             except Exception:
-                _LOGGER.debug("TPAP: invalid base64 salt, using passcode")
+                _LOGGER.debug("invalid base64 salt, using passcode")
                 return passcode
             return cls._sha256((username_hint + decoded_salt + passcode).encode()).hex()
 
@@ -1106,10 +1156,10 @@ class TpapEncryptionSession:
                 )
             public_key.verify(signature, message, ec.ECDSA(hashes.SHA256()))
         except InvalidSignature as exc:
-            _LOGGER.error("TPAP: invalid DAC proof signature")
+            _LOGGER.error("invalid DAC proof signature")
             raise KasaException("Invalid DAC proof signature") from exc
         except Exception as exc:
-            _LOGGER.error("TPAP: DAC verification failed: %s", exc)
+            _LOGGER.error("DAC verification failed: %s", exc)
             raise KasaException(f"DAC verification failed: {exc}") from exc
 
     def _establish_session_from_share_result(
@@ -1131,7 +1181,7 @@ class TpapEncryptionSession:
             share_result.get("sessionId") or share_result.get("stok") or ""
         )
         if not session_id:
-            _LOGGER.error("TPAP: missing session ID from device")
+            _LOGGER.error("missing session ID from device")
             raise KasaException("Missing session fields from device")
         if self._shared_key is None:
             raise KasaException("TPAP shared key was not derived")
@@ -1394,6 +1444,7 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
         self._login_refused = False
         self._send_lock: asyncio.Lock = asyncio.Lock()
         self._encryption_session = TpapEncryptionSession(self)
+        _LOGGER.debug("Created TPAP transport for %s", self._host)
 
     @property
     def default_port(self) -> int:
@@ -1640,7 +1691,7 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
                 raise
 
             _LOGGER.debug(
-                "TPAP: resetting live session and retrying after error: %s",
+                "resetting live session and retrying after error: %s",
                 exc,
             )
             await self.reset()
@@ -1665,14 +1716,22 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
                 headers=headers,
                 ssl=ssl_context,
             )
+            msg = (
+                f"Host is {self._host}, Sequence is {seq}, "
+                f"Response status is {status}, Request was {request}"
+            )
             if status != 200:
+                # Debug, not error: a dropped session is logged in again
+                _LOGGER.debug("Device %s query failed: %s", self._host, msg)
                 self._raise_if_session_lost(data)
                 raise KasaException(
                     f"TPAP secure request failed for {self._host}: status {status}"
                 )
+            _LOGGER.debug("Device %s query posted %s", self._host, msg)
 
         if isinstance(data, bytes | bytearray):
             plaintext = self._encryption_session.decrypt(bytes(data), seq)
+            _LOGGER.debug("Device %s query response received", self._host)
             return self._load_json_dict(plaintext)
 
         if isinstance(data, dict):

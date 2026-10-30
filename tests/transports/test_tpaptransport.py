@@ -3401,3 +3401,85 @@ async def test_stored_config_keeps_discovered_parameters() -> None:
     assert restored._config.connection_type.tpap == tpap
     await transport.close()
     await restored.close()
+
+
+async def test_connection_logs_each_step(caplog: pytest.LogCaptureFixture) -> None:
+    """Like KLAP, the debug log shows every step of a connection, no secrets."""
+    transport = _make_tpap_transport(
+        family=DeviceFamily.SmartTapoPlug,
+        credentials=Credentials("user", "secret-pass"),
+    )
+    session = transport._encryption_session
+
+    async def post(
+        url: URL,
+        *,
+        json: dict[str, Any] | None = None,
+        data: bytes | None = None,
+        headers: dict[str, str] | None = None,
+        ssl: ssl.SSLContext | bool | None = None,
+    ) -> tuple[int, Any]:
+        if json is None:
+            return 200, data  # the /ds request, echoed
+        sub_method = json["params"]["sub_method"]
+        if sub_method == "discover":
+            return 200, _discover_response(tls=0, port=80, pake=[2])
+        if sub_method == "pake_register":
+            result = _register_result(
+                extra_crypt={"type": "password_shadow", "params": {"passwd_id": 2}},
+                cipher_suites=1,
+            )
+            return 200, {"error_code": 0, "result": result}
+        return 200, {"error_code": 0, "result": _share_result(session)}
+
+    transport._http_client.post = post  # type: ignore[assignment]
+
+    with caplog.at_level(logging.DEBUG, logger="kasa.transports.tpaptransport"):
+        await transport.send('{"result": {"ok": true}}')
+
+    messages = [record.getMessage() for record in caplog.records]
+    expected = [
+        "Starting handshake with tpap-host",
+        "Discover posted at",
+        "Using the TPAP login from the in-band discover for tpap-host: tls 0, "
+        "port 80, pake [2], dac False",
+        "pake_register posted at",
+        "pake_register success at",
+        "credential encoding is password_shadow passwd_id 2",
+        "pake_share posted at",
+        "pake_share confirmation matches the expected credentials (candidate 1/1)",
+        "Handshake with tpap-host complete",
+        "Device tpap-host query posted Host is tpap-host, Sequence is",
+        "Device tpap-host query response received",
+    ]
+    for text in expected:
+        assert any(text in message for message in messages), text
+    assert "Response status is 200" in caplog.text
+    # No credentials and no SPAKE2+ values
+    assert "secret-pass" not in caplog.text
+    assert session._user_random
+    assert session._user_random not in caplog.text
+    assert "AA:BB:CC:DD:EE:FF" not in caplog.text
+    assert not any(m.startswith("TPAP: ") for m in messages)
+    await transport.close()
+
+
+@pytest.mark.parametrize(
+    ("register_result", "expected"),
+    [
+        pytest.param({}, "none", id="missing"),
+        pytest.param({"extra_crypt": {}}, "none", id="empty"),
+        pytest.param(
+            {"extra_crypt": {"type": "password_authkey", "params": {}}},
+            "password_authkey",
+            id="type-only",
+        ),
+        pytest.param(
+            {"extra_crypt": {"type": "password_shadow", "params": {"passwd_id": 5}}},
+            "password_shadow passwd_id 5",
+            id="password-shadow",
+        ),
+    ],
+)
+def test_describe_extra_crypt(register_result: dict[str, Any], expected: str) -> None:
+    assert tp.TpapEncryptionSession._describe_extra_crypt(register_result) == expected
