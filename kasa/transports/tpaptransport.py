@@ -27,7 +27,7 @@ from ecdsa.ellipticcurve import CurveFp, PointJacobi
 from yarl import URL
 
 from kasa.credentials import Credentials
-from kasa.deviceconfig import DeviceConfig, DeviceFamily
+from kasa.deviceconfig import DeviceConfig, DeviceFamily, TpapParameters
 from kasa.exceptions import (
     SMART_AUTHENTICATION_ERRORS,
     SMART_RETRYABLE_ERRORS,
@@ -1422,6 +1422,21 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
     def is_transport_credentials_hash(cls, credentials_hash: str) -> bool:
         """Whether the hash has the shape this transport produces."""
         return Credentials._from_plaintext_hash(credentials_hash) is not None
+
+    @property
+    def tpap_parameters(self) -> TpapParameters:
+        """The TPAP login the transport uses, once it has logged in.
+
+        From the discovery reply, the in-band discover or the camera defaults.
+        """
+        return TpapParameters(
+            tls=self._known_tpap_tls or 0,
+            port=self._known_tpap_port,
+            pake=list(self._known_tpap_pake),
+            dac=self._known_tpap_dac,
+            user_hash_type=self._known_tpap_user_hash_type,
+            mac=self._known_device_mac or None,
+        )
 
     @property
     def login_refused(self) -> bool:

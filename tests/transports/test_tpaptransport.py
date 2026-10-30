@@ -3005,6 +3005,10 @@ async def test_kasa_iot_handshake_from_in_band_discover(
     assert transport._app_url.port == 80
     assert captured_register["passcode_type"] == "userpw"
     assert captured_register["username"] == tp.TpapEncryptionSession._md5_hex("admin")
+    # What the in-band discover said, as discover config prints it
+    assert transport.tpap_parameters == TpapParameters(
+        tls=1, port=0, pake=[0, 2], dac=True, mac="AA:BB:CC:DD:EE:FF"
+    )
     await transport.close()
 
 
@@ -3070,6 +3074,7 @@ async def test_camera_handshake_skips_in_band_discover(
     assert transport._app_url.port == 443
     assert captured_register["passcode_type"] == "userpw"
     assert captured_register["username"] == tp.TpapEncryptionSession._md5_hex("admin")
+    assert transport.tpap_parameters == TpapParameters(tls=1, port=443, pake=[2])
     await transport.close()
 
 

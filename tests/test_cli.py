@@ -44,11 +44,20 @@ from kasa.cli.main import TYPES, _legacy_type_to_class, cli, cmd_command, raw_co
 from kasa.cli.time import time
 from kasa.cli.usage import energy
 from kasa.cli.wifi import wifi
+from kasa.deviceconfig import (
+    DeviceConfig,
+    DeviceConnectionParameters,
+    DeviceEncryptionType,
+    DeviceFamily,
+    TpapParameters,
+)
 from kasa.discover import Discover, DiscoveryResult, redact_data
 from kasa.iot import IotDevice
 from kasa.json import dumps as json_dumps
+from kasa.protocols import SmartProtocol
 from kasa.smart import SmartDevice
 from kasa.smartcam import SmartCamDevice
+from kasa.transports import TpapTransport
 
 from .conftest import (
     device_iot,
@@ -58,6 +67,7 @@ from .conftest import (
     handle_turn_on,
     new_discovery,
     parametrize_combine,
+    parametrize_discovery,
     turn_on,
 )
 
@@ -1577,3 +1587,163 @@ def test_echo_strips_rich_tags_without_rich(monkeypatch, capsys):
     module._echo("[bold red]Only discover is available[/bold red] [ABC]")
 
     assert capsys.readouterr().out == "Only discover is available [ABC]\n"
+
+
+tpap_object_discovery = parametrize_discovery(
+    "tpap object discovery",
+    model_filter={"C101(US)_5.0_1.4.3", "KP125M(US)_1.0_1.4.1"},
+)
+
+
+@tpap_object_discovery
+async def test_state_shows_discovery_tpap_object(
+    discovery_mock, runner: CliRunner
+) -> None:
+    """The discovery block shows the tpap object, which picks TPAP."""
+    res = await runner.invoke(
+        cli,
+        [
+            "--host",
+            discovery_mock.ip,
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+            "--verbose",
+            "state",
+        ],
+    )
+
+    assert res.exit_code == 0, res.output
+    tpap = discovery_mock.discovery_data["result"]["tpap"]
+    # The output wraps at the terminal width
+    assert f"TPAP: {tpap}" in " ".join(res.output.split())
+
+
+def _capture_connect(mocker: MockerFixture, device_class: type[Device]) -> list:
+    configs: list = []
+
+    async def _connect(config):
+        configs.append(config)
+        return device_class(host=config.host, config=config)
+
+    mocker.patch("kasa.device.Device.connect", side_effect=_connect)
+    mocker.patch.object(device_class, "update")
+    mocker.patch("kasa.cli.device.state")
+    return configs
+
+
+async def test_tpap_option_sets_tpap_parameters(
+    mocker: MockerFixture, runner: CliRunner
+) -> None:
+    """--tpap gives a manual TPAP connection the values from discovery."""
+    configs = _capture_connect(mocker, SmartDevice)
+    res = await runner.invoke(
+        cli,
+        [
+            "--host",
+            "127.0.0.1",
+            "--device-family",
+            "SMART.TAPOPLUG",
+            "--encrypt-type",
+            "TPAP",
+            "--tpap",
+            '{"tls": 0, "port": 80, "pake": [2], "dac": true}',
+        ],
+    )
+
+    assert res.exit_code == 0, res.output
+    assert configs[0].connection_type.tpap == TpapParameters(
+        tls=0, port=80, pake=[2], dac=True
+    )
+
+
+async def test_type_camera_keeps_encrypt_type(
+    mocker: MockerFixture, runner: CliRunner
+) -> None:
+    """--type camera defaults to AES but keeps an explicit TPAP."""
+    configs = _capture_connect(mocker, SmartCamDevice)
+    res = await runner.invoke(
+        cli,
+        [
+            "--host",
+            "127.0.0.1",
+            "--type",
+            "camera",
+            "--encrypt-type",
+            "TPAP",
+            "--tpap",
+            '{"tls": 1, "port": 443, "pake": [2], "user_hash_type": 1}',
+        ],
+    )
+
+    assert res.exit_code == 0, res.output
+    ctype = configs[0].connection_type
+    assert ctype.device_family is DeviceFamily.SmartIpCamera
+    assert ctype.encryption_type is DeviceEncryptionType.Tpap
+    assert ctype.https is True
+    assert ctype.tpap == TpapParameters(tls=1, port=443, pake=[2], user_hash_type=1)
+
+    res = await runner.invoke(cli, ["--host", "127.0.0.1", "--type", "camera"])
+    assert res.exit_code == 0, res.output
+    assert configs[1].connection_type.encryption_type is DeviceEncryptionType.Aes
+
+
+@pytest.mark.parametrize(
+    ("args", "message"),
+    [
+        pytest.param(
+            ["--encrypt-type", "TPAP", "--tpap", "not json"],
+            "not valid TPAP parameters",
+            id="not-json",
+        ),
+        pytest.param(
+            ["--encrypt-type", "TPAP", "--tpap", '{"pake": 2}'],
+            "not valid TPAP parameters",
+            id="wrong-type",
+        ),
+        pytest.param(
+            ["--tpap", '{"tls": 0}'],
+            "--tpap is only used with --encrypt-type",
+            id="without-manual-connection",
+        ),
+    ],
+)
+async def test_tpap_option_invalid(
+    args: list[str], message: str, mocker: MockerFixture, runner: CliRunner
+) -> None:
+    connect = mocker.patch("kasa.device.Device.connect")
+    res = await runner.invoke(cli, ["--host", "127.0.0.1", *args, "state"])
+
+    assert res.exit_code != 0
+    assert message in res.output
+    connect.assert_not_called()
+
+
+async def test_discover_config_prints_tpap(
+    mocker: MockerFixture, runner: CliRunner
+) -> None:
+    """Discover config prints the TPAP login that was used, as a --tpap option."""
+    tpap = TpapParameters(tls=0, port=80, pake=[2], dac=True, mac="AA-BB-CC-DD-EE-FF")
+    config = DeviceConfig(
+        "127.0.0.1",
+        connection_type=DeviceConnectionParameters(
+            DeviceFamily.SmartTapoPlug, DeviceEncryptionType.Tpap, 2, tpap=tpap
+        ),
+    )
+    dev = SmartDevice(
+        "127.0.0.1", protocol=SmartProtocol(transport=TpapTransport(config=config))
+    )
+    mocker.patch("kasa.discover.Discover.try_connect_all", return_value=dev)
+
+    res = await runner.invoke(cli, ["--host", "127.0.0.1", "discover", "config"])
+
+    assert res.exit_code == 0, res.output
+    # The output wraps at the terminal width
+    output = " ".join(res.output.split())
+    options = output.split("cli options to connect are: ", 1)[1]
+    assert options.startswith(
+        "--device-family SMART.TAPOPLUG --encrypt-type TPAP --no-https --tpap '"
+    )
+    printed = options.split("--tpap ", 1)[1].strip("'")
+    assert TpapParameters.from_dict(json.loads(printed)) == tpap
