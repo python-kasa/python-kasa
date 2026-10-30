@@ -203,9 +203,9 @@ def _parse_tpap(ctx: click.Context, param: click.Parameter, value: str | None):
     envvar="KASA_TPAP",
     default=None,
     callback=_parse_tpap,
-    help="TPAP login from the device's discovery reply, as JSON, for "
-    "--encrypt-type TPAP without discovery, e.g. "
-    '\'{"tls": 1, "port": 443, "pake": [2]}\'.',
+    help="TPAP login from the device's discovery reply, as JSON, to connect "
+    "over TPAP without discovery, e.g. "
+    '\'{"tls": 1, "port": 443, "pake": [2]}\'. Implies --encrypt-type TPAP.',
 )
 @click.option(
     "--timeout",
@@ -301,10 +301,15 @@ async def cli(
     if alias is not None and host is not None:
         raise click.BadOptionUsage("alias", "Use either --alias or --host, not both.")
 
-    if tpap is not None and not (type in {"smart", "camera"} or encrypt_type):
-        raise click.BadOptionUsage(
-            "tpap", "--tpap is only used with --encrypt-type or --type smart/camera"
-        )
+    if tpap is not None:
+        # The TPAP values mean a TPAP connection, so they cannot be ignored
+        if type is not None and type not in {"smart", "camera"}:
+            raise click.BadOptionUsage("tpap", f"--tpap is not used with --type {type}")
+        if encrypt_type and encrypt_type.upper() != "TPAP":
+            raise click.BadOptionUsage(
+                "tpap", "--tpap is only used with --encrypt-type TPAP"
+            )
+        encrypt_type = "TPAP"
 
     if bool(password) != bool(username):
         raise click.BadOptionUsage(

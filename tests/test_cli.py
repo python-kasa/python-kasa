@@ -1658,6 +1658,55 @@ async def test_tpap_option_sets_tpap_parameters(
     )
 
 
+@pytest.mark.parametrize(
+    ("args", "device_class", "family", "https"),
+    [
+        pytest.param([], SmartDevice, DeviceFamily.SmartTapoPlug, False, id="alone"),
+        pytest.param(
+            ["--type", "smart"],
+            SmartDevice,
+            DeviceFamily.SmartTapoPlug,
+            False,
+            id="type-smart",
+        ),
+        pytest.param(
+            ["--type", "camera"],
+            SmartCamDevice,
+            DeviceFamily.SmartIpCamera,
+            True,
+            id="type-camera",
+        ),
+    ],
+)
+async def test_tpap_option_implies_tpap(
+    args: list[str],
+    device_class: type[Device],
+    family: DeviceFamily,
+    https: bool,
+    mocker: MockerFixture,
+    runner: CliRunner,
+) -> None:
+    """--tpap connects over TPAP even where KLAP or AES is the default."""
+    configs = _capture_connect(mocker, device_class)
+    res = await runner.invoke(
+        cli,
+        [
+            "--host",
+            "127.0.0.1",
+            *args,
+            "--tpap",
+            '{"tls": 1, "port": 443, "pake": [2]}',
+        ],
+    )
+
+    assert res.exit_code == 0, res.output
+    ctype = configs[0].connection_type
+    assert ctype.encryption_type is DeviceEncryptionType.Tpap
+    assert ctype.device_family is family
+    assert ctype.https is https
+    assert ctype.tpap == TpapParameters(tls=1, port=443, pake=[2])
+
+
 async def test_type_camera_keeps_encrypt_type(
     mocker: MockerFixture, runner: CliRunner
 ) -> None:
@@ -1703,9 +1752,14 @@ async def test_type_camera_keeps_encrypt_type(
             id="wrong-type",
         ),
         pytest.param(
-            ["--tpap", '{"tls": 0}'],
-            "--tpap is only used with --encrypt-type",
-            id="without-manual-connection",
+            ["--encrypt-type", "KLAP", "--tpap", '{"tls": 0}'],
+            "--tpap is only used with --encrypt-type TPAP",
+            id="other-encrypt-type",
+        ),
+        pytest.param(
+            ["--type", "plug", "--tpap", '{"tls": 0}'],
+            "--tpap is not used with --type plug",
+            id="legacy-type",
         ),
     ],
 )
