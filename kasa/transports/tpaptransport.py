@@ -97,7 +97,7 @@ class TpapEncryptionSession:
         self._tpap_tls: int | None = None
         self._tpap_port: int | None = None
         self._tpap_dac: bool = False
-        self._tpap_pake: list[int] = []
+        self._tpap_pake: list[int] | None = None
         self._tpap_user_hash_type: int | None = None
         self._session_id: str | None = None
         self._sequence: int | None = None
@@ -175,7 +175,8 @@ class TpapEncryptionSession:
         self._tpap_tls = self._transport._known_tpap_tls
         self._tpap_port = self._transport._known_tpap_port
         self._tpap_dac = self._transport._known_tpap_dac
-        self._tpap_pake = list(self._transport._known_tpap_pake)
+        known_pake = self._transport._known_tpap_pake
+        self._tpap_pake = None if known_pake is None else list(known_pake)
         self._tpap_user_hash_type = self._transport._known_tpap_user_hash_type
         self._invalidate_session()
 
@@ -266,14 +267,15 @@ class TpapEncryptionSession:
             self._tpap_tls = 2
         self._tpap_port = self._parse_optional_int(tpap.get("port"))
         self._tpap_dac = bool(tpap.get("dac"))
-        self._tpap_pake = list(tpap.get("pake") or [])
+        pake = tpap.get("pake")
+        self._tpap_pake = list(pake) if isinstance(pake, list) else None
         self._tpap_user_hash_type = self._parse_optional_int(tpap.get("user_hash_type"))
 
         self._transport._known_device_mac = self._device_mac
         self._transport._known_tpap_tls = self._tpap_tls
         self._transport._known_tpap_port = self._tpap_port
         self._transport._known_tpap_dac = self._tpap_dac
-        self._transport._known_tpap_pake = list(self._tpap_pake)
+        self._transport._known_tpap_pake = self._tpap_pake
         self._transport._known_tpap_user_hash_type = self._tpap_user_hash_type
         self._update_transport_url()
 
@@ -499,7 +501,7 @@ class TpapEncryptionSession:
                     )
 
         if last_error is not None:
-            if self._uses_camera_auth and 2 in self._tpap_pake:
+            if self._uses_camera_auth and 2 in (self._tpap_pake or []):
                 _LOGGER.debug(
                     "all password-based camera candidates failed for %s",
                     self._transport._host,
@@ -894,6 +896,9 @@ class TpapEncryptionSession:
             )
             default_passcode_type = "default_userpw"
 
+        if self._tpap_pake is None:
+            # Like the Tapo app: no announced passcode types, no credential
+            return None
         pake = set(self._tpap_pake)
         for pake_values, passcode_type in passcode_type_order:
             if pake.intersection(pake_values):
@@ -919,7 +924,7 @@ class TpapEncryptionSession:
             return [password]
         if passcode_type == "shared_token":
             return [self._md5_hex(password)]
-        if 2 not in self._tpap_pake:
+        if 2 not in (self._tpap_pake or []):
             return [password]
         return list(
             dict.fromkeys(
@@ -1430,7 +1435,7 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
         self._known_tpap_tls: int | None = None
         self._known_tpap_port: int | None = None
         self._known_tpap_dac = False
-        self._known_tpap_pake: list[int] = []
+        self._known_tpap_pake: list[int] | None = None
         self._known_tpap_user_hash_type: int | None = None
         self._has_discovery_tpap = False
         if (tpap := config.connection_type.tpap) is not None:
@@ -1439,7 +1444,7 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
             self._known_tpap_tls = tpap.tls
             self._known_tpap_port = tpap.port
             self._known_tpap_dac = tpap.dac
-            self._known_tpap_pake = list(tpap.pake)
+            self._known_tpap_pake = None if tpap.pake is None else list(tpap.pake)
             self._known_tpap_user_hash_type = tpap.user_hash_type
         self._login_refused = False
         self._send_lock: asyncio.Lock = asyncio.Lock()
@@ -1483,7 +1488,7 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
         return TpapParameters(
             tls=self._known_tpap_tls or 0,
             port=self._known_tpap_port,
-            pake=list(self._known_tpap_pake),
+            pake=self._known_tpap_pake,
             dac=self._known_tpap_dac,
             user_hash_type=self._known_tpap_user_hash_type,
             mac=self._known_device_mac or None,

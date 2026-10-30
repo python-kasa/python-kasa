@@ -105,8 +105,9 @@ class TpapParameters(_DeviceConfigBaseMixin):
     tls: int = 0
     #: Port of the TPAP endpoint, the transport default if not set
     port: int | None = None
-    #: Passcode types the device accepts, 2 is the account password
-    pake: list[int] = field(default_factory=list)
+    #: Passcode types the device accepts, 2 is the account password; None if
+    #: it announced none, which leaves nothing to log in with
+    pake: list[int] | None = None
     #: Whether the device proves itself with its attestation certificate
     dac: bool = False
     #: Camera user name hash: 0 for MD5, 1 for SHA-256

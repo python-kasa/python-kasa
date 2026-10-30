@@ -214,7 +214,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             tpap = TpapParameters(
                 tls=tpap_info.get("tls", 0),
                 port=tpap_info.get("port"),
-                pake=tpap_info.get("pake", []),
+                pake=tpap_info.get("pake"),
                 dac=bool(tpap_info.get("dac")),
                 user_hash_type=tpap_info.get("user_hash_type"),
                 mac=discovery_result["mac"],

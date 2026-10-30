@@ -884,12 +884,12 @@ class Discover:
             return value if isinstance(value, int) else None
 
         pake = tpap.get("pake")
-        if not isinstance(pake, list):
-            pake = []
         return TpapParameters(
             tls=as_int(tpap.get("tls")) or 0,
             port=as_int(tpap.get("port")),
-            pake=[value for value in pake if isinstance(value, int)],
+            pake=[value for value in pake if isinstance(value, int)]
+            if isinstance(pake, list)
+            else None,
             dac=bool(tpap.get("dac")),
             user_hash_type=as_int(tpap.get("user_hash_type")),
             mac=discovery_result.mac,

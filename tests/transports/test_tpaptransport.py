@@ -533,6 +533,7 @@ async def test_generic_tpap_session_reraises_last_candidate_error_without_hint(
     config.credentials = Credentials("user", "pass")
     transport = tp.TpapTransport(config=config)
     session = transport._encryption_session
+    session._tpap_pake = [2]
 
     async def fake_login(params: dict[str, Any], *, step_name: str) -> dict[str, Any]:
         del params
@@ -736,7 +737,7 @@ async def test_use_dac_certification_uses_discovered_dac_support(
             DeviceFamily.IotSmartBulb, [5], "default_userpw", id="kasa-iot-pake-five"
         ),
         pytest.param(
-            DeviceFamily.IotSmartBulb, [], "default_userpw", id="kasa-iot-no-pake"
+            DeviceFamily.IotSmartBulb, [], "default_userpw", id="kasa-iot-empty-pake"
         ),
         pytest.param(DeviceFamily.SmartTapoHub, [2], "userpw", id="hub-userpw"),
         pytest.param(
@@ -765,13 +766,18 @@ async def test_use_dac_certification_uses_discovered_dac_support(
             id="camera-shared-token",
         ),
         pytest.param(
-            DeviceFamily.SmartTapoPlug, [], "default_userpw", id="default-missing-pake"
+            DeviceFamily.SmartTapoPlug, [], "default_userpw", id="default-empty-pake"
         ),
-        pytest.param(DeviceFamily.SmartIpCamera, [], None, id="camera-missing-pake"),
+        pytest.param(DeviceFamily.SmartIpCamera, [], None, id="camera-empty-pake"),
+        # Like the app, no announced passcode types means nothing to log in with
+        pytest.param(DeviceFamily.SmartTapoPlug, None, None, id="default-no-pake"),
+        pytest.param(DeviceFamily.IotSmartBulb, None, None, id="kasa-iot-no-pake"),
+        pytest.param(DeviceFamily.SmartTapoRobovac, None, None, id="robot-no-pake"),
+        pytest.param(DeviceFamily.SmartIpCamera, None, None, id="camera-no-pake"),
     ],
 )
 async def test_get_passcode_type(
-    family: DeviceFamily | None, pake: list[int], expected: str | None
+    family: DeviceFamily | None, pake: list[int] | None, expected: str | None
 ) -> None:
     transport = _make_tpap_transport("tpap-host", family=family)
     session = transport._encryption_session
@@ -3483,3 +3489,18 @@ async def test_connection_logs_each_step(caplog: pytest.LogCaptureFixture) -> No
 )
 def test_describe_extra_crypt(register_result: dict[str, Any], expected: str) -> None:
     assert tp.TpapEncryptionSession._describe_extra_crypt(register_result) == expected
+
+
+async def test_no_pake_refuses_before_logging_in() -> None:
+    """A discover reply without pake sends no login, as in the Tapo app."""
+    transport = _make_tpap_transport(
+        family=DeviceFamily.SmartTapoPlug, credentials=Credentials("user", "pass")
+    )
+    response = _discover_response(tls=0, port=80)
+    del response["result"]["tpap"]["pake"]
+    counts = _fake_login_device(transport, discover=response)
+
+    with pytest.raises(AuthenticationError, match="no supported passcode type"):
+        await transport._encryption_session.perform_handshake()
+    assert counts == {"discover": 1, "pake_register": 0, "pake_share": 0}
+    await transport.close()
