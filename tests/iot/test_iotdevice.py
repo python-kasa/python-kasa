@@ -128,7 +128,9 @@ async def test_initial_update_no_emeter(dev: IotDevice, mocker: MockerFixture) -
                 break
     # 2 parent are necessary as some devices crash on unexpected modules
     # See #105, #120, #161
-    assert spy.call_count == 2 + child_calls
+    # Devices with small buffers split the module queries over 3 requests
+    expected_queries = 2 if dev.max_device_response_size > 2048 else 4
+    assert spy.call_count == expected_queries + child_calls
 
 
 @device_iot
