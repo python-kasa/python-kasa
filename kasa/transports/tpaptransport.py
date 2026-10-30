@@ -508,12 +508,9 @@ class TpapEncryptionSession:
                     register_params, step_name="pake_register"
                 )
                 _LOGGER.debug(
-                    "pake_register success at %s. Host is %s, passcode type is %s, "
-                    "credential encoding is %s",
+                    "pake_register success at %s. Host is %s",
                     datetime.now(),
                     self._transport._host,
-                    passcode_type,
-                    self._describe_extra_crypt(register_result),
                 )
                 credentials_string = self._resolve_credentials(
                     register_result,
@@ -562,18 +559,6 @@ class TpapEncryptionSession:
         raise KasaException(  # pragma: no cover
             "TPAP: handshake did not produce a session"
         )
-
-    @staticmethod
-    def _describe_extra_crypt(register_result: dict[str, Any]) -> str:
-        """Describe how the device wants the password encoded, for the log."""
-        extra_crypt = register_result.get("extra_crypt")
-        if not isinstance(extra_crypt, dict) or not extra_crypt.get("type"):
-            return "none"
-        params = extra_crypt.get("params")
-        passwd_id = params.get("passwd_id") if isinstance(params, dict) else None
-        if passwd_id is None:
-            return str(extra_crypt.get("type"))
-        return f"{extra_crypt.get('type')} passwd_id {passwd_id}"
 
     @staticmethod
     def _md5(data: bytes) -> bytes:

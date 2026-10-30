@@ -3508,7 +3508,6 @@ async def test_connection_logs_each_step(caplog: pytest.LogCaptureFixture) -> No
         "port 80, pake [2], dac False",
         "pake_register posted at",
         "pake_register success at",
-        "credential encoding is password_shadow passwd_id 2",
         "pake_share posted at",
         "pake_share confirmation matches the expected credentials (candidate 1/1)",
         "Handshake with tpap-host complete",
@@ -3525,27 +3524,6 @@ async def test_connection_logs_each_step(caplog: pytest.LogCaptureFixture) -> No
     assert "AA:BB:CC:DD:EE:FF" not in caplog.text
     assert not any(m.startswith("TPAP: ") for m in messages)
     await transport.close()
-
-
-@pytest.mark.parametrize(
-    ("register_result", "expected"),
-    [
-        pytest.param({}, "none", id="missing"),
-        pytest.param({"extra_crypt": {}}, "none", id="empty"),
-        pytest.param(
-            {"extra_crypt": {"type": "password_authkey", "params": {}}},
-            "password_authkey",
-            id="type-only",
-        ),
-        pytest.param(
-            {"extra_crypt": {"type": "password_shadow", "params": {"passwd_id": 5}}},
-            "password_shadow passwd_id 5",
-            id="password-shadow",
-        ),
-    ],
-)
-def test_describe_extra_crypt(register_result: dict[str, Any], expected: str) -> None:
-    assert tp.TpapEncryptionSession._describe_extra_crypt(register_result) == expected
 
 
 async def test_no_pake_refuses_before_logging_in() -> None:
