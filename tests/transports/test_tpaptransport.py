@@ -2280,11 +2280,34 @@ async def test_build_share_params_from_register_uses_cmac_suites() -> None:
     assert share_params["user_confirm"]
 
 
-@pytest.mark.asyncio
-async def test_verify_dac_proof_returns_early_without_required_fields() -> None:
+@pytest.mark.parametrize(
+    "share_result",
+    [
+        pytest.param({}, id="nothing"),
+        pytest.param({"dac_proof": "cHJvb2Y="}, id="no-certificate"),
+        pytest.param({"dac_ca": "cert"}, id="no-proof"),
+    ],
+)
+async def test_verify_dac_proof_fails_without_attestation(
+    share_result: dict[str, Any],
+) -> None:
+    """Like the Tapo app, an attestation that was asked for must be there."""
     transport = tp.TpapTransport(config=DeviceConfig("tpap-host"))
     session = transport._encryption_session
-    session._verify_dac_proof({})
+    session._shared_key = b"shared"
+    session._dac_nonce_base64 = base64.b64encode(b"nonce").decode()
+
+    with pytest.raises(KasaException, match="no DAC certificate or proof"):
+        session._verify_dac_proof(share_result)
+    await transport.close()
+
+
+async def test_verify_dac_proof_fails_without_nonce() -> None:
+    transport = tp.TpapTransport(config=DeviceConfig("tpap-host"))
+    session = transport._encryption_session
+
+    with pytest.raises(KasaException, match="no shared key or DAC nonce"):
+        session._verify_dac_proof({"dac_ca": "cert", "dac_proof": "cHJvb2Y="})
     await transport.close()
 
 

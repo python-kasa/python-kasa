@@ -1193,15 +1193,20 @@ class TpapEncryptionSession:
         }
 
     def _verify_dac_proof(self, share_result: dict[str, Any]) -> None:
-        """Verify DAC certificate chain and proof signature."""
+        """Verify DAC certificate chain and proof signature.
+
+        Called when the attestation was asked for. Like the Tapo app, a reply
+        without the certificate or the proof fails; the intermediate is
+        optional.
+        """
         try:
             dac_ca = str(share_result.get("dac_ca") or "")
             dac_ica = str(share_result.get("dac_ica") or "")
             dac_proof = share_result.get("dac_proof")
-            if not (
-                dac_ca and dac_proof and self._shared_key and self._dac_nonce_base64
-            ):
-                return
+            if not dac_ca or not dac_proof:
+                raise KasaException("device sent no DAC certificate or proof")
+            if not self._shared_key or not self._dac_nonce_base64:
+                raise KasaException("no shared key or DAC nonce to check it with")
             if not isinstance(dac_proof, str):
                 raise KasaException("Invalid DAC proof type")
 
