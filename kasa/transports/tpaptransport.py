@@ -46,6 +46,57 @@ from .basetransport import BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
 
+# With TLS mode 2 the device certificate names the device MAC in a
+# SubjectAltName otherName with this OID (the Tapo app's
+# TpapCertificateTrustManager).
+_TLS2_MAC_OID = x509.ObjectIdentifier("1.0.15961.13.375")
+
+
+def _der_string(value: bytes) -> str:
+    """Return the text of a DER-encoded string value, such as an OCTET STRING."""
+    if len(value) < 2:
+        return ""
+    length, offset = value[1], 2
+    if length & 0x80:
+        count = length & 0x7F
+        length, offset = int.from_bytes(value[2 : 2 + count], "big"), 2 + count
+    return value[offset : offset + length].decode("utf-8", "replace")
+
+
+def _certificate_names_mac(der: bytes | None, mac: str) -> bool:
+    """Return True if the certificate's SubjectAltName names the device MAC."""
+    if not der:
+        return False
+    try:
+        cert = x509.load_der_x509_certificate(der)
+        names = cert.extensions.get_extension_for_class(x509.SubjectAlternativeName)
+    except (ValueError, x509.ExtensionNotFound):
+        return False
+    wanted = mac.replace(":", "").replace("-", "").upper()
+    return any(
+        wanted in _der_string(name.value).replace(":", "").replace("-", "").upper()
+        for name in names.value.get_values_for_type(x509.OtherName)
+        if name.type_id == _TLS2_MAC_OID
+    )
+
+
+def _mac_checking_sslobject(mac: str) -> type[ssl.SSLObject]:
+    """Return an SSLObject class that checks the certificate names the MAC.
+
+    The check runs at the end of every TLS handshake, so it applies to the
+    connection the requests then use.
+    """
+
+    class _MacCheckingSSLObject(ssl.SSLObject):
+        def do_handshake(self) -> None:
+            super().do_handshake()
+            if not _certificate_names_mac(self.getpeercert(binary_form=True), mac):
+                raise ssl.SSLCertVerificationError(
+                    "TPAP TLS certificate does not name the device MAC"
+                )
+
+    return _MacCheckingSSLObject
+
 
 class _SessionLostError(DeviceError):
     """The device dropped the session of a request; log in again once and resend."""
@@ -1409,6 +1460,16 @@ class TpapTransport(BaseTransport):
             "ECDHE-RSA-AES128-SHA",
         ]
     )
+    TLS2_CIPHERS = ":".join(
+        [
+            "ECDHE-ECDSA-AES256-GCM-SHA384",
+            "ECDHE-ECDSA-AES256-SHA384",
+            "ECDHE-ECDSA-AES256-SHA",
+            "ECDHE-ECDSA-AES128-GCM-SHA256",
+            "ECDHE-ECDSA-AES128-SHA256",
+            "ECDHE-ECDSA-AES128-SHA",
+        ]
+    )
     COMMON_HEADERS = {"Content-Type": "application/json"}
     TPAP_ROOT_CA_PEM = """
 -----BEGIN CERTIFICATE-----
@@ -1686,6 +1747,16 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
 
         context.verify_mode = ssl.CERT_REQUIRED
         context.load_verify_locations(cadata=self.TPAP_ROOT_CA_PEM)
+        # Like the Tapo app: ECDSA suites only, and the certificate has to
+        # name this device's MAC
+        context.set_ciphers(self.TLS2_CIPHERS)
+        if mac := self._encryption_session.device_mac:
+            context.sslobject_class = _mac_checking_sslobject(mac)
+        else:
+            _LOGGER.debug(
+                "No device MAC to check the TLS certificate of %s against",
+                self._host,
+            )
         return context
 
     async def send(self, request: str) -> dict[str, Any]:

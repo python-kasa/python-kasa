@@ -3538,3 +3538,173 @@ async def test_no_pake_refuses_before_logging_in() -> None:
         await transport._encryption_session.perform_handshake()
     assert counts == {"discover": 1, "pake_register": 0, "pake_share": 0}
     await transport.close()
+
+
+# --------------------------
+# TLS mode 2: the certificate names the device MAC
+# --------------------------
+
+
+def _mac_name(text: bytes, oid: str = "1.0.15961.13.375") -> x509.GeneralName:
+    # The otherName value is an OCTET STRING holding the text
+    length = len(text)
+    header = bytes([0x04, length]) if length < 0x80 else bytes([0x04, 0x81, length])
+    return x509.OtherName(x509.ObjectIdentifier(oid), header + text)
+
+
+def _device_cert_der(names: list[x509.GeneralName] | None) -> bytes:
+    key = ec.generate_private_key(ec.SECP256R1())
+    cert = _build_certificate(key, "device", "device", key, subject_alt_names=names)
+    return cert.public_bytes(serialization.Encoding.DER)
+
+
+@pytest.mark.parametrize(
+    ("names", "mac", "expected"),
+    [
+        pytest.param([_mac_name(b"AABBCCDDEEFF")], "AA-BB-CC-DD-EE-FF", True, id="udp"),
+        pytest.param([_mac_name(b"AABBCCDDEEFF")], "aa:bb:cc:dd:ee:ff", True, id="lc"),
+        pytest.param(
+            [_mac_name(b"mac=AA:BB:CC:DD:EE:FF")], "AABBCCDDEEFF", True, id="in-text"
+        ),
+        pytest.param(
+            [_mac_name(b"x" * 200 + b"AABBCCDDEEFF")],
+            "AABBCCDDEEFF",
+            True,
+            id="long-form-length",
+        ),
+        pytest.param([_mac_name(b"112233445566")], "AABBCCDDEEFF", False, id="other"),
+        pytest.param(
+            [_mac_name(b"AABBCCDDEEFF", oid="1.2.3.4")],
+            "AABBCCDDEEFF",
+            False,
+            id="other-oid",
+        ),
+        pytest.param(
+            [x509.DNSName("AABBCCDDEEFF")], "AABBCCDDEEFF", False, id="dns-name"
+        ),
+        pytest.param(None, "AABBCCDDEEFF", False, id="no-san"),
+    ],
+)
+def test_certificate_names_mac(
+    names: list[x509.GeneralName] | None, mac: str, expected: bool
+) -> None:
+    assert tp._certificate_names_mac(_device_cert_der(names), mac) is expected
+
+
+def test_certificate_names_mac_without_certificate() -> None:
+    assert tp._certificate_names_mac(None, "AABBCCDDEEFF") is False
+    assert tp._certificate_names_mac(b"not a certificate", "AABBCCDDEEFF") is False
+
+
+@pytest.mark.parametrize("mac", ["AA-BB-CC-DD-EE-FF", ""])
+async def test_tls2_ssl_context_uses_ecdsa_and_checks_mac(mac: str) -> None:
+    """Like the app: ECDSA suites only, and the MAC check when the MAC is known."""
+    transport = _make_tpap_transport(family=DeviceFamily.SmartTapoRobovac)
+    session = transport._encryption_session
+    session._tpap_tls = 2
+    session._device_mac = mac
+
+    context = transport._create_ssl_context()
+
+    assert isinstance(context, ssl.SSLContext)
+    tls12 = [c["name"] for c in context.get_ciphers() if c["protocol"] == "TLSv1.2"]
+    assert tls12
+    assert all(name.startswith("ECDHE-ECDSA-") for name in tls12)
+    if mac:
+        assert context.sslobject_class is not ssl.SSLObject
+    else:
+        assert context.sslobject_class is ssl.SSLObject
+    await transport.close()
+
+
+def _tls_handshake(client_ctx: ssl.SSLContext, server_ctx: ssl.SSLContext) -> None:
+    """Run a TLS handshake in memory, raising what the client raises."""
+    client_in, client_out = ssl.MemoryBIO(), ssl.MemoryBIO()
+    server_in, server_out = ssl.MemoryBIO(), ssl.MemoryBIO()
+    client = client_ctx.wrap_bio(client_in, client_out)
+    server = server_ctx.wrap_bio(server_in, server_out, server_side=True)
+    client_done = server_done = False
+    for _ in range(10):
+        if not client_done:
+            try:
+                client.do_handshake()
+                client_done = True
+            except ssl.SSLWantReadError:
+                pass
+        server_in.write(client_out.read())
+        if not server_done:
+            try:
+                server.do_handshake()
+                server_done = True
+            except ssl.SSLWantReadError:
+                pass
+        client_in.write(server_out.read())
+        if client_done and server_done:
+            return
+    raise AssertionError("handshake did not finish")
+
+
+@pytest.mark.parametrize(
+    ("cert_mac", "matches"),
+    [
+        pytest.param(b"AABBCCDDEEFF", True, id="device-mac"),
+        pytest.param(b"112233445566", False, id="other-device"),
+    ],
+)
+async def test_tls2_handshake_requires_device_mac(
+    tmp_path: Any, monkeypatch: pytest.MonkeyPatch, cert_mac: bytes, matches: bool
+) -> None:
+    """A real TLS handshake fails unless the certificate names the device MAC."""
+    root_key = ec.generate_private_key(ec.SECP256R1())
+    root = _build_certificate(root_key, "test root", "test root", root_key, is_ca=True)
+    device_key = ec.generate_private_key(ec.SECP256R1())
+    device = _build_certificate(
+        device_key,
+        "device",
+        "test root",
+        root_key,
+        subject_alt_names=[_mac_name(cert_mac)],
+    )
+    cert_file, key_file = tmp_path / "device.pem", tmp_path / "device.key"
+    cert_file.write_bytes(device.public_bytes(serialization.Encoding.PEM))
+    key_file.write_bytes(
+        device_key.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
+    )
+    server_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    server_ctx.load_cert_chain(cert_file, key_file)
+
+    monkeypatch.setattr(
+        tp.TpapTransport,
+        "TPAP_ROOT_CA_PEM",
+        root.public_bytes(serialization.Encoding.PEM).decode(),
+    )
+    transport = _make_tpap_transport(family=DeviceFamily.SmartTapoRobovac)
+    session = transport._encryption_session
+    session._tpap_tls = 2
+    session._device_mac = "AA-BB-CC-DD-EE-FF"
+    client_ctx = transport._create_ssl_context()
+    assert isinstance(client_ctx, ssl.SSLContext)
+
+    if matches:
+        _tls_handshake(client_ctx, server_ctx)
+    else:
+        with pytest.raises(ssl.SSLCertVerificationError, match="device MAC"):
+            _tls_handshake(client_ctx, server_ctx)
+    await transport.close()
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        pytest.param(b"", "", id="empty"),
+        pytest.param(b"\x04", "", id="no-length"),
+        pytest.param(b"\x04\x03abc", "abc", id="short-form"),
+        pytest.param(b"\x04\x81\x03abc", "abc", id="long-form"),
+    ],
+)
+def test_der_string(value: bytes, expected: str) -> None:
+    assert tp._der_string(value) == expected
