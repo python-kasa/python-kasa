@@ -878,6 +878,13 @@ def scrub_child_device_ids(
             _LOGGER.error(
                 "Cannot find device id in child get device info: %s", child_id
             )
+        # Thermostats can reference another child as their temperature source
+        if (correction := response.get("get_temperature_correction")) and (
+            sensor_id := correction.get("temp_sensor_device_id")
+        ):
+            correction["temp_sensor_device_id"] = scrubbed_child_id_map.get(
+                sensor_id, "SCRUBBED_DEVICE_ID"
+            )
 
     # Scrub the device ids in the parent for smart protocol
     if gc := main_response.get("get_child_device_component_list"):
