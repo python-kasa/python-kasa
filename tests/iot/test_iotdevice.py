@@ -332,6 +332,19 @@ async def test_modules_not_supported(dev: IotDevice) -> None:
         assert module.is_supported is not None
 
 
+async def test_update_skips_unsupported_modules(mocker: MockerFixture) -> None:
+    """Test that a module the device doesn't support is left out of the update."""
+    dev = await get_device_for_fixture_protocol("HS100(US)_2.0_1.5.6.json", "IOT")
+    dev._last_update["cnCloud"] = {"err_code": -1, "err_msg": "module not support"}
+    assert not dev.modules[Module.IotCloud].is_supported
+
+    spy = mocker.spy(dev.protocol, "query")
+    await dev.update()
+
+    assert spy.call_count == 1
+    assert "cnCloud" not in spy.call_args.args[0]
+
+
 async def test_get_modules() -> None:
     """Test getting modules for child and parent modules."""
     dummy_device = await get_device_for_fixture_protocol(
