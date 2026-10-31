@@ -21,6 +21,7 @@ from kasa.exceptions import (
     KasaException,
     TimeoutError,
     _ConnectionError,
+    _InvalidResponseError,
     _RetryableError,
 )
 from kasa.httpclient import HttpClient
@@ -325,8 +326,100 @@ async def test_transport_decrypt_error(
     with pytest.raises(
         KasaException,
         match=re.escape("Error trying to decrypt device 127.0.0.1 response:"),
+    ) as excinfo:
+        await transport.send(json.dumps({}))
+    assert not isinstance(excinfo.value, _InvalidResponseError)
+
+
+HTML_PAGE = b"<html><body><center>200 OK</center></body></html>"
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        pytest.param(HTML_PAGE, id="html-page"),
+        pytest.param(b"", id="empty"),
+        pytest.param(secrets.token_bytes(32), id="signature-only"),
+        pytest.param(secrets.token_bytes(32 + 17), id="partial-block"),
+    ],
+)
+async def test_transport_invalid_response(
+    mocker: MockerFixture, response: bytes
+) -> None:
+    """Test that a response that is not a KLAP message raises a clear error."""
+    seed = secrets.token_bytes(16)
+    auth_hash = KlapTransport.generate_auth_hash(Credentials("foo", "bar"))
+
+    transport = KlapTransport(config=DeviceConfig(host="127.0.0.1"))
+    transport._handshake_done = True
+    transport._session_expire_at = time.monotonic() + 60
+    transport._encryption_session = KlapEncryptionSession(seed, seed, auth_hash)
+
+    mocker.patch.object(HttpClient, "post", return_value=(200, response))
+
+    with pytest.raises(
+        _InvalidResponseError,
+        match=re.escape(
+            "Device 127.0.0.1 sent a response that is not a KLAP message "
+            f"({len(response)} bytes)"
+        ),
     ):
         await transport.send(json.dumps({}))
+
+
+@pytest.mark.parametrize("transport_class", [KlapTransport, KlapTransportV2])
+async def test_protocol_invalid_response(
+    mocker: MockerFixture, transport_class: type[KlapTransport]
+) -> None:
+    """Test that an invalid response is not retried and resets the session."""
+    server_seed = secrets.token_bytes(16)
+    client_credentials = Credentials("foo", "bar")
+    device_auth_hash = transport_class.generate_auth_hash(client_credentials)
+    handshakes = 0
+    requests = 0
+
+    async def _return_response(url: URL, params=None, data=None, *_, **__):
+        nonlocal handshakes, requests
+
+        if url == URL("http://127.0.0.1:80/app/handshake1"):
+            handshakes += 1
+            seed_auth_hash = _sha256(
+                data + server_seed + device_auth_hash
+                if transport_class is KlapTransportV2
+                else data + device_auth_hash
+            )
+            return _mock_response(200, server_seed + seed_auth_hash)
+        elif url == URL("http://127.0.0.1:80/app/handshake2"):
+            return _mock_response(200, b"")
+        elif url == URL("http://127.0.0.1:80/app/request"):
+            requests += 1
+            if requests == 1:
+                return _mock_response(200, HTML_PAGE)
+            assert transport._encryption_session is not None
+            encryption_session = KlapEncryptionSession(
+                transport._encryption_session.local_seed,
+                transport._encryption_session.remote_seed,
+                transport._encryption_session.user_hash,
+            )
+            encryption_session._seq = params.get("seq") - 1
+            encrypted, _seq = encryption_session.encrypt('{"great": "success"}')
+            return _mock_response(200, encrypted)
+
+    mocker.patch.object(aiohttp.ClientSession, "post", side_effect=_return_response)
+
+    config = DeviceConfig("127.0.0.1", credentials=client_credentials)
+    transport = transport_class(config=config)
+    protocol = IotProtocol(transport=transport)
+
+    with pytest.raises(_InvalidResponseError):
+        await protocol.query(DUMMY_QUERY)
+    assert requests == 1
+    assert handshakes == 1
+    assert transport._handshake_done is False
+
+    assert await protocol.query(DUMMY_QUERY) == {"great": "success"}
+    assert requests == 2
+    assert handshakes == 2
 
 
 @pytest.mark.parametrize(
