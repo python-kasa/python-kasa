@@ -13,6 +13,10 @@ shutdownmode = parametrize(
     protocol_filter={"SMART.CHILD"},
 )
 
+hubs_with_children = parametrize(
+    "smart hubs", model_filter={"KH100"}, protocol_filter={"SMART"}
+)
+
 
 @shutdownmode
 async def test_enabled_and_position(dev: SmartDevice) -> None:
@@ -153,3 +157,30 @@ async def test_shutdown_replaces_heating_and_survives_setpoint_writes(
 async def test_firmware_rejects_invalid_writes(dev: SmartDevice, params: dict) -> None:
     with pytest.raises(DeviceError):
         await dev.modules[Module.ShutdownMode].call("set_shutdown_info", params)
+
+
+@hubs_with_children
+async def test_data_survives_update_of_other_modules(
+    dev: SmartDevice, mocker: MockerFixture
+) -> None:
+    """Hub child modules update on their own schedule, and must keep each other's data."""
+    children = [
+        child
+        for child in dev.children
+        if Module.ShutdownMode in child.modules
+        and Module.TemperatureRecords in child.modules
+    ]
+    if not children:
+        pytest.skip("Needs a child with shutdown mode and temperature records")
+
+    for child in children:
+        mod = child.modules[Module.ShutdownMode]
+        position = mod.valve_position
+        mocker.patch.object(mod, "_should_update", return_value=False)
+        mocker.patch.object(
+            child.modules[Module.TemperatureRecords],
+            "_should_update",
+            return_value=True,
+        )
+        await child.update()
+        assert mod.valve_position == position

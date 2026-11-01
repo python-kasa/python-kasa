@@ -109,7 +109,7 @@ class SmartChildDevice(SmartDevice):
                 resp = await self._handle_modular_update_error(
                     ex, first_update, ", ".join(mod.name for mod in module_queries), req
                 )
-            self._last_update = resp
+            self._last_update.update(resp)
 
         for module in self.modules.values():
             await self._handle_module_post_update(
