@@ -28,6 +28,7 @@ from kasa.discover import (
 from kasa.iot.iotdevice import _extract_sys_info
 from kasa.protocols.iotprotocol import REDACTORS as IOT_REDACTORS
 from kasa.protocols.protocol import redact_data
+from kasa.transports.tpaptransport import TpapTransport
 
 from ..json import dumps as json_dumps
 from .common import echo, error
@@ -275,12 +276,18 @@ async def config(ctx: click.Context) -> DeviceDict:
     )
     if dev:
         cparams = dev.config.connection_type
-        echo("Managed to connect, cli options to connect are:")
-        echo(
+        options = (
             f"--device-family {cparams.device_family.value} "
             f"--encrypt-type {cparams.encryption_type.value} "
             f"{'--https' if cparams.https else '--no-https'}"
         )
+        transport = dev.protocol._transport
+        if isinstance(transport, TpapTransport):
+            # What the login used, so the next one need not ask the device
+            tpap = json_dumps(transport.tpap_parameters.to_dict())
+            options += f" --tpap '{tpap}'"
+        echo("Managed to connect, cli options to connect are:")
+        echo(options)
         return {host: dev}
     else:
         error(f"Unable to connect to {host}")
@@ -334,6 +341,8 @@ def _echo_discovery_info(discovery_info: dict) -> None:
         _conditional_echo("Supports HTTPS", mgt_encrypt_schm.is_support_https)
         _conditional_echo("HTTP Port", mgt_encrypt_schm.http_port)
         _conditional_echo("Login version", mgt_encrypt_schm.lv)
+    # The tpap object picks TPAP, whatever the encrypt type above says
+    _conditional_echo("TPAP", dr.tpap)
     _conditional_echo("Encrypt info", pf(dr.encrypt_info) if dr.encrypt_info else None)
     _conditional_echo("Decrypted", pf(dr.decrypted_data) if dr.decrypted_data else None)
 

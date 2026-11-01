@@ -119,6 +119,7 @@ from kasa.deviceconfig import (
     DeviceConfig,
     DeviceConnectionParameters,
     DeviceEncryptionType,
+    TpapParameters,
 )
 from kasa.exceptions import (
     KasaException,
@@ -132,6 +133,7 @@ from kasa.json import loads as json_loads
 from kasa.protocols.iotprotocol import REDACTORS as IOT_REDACTORS
 from kasa.protocols.protocol import mask_mac, redact_data
 from kasa.transports.aestransport import AesEncyptionSession, KeyPair
+from kasa.transports.tpaptransport import TpapTransport
 from kasa.transports.xortransport import XorEncryption
 
 _LOGGER = logging.getLogger(__name__)
@@ -678,9 +680,14 @@ class Discover:
                 )
             )
         }
+        tpap_refused = False
         for key, val in candidates.items():
             try:
                 prot, config = val
+                if tpap_refused and isinstance(prot._transport, TpapTransport):
+                    # A device that refused the credentials over TPAP would
+                    # count each further attempt toward its lockout
+                    continue
                 _LOGGER.debug("Trying to connect with %s", prot.__class__.__name__)
                 dev = await _connect(config, prot)
             except Exception as ex:
@@ -689,6 +696,9 @@ class Discover:
                     prot.__class__.__name__,
                     ex,
                 )
+                transport = prot._transport
+                if isinstance(transport, TpapTransport) and transport.login_refused:
+                    tpap_refused = True
                 if on_attempt:
                     ca = tuple.__new__(ConnectAttempt, key)
                     on_attempt(ca, False)
@@ -838,6 +848,13 @@ class Discover:
             # reports as sym_schm AES.
             encrypt_type = DeviceEncryptionType.Aes.value
 
+        tpap = None
+        if discovery_result.tpap is not None:
+            # The tpap object is what makes the Tapo app use TPAP, for every
+            # family. Cameras still advertise AES in encrypt_type.
+            encrypt_type = DeviceEncryptionType.Tpap.value
+            tpap = Discover._get_tpap_parameters(discovery_result)
+
         if not encrypt_type:
             raise UnsupportedDeviceError(
                 f"Unsupported device {discovery_result.ip} of type {type_} "
@@ -851,6 +868,31 @@ class Discover:
             login_version=login_version,
             https=encrypt_schm.is_support_https,
             http_port=encrypt_schm.http_port,
+            tpap=tpap,
+        )
+
+    @staticmethod
+    def _get_tpap_parameters(discovery_result: DiscoveryResult) -> TpapParameters:
+        """Get the TPAP login from the discovery tpap object.
+
+        Values of the wrong type are left at their defaults, so that a
+        malformed object does not make the device unsupported.
+        """
+        tpap = discovery_result.tpap or {}
+
+        def as_int(value: Any) -> int | None:
+            return value if isinstance(value, int) else None
+
+        pake = tpap.get("pake")
+        return TpapParameters(
+            tls=as_int(tpap.get("tls")) or 0,
+            port=as_int(tpap.get("port")),
+            pake=[value for value in pake if isinstance(value, int)]
+            if isinstance(pake, list)
+            else None,
+            dac=bool(tpap.get("dac")),
+            user_hash_type=as_int(tpap.get("user_hash_type")),
+            mac=discovery_result.mac,
         )
 
     @staticmethod
@@ -983,6 +1025,8 @@ class DiscoveryResult(_DiscoveryBaseMixin):
     ip: str
     mac: str
     mgt_encrypt_schm: EncryptionScheme | None = None
+    # Kept as sent, Discover._get_tpap_parameters reads it leniently
+    tpap: dict | None = None
     device_name: str | None = None
     encrypt_info: EncryptionInfo | None = None
     encrypt_type: list[str] | None = None
