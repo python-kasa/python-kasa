@@ -34,8 +34,12 @@ async def hub(dev: Device):
 @pass_dev
 async def hub_list(dev: Device):
     """List hub paired child devices."""
-    for c in dev.children:
-        echo(f"{c.device_id}: {c}")
+    echo(f"{'INDEX':<5} {'DEVICE ID':<40} {'MODEL':<9} {'AVAILABLE':<9} ALIAS")
+    for index, child in enumerate(dev.children):
+        echo(
+            f"{index:<5} {child.device_id:<40} {child.model:<9} "
+            f"{child.is_available!s:<9} {child.alias}"
+        )
 
 
 @hub.command(name="supported")
