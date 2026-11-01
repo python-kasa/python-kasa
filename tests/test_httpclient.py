@@ -3,6 +3,8 @@ import re
 
 import aiohttp
 import pytest
+from aiohttp.http_exceptions import HttpProcessingError
+from multidict import CIMultiDict, CIMultiDictProxy
 from pytest_mock import MockerFixture
 from yarl import URL
 
@@ -11,8 +13,22 @@ from kasa.exceptions import (
     KasaException,
     TimeoutError,
     _ConnectionError,
+    _InvalidResponseError,
 )
 from kasa.httpclient import HttpClient
+
+
+def _response_error(cause: Exception | None) -> aiohttp.ClientResponseError:
+    """Return the error aiohttp raises for a response, with its cause."""
+    url = URL("http://127.0.0.1/app/request")
+    request_info = aiohttp.RequestInfo(
+        url, "POST", CIMultiDictProxy(CIMultiDict()), url
+    )
+    error = aiohttp.ClientResponseError(
+        request_info, (), status=400, message="Bad status line"
+    )
+    error.__cause__ = cause
+    return error
 
 
 @pytest.mark.parametrize(
@@ -51,6 +67,17 @@ from kasa.httpclient import HttpClient
             KasaException,
             "Unable to query the device: ",
         ),
+        # A plain html page without an http status line can't be parsed.
+        (
+            _response_error(HttpProcessingError(code=400, message="Bad status line")),
+            _InvalidResponseError,
+            "Unable to parse the device response: ",
+        ),
+        (
+            _response_error(None),
+            KasaException,
+            "Unable to query the device: ",
+        ),
     ],
     ids=(
         "ServerDisconnectedError",
@@ -60,6 +87,8 @@ from kasa.httpclient import HttpClient
         "BuiltinTimeoutError",
         "Exception",
         "ServerFingerprintMismatch",
+        "ParseError",
+        "ClientResponseError",
     ),
 )
 @pytest.mark.parametrize("mock_read", [False, True], ids=("post", "read"))
@@ -110,6 +139,7 @@ async def test_httpclient_errors(
         await client.post(URL("http://foobar"))
 
     assert re.match(full_msg, str(exc_info.value))
+    assert type(exc_info.value) is error_raises
     if mock_read:
         assert mock_response.call_count == 1
     else:

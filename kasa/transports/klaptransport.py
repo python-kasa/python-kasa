@@ -60,7 +60,12 @@ from yarl import URL
 
 from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
 from kasa.deviceconfig import DeviceConfig
-from kasa.exceptions import AuthenticationError, KasaException, _RetryableError
+from kasa.exceptions import (
+    AuthenticationError,
+    KasaException,
+    _InvalidResponseError,
+    _RetryableError,
+)
 from kasa.httpclient import HttpClient
 from kasa.json import loads as json_loads
 from kasa.protocols.protocol import md5
@@ -396,6 +401,13 @@ class KlapTransport(BaseTransport):
             if TYPE_CHECKING:
                 assert self._encryption_session
                 assert isinstance(response_data, bytes)
+            # A message is a 32 byte signature followed by whole AES blocks.
+            # Some devices answer a request they reject with a plain html page.
+            if len(response_data) < 48 or (len(response_data) - 32) % 16:
+                raise _InvalidResponseError(
+                    f"Device {self._host} sent a response that is not a KLAP "
+                    f"message ({len(response_data)} bytes): {response_data[:64]!r}"
+                )
             try:
                 decrypted_response = self._encryption_session.decrypt(response_data)
             except Exception as ex:
