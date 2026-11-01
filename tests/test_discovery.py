@@ -798,3 +798,30 @@ async def test_connection_parameters_from_encrypt_type_list_only():
     result["encrypt_type"] = ["9"]
     with pytest.raises(UnsupportedDeviceError, match="no encryption type"):
         Discover._get_connection_parameters(DiscoveryResult.from_dict(result))
+
+
+async def test_connection_parameters_unsupported_encrypt_type():
+    """An unknown encrypt_type is named in the error."""
+    result = {
+        "device_type": "SMART.TAPOROBOVAC",
+        "device_model": "RV20 Max Plus(EU)",
+        "device_id": "0000000000000000000000000000000000000000",
+        "ip": "127.0.0.123",
+        "mac": "B0-19-21-00-00-00",
+        "mgt_encrypt_schm": {
+            "is_support_https": True,
+            "http_port": 4433,
+            "encrypt_type": "TPAP",
+            "lv": 2,
+        },
+    }
+    with pytest.raises(
+        UnsupportedDeviceError,
+        match=(
+            r"^Device 127\.0\.0\.123 \(SMART\.TAPOROBOVAC\) uses unsupported "
+            r"encryption type TPAP$"
+        ),
+    ) as exc_info:
+        Discover._get_connection_parameters(DiscoveryResult.from_dict(result))
+    assert exc_info.value.host == "127.0.0.123"
+    assert exc_info.value.discovery_result
