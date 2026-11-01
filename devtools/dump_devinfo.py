@@ -36,7 +36,6 @@ from kasa import (
     KasaException,
     TimeoutError,
 )
-from kasa.device_factory import get_protocol
 from kasa.deviceconfig import DeviceEncryptionType, DeviceFamily
 from kasa.discover import (
     NEW_DISCOVERY_REDACTORS,
@@ -53,6 +52,7 @@ from kasa.protocols.smartcamprotocol import (
 )
 from kasa.protocols.smartprotocol import REDACTORS as SMART_REDACTORS
 from kasa.protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
+from kasa.registry import REGISTRY
 from kasa.smart import SmartChildDevice, SmartDevice
 from kasa.smartcam import SmartCamChild, SmartCamDevice
 from kasa.smartcam.smartcamchild import CHILD_INFO_FROM_PARENT
@@ -321,10 +321,10 @@ async def cli(
             )
         elif device_family and encrypt_type:
             ctype = DeviceConnectionParameters(
-                DeviceFamily(device_family),
-                DeviceEncryptionType(encrypt_type),
-                login_version,
-                https,
+                device_family=DeviceFamily(device_family),
+                encryption_type=DeviceEncryptionType(encrypt_type),
+                login_version=login_version,
+                https=https,
             )
             config = DeviceConfig(
                 host=host,
@@ -333,7 +333,7 @@ async def cli(
                 connection_type=ctype,
                 timeout=timeout,
             )
-            if protocol := get_protocol(config):
+            if protocol := REGISTRY.get_protocol(config):
                 await handle_device(basedir, autosave, protocol, batch_size=batch_size)
             else:
                 raise KasaException(
