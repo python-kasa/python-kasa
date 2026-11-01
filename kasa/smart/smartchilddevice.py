@@ -51,6 +51,7 @@ class SmartChildDevice(SmartDevice):
         _protocol = protocol or _ChildProtocolWrapper(self._id, parent.protocol)
         super().__init__(parent.host, config=parent.config, protocol=_protocol)
         self._parent = parent
+        self._was_available = True
         self._update_internal_state(info)
         self._components_raw = component_info_raw
         self._components = self._parse_components(self._components_raw)
@@ -85,6 +86,10 @@ class SmartChildDevice(SmartDevice):
         Internal implementation to allow patching of public update in the cli
         or test framework.
         """
+        if (available := self.is_available) != self._was_available:
+            self._was_available = available
+            _LOGGER.debug("%s (%s) available: %s", self.alias, self._id, available)
+
         now = time.monotonic()
         module_queries: list[SmartModule] = []
         req: dict[str, Any] = {}

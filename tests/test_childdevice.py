@@ -1,4 +1,5 @@
 import inspect
+import logging
 from datetime import UTC, datetime
 
 import pytest
@@ -197,6 +198,32 @@ async def test_unavailable_child_refuses_writes(
 
     await child._query_helper("get_device_info")
     query.assert_called_once()
+
+
+@hub_smart
+@pytest.mark.requires_dummy
+@pytest.mark.xdist_group(name="caplog")
+async def test_child_availability_change_logged_once(
+    dev: Device, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Test going offline and coming back are each logged once."""
+    if not dev.children:
+        pytest.skip(f"Device {dev} fixture does not have any children")
+
+    assert isinstance(dev.protocol._transport, FakeSmartTransport)
+    child_info = dev.protocol._transport.info["get_child_device_list"]
+    child_id = child_info["child_device_list"][0]["device_id"]
+    caplog.set_level(logging.DEBUG)
+
+    child_info["child_device_list"][0]["status"] = "offline"
+    await dev.update()
+    await dev.update()
+    assert caplog.text.count(f"({child_id}) available: False") == 1
+
+    child_info["child_device_list"][0]["status"] = "online"
+    await dev.update()
+    await dev.update()
+    assert caplog.text.count(f"({child_id}) available: True") == 1
 
 
 @has_children_smart
