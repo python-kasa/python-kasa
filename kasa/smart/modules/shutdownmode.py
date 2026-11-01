@@ -12,20 +12,19 @@ from ...feature import Feature
 from ..smartmodule import SmartModule, allow_update_after
 
 VALVE_POSITIONS = ["full_closed", "full_open"]
-#: Firmware rejects anything outside of these ranges.
-#: Days count from Sunday: the Kasa app shows 1 as Monday.
-ANTI_BLOCKING_DAY_RANGE = (0, 6)
+#: Indexed by the firmware's day value, which accepts 0-6.
+#: The Kasa app shows 1 as Monday.
+ANTI_BLOCKING_DAYS = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+]
+#: Firmware rejects anything outside of this range.
 ANTI_BLOCKING_MINUTE_RANGE = (0, 1439)
-
-
-def _validate_integer(name: str, value: float, allowed: tuple[int, int]) -> int:
-    """Return value as an int, raising ValueError unless it is a valid integer."""
-    low, high = allowed
-    if not low <= value <= high or value != int(value):
-        raise ValueError(
-            f"Invalid {name} {value}, must be an integer in range [{low},{high}]"
-        )
-    return int(value)
 
 
 class ShutdownMode(SmartModule):
@@ -84,8 +83,8 @@ class ShutdownMode(SmartModule):
                 container=self,
                 attribute_getter="anti_blocking_day",
                 attribute_setter="set_anti_blocking_day",
-                range_getter=lambda: ANTI_BLOCKING_DAY_RANGE,
-                type=Feature.Type.Number,
+                choices_getter=lambda: ANTI_BLOCKING_DAYS,
+                type=Feature.Type.Choice,
                 category=Feature.Category.Config,
             )
         )
@@ -150,14 +149,16 @@ class ShutdownMode(SmartModule):
         return await self._set_shutdown_info(anti_clogging_enable=enable)
 
     @property
-    def anti_blocking_day(self) -> int:
-        """Return the day of the valve movement, where 0 is Sunday and 1 is Monday."""
-        return self.data["anti_clogging_day"]
+    def anti_blocking_day(self) -> str:
+        """Return the name of the day of the valve movement."""
+        return ANTI_BLOCKING_DAYS[self.data["anti_clogging_day"]]
 
-    async def set_anti_blocking_day(self, day: float) -> dict:
-        """Set the day of the valve movement, where 0 is Sunday and 1 is Monday."""
+    async def set_anti_blocking_day(self, day: str) -> dict:
+        """Set the day of the valve movement by name."""
+        if day not in ANTI_BLOCKING_DAYS:
+            raise ValueError(f"Invalid day {day}, must be one of {ANTI_BLOCKING_DAYS}")
         return await self._set_shutdown_info(
-            anti_clogging_day=_validate_integer("day", day, ANTI_BLOCKING_DAY_RANGE)
+            anti_clogging_day=ANTI_BLOCKING_DAYS.index(day)
         )
 
     @property
@@ -167,8 +168,9 @@ class ShutdownMode(SmartModule):
 
     async def set_anti_blocking_minute(self, minute: float) -> dict:
         """Set the minute of day of the valve movement."""
-        return await self._set_shutdown_info(
-            anti_clogging_min=_validate_integer(
-                "minute", minute, ANTI_BLOCKING_MINUTE_RANGE
+        low, high = ANTI_BLOCKING_MINUTE_RANGE
+        if not low <= minute <= high or minute != int(minute):
+            raise ValueError(
+                f"Invalid minute {minute}, must be an integer in range [{low},{high}]"
             )
-        )
+        return await self._set_shutdown_info(anti_clogging_min=int(minute))

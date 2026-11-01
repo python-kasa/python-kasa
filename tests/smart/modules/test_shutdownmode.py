@@ -75,11 +75,11 @@ async def test_anti_blocking(dev: SmartDevice) -> None:
         return
 
     await dev.features["anti_blocking"].set_value(True)
-    await dev.features["anti_blocking_day"].set_value(6)
+    await dev.features["anti_blocking_day"].set_value("Saturday")
     await dev.features["anti_blocking_minute"].set_value(1439)
     await dev.update()
     assert mod.anti_blocking_enabled is True
-    assert mod.anti_blocking_day == 6
+    assert mod.anti_blocking_day == "Saturday"
     assert mod.anti_blocking_minute == 1439
 
 
@@ -87,14 +87,13 @@ async def test_anti_blocking(dev: SmartDevice) -> None:
 @pytest.mark.parametrize(
     ("setter", "value", "match"),
     [
-        ("set_anti_blocking_day", 7, "Invalid day"),
-        ("set_anti_blocking_day", 3.5, "Invalid day"),
+        ("set_anti_blocking_day", "Someday", "Invalid day"),
         ("set_anti_blocking_minute", 1440, "Invalid minute"),
         ("set_anti_blocking_minute", 600.5, "Invalid minute"),
     ],
 )
 async def test_anti_blocking_invalid_values(
-    dev: SmartDevice, setter: str, value: float, match: str
+    dev: SmartDevice, setter: str, value: float | str, match: str
 ) -> None:
     mod = dev.modules[Module.ShutdownMode]
     with pytest.raises(ValueError, match=match):
@@ -108,10 +107,24 @@ async def test_whole_number_floats_are_sent_as_integers(
     mod = dev.modules[Module.ShutdownMode]
     call = mocker.spy(mod, "call")
 
-    await mod.set_anti_blocking_day(3.0)
+    await mod.set_anti_blocking_minute(600.0)
     params = call.call_args.args[1]
-    assert params["anti_clogging_day"] == 3
-    assert isinstance(params["anti_clogging_day"], int)
+    assert params["anti_clogging_min"] == 600
+    assert isinstance(params["anti_clogging_min"], int)
+
+
+@shutdownmode
+@pytest.mark.parametrize(
+    ("name", "firmware_value"), [("Sunday", 0), ("Monday", 1), ("Saturday", 6)]
+)
+async def test_anti_blocking_day_names_map_to_firmware_values(
+    dev: SmartDevice, mocker: MockerFixture, name: str, firmware_value: int
+) -> None:
+    mod = dev.modules[Module.ShutdownMode]
+    call = mocker.spy(mod, "call")
+
+    await mod.set_anti_blocking_day(name)
+    assert call.call_args.args[1]["anti_clogging_day"] == firmware_value
 
 
 @shutdownmode
