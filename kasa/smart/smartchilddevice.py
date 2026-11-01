@@ -109,6 +109,15 @@ class SmartChildDevice(SmartDevice):
                 resp = await self._handle_modular_update_error(
                     ex, first_update, ", ".join(mod.name for mod in module_queries), req
                 )
+            if _LOGGER.isEnabledFor(logging.DEBUG) and (
+                cached_keys := self._last_update.keys() - resp.keys()
+            ):
+                _LOGGER.debug(
+                    "Keeping cached responses for %s (%s): %s",
+                    self.alias,
+                    self._id,
+                    sorted(cached_keys),
+                )
             # Modules not due for an update still need their cached responses.
             self._last_update.update(resp)
 

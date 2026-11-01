@@ -9,6 +9,7 @@ from pytest_mock import MockerFixture
 
 from kasa import Device, DeviceUnavailableError, Module
 from kasa.device_type import DeviceType
+from kasa.exceptions import SmartErrorCode
 from kasa.protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 from kasa.smart.smartchilddevice import SmartChildDevice
 from kasa.smart.smartdevice import NON_HUB_PARENT_ONLY_MODULES, SmartDevice
@@ -269,8 +270,9 @@ async def test_child_device_type_unknown(caplog: pytest.LogCaptureFixture) -> No
     protocol_filter={"SMART"},
 )
 @pytest.mark.requires_dummy
+@pytest.mark.xdist_group(name="caplog")
 async def test_child_partial_update_keeps_module_data(
-    dev: SmartDevice, mocker: MockerFixture
+    dev: SmartDevice, mocker: MockerFixture, caplog: pytest.LogCaptureFixture
 ) -> None:
     """Keep cached module data when only another child module is queried."""
     child = next(
@@ -287,11 +289,81 @@ async def test_child_partial_update_keeps_module_data(
     due = child.modules[Module.Cloud]
     due._last_update_time = None
     query = mocker.spy(child.protocol, "query")
+    retained_keys = sorted(child._last_update.keys() - due.query().keys())
 
-    await child.update()
+    with caplog.at_level(logging.DEBUG, logger="kasa.smart.smartchilddevice"):
+        await child.update()
 
     query.assert_called_once_with(due.query())
     assert cached.data == cached_data
     assert cached.logs == cached_logs
     assert due.data
     assert cached._last_update_error is None
+    assert caplog.messages == [
+        f"Keeping cached responses for {child.alias} ({child.device_id}): "
+        f"{retained_keys}"
+    ]
+
+    caplog.clear()
+    with caplog.at_level(logging.DEBUG, logger="kasa.smart.smartchilddevice"):
+        await child.update()
+
+    query.assert_called_once_with(due.query())
+    assert not caplog.messages
+
+
+@parametrize(
+    "hub with cloud-connected sensor",
+    model_filter={"H100(EU)_1.0_1.5.10", "KH100(UK)_1.0_1.5.6"},
+    protocol_filter={"SMART"},
+)
+@pytest.mark.requires_dummy
+@pytest.mark.xdist_group(name="caplog")
+@pytest.mark.parametrize("response", ["missing", "complete", "error"])
+async def test_child_update_cached_response_logging(
+    dev: SmartDevice,
+    mocker: MockerFixture,
+    caplog: pytest.LogCaptureFixture,
+    response: str,
+) -> None:
+    """Log retained responses without retaining stale data over explicit errors."""
+    child = next(child for child in dev.children if Module.Cloud in child.modules)
+    assert isinstance(child, SmartChildDevice)
+    cloud = child.modules[Module.Cloud]
+    query_key = next(iter(cloud.query()))
+    cached_data = cloud.data.copy()
+    responses = child._last_update.copy()
+    if response == "missing":
+        responses.pop(query_key)
+    elif response == "error":
+        responses[query_key] = SmartErrorCode.INTERNAL_QUERY_ERROR
+
+    request = {}
+    for module in child.modules.values():
+        module._last_update_time = None
+        request.update(module.query())
+    query = mocker.patch.object(child.protocol, "query", return_value=responses)
+
+    with caplog.at_level(logging.DEBUG, logger="kasa.smart.smartchilddevice"):
+        await child.update()
+
+    query.assert_called_once_with(request)
+    cache_messages = [
+        message
+        for message in caplog.messages
+        if message.startswith("Keeping cached responses")
+    ]
+    if response == "missing":
+        assert cache_messages == [
+            f"Keeping cached responses for {child.alias} ({child.device_id}): "
+            f"{[query_key]}"
+        ]
+    else:
+        assert not cache_messages
+
+    if response == "error":
+        assert child._last_update[query_key] is SmartErrorCode.INTERNAL_QUERY_ERROR
+        assert cloud._last_update_error is not None
+    else:
+        assert cloud.data == cached_data
+        assert cloud._last_update_error is None
