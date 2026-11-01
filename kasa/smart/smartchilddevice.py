@@ -9,6 +9,8 @@ from typing import Any
 from ..device import DeviceInfo
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
+from ..exceptions import DeviceUnavailableError
+from ..feature import Feature
 from ..protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 from .smartdevice import ComponentsRaw, SmartDevice
 from .smartmodule import SmartModule
@@ -159,6 +161,34 @@ class SmartChildDevice(SmartDevice):
                 self._device_type = dev_type
 
         return self._device_type
+
+    @property
+    def is_available(self) -> bool:
+        """Return False if the hub reports the device offline or no longer lists it."""
+        listed = self._parent is None or self._id in self._parent._children
+        return listed and self._info.get("status") != "offline"
+
+    async def _initialize_features(self) -> None:
+        """Initialize device features."""
+        await super()._initialize_features()
+        if "status" in self._info:
+            self._add_feature(
+                Feature(
+                    self,
+                    id="available",
+                    name="Available",
+                    attribute_getter="is_available",
+                    category=Feature.Category.Info,
+                    type=Feature.Type.BinarySensor,
+                )
+            )
+
+    async def _query_helper(self, method: str, params: dict | None = None) -> dict:
+        # Fail fast on writes, the hub rejects them only after a timeout.
+        if not method.startswith("get") and not self.is_available:
+            raise DeviceUnavailableError(f"{self.alias} is not available")
+
+        return await super()._query_helper(method, params)
 
     def __repr__(self) -> str:
         if not self._parent:

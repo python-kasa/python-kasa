@@ -5,7 +5,7 @@ import pytest
 from freezegun.api import FrozenDateTimeFactory
 from pytest_mock import MockerFixture
 
-from kasa import Device
+from kasa import Device, DeviceUnavailableError
 from kasa.device_type import DeviceType
 from kasa.protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 from kasa.smart.smartchilddevice import SmartChildDevice
@@ -18,6 +18,7 @@ from .conftest import (
     strip_iot,
     strip_smart,
 )
+from .fakeprotocol_smart import FakeSmartTransport
 
 has_children_smart = parametrize(
     "has children", component_filter="control_child", protocol_filter={"SMART"}
@@ -124,6 +125,78 @@ async def test_parent_property(dev: Device) -> None:
     assert dev.parent is None
     for child in dev.children:
         assert child.parent == dev
+
+
+@hub_smart
+@pytest.mark.requires_dummy
+@pytest.mark.parametrize(
+    ("status", "is_available"), [("online", True), ("offline", False)]
+)
+async def test_child_is_available(dev: Device, status: str, is_available: bool) -> None:
+    """Test a hub child reports the reachability status from the hub."""
+    if not dev.children:
+        pytest.skip(f"Device {dev} fixture does not have any children")
+
+    assert isinstance(dev.protocol._transport, FakeSmartTransport)
+    child_list = dev.protocol._transport.info["get_child_device_list"]
+    child_list["child_device_list"][0]["status"] = status
+
+    await dev.update()
+
+    child = dev.children[0]
+    assert child.is_available is is_available
+    assert child.features["available"].value is is_available
+    assert dev.is_available is True
+
+
+@hub_smart
+@pytest.mark.requires_dummy
+@pytest.mark.parametrize(
+    "write",
+    [
+        pytest.param(lambda child: child.set_alias("new"), id="set_alias"),
+        pytest.param(lambda child: child.reboot(), id="reboot"),
+        pytest.param(
+            lambda child: next(iter(child.modules.values())).call(
+                "set_device_info", {"a": 1}
+            ),
+            id="module_call",
+        ),
+    ],
+)
+@pytest.mark.parametrize("removed", [False, True], ids=["offline", "removed"])
+async def test_unavailable_child_refuses_writes(
+    dev: Device, write, removed: bool, mocker: MockerFixture
+) -> None:
+    """Test writes to an unreachable hub child fail without contacting the hub."""
+    if not dev.children:
+        pytest.skip(f"Device {dev} fixture does not have any children")
+
+    child = dev.children[0]
+    assert isinstance(child, SmartChildDevice)
+    assert isinstance(dev.protocol._transport, FakeSmartTransport)
+    info = dev.protocol._transport.info
+    child_list = info["get_child_device_list"]
+    if removed:
+        child_list["child_device_list"].pop(0)
+        child_list["sum"] -= 1
+        info["get_child_device_component_list"]["child_component_list"] = [
+            c
+            for c in info["get_child_device_component_list"]["child_component_list"]
+            if c["device_id"] != child.device_id
+        ]
+    else:
+        child_list["child_device_list"][0]["status"] = "offline"
+    await dev.update()
+    query = mocker.spy(dev.protocol, "query")
+
+    assert child.is_available is False
+    with pytest.raises(DeviceUnavailableError):
+        await write(child)
+    query.assert_not_called()
+
+    await child._query_helper("get_device_info")
+    query.assert_called_once()
 
 
 @has_children_smart

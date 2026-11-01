@@ -123,6 +123,12 @@
 ```
 
 ```{eval-rst}
+.. autoclass:: kasa.exceptions.DeviceUnavailableError
+    :members:
+    :undoc-members:
+```
+
+```{eval-rst}
 .. autoclass:: kasa.exceptions.UnsupportedDeviceError
     :members:
     :undoc-members:

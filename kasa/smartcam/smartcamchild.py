@@ -86,6 +86,12 @@ class SmartCamChild(SmartChildDevice, SmartCamDevice):
         self._info = self._map_child_info_from_parent(info)
 
     @property
+    def is_available(self) -> bool:
+        """Return False if the hub reports the camera offline or no longer lists it."""
+        # Camera children report "online" instead of an "offline" status.
+        return super().is_available and self._info.get("online") is not False
+
+    @property
     def device_type(self) -> DeviceType:
         """Return the device type."""
         if self._device_type == DeviceType.Unknown and self._info:
