@@ -149,6 +149,12 @@ async def discovery_mock(request: pytest.FixtureRequest, mocker: MockerFixture):
     return patch_discovery({DISCOVERY_MOCK_IP: fixture_info}, mocker)
 
 
+def _xfail_tpap(discovery_result: dict) -> None:
+    """Mark tests of devices that advertise TPAP as expected to fail."""
+    if discovery_result.get("mgt_encrypt_schm", {}).get("encrypt_type") == "TPAP":
+        pytest.xfail("TPAP encryption is not supported yet")
+
+
 def create_discovery_mock(ip: str, fixture_data: dict):
     """Mock discovery and patch protocol queries to use Fake protocols."""
 
@@ -194,6 +200,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
         encrypt_type = discovery_result["mgt_encrypt_schm"].get(
             "encrypt_type", discovery_result.get("encrypt_info", {}).get("sym_schm")
         )
+        _xfail_tpap(discovery_result)
 
         if not (login_version := discovery_result["mgt_encrypt_schm"].get("lv")) and (
             et := discovery_result.get("encrypt_type")
@@ -380,6 +387,7 @@ def discovery_data(request: pytest.FixtureRequest, mocker: MockerFixture):
     mocker.patch("kasa.IotProtocol.query", return_value=fixture_data)
     mocker.patch("kasa.SmartProtocol.query", return_value=fixture_data)
     if "discovery_result" in fixture_data:
+        _xfail_tpap(fixture_data["discovery_result"]["result"])
         return fixture_data["discovery_result"].copy()
     else:
         return {"system": {"get_sysinfo": fixture_data["system"]["get_sysinfo"]}}
