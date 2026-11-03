@@ -2196,11 +2196,6 @@ def test_payload_and_sequence_helpers() -> None:
 
     payload, seq = session.encrypt("hello")
     assert seq == 5
-
-    session._sequence = 5
-    session.advance(5)
-    assert session._sequence == 6
-    session.advance(3)
     assert session._sequence == 6
 
     with pytest.raises(KasaException, match="response too short"):

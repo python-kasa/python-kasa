@@ -1062,11 +1062,6 @@ class TpapEncryptionSession:
         self._sequence = seq + 1
         return struct.pack(">I", seq) + encrypted, seq
 
-    def advance(self, seq: int) -> None:
-        """Advance the request sequence."""
-        if self._sequence == seq:
-            self._sequence = seq + 1
-
     def decrypt(self, payload: bytes, request_seq: int) -> bytes:
         """Decrypt the message."""
         cipher_id, key, base_nonce = self._cipher_id, self._key, self._base_nonce
