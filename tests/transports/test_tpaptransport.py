@@ -2565,57 +2565,6 @@ async def test_default_port_uses_443_for_https_cameras() -> None:
     assert generic_https._port == tp.TpapTransport.DEFAULT_HTTPS_PORT
 
 
-@pytest.mark.parametrize(
-    ("step", "response"),
-    [
-        pytest.param(
-            "pake_share",
-            {"error_code": SmartErrorCode.SESSION_EXPIRED.value},
-            id="share-session-expired",
-        ),
-        pytest.param(
-            "pake_share",
-            {"error_code": SmartErrorCode.STAT_ACCESS_ERROR.value},
-            id="share-credentials-illegal",
-        ),
-        pytest.param(
-            "discover",
-            {
-                "error_code": SmartErrorCode.ACCOUNT_ERROR.value,
-                "error_info": {"lockedMinute": 30, "remainAttempts": 0},
-            },
-            id="discover-locked",
-        ),
-    ],
-)
-async def test_login_refused_after_device_rejection(
-    step: str, response: dict[str, Any]
-) -> None:
-    """Any rejected pake_share, or a lockout, marks the login as refused."""
-    transport = _make_tpap_transport(credentials=Credentials("user", "pass"))
-
-    assert transport.login_refused is False
-    with pytest.raises(KasaException):
-        transport._handle_login_error_code(response, step)
-    assert transport.login_refused is True
-    await transport.close()
-
-
-async def test_login_not_refused_by_local_or_early_errors() -> None:
-    """Errors before pake_share, and refusing locally, send no counted login."""
-    transport = _make_tpap_transport(credentials=Credentials("user", ""))
-    transport._tpap_pake = [2]
-
-    with pytest.raises(DeviceError):
-        transport._handle_login_error_code(
-            {"error_code": SmartErrorCode.INVALID_ARGUMENTS.value}, "pake_register"
-        )
-    with pytest.raises(AuthenticationError, match="no credential candidates"):
-        await transport._perform_auth_handshake()
-    assert transport.login_refused is False
-    await transport.close()
-
-
 # --------------------------
 # TPAP parameters from discovery
 # --------------------------

@@ -42,7 +42,12 @@ from kasa.discover import (
     _DiscoverProtocol,
     json_dumps,
 )
-from kasa.exceptions import AuthenticationError, UnsupportedDeviceError
+from kasa.exceptions import (
+    AuthenticationError,
+    DeviceError,
+    SmartErrorCode,
+    UnsupportedDeviceError,
+)
 from kasa.iot import IotDevice, IotPlug
 from kasa.protocols import SmartCamProtocol
 from kasa.smart import SmartDevice
@@ -997,40 +1002,68 @@ async def test_connection_parameters_from_encrypt_type_list_only():
         Discover._get_connection_parameters(DiscoveryResult.from_dict(result))
 
 
+@pytest.mark.parametrize(
+    "error",
+    [
+        pytest.param(
+            AuthenticationError("refused", error_code=SmartErrorCode.STAT_ACCESS_ERROR),
+            id="refused",
+        ),
+        pytest.param(
+            DeviceError("locked", error_code=SmartErrorCode.DEVICE_BLOCKED),
+            id="locked",
+        ),
+    ],
+)
 async def test_try_connect_all_stops_tpap_after_refused_login(
-    mocker: MockerFixture,
+    mocker: MockerFixture, error: KasaException
 ) -> None:
-    """Once the device rejects a TPAP login, no other TPAP attempt logs in."""
+    """Once the device refuses a TPAP login or is locked, no other TPAP attempt runs."""
     tried = []
 
     async def _connect(config, protocol):
-        tried.append(type(protocol._transport))
-        if isinstance(protocol._transport, TpapTransport):
-            protocol._transport._login_refused = True
+        encryption = config.connection_type.encryption_type
+        tried.append(encryption)
+        if encryption is DeviceEncryptionType.Tpap:
+            raise error
         raise KasaException("not this one")
 
     mocker.patch("kasa.device_factory._connect", _connect)
     credentials = Credentials("user", "pass")
     assert await Discover.try_connect_all("127.0.0.1", credentials=credentials) is None
 
-    assert tried.count(TpapTransport) == 1
-    assert tried[-1] is TpapTransport
+    assert tried.count(DeviceEncryptionType.Tpap) == 1
+    assert tried[-1] is DeviceEncryptionType.Tpap
 
 
+@pytest.mark.parametrize(
+    "error",
+    [
+        pytest.param(KasaException("not this one"), id="other"),
+        pytest.param(
+            DeviceError("expired", error_code=SmartErrorCode.SESSION_EXPIRED),
+            id="device-error",
+        ),
+        pytest.param(
+            AuthenticationError("no credentials to log in with"),
+            id="refused-locally",
+        ),
+    ],
+)
 async def test_try_connect_all_tries_every_tpap_attempt_on_other_errors(
-    mocker: MockerFixture,
+    mocker: MockerFixture, error: KasaException
 ) -> None:
-    """A TPAP attempt that fails without a rejected login moves on."""
+    """A TPAP attempt that fails without the device refusing the login moves on."""
     tried = []
 
     async def _connect(config, protocol):
-        tried.append(type(protocol._transport))
-        raise KasaException("not this one")
+        tried.append(config.connection_type.encryption_type)
+        raise error
 
     mocker.patch("kasa.device_factory._connect", _connect)
     credentials = Credentials("user", "pass")
     assert await Discover.try_connect_all("127.0.0.1", credentials=credentials) is None
 
-    assert tried.count(TpapTransport) > 1
-    first_tpap = tried.index(TpapTransport)
-    assert set(tried[first_tpap:]) == {TpapTransport}
+    assert tried.count(DeviceEncryptionType.Tpap) > 1
+    first_tpap = tried.index(DeviceEncryptionType.Tpap)
+    assert set(tried[first_tpap:]) == {DeviceEncryptionType.Tpap}

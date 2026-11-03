@@ -102,7 +102,6 @@ class TpapTransport(BaseTransport):
             self._tpap_dac = tpap.dac
             self._tpap_pake = None if tpap.pake is None else list(tpap.pake)
             self._tpap_user_hash_type = tpap.user_hash_type
-        self._login_refused = False
         self._handshake_lock = asyncio.Lock()
         self._send_lock: asyncio.Lock = asyncio.Lock()
         # The login state, and the session once logged in
@@ -158,15 +157,6 @@ class TpapTransport(BaseTransport):
             user_hash_type=self._tpap_user_hash_type,
             mac=self._device_mac or None,
         )
-
-    @property
-    def login_refused(self) -> bool:
-        """True once the device rejected a login or reported a lockout.
-
-        The device counts each rejected login toward its lockout, whatever
-        error code it answers with.
-        """
-        return self._login_refused
 
     @property
     def _uses_camera_auth(self) -> bool:
@@ -425,7 +415,6 @@ class TpapTransport(BaseTransport):
         remain_attempts = self._parse_optional_int(error_info.get("remainAttempts"))
         host = self._host
         if (locked_minutes or 0) > 0 or remain_attempts == 0:
-            self._login_refused = True
             self._invalidate_session()
             msg = f"TPAP {step} failed for {host}: device blocked after failed logins"
             if locked_minutes:
@@ -433,7 +422,6 @@ class TpapTransport(BaseTransport):
             raise DeviceError(msg, error_code=SmartErrorCode.DEVICE_BLOCKED)
 
         if step == "pake_share":
-            self._login_refused = True
             self._invalidate_session()
             attempts_left = (
                 f", {remain_attempts} attempts left before the device locks"

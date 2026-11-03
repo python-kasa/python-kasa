@@ -122,7 +122,9 @@ from kasa.deviceconfig import (
     TpapParameters,
 )
 from kasa.exceptions import (
+    SMART_AUTHENTICATION_ERRORS,
     KasaException,
+    SmartErrorCode,
     TimeoutError,
     UnsupportedDeviceError,
 )
@@ -133,10 +135,18 @@ from kasa.json import loads as json_loads
 from kasa.protocols.iotprotocol import REDACTORS as IOT_REDACTORS
 from kasa.protocols.protocol import mask_mac, redact_data
 from kasa.transports.aestransport import AesEncyptionSession, KeyPair
-from kasa.transports.tpaptransport import TpapTransport
 from kasa.transports.xortransport import XorEncryption
 
 _LOGGER = logging.getLogger(__name__)
+
+# How a device refuses a TPAP login (-2203 is its answer to a wrong password)
+# or reports a lockout. Another TPAP attempt would be refused too, and would
+# count toward the lockout.
+_TPAP_LOGIN_REFUSED = {
+    SmartErrorCode.STAT_ACCESS_ERROR,
+    SmartErrorCode.DEVICE_BLOCKED,
+    *SMART_AUTHENTICATION_ERRORS,
+}
 
 if TYPE_CHECKING:
     from kasa import BaseProtocol
@@ -682,9 +692,11 @@ class Discover:
         }
         tpap_refused = False
         for key, val in candidates.items():
+            prot, config = val
+            encryption = config.connection_type.encryption_type
+            is_tpap = encryption is Device.EncryptionType.Tpap
             try:
-                prot, config = val
-                if tpap_refused and isinstance(prot._transport, TpapTransport):
+                if tpap_refused and is_tpap:
                     # A device that refused the credentials over TPAP would
                     # count each further attempt toward its lockout
                     continue
@@ -696,8 +708,7 @@ class Discover:
                     prot.__class__.__name__,
                     ex,
                 )
-                transport = prot._transport
-                if isinstance(transport, TpapTransport) and transport.login_refused:
+                if is_tpap and getattr(ex, "error_code", None) in _TPAP_LOGIN_REFUSED:
                     tpap_refused = True
                 if on_attempt:
                     ca = tuple.__new__(ConnectAttempt, key)
