@@ -1492,6 +1492,7 @@ DROPPED_SESSION = [
     pytest.param(500, b'{"error_code": -40421}', id="http-40421"),
     pytest.param(500, b'{"err_code": -2402}', id="http-err_code-2402"),
     pytest.param(500, b'{"error_code": -2101}', id="http-2101"),
+    pytest.param(200, {"error_code": -2402}, id="plain-reply-2402"),
 ]
 
 
@@ -1554,10 +1555,28 @@ async def test_request_failed(mocker: MockerFixture, body: bytes) -> None:
     ("device_kwargs", "error", "match"),
     [
         pytest.param(
+            {"ds_replies": [(200, {"error_code": -40401})]},
+            _RetryableError,
+            "SESSION_EXPIRED",
+            id="plain-retryable",
+        ),
+        pytest.param(
+            {"ds_replies": [(200, {"error_code": -1002})]},
+            DeviceError,
+            "UNKNOWN_METHOD_ERROR",
+            id="plain-device-error",
+        ),
+        pytest.param(
             {"ds_replies": [(200, b"\x00\x00\x00\x01")]},
             KasaException,
             "response too short",
             id="too-short",
+        ),
+        pytest.param(
+            {"ds_replies": [(200, b"\x00\x00\x00\x01" + bytes(32))]},
+            KasaException,
+            "could not be decrypted",
+            id="not-decryptable",
         ),
         pytest.param(
             {"response": b"[1]"},
@@ -1578,6 +1597,48 @@ async def test_request_errors(
 
     with pytest.raises(error, match=match):
         await transport.send(json_dumps(DUMMY_QUERY))
+
+
+async def test_plain_reply(mocker: MockerFixture) -> None:
+    """A plain JSON reply is taken as it is."""
+    reply = {"error_code": 0, "result": {"plain": True}}
+    _patch(mocker, MockTpapDevice(ds_replies=[(200, reply)]))
+    transport = _transport()
+
+    assert await transport.send(json_dumps(DUMMY_QUERY)) == reply
+
+
+async def test_authentication_error_drops_the_session(mocker: MockerFixture) -> None:
+    device = _patch(mocker, MockTpapDevice(ds_replies=[(200, {"error_code": -1501})]))
+    transport = _transport()
+    await transport.perform_handshake()
+
+    with pytest.raises(AuthenticationError, match="LOGIN_ERROR"):
+        await transport.send(json_dumps(DUMMY_QUERY))
+    assert transport._encryption_session is None
+
+    assert await transport.send(json_dumps(DUMMY_QUERY)) == DEVICE_RESPONSE
+    assert device.calls["pake_share"] == 2
+
+
+async def test_request_waiting_while_the_session_drops(mocker: MockerFixture) -> None:
+    """A request that waited while another one lost the session is not sent."""
+    device = _patch(
+        mocker, MockTpapDevice(ds_replies=[(500, b'{"error_code": -2402}')])
+    )
+    transport = _transport()
+    await transport.perform_handshake()
+
+    first, second = await asyncio.gather(
+        transport.send(json_dumps(DUMMY_QUERY)),
+        transport.send(json_dumps(DUMMY_QUERY)),
+        return_exceptions=True,
+    )
+
+    assert isinstance(first, _RetryableError)
+    assert isinstance(second, KasaException)
+    assert "not established" in str(second)
+    assert device.calls["request"] == 1
 
 
 async def test_reset_keeps_the_login_values(mocker: MockerFixture) -> None:

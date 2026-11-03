@@ -38,9 +38,9 @@ import secrets
 import ssl
 import struct
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from cryptography.exceptions import InvalidSignature
+from cryptography.exceptions import InvalidSignature, InvalidTag
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESCCM, ChaCha20Poly1305
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
@@ -481,7 +481,7 @@ class TpapTransport(BaseTransport):
                 f"TPAP: no supported passcode type for {self._host}"
             )
 
-        candidate_secrets = self._get_candidate_secrets()
+        candidate_secrets = self._get_candidate_secrets(passcode_type)
         if not candidate_secrets:
             raise AuthenticationError(
                 f"TPAP: no credential candidates available for {self._host}"
@@ -633,10 +633,7 @@ class TpapTransport(BaseTransport):
                 return passcode_type
         return default_passcode_type
 
-    def _get_candidate_secrets(self, passcode_type: str | None = None) -> list[str]:
-        passcode_type = passcode_type or self._get_passcode_type()
-        if passcode_type is None:
-            return []
+    def _get_candidate_secrets(self, passcode_type: str) -> list[str]:
         if passcode_type == "default_userpw":
             return (
                 [crypto.mac_pass_from_device_mac(self._device_mac)]
@@ -668,9 +665,9 @@ class TpapTransport(BaseTransport):
         register_result: dict[str, Any],
         candidate_secret: str,
         *,
-        passcode_type: str | None = None,
+        passcode_type: str,
     ) -> str:
-        if (passcode_type or self._get_passcode_type()) == "default_userpw":
+        if passcode_type == "default_userpw":
             return candidate_secret
         extra_crypt_value = register_result.get("extra_crypt")
         extra_crypt = extra_crypt_value if isinstance(extra_crypt_value, dict) else {}
@@ -691,8 +688,8 @@ class TpapTransport(BaseTransport):
     def _build_share_params_from_register(
         self, register_result: dict[str, Any], credentials_string: str
     ) -> dict[str, Any]:
-        if self._user_random is None:
-            raise KasaException("TPAP user random not initialized")
+        if TYPE_CHECKING:
+            assert self._user_random is not None
 
         dev_random = str(register_result.get("dev_random") or "")
         dev_salt = str(register_result.get("dev_salt") or "")
@@ -766,8 +763,9 @@ class TpapTransport(BaseTransport):
             dac_proof = share_result.get("dac_proof")
             if not dac_ca or not dac_proof:
                 raise KasaException("device sent no DAC certificate or proof")
-            if not self._shared_key or not self._dac_nonce_base64:
-                raise KasaException("no shared key or DAC nonce to check it with")
+            if TYPE_CHECKING:
+                assert self._shared_key is not None
+                assert self._dac_nonce_base64 is not None
             if not isinstance(dac_proof, str):
                 raise KasaException("Invalid DAC proof type")
 
@@ -805,8 +803,8 @@ class TpapTransport(BaseTransport):
         if not session_id:
             _LOGGER.error("missing session ID from device")
             raise KasaException("Missing session fields from device")
-        if self._shared_key is None:
-            raise KasaException("TPAP shared key was not derived")
+        if TYPE_CHECKING:
+            assert self._shared_key is not None
         start_seq = share_result.get("start_seq")
         if start_seq is None:
             raise KasaException("Missing session fields from device")
@@ -838,6 +836,8 @@ class TpapTransport(BaseTransport):
                 headers=headers,
                 ssl=ssl_context,
             )
+            if TYPE_CHECKING:
+                assert isinstance(data, bytes)
             msg = (
                 f"Host is {self._host}, Sequence is {seq}, "
                 f"Response status is {status}, Request was {request}"
@@ -845,34 +845,40 @@ class TpapTransport(BaseTransport):
             if status != 200:
                 # Debug, not error: a dropped session is logged in again
                 _LOGGER.debug("Device %s query failed: %s", self._host, msg)
-                self._raise_if_session_lost(data)
+                self._raise_if_session_lost(self._json_reply(data))
                 raise KasaException(
                     f"TPAP secure request failed for {self._host}: status {status}"
                 )
             _LOGGER.debug("Device %s query posted %s", self._host, msg)
 
-        if isinstance(data, bytes | bytearray):
-            plaintext = session.decrypt(bytes(data), seq)
-            _LOGGER.debug("Device %s query response received", self._host)
-            return self._load_json_dict(plaintext)
+        if (reply := self._json_reply(data)) is not None:
+            # A device that dropped the session cannot encrypt its answer
+            self._raise_if_session_lost(reply)
+            self._handle_response_error_code(reply, "request")
+            return reply
+        try:
+            plaintext = session.decrypt(data, seq)
+        except InvalidTag as ex:
+            raise KasaException(
+                f"TPAP response from {self._host} could not be decrypted"
+            ) from ex
+        _LOGGER.debug("Device %s query response received", self._host)
+        return self._load_json_dict(plaintext)
 
-        if isinstance(data, dict):
-            self._raise_if_session_lost(data)
-            self._handle_response_error_code(data, "request")
-            return data
+    @staticmethod
+    def _json_reply(data: bytes) -> dict[str, Any] | None:
+        """Return the reply if it is a plain JSON object, else None."""
+        try:
+            reply = json_loads(data.decode())
+        except (UnicodeDecodeError, ValueError):
+            return None
+        return reply if isinstance(reply, dict) else None
 
-        raise KasaException("Unexpected TPAP response body type")
-
-    def _raise_if_session_lost(self, data: Any) -> None:
+    def _raise_if_session_lost(self, reply: dict[str, Any] | None) -> None:
         """Drop the session and raise a retryable error if the device dropped it."""
-        if isinstance(data, bytes | bytearray):
-            try:
-                data = json_loads(bytes(data).decode())
-            except (UnicodeDecodeError, ValueError):
-                return
-        if not isinstance(data, dict):
+        if reply is None:
             return
-        error_code = data.get("error_code", data.get("err_code"))
+        error_code = reply.get("error_code", reply.get("err_code"))
         if error_code not in self.SESSION_LOST_ERROR_CODES:
             return
         self._reset_state()
@@ -980,8 +986,6 @@ class TpapEncryptionSession:
 
     @staticmethod
     def _nonce_from_base(base_nonce: bytes, seq: int) -> bytes:
-        if len(base_nonce) < 4:
-            raise ValueError("base nonce too short")
         return base_nonce[:-4] + struct.pack(">I", seq)
 
     @classmethod
