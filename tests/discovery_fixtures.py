@@ -11,6 +11,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from kasa.deviceconfig import TpapParameters
+from kasa.discover import Discover, DiscoveryResult
 from kasa.transports.xortransport import XorEncryption
 
 from .fakeprotocol_iot import FakeIotProtocol
@@ -192,37 +193,13 @@ def create_discovery_mock(ip: str, fixture_data: dict):
     if "discovery_result" in fixture_data:
         discovery_data = fixture_data["discovery_result"].copy()
         discovery_result = fixture_data["discovery_result"]["result"]
-        device_type = discovery_result["device_type"]
-        encrypt_type = discovery_result["mgt_encrypt_schm"].get(
-            "encrypt_type", discovery_result.get("encrypt_info", {}).get("sym_schm")
+        connection_type = Discover._get_connection_parameters(
+            DiscoveryResult.from_dict(discovery_result)
         )
-
-        if not (login_version := discovery_result["mgt_encrypt_schm"].get("lv")) and (
-            et := discovery_result.get("encrypt_type")
-        ):
-            login_version = max([int(i) for i in et])
-        https = discovery_result["mgt_encrypt_schm"]["is_support_https"]
-        if not encrypt_type and https and login_version == 3:
-            # Mirrors Discover._get_connection_parameters for cameras that
-            # only send the top level encrypt_type list
-            encrypt_type = "AES"
-        tpap = None
-        if tpap_info := discovery_result.get("tpap"):
-            # Mirrors Discover._get_connection_parameters, the tpap object
-            # selects TPAP whatever encrypt_type says
-            encrypt_type = "TPAP"
-            tpap = TpapParameters(
-                tls=tpap_info.get("tls", 0),
-                port=tpap_info.get("port"),
-                pake=tpap_info.get("pake"),
-                dac=bool(tpap_info.get("dac")),
-                user_hash_type=tpap_info.get("user_hash_type"),
-                mac=discovery_result["mac"],
-            )
-        http_port = discovery_result["mgt_encrypt_schm"].get("http_port")
+        http_port = connection_type.http_port
         if not http_port:  # noqa: SIM108
             # Not all discovery responses set the http port, i.e. smartcam.
-            default_port = 443 if https else 80
+            default_port = 443 if connection_type.https else 80
         else:
             default_port = http_port
         dm = _DiscoveryMock(
@@ -231,12 +208,12 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             20002,
             discovery_data,
             fixture_data,
-            device_type,
-            encrypt_type,
-            https,
-            login_version,
+            discovery_result["device_type"],
+            connection_type.encryption_type.value,
+            connection_type.https,
+            connection_type.login_version,
             http_port=http_port,
-            tpap=tpap,
+            tpap=connection_type.tpap,
         )
     else:
         sys_info = fixture_data["system"]["get_sysinfo"]
