@@ -81,14 +81,14 @@ def _register_result(
 
 
 def _share_result(
-    session: tp.TpapEncryptionSession,
+    transport: tp.TpapTransport,
     *,
     session_id: str = "STOK",
     start_seq: int = 7,
 ) -> dict[str, Any]:
-    assert session._expected_dev_confirm is not None
+    assert transport._expected_dev_confirm is not None
     return {
-        "dev_confirm": session._expected_dev_confirm,
+        "dev_confirm": transport._expected_dev_confirm,
         "sessionId": session_id,
         "start_seq": start_seq,
     }
@@ -114,7 +114,7 @@ def _make_discover_post(
 
 
 def _make_handshake_login(
-    session: tp.TpapEncryptionSession,
+    transport: tp.TpapTransport,
     *,
     capture_register: dict[str, Any] | None = None,
     register_result: dict[str, Any] | None = None,
@@ -128,7 +128,7 @@ def _make_handshake_login(
             return register_result or _register_result()
 
         assert step_name == "pake_share"
-        return _share_result(session, session_id=session_id, start_seq=start_seq)
+        return _share_result(transport, session_id=session_id, start_seq=start_seq)
 
     return fake_login
 
@@ -146,27 +146,24 @@ def _p256_pub_uncompressed() -> bytes:
 
 def _establish_session(
     transport: tp.TpapTransport,
-    session: tp.TpapEncryptionSession,
     *,
     session_id: str = "SID",
     start_seq: int = 10,
-) -> None:
-    key, base_nonce = tp.TpapEncryptionSession.key_nonce_from_shared(
-        b"shared-secret", "aes_128_ccm"
-    )
-    session._cipher_id = "aes_128_ccm"
-    session._key = key
-    session._base_nonce = base_nonce
-    session._session_id = session_id
-    session._sequence = start_seq
-    session._ds_url = URL(f"{transport._app_url}/stok={session_id}/ds")
+) -> tp.TpapEncryptionSession:
+    session = tp.TpapEncryptionSession("aes_128_ccm", b"shared-secret", start_seq)
+    transport._encryption_session = session
+    transport._ds_url = URL(f"{transport._app_url}/stok={session_id}/ds")
+    return session
+
+
+def _live_session(transport: tp.TpapTransport) -> tp.TpapEncryptionSession:
+    assert transport._encryption_session is not None
+    return transport._encryption_session
 
 
 def _make_established_transport() -> tuple[tp.TpapTransport, tp.TpapEncryptionSession]:
     transport = _make_tpap_transport("host")
-    session = transport._encryption_session
-    _establish_session(transport, session)
-    return transport, session
+    return transport, _establish_session(transport)
 
 
 def _make_tpap_transport(
@@ -191,46 +188,16 @@ def _make_camera_tpap_transport(host: str = "cam-host") -> tp.TpapTransport:
     )
 
 
-def test_session_cipher_helpers_roundtrip() -> None:
-    aes_key, aes_nonce = tp.TpapEncryptionSession.key_nonce_from_shared(
-        b"k" * 16, "aes_256_ccm"
-    )
-    aes_ct, aes_tag = tp.TpapEncryptionSession.sec_encrypt(
-        "aes_256_ccm", aes_key, aes_nonce, b"hello", seq=3
-    )
-    assert (
-        tp.TpapEncryptionSession.sec_decrypt(
-            "aes_256_ccm",
-            aes_key,
-            aes_nonce,
-            aes_ct,
-            aes_tag,
-            seq=3,
-        )
-        == b"hello"
-    )
+@pytest.mark.parametrize(
+    "cipher_id", ["aes_128_ccm", "aes_256_ccm", "chacha20_poly1305"]
+)
+def test_session_cipher_roundtrip(cipher_id: str) -> None:
+    session = tp.TpapEncryptionSession(cipher_id, b"k" * 32, 3)
 
-    chacha_key, chacha_nonce = tp.TpapEncryptionSession.key_nonce_from_shared(
-        b"c" * 32, "chacha20_poly1305"
-    )
-    chacha_ct, chacha_tag = tp.TpapEncryptionSession.sec_encrypt(
-        "chacha20_poly1305",
-        chacha_key,
-        chacha_nonce,
-        b"world",
-        seq=5,
-    )
-    assert (
-        tp.TpapEncryptionSession.sec_decrypt(
-            "chacha20_poly1305",
-            chacha_key,
-            chacha_nonce,
-            chacha_ct,
-            chacha_tag,
-            seq=5,
-        )
-        == b"world"
-    )
+    payload, seq = session.encrypt(b"hello")
+
+    assert seq == 3
+    assert session.decrypt(payload, seq) == b"hello"
 
 
 async def test_session_encrypt_and_decrypt_roundtrip() -> None:
@@ -240,7 +207,7 @@ async def test_session_encrypt_and_decrypt_roundtrip() -> None:
     assert seq == 10
     assert session._sequence == 11
     assert session.decrypt(payload, seq) == b'{"ok": true}'
-    assert str(session.ds_url) == f"{transport._app_url}/stok=SID/ds"
+    assert str(transport._ds_url) == f"{transport._app_url}/stok=SID/ds"
 
 
 @pytest.mark.parametrize(
@@ -311,36 +278,35 @@ async def test_session_perform_handshake_registers_expected_auth_values(
         family=family,
         credentials=Credentials("user", "pass"),
     )
-    session = transport._encryption_session
     captured_register: dict[str, Any] = {}
 
     transport._http_client.post = _make_discover_post(  # type: ignore[assignment]
         discover_response
     )
     monkeypatch.setattr(
-        session,
+        transport,
         "_login",
-        _make_handshake_login(session, capture_register=captured_register),
+        _make_handshake_login(transport, capture_register=captured_register),
         raising=True,
     )
 
-    await session.perform_handshake()
+    await transport.perform_handshake()
 
     assert captured_register["username"] == expected_username
     assert captured_register["encryption"] == ["aes_128_ccm"]
     assert captured_register["passcode_type"] == expected_passcode_type
     # Like the app, no stok is sent when there is no session to reuse
     assert "stok" not in captured_register
-    assert session.is_established is True
-    assert session.tls_mode == expected_tls_mode
+    assert (transport._encryption_session is not None) is True
+    assert transport._tpap_tls == expected_tls_mode
     assert transport._app_url.scheme == expected_scheme
     assert transport._app_url.host == "handshake-host"
     assert transport._app_url.port == expected_port
-    assert session.ds_url is not None
-    assert session.ds_url.scheme == expected_scheme
-    assert session.ds_url.host == "handshake-host"
-    assert session.ds_url.port == expected_port
-    assert session.ds_url.path == "/stok=STOK/ds"
+    assert transport._ds_url is not None
+    assert transport._ds_url.scheme == expected_scheme
+    assert transport._ds_url.host == "handshake-host"
+    assert transport._ds_url.port == expected_port
+    assert transport._ds_url.path == "/stok=STOK/ds"
 
 
 async def test_session_camera_auth_uses_device_family() -> None:
@@ -352,19 +318,18 @@ async def test_session_camera_auth_uses_device_family() -> None:
     )
     iot_transport = _make_tpap_transport()
 
-    assert camera_transport._encryption_session._uses_camera_auth is True
-    assert hub_transport._encryption_session._uses_camera_auth is False
-    assert robot_transport._encryption_session._uses_camera_auth is False
-    assert robot_transport._encryption_session._uses_robot_tpap_auth is True
-    assert iot_transport._encryption_session._uses_camera_auth is False
+    assert camera_transport._uses_camera_auth is True
+    assert hub_transport._uses_camera_auth is False
+    assert robot_transport._uses_camera_auth is False
+    assert robot_transport._uses_robot_tpap_auth is True
+    assert iot_transport._uses_camera_auth is False
 
 
 async def test_smartcam_session_builds_password_candidates_without_lat() -> None:
     transport = _make_camera_tpap_transport()
-    session = transport._encryption_session
-    session._tpap_pake = [2]
+    transport._tpap_pake = [2]
 
-    assert session._get_candidate_secrets() == [
+    assert transport._get_candidate_secrets() == [
         crypto.md5_hex("pass"),
         crypto.sha256_hex_upper("pass"),
     ]
@@ -375,8 +340,7 @@ async def test_smartcam_session_retries_next_candidate_on_handshake_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     transport = _make_camera_tpap_transport()
-    session = transport._encryption_session
-    session._tpap_pake = [2]
+    transport._tpap_pake = [2]
     attempted_candidates: list[str] = []
 
     async def fake_login(params: dict[str, Any], *, step_name: str) -> dict[str, Any]:
@@ -399,29 +363,29 @@ async def test_smartcam_session_retries_next_candidate_on_handshake_failure(
         del share_result
         if attempted_candidates[-1] == "first":
             raise KasaException("bad candidate")
-        _establish_session(transport, session, session_id="CAM-SID", start_seq=4)
+        _establish_session(transport, session_id="CAM-SID", start_seq=4)
 
-    monkeypatch.setattr(session, "_login", fake_login, raising=True)
+    monkeypatch.setattr(transport, "_login", fake_login, raising=True)
     monkeypatch.setattr(
-        session, "_get_candidate_secrets", fake_iter_candidates, raising=True
+        transport, "_get_candidate_secrets", fake_iter_candidates, raising=True
     )
     monkeypatch.setattr(
-        session,
+        transport,
         "_build_share_params_from_register",
         fake_build_share_params,
         raising=True,
     )
     monkeypatch.setattr(
-        session,
+        transport,
         "_establish_session_from_share_result",
         fake_establish_session,
         raising=True,
     )
 
-    await session._perform_auth_handshake()
+    await transport._perform_auth_handshake()
 
     assert attempted_candidates == ["first", "second"]
-    assert session._session_id == "CAM-SID"
+    assert str(transport._ds_url).endswith("/stok=CAM-SID/ds")
 
 
 @pytest.mark.asyncio
@@ -429,23 +393,21 @@ async def test_smartcam_session_raises_when_no_candidates(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     transport = _make_camera_tpap_transport()
-    session = transport._encryption_session
-    session._tpap_pake = [2]
+    transport._tpap_pake = [2]
 
-    monkeypatch.setattr(session, "_get_candidate_secrets", lambda: [], raising=True)
+    monkeypatch.setattr(transport, "_get_candidate_secrets", lambda: [], raising=True)
 
     with pytest.raises(AuthenticationError, match="no credential candidates"):
-        await session._perform_auth_handshake()
+        await transport._perform_auth_handshake()
 
 
 @pytest.mark.asyncio
 async def test_smartcam_session_raises_when_no_supported_passcode_type() -> None:
     transport = _make_camera_tpap_transport()
-    session = transport._encryption_session
-    session._tpap_pake = [9]
+    transport._tpap_pake = [9]
 
     with pytest.raises(AuthenticationError, match="no supported passcode type"):
-        await session._perform_auth_handshake()
+        await transport._perform_auth_handshake()
 
 
 @pytest.mark.asyncio
@@ -454,8 +416,7 @@ async def test_smartcam_session_reraises_last_candidate_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     transport = _make_camera_tpap_transport()
-    session = transport._encryption_session
-    session._tpap_pake = [2]
+    transport._tpap_pake = [2]
 
     async def fake_login(params: dict[str, Any], *, step_name: str) -> dict[str, Any]:
         del params
@@ -463,18 +424,18 @@ async def test_smartcam_session_reraises_last_candidate_error(
             return {"extra_crypt": {}}
         return {}
 
-    monkeypatch.setattr(session, "_login", fake_login, raising=True)
+    monkeypatch.setattr(transport, "_login", fake_login, raising=True)
     monkeypatch.setattr(
-        session, "_get_candidate_secrets", lambda: ["only"], raising=True
+        transport, "_get_candidate_secrets", lambda: ["only"], raising=True
     )
     monkeypatch.setattr(
-        session,
+        transport,
         "_build_share_params_from_register",
         lambda register_result, credentials_string: {},
         raising=True,
     )
     monkeypatch.setattr(
-        session,
+        transport,
         "_establish_session_from_share_result",
         lambda share_result: (_ for _ in ()).throw(KasaException("last failure")),
         raising=True,
@@ -484,7 +445,7 @@ async def test_smartcam_session_reraises_last_candidate_error(
         caplog.at_level(logging.DEBUG),
         pytest.raises(KasaException, match="last failure"),
     ):
-        await session._perform_auth_handshake()
+        await transport._perform_auth_handshake()
 
     assert "all password-based camera candidates failed" in caplog.text
 
@@ -497,8 +458,7 @@ async def test_generic_tpap_session_reraises_last_candidate_error_without_hint(
     config = DeviceConfig("tpap-host")
     config.credentials = Credentials("user", "pass")
     transport = tp.TpapTransport(config=config)
-    session = transport._encryption_session
-    session._tpap_pake = [2]
+    transport._tpap_pake = [2]
 
     async def fake_login(params: dict[str, Any], *, step_name: str) -> dict[str, Any]:
         del params
@@ -506,18 +466,18 @@ async def test_generic_tpap_session_reraises_last_candidate_error_without_hint(
             return {"extra_crypt": {}}
         return {}
 
-    monkeypatch.setattr(session, "_login", fake_login, raising=True)
+    monkeypatch.setattr(transport, "_login", fake_login, raising=True)
     monkeypatch.setattr(
-        session, "_get_candidate_secrets", lambda: ["only"], raising=True
+        transport, "_get_candidate_secrets", lambda: ["only"], raising=True
     )
     monkeypatch.setattr(
-        session,
+        transport,
         "_build_share_params_from_register",
         lambda register_result, credentials_string: {},
         raising=True,
     )
     monkeypatch.setattr(
-        session,
+        transport,
         "_establish_session_from_share_result",
         lambda share_result: (_ for _ in ()).throw(KasaException("last failure")),
         raising=True,
@@ -527,7 +487,7 @@ async def test_generic_tpap_session_reraises_last_candidate_error_without_hint(
         caplog.at_level(logging.DEBUG),
         pytest.raises(KasaException, match="last failure"),
     ):
-        await session._perform_auth_handshake()
+        await transport._perform_auth_handshake()
 
     assert "all password-based camera candidates failed" not in caplog.text
 
@@ -537,8 +497,7 @@ async def test_smartcam_session_propagates_retryable_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     transport = _make_camera_tpap_transport()
-    session = transport._encryption_session
-    session._tpap_pake = [2]
+    transport._tpap_pake = [2]
     attempts: list[str] = []
 
     async def fake_login(params: dict[str, Any], *, step_name: str) -> dict[str, Any]:
@@ -554,22 +513,22 @@ async def test_smartcam_session_propagates_retryable_error(
         attempts.append(credentials_string)
         return {}
 
-    monkeypatch.setattr(session, "_login", fake_login, raising=True)
+    monkeypatch.setattr(transport, "_login", fake_login, raising=True)
     monkeypatch.setattr(
-        session,
+        transport,
         "_get_candidate_secrets",
         lambda: ["first", "second"],
         raising=True,
     )
     monkeypatch.setattr(
-        session,
+        transport,
         "_build_share_params_from_register",
         fake_build_share_params,
         raising=True,
     )
 
     with pytest.raises(_RetryableError, match="retry me"):
-        await session._perform_auth_handshake()
+        await transport._perform_auth_handshake()
 
     assert attempts == ["first"]
 
@@ -582,10 +541,9 @@ async def test_iot_session_adds_dac_nonce_when_required(
         family=DeviceFamily.SmartTapoPlug,
         credentials=Credentials("user", "pass"),
     )
-    session = transport._encryption_session
-    session._tpap_pake = [5]
-    session._tpap_tls = 0
-    session._tpap_dac = True
+    transport._tpap_pake = [5]
+    transport._tpap_tls = 0
+    transport._tpap_dac = True
     captured_share_params: dict[str, Any] | None = None
 
     async def fake_login(params: dict[str, Any], *, step_name: str) -> dict[str, Any]:
@@ -595,31 +553,31 @@ async def test_iot_session_adds_dac_nonce_when_required(
         captured_share_params = params.copy()
         return {}
 
-    monkeypatch.setattr(session, "_login", fake_login, raising=True)
+    monkeypatch.setattr(transport, "_login", fake_login, raising=True)
     monkeypatch.setattr(
-        session, "_get_candidate_secrets", lambda: ["candidate"], raising=True
+        transport, "_get_candidate_secrets", lambda: ["candidate"], raising=True
     )
     monkeypatch.setattr(
-        session,
+        transport,
         "_build_share_params_from_register",
         lambda register_result, credentials_string: {},
         raising=True,
     )
     monkeypatch.setattr(
-        session,
+        transport,
         "_establish_session_from_share_result",
         lambda share_result: _establish_session(
-            transport, session, session_id="DAC-SID", start_seq=2
+            transport, session_id="DAC-SID", start_seq=2
         ),
         raising=True,
     )
 
-    await session._perform_auth_handshake()
+    await transport._perform_auth_handshake()
 
     assert captured_share_params is not None
     assert captured_share_params["dac_nonce"]
     assert len(base64.b64decode(captured_share_params["dac_nonce"])) == 32
-    assert session._session_id == "DAC-SID"
+    assert str(transport._ds_url).endswith("/stok=DAC-SID/ds")
 
 
 @pytest.mark.parametrize(
@@ -659,12 +617,11 @@ async def test_use_dac_certification_uses_discovered_dac_support(
 ) -> None:
     """DAC is requested only where the Tapo app requests it."""
     transport = _make_tpap_transport("tpap-host", family=family)
-    session = transport._encryption_session
-    session._tpap_pake = pake
-    session._tpap_tls = tls
-    session._tpap_dac = dac
+    transport._tpap_pake = pake
+    transport._tpap_tls = tls
+    transport._tpap_dac = dac
 
-    assert session._use_dac_certification() is expected
+    assert transport._use_dac_certification() is expected
 
 
 @pytest.mark.parametrize(
@@ -770,10 +727,9 @@ async def test_get_passcode_type(
     family: DeviceFamily | None, pake: list[int] | None, expected: str | None
 ) -> None:
     transport = _make_tpap_transport("tpap-host", family=family)
-    session = transport._encryption_session
-    session._tpap_pake = pake
+    transport._tpap_pake = pake
 
-    assert session._get_passcode_type() == expected
+    assert transport._get_passcode_type() == expected
 
 
 @pytest.mark.parametrize(
@@ -787,44 +743,40 @@ async def test_get_passcode_type(
 )
 async def test_camera_candidate_secrets(pake: list[int], expected: list[str]) -> None:
     transport = _make_camera_tpap_transport()
-    session = transport._encryption_session
-    session._tpap_pake = pake
+    transport._tpap_pake = pake
 
-    assert session._get_candidate_secrets() == expected
+    assert transport._get_candidate_secrets() == expected
 
 
 async def test_smartcam_candidate_builder_dedupes_duplicates(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     transport = _make_camera_tpap_transport()
-    session = transport._encryption_session
-    session._tpap_pake = [2]
+    transport._tpap_pake = [2]
     monkeypatch.setattr(crypto, "md5_hex", lambda value: "same")
     monkeypatch.setattr(crypto, "sha256_hex_upper", lambda value: "same")
 
-    assert session._get_candidate_secrets() == ["same"]
+    assert transport._get_candidate_secrets() == ["same"]
 
 
 async def test_smartcam_resolve_credentials_applies_extra_crypt() -> None:
     transport = _make_camera_tpap_transport()
-    session = transport._encryption_session
-    session._tpap_pake = [2]
+    transport._tpap_pake = [2]
     register_result = {
         "extra_crypt": {"type": "password_shadow", "params": {"passwd_id": 2}}
     }
 
-    assert session._resolve_credentials(register_result, "candidate") == (
+    assert transport._resolve_credentials(register_result, "candidate") == (
         crypto._sha1_hex("candidate")
     )
 
 
 async def test_default_passcode_resolve_credentials_returns_candidate() -> None:
     transport = _make_tpap_transport()
-    session = transport._encryption_session
-    session._tpap_pake = [0]
-    session._device_mac = "AA:BB:CC:DD:EE:FF"
+    transport._tpap_pake = [0]
+    transport._device_mac = "AA:BB:CC:DD:EE:FF"
 
-    assert session._resolve_credentials({}, "candidate") == "candidate"
+    assert transport._resolve_credentials({}, "candidate") == "candidate"
 
 
 async def test_tls2_ssl_context_loads_root_ca(
@@ -841,7 +793,7 @@ async def test_tls2_ssl_context_loads_root_ca(
     )
 
     transport = tp.TpapTransport(config=DeviceConfig("tls-host"))
-    transport._encryption_session._tpap_tls = 2
+    transport._tpap_tls = 2
     context = transport._create_tls2_ssl_context()
 
     assert isinstance(context, ssl.SSLContext)
@@ -869,12 +821,11 @@ async def test_dac_verification_checks_chain_and_signature(
     )
 
     transport = tp.TpapTransport(config=DeviceConfig("dac-host"))
-    session = transport._encryption_session
-    session._shared_key = b"shared-key"
+    transport._shared_key = b"shared-key"
     nonce = b"dac-nonce"
-    session._dac_nonce_base64 = base64.b64encode(nonce).decode()
+    transport._dac_nonce_base64 = base64.b64encode(nonce).decode()
 
-    proof = dac_key.sign(session._shared_key + nonce, ec.ECDSA(hashes.SHA256()))
+    proof = dac_key.sign(transport._shared_key + nonce, ec.ECDSA(hashes.SHA256()))
     share_result = {
         "dac_ca": base64.b64encode(
             dac_cert.public_bytes(serialization.Encoding.PEM)
@@ -885,11 +836,11 @@ async def test_dac_verification_checks_chain_and_signature(
         "dac_proof": base64.b64encode(proof).decode(),
     }
 
-    session._verify_dac_proof(share_result)
+    transport._verify_dac_proof(share_result)
 
     share_result["dac_proof"] = base64.b64encode(b"bad-proof").decode()
     with pytest.raises(KasaException, match="Invalid DAC proof signature"):
-        session._verify_dac_proof(share_result)
+        transport._verify_dac_proof(share_result)
 
 
 @pytest.mark.asyncio
@@ -933,9 +884,7 @@ async def test_transport_send_retries_live_session_failures(
     request_calls = 0
 
     async def fake_handshake() -> None:
-        _establish_session(
-            transport, session, session_id=session_id, start_seq=start_seq
-        )
+        _establish_session(transport, session_id=session_id, start_seq=start_seq)
 
     async def post(
         url: URL,
@@ -956,14 +905,14 @@ async def test_transport_send_retries_live_session_failures(
         return 200, data
 
     transport._http_client.post = post  # type: ignore[assignment]
-    monkeypatch.setattr(session, "perform_handshake", fake_handshake, raising=True)
+    monkeypatch.setattr(transport, "perform_handshake", fake_handshake, raising=True)
 
     out = await transport.send('{"result": {"retry": true}}')
 
     assert out["result"]["retry"] is True
     assert request_calls == 2
-    assert session._session_id == session_id
-    assert session._sequence == start_seq + 1
+    assert str(transport._ds_url).endswith(f"/stok={session_id}/ds")
+    assert _live_session(transport)._sequence == start_seq + 1
 
 
 def _dropping_post(
@@ -1009,18 +958,18 @@ async def test_send_logs_in_again_once_when_session_dropped(
     async def fake_handshake() -> None:
         nonlocal handshakes
         handshakes += 1
-        _establish_session(transport, session, session_id="SID-NEW", start_seq=40)
+        _establish_session(transport, session_id="SID-NEW", start_seq=40)
 
     post, calls = _dropping_post([(status, body)])
     transport._http_client.post = post  # type: ignore[assignment]
-    monkeypatch.setattr(session, "perform_handshake", fake_handshake, raising=True)
+    monkeypatch.setattr(transport, "perform_handshake", fake_handshake, raising=True)
 
     out = await transport.send('{"result": {"ok": true}}')
 
     assert out["result"]["ok"] is True
     assert len(calls) == 2
     assert handshakes == 1
-    assert session._session_id == "SID-NEW"
+    assert str(transport._ds_url).endswith("/stok=SID-NEW/ds")
 
 
 async def test_send_logs_in_again_when_fresh_session_dropped(
@@ -1034,11 +983,11 @@ async def test_send_logs_in_again_when_fresh_session_dropped(
     async def fake_handshake() -> None:
         nonlocal handshakes
         handshakes += 1
-        _establish_session(transport, session, session_id=f"SID-{handshakes}")
+        _establish_session(transport, session_id=f"SID-{handshakes}")
 
     post, calls = _dropping_post([(500, b'{"error_code": -2402}')])
     transport._http_client.post = post  # type: ignore[assignment]
-    monkeypatch.setattr(session, "perform_handshake", fake_handshake, raising=True)
+    monkeypatch.setattr(transport, "perform_handshake", fake_handshake, raising=True)
 
     out = await transport.send('{"result": {"ok": true}}')
 
@@ -1056,18 +1005,18 @@ async def test_send_gives_up_when_session_dropped_twice(
     async def fake_handshake() -> None:
         nonlocal handshakes
         handshakes += 1
-        _establish_session(transport, session)
+        _establish_session(transport)
 
     dropped = (500, b'{"error_code": -2402}')
     post, calls = _dropping_post([dropped, dropped, dropped])
     transport._http_client.post = post  # type: ignore[assignment]
-    monkeypatch.setattr(session, "perform_handshake", fake_handshake, raising=True)
+    monkeypatch.setattr(transport, "perform_handshake", fake_handshake, raising=True)
 
     with pytest.raises(DeviceError, match="device dropped the session"):
         await transport.send('{"result": {"ok": true}}')
 
     assert (len(calls), handshakes) == (2, 1)
-    assert not session.is_established
+    assert transport._encryption_session is None
 
 
 @pytest.mark.parametrize(
@@ -1091,7 +1040,7 @@ async def test_send_does_not_log_in_again_for_other_http_errors(
 
     post, calls = _dropping_post([(500, body)])
     transport._http_client.post = post  # type: ignore[assignment]
-    monkeypatch.setattr(session, "perform_handshake", fake_handshake, raising=True)
+    monkeypatch.setattr(transport, "perform_handshake", fake_handshake, raising=True)
 
     with pytest.raises(KasaException, match="status 500"):
         await transport.send('{"result": {"ok": true}}')
@@ -1105,38 +1054,30 @@ async def test_transport_reset_clears_session_state() -> None:
 
     await transport.reset()
 
-    assert session.is_established is False
+    assert transport._encryption_session is None
+    assert transport._ds_url is None
     assert transport._app_url == transport._bootstrap_url
-    with pytest.raises(KasaException, match="TPAP transport is not established"):
-        session.encrypt(b"{}")
 
 
 @pytest.mark.asyncio
 async def test_transport_reset_preserves_discovered_transport_identity() -> None:
     transport = tp.TpapTransport(config=DeviceConfig("tpap-host"))
-    session = transport._encryption_session
-    session._device_mac = "AA:BB:CC:DD:EE:FF"
-    session._tpap_tls = 2
-    session._tpap_port = 4567
-    session._tpap_dac = True
-    session._tpap_pake = [0, 2]
-    session._tpap_user_hash_type = 1
-    transport._known_device_mac = session._device_mac
-    transport._known_tpap_tls = session._tpap_tls
-    transport._known_tpap_port = session._tpap_port
-    transport._known_tpap_dac = session._tpap_dac
-    transport._known_tpap_pake = list(session._tpap_pake)
-    transport._known_tpap_user_hash_type = session._tpap_user_hash_type
+    transport._device_mac = "AA:BB:CC:DD:EE:FF"
+    transport._tpap_tls = 2
+    transport._tpap_port = 4567
+    transport._tpap_dac = True
+    transport._tpap_pake = [0, 2]
+    transport._tpap_user_hash_type = 1
 
     await transport.reset()
 
     assert transport._app_url == URL("https://tpap-host:4567")
-    assert session.device_mac == "AA:BB:CC:DD:EE:FF"
-    assert session.tls_mode == 2
-    assert session._tpap_port == 4567
-    assert session._tpap_dac is True
-    assert session._tpap_pake == [0, 2]
-    assert session._tpap_user_hash_type == 1
+    assert transport._device_mac == "AA:BB:CC:DD:EE:FF"
+    assert transport._tpap_tls == 2
+    assert transport._tpap_port == 4567
+    assert transport._tpap_dac is True
+    assert transport._tpap_pake == [0, 2]
+    assert transport._tpap_user_hash_type == 1
 
 
 # --------------------------
@@ -1148,9 +1089,9 @@ async def test_transport_reset_preserves_discovered_transport_identity() -> None
 async def test_perform_handshake_is_noop_when_session_already_established() -> None:
     transport, session = _make_established_transport()
 
-    await session.perform_handshake()
+    await transport.perform_handshake()
 
-    assert session.is_established is True
+    assert transport._encryption_session is not None
 
 
 @pytest.mark.asyncio
@@ -1158,7 +1099,7 @@ async def test_perform_handshake_restarts_when_session_was_invalidated(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     transport, session = _make_established_transport()
-    session._invalidate_session()
+    transport._invalidate_session()
     discover_called = False
 
     async def fake_discover() -> None:
@@ -1166,24 +1107,23 @@ async def test_perform_handshake_restarts_when_session_was_invalidated(
         discover_called = True
 
     async def fake_auth_handshake() -> None:
-        _establish_session(transport, session, session_id="SID-NEW", start_seq=14)
+        _establish_session(transport, session_id="SID-NEW", start_seq=14)
 
-    monkeypatch.setattr(session, "_discover", fake_discover, raising=True)
+    monkeypatch.setattr(transport, "_discover", fake_discover, raising=True)
     monkeypatch.setattr(
-        session, "_perform_auth_handshake", fake_auth_handshake, raising=True
+        transport, "_perform_auth_handshake", fake_auth_handshake, raising=True
     )
 
-    await session.perform_handshake()
+    await transport.perform_handshake()
 
     assert discover_called is True
-    assert session.is_established is True
-    assert session._session_id == "SID-NEW"
+    assert transport._encryption_session is not None
+    assert str(transport._ds_url).endswith("/stok=SID-NEW/ds")
 
 
 @pytest.mark.asyncio
 async def test_discover_raises_on_bad_status_or_body() -> None:
     transport = tp.TpapTransport(config=DeviceConfig("discover-host"))
-    session = transport._encryption_session
 
     async def post(
         url: URL,
@@ -1199,13 +1139,12 @@ async def test_discover_raises_on_bad_status_or_body() -> None:
     transport._http_client.post = post  # type: ignore[assignment]
 
     with pytest.raises(KasaException, match="TPAP discover failed"):
-        await session._discover()
+        await transport._discover()
 
 
 @pytest.mark.asyncio
 async def test_discover_parses_invalid_numeric_fields_as_none() -> None:
     transport = tp.TpapTransport(config=DeviceConfig("discover-host"))
-    session = transport._encryption_session
 
     async def post(
         url: URL,
@@ -1235,12 +1174,12 @@ async def test_discover_parses_invalid_numeric_fields_as_none() -> None:
 
     transport._http_client.post = post  # type: ignore[assignment]
 
-    await session._discover()
+    await transport._discover()
 
-    assert session.device_mac == "AA:BB:CC:DD:EE:FF"
-    assert session.tls_mode is None
-    assert session._tpap_port is None
-    assert session._tpap_user_hash_type is None
+    assert transport._device_mac == "AA:BB:CC:DD:EE:FF"
+    assert transport._tpap_tls is None
+    assert transport._tpap_port is None
+    assert transport._tpap_user_hash_type is None
     assert str(transport._app_url) == str(transport._bootstrap_url)
 
 
@@ -1251,7 +1190,6 @@ async def test_discover_tls0_over_https_does_not_downgrade_to_http() -> None:
     config.connection_type.https = True
     config.connection_type.http_port = 4433
     transport = tp.TpapTransport(config=config)
-    session = transport._encryption_session
 
     async def post(
         url: URL,
@@ -1266,20 +1204,19 @@ async def test_discover_tls0_over_https_does_not_downgrade_to_http() -> None:
 
     transport._http_client.post = post  # type: ignore[assignment]
 
-    await session._discover()
-    session._update_transport_url()
+    await transport._discover()
+    transport._update_app_url()
 
     assert transport._app_url == URL("https://tpap-host:4433")
-    assert session.tls_mode == 2
-    assert transport._known_tpap_tls == 2
-    assert not session._use_dac_certification()
+    assert transport._tpap_tls == 2
+    assert transport._tpap_tls == 2
+    assert not transport._use_dac_certification()
     await transport.close()
 
 
 @pytest.mark.asyncio
 async def test_discover_propagates_device_error_codes() -> None:
     transport = tp.TpapTransport(config=DeviceConfig("discover-host"))
-    session = transport._encryption_session
 
     async def post(
         url: URL,
@@ -1298,13 +1235,12 @@ async def test_discover_propagates_device_error_codes() -> None:
     transport._http_client.post = post  # type: ignore[assignment]
 
     with pytest.raises(_RetryableError):
-        await session._discover()
+        await transport._discover()
 
 
 @pytest.mark.asyncio
 async def test_discover_requires_result_and_tpap_objects() -> None:
     transport = tp.TpapTransport(config=DeviceConfig("discover-host"))
-    session = transport._encryption_session
 
     async def post_without_result(
         url: URL,
@@ -1320,7 +1256,7 @@ async def test_discover_requires_result_and_tpap_objects() -> None:
     transport._http_client.post = post_without_result  # type: ignore[assignment]
 
     with pytest.raises(KasaException, match="missing result object"):
-        await session._discover()
+        await transport._discover()
 
     async def post_without_tpap(
         url: URL,
@@ -1336,13 +1272,12 @@ async def test_discover_requires_result_and_tpap_objects() -> None:
     transport._http_client.post = post_without_tpap  # type: ignore[assignment]
 
     with pytest.raises(KasaException, match="missing tpap object"):
-        await session._discover()
+        await transport._discover()
 
 
 @pytest.mark.asyncio
 async def test_login_raises_on_bad_status_or_body() -> None:
     transport = tp.TpapTransport(config=DeviceConfig("login-host"))
-    session = transport._encryption_session
 
     async def post(
         url: URL,
@@ -1358,13 +1293,12 @@ async def test_login_raises_on_bad_status_or_body() -> None:
     transport._http_client.post = post  # type: ignore[assignment]
 
     with pytest.raises(KasaException, match="TPAP pake_register failed"):
-        await session._login({}, step_name="pake_register")
+        await transport._login({}, step_name="pake_register")
 
 
 @pytest.mark.asyncio
 async def test_login_propagates_error_code_handling() -> None:
     transport = tp.TpapTransport(config=DeviceConfig("login-host"))
-    session = transport._encryption_session
 
     async def post(
         url: URL,
@@ -1383,7 +1317,7 @@ async def test_login_propagates_error_code_handling() -> None:
     transport._http_client.post = post  # type: ignore[assignment]
 
     with pytest.raises(AuthenticationError, match="TPAP pake_register failed"):
-        await session._login({}, step_name="pake_register")
+        await transport._login({}, step_name="pake_register")
 
     async def post_without_result(
         url: URL,
@@ -1398,7 +1332,7 @@ async def test_login_propagates_error_code_handling() -> None:
 
     transport._http_client.post = post_without_result  # type: ignore[assignment]
     with pytest.raises(KasaException, match="missing result object"):
-        await session._login({}, step_name="pake_register")
+        await transport._login({}, step_name="pake_register")
 
 
 @pytest.mark.parametrize(
@@ -1413,7 +1347,6 @@ async def test_login_stat_access_error_on_share_is_authentication_error(
     step_name: str, expected: type[Exception]
 ) -> None:
     transport = tp.TpapTransport(config=DeviceConfig("login-host"))
-    session = transport._encryption_session
 
     async def post(
         url: URL,
@@ -1429,7 +1362,7 @@ async def test_login_stat_access_error_on_share_is_authentication_error(
     transport._http_client.post = post  # type: ignore[assignment]
 
     with pytest.raises(expected) as exc_info:
-        await session._login({}, step_name=step_name)
+        await transport._login({}, step_name=step_name)
     assert exc_info.value.error_code is SmartErrorCode.STAT_ACCESS_ERROR  # type: ignore[attr-defined]
 
 
@@ -1474,7 +1407,7 @@ async def test_send_wrong_password_fails_once_without_retry() -> None:
     with pytest.raises(AuthenticationError, match="credentials rejected"):
         await transport.send('{"method": "get_device_info"}')
     assert share_attempts == 1
-    assert not transport._encryption_session.is_established
+    assert not (transport._encryption_session is not None)
 
 
 def _fake_login_device(
@@ -1675,9 +1608,8 @@ async def test_send_does_not_retry_failed_handshake() -> None:
 @pytest.mark.asyncio
 async def test_login_tls2_uses_post() -> None:
     transport = _make_tpap_transport("login-host", family=DeviceFamily.SmartTapoPlug)
-    session = transport._encryption_session
-    session._tpap_tls = 2
-    session._update_transport_url()
+    transport._tpap_tls = 2
+    transport._update_app_url()
 
     async def post(
         url: URL,
@@ -1697,22 +1629,21 @@ async def test_login_tls2_uses_post() -> None:
 
     transport._http_client.post = post  # type: ignore[assignment]
 
-    assert await session._login({}, step_name="pake_register") == {}
+    assert await transport._login({}, step_name="pake_register") == {}
 
 
 @pytest.mark.asyncio
-async def test_update_transport_url_uses_https_default_or_bootstrap_port() -> None:
+async def test_update_app_url_uses_https_default_or_bootstrap_port() -> None:
     transport = _make_tpap_transport(family=DeviceFamily.SmartTapoPlug)
-    session = transport._encryption_session
 
-    session._tpap_tls = 1
-    session._tpap_port = None
-    session._update_transport_url()
+    transport._tpap_tls = 1
+    transport._tpap_port = None
+    transport._update_app_url()
     assert transport._app_url == URL("https://tpap-host:4433")
 
-    session._tpap_tls = 0
-    session._tpap_port = None
-    session._update_transport_url()
+    transport._tpap_tls = 0
+    transport._tpap_port = None
+    transport._update_app_url()
     assert str(transport._app_url) == "http://tpap-host"
     await transport.close()
 
@@ -1722,37 +1653,36 @@ async def test_private_handle_response_error_code_covers_invalid_retry_auth_and_
     None
 ):
     transport = tp.TpapTransport(config=DeviceConfig("tpap-host"))
-    session = transport._encryption_session
-    session._tpap_tls = 2
-    session._tpap_port = 4567
+    transport._tpap_tls = 2
+    transport._tpap_port = 4567
     transport._app_url = URL("https://tpap-host:4567")
-    _establish_session(transport, session, session_id="SID-AUTH", start_seq=4)
+    _establish_session(transport, session_id="SID-AUTH", start_seq=4)
 
     with pytest.raises(DeviceError) as invalid_code:
-        session._handle_response_error_code({"error_code": "not-an-int"}, "ignored")
+        transport._handle_response_error_code({"error_code": "not-an-int"}, "ignored")
     assert invalid_code.value.error_code is SmartErrorCode.INTERNAL_UNKNOWN_ERROR
 
     with pytest.raises(_RetryableError):
-        session._handle_response_error_code(
+        transport._handle_response_error_code(
             {"error_code": SmartErrorCode.SESSION_EXPIRED.value}, "retry"
         )
     with pytest.raises(DeviceError):
-        session._handle_response_error_code(
+        transport._handle_response_error_code(
             {"error_code": SmartErrorCode.STAT_ACCESS_ERROR.value}, "retry"
         )
 
     with pytest.raises(AuthenticationError):
-        session._handle_response_error_code(
+        transport._handle_response_error_code(
             {"error_code": SmartErrorCode.LOGIN_ERROR.value}, "auth"
         )
 
-    assert session.is_established is False
-    assert session.tls_mode == 2
-    assert session._tpap_port == 4567
+    assert (transport._encryption_session is not None) is False
+    assert transport._tpap_tls == 2
+    assert transport._tpap_port == 4567
     assert transport._app_url == URL("https://tpap-host:4567")
 
     with pytest.raises(DeviceError):
-        session._handle_response_error_code(
+        transport._handle_response_error_code(
             {"error_code": SmartErrorCode.DEVICE_ERROR.value}, "device"
         )
     await transport.close()
@@ -1775,8 +1705,7 @@ async def test_share_params_default_iterations(
 ) -> None:
     """Without iterations, PBKDF2 uses the app's default of 10000."""
     transport = _make_tpap_transport()
-    session = transport._encryption_session
-    session._user_random = session._base64(b"\x01" * 32)
+    transport._user_random = transport._base64(b"\x01" * 32)
     used: list[int] = []
 
     def derive_ab(credentials: bytes, salt: bytes, iterations: int, hash_len: int):
@@ -1788,7 +1717,7 @@ async def test_share_params_default_iterations(
     register_result.pop("iterations")
     register_result.update(register_overrides)
 
-    session._build_share_params_from_register(register_result, "secret")
+    transport._build_share_params_from_register(register_result, "secret")
 
     assert used == [10000]
 
@@ -1796,12 +1725,11 @@ async def test_share_params_default_iterations(
 async def test_session_keys_use_sha256_for_sha512_suites() -> None:
     """The session key and nonce use HKDF-SHA256 even when the suite hash is SHA512."""
     transport = _make_tpap_transport()
-    session = transport._encryption_session
-    session._cipher_id = "aes_128_ccm"
-    session._shared_key = b"shared-key"
-    session._expected_dev_confirm = "expected"
+    transport._cipher_id = "aes_128_ccm"
+    transport._shared_key = b"shared-key"
+    transport._expected_dev_confirm = "expected"
 
-    session._establish_session_from_share_result(
+    transport._establish_session_from_share_result(
         {"dev_confirm": "expected", "stok": "STOK", "start_seq": 1}
     )
 
@@ -1812,9 +1740,9 @@ async def test_session_keys_use_sha256_for_sha512_suites() -> None:
 
     key_labels = (b"tp-kdf-salt-aes128-key", b"tp-kdf-info-aes128-key", 16)
     iv_labels = (b"tp-kdf-salt-aes128-iv", b"tp-kdf-info-aes128-iv", 12)
-    assert session._key == hkdf(hashes.SHA256(), *key_labels)
-    assert session._base_nonce == hkdf(hashes.SHA256(), *iv_labels)
-    assert session._key != hkdf(hashes.SHA512(), *key_labels)
+    assert _live_session(transport)._key == hkdf(hashes.SHA256(), *key_labels)
+    assert _live_session(transport)._base_nonce == hkdf(hashes.SHA256(), *iv_labels)
+    assert _live_session(transport)._key != hkdf(hashes.SHA512(), *key_labels)
 
 
 # --------------------------
@@ -1824,10 +1752,9 @@ async def test_session_keys_use_sha256_for_sha512_suites() -> None:
 
 async def test_build_share_params_from_register_requires_user_random() -> None:
     transport = _make_tpap_transport()
-    session = transport._encryption_session
 
     with pytest.raises(KasaException, match="user random not initialized"):
-        session._build_share_params_from_register({}, "secret")
+        transport._build_share_params_from_register({}, "secret")
 
 
 @pytest.mark.parametrize(
@@ -1866,11 +1793,10 @@ async def test_build_share_params_from_register_validates_required_fields(
     overrides: dict[str, Any], match: str
 ) -> None:
     transport = _make_tpap_transport()
-    session = transport._encryption_session
-    session._user_random = base64.b64encode(b"\x01" * 16).decode()
+    transport._user_random = base64.b64encode(b"\x01" * 16).decode()
 
     with pytest.raises(KasaException, match=match):
-        session._build_share_params_from_register(
+        transport._build_share_params_from_register(
             {**_register_result(), **overrides},
             "secret",
         )
@@ -1889,33 +1815,30 @@ async def test_verify_dac_proof_fails_without_attestation(
 ) -> None:
     """Like the Tapo app, an attestation that was asked for must be there."""
     transport = tp.TpapTransport(config=DeviceConfig("tpap-host"))
-    session = transport._encryption_session
-    session._shared_key = b"shared"
-    session._dac_nonce_base64 = base64.b64encode(b"nonce").decode()
+    transport._shared_key = b"shared"
+    transport._dac_nonce_base64 = base64.b64encode(b"nonce").decode()
 
     with pytest.raises(KasaException, match="no DAC certificate or proof"):
-        session._verify_dac_proof(share_result)
+        transport._verify_dac_proof(share_result)
     await transport.close()
 
 
 async def test_verify_dac_proof_fails_without_nonce() -> None:
     transport = tp.TpapTransport(config=DeviceConfig("tpap-host"))
-    session = transport._encryption_session
 
     with pytest.raises(KasaException, match="no shared key or DAC nonce"):
-        session._verify_dac_proof({"dac_ca": "cert", "dac_proof": "cHJvb2Y="})
+        transport._verify_dac_proof({"dac_ca": "cert", "dac_proof": "cHJvb2Y="})
     await transport.close()
 
 
 @pytest.mark.asyncio
 async def test_verify_dac_proof_wraps_non_signature_errors() -> None:
     transport = tp.TpapTransport(config=DeviceConfig("tpap-host"))
-    session = transport._encryption_session
-    session._shared_key = b"shared"
-    session._dac_nonce_base64 = base64.b64encode(b"nonce").decode()
+    transport._shared_key = b"shared"
+    transport._dac_nonce_base64 = base64.b64encode(b"nonce").decode()
 
     with pytest.raises(KasaException, match="DAC verification failed"):
-        session._verify_dac_proof({"dac_ca": "not-a-cert", "dac_proof": "not-b64"})
+        transport._verify_dac_proof({"dac_ca": "not-a-cert", "dac_proof": "not-b64"})
     await transport.close()
 
 
@@ -1924,9 +1847,8 @@ async def test_verify_dac_proof_rejects_invalid_proof_type_and_public_key(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     transport = tp.TpapTransport(config=DeviceConfig("tpap-host"))
-    session = transport._encryption_session
-    session._shared_key = b"shared"
-    session._dac_nonce_base64 = base64.b64encode(b"nonce").decode()
+    transport._shared_key = b"shared"
+    transport._dac_nonce_base64 = base64.b64encode(b"nonce").decode()
 
     cert_key = ec.generate_private_key(ec.SECP256R1())
     dac_cert = build_certificate(cert_key, "root", "root", cert_key, is_ca=True)
@@ -1945,7 +1867,7 @@ async def test_verify_dac_proof_rejects_invalid_proof_type_and_public_key(
     )
 
     with pytest.raises(KasaException, match="Invalid DAC proof type"):
-        session._verify_dac_proof({"dac_ca": "cert", "dac_proof": 1})
+        transport._verify_dac_proof({"dac_ca": "cert", "dac_proof": 1})
 
     bad_cert = cast(Any, SimpleNamespace(public_key=lambda: object()))
     monkeypatch.setattr(
@@ -1955,7 +1877,7 @@ async def test_verify_dac_proof_rejects_invalid_proof_type_and_public_key(
         raising=True,
     )
     with pytest.raises(KasaException, match="Unsupported DAC proof public key type"):
-        session._verify_dac_proof(
+        transport._verify_dac_proof(
             {"dac_ca": "cert", "dac_proof": base64.b64encode(b"proof").decode()}
         )
     await transport.close()
@@ -1966,54 +1888,55 @@ async def test_establish_session_from_share_result_error_paths(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     transport = tp.TpapTransport(config=DeviceConfig("tpap-host"))
-    session = transport._encryption_session
-    session._expected_dev_confirm = "expected"
+    transport._expected_dev_confirm = "expected"
 
     with pytest.raises(KasaException, match="missing dev_confirm"):
-        session._establish_session_from_share_result({})
+        transport._establish_session_from_share_result({})
 
     with pytest.raises(KasaException, match="confirmation mismatch"):
-        session._establish_session_from_share_result({"dev_confirm": "wrong"})
+        transport._establish_session_from_share_result({"dev_confirm": "wrong"})
 
     # compare_digest rejects non-ASCII str with a TypeError
     with pytest.raises(KasaException, match="confirmation mismatch"):
-        session._establish_session_from_share_result({"dev_confirm": "wröng"})
+        transport._establish_session_from_share_result({"dev_confirm": "wröng"})
 
     # base64 is case-sensitive: a value differing only in case does not match
-    session._expected_dev_confirm = "AbCdEf=="
+    transport._expected_dev_confirm = "AbCdEf=="
     with pytest.raises(KasaException, match="confirmation mismatch"):
-        session._establish_session_from_share_result({"dev_confirm": "abcdef=="})
-    session._expected_dev_confirm = "expected"
+        transport._establish_session_from_share_result({"dev_confirm": "abcdef=="})
+    transport._expected_dev_confirm = "expected"
 
-    monkeypatch.setattr(session, "_use_dac_certification", lambda: True, raising=True)
+    monkeypatch.setattr(transport, "_use_dac_certification", lambda: True, raising=True)
     verified: list[dict[str, Any]] = []
     monkeypatch.setattr(
-        session, "_verify_dac_proof", lambda share_result: verified.append(share_result)
+        transport,
+        "_verify_dac_proof",
+        lambda share_result: verified.append(share_result),
     )
-    session._shared_key = b"shared"
-    session._establish_session_from_share_result(
+    transport._shared_key = b"shared"
+    transport._establish_session_from_share_result(
         {"dev_confirm": "expected", "stok": "STOK", "start_seq": 3}
     )
     assert verified
-    assert session._session_id == "STOK"
-    assert session._sequence == 3
+    assert str(transport._ds_url).endswith("/stok=STOK/ds")
+    assert _live_session(transport)._sequence == 3
 
-    session._expected_dev_confirm = "expected"
-    session._shared_key = b"shared"
+    transport._expected_dev_confirm = "expected"
+    transport._shared_key = b"shared"
     with pytest.raises(KasaException, match="Missing session fields"):
-        session._establish_session_from_share_result({"dev_confirm": "expected"})
+        transport._establish_session_from_share_result({"dev_confirm": "expected"})
 
-    session._expected_dev_confirm = "expected"
-    session._shared_key = b"shared"
+    transport._expected_dev_confirm = "expected"
+    transport._shared_key = b"shared"
     with pytest.raises(KasaException, match="Missing session fields"):
-        session._establish_session_from_share_result(
+        transport._establish_session_from_share_result(
             {"dev_confirm": "expected", "sessionId": "SID"}
         )
 
-    session._expected_dev_confirm = "expected"
-    session._shared_key = b"shared"
+    transport._expected_dev_confirm = "expected"
+    transport._shared_key = b"shared"
     with pytest.raises(KasaException, match="Invalid session fields"):
-        session._establish_session_from_share_result(
+        transport._establish_session_from_share_result(
             {
                 "dev_confirm": "expected",
                 "sessionId": "SID",
@@ -2021,10 +1944,10 @@ async def test_establish_session_from_share_result_error_paths(
             }
         )
 
-    session._expected_dev_confirm = "expected"
-    session._shared_key = None
+    transport._expected_dev_confirm = "expected"
+    transport._shared_key = None
     with pytest.raises(KasaException, match="shared key was not derived"):
-        session._establish_session_from_share_result(
+        transport._establish_session_from_share_result(
             {"dev_confirm": "expected", "sessionId": "SID", "start_seq": 1}
         )
     await transport.close()
@@ -2054,7 +1977,7 @@ async def test_transport_properties_and_initial_url_helpers() -> None:
     config.credentials_hash = "hash"
     config.connection_type.http_port = 8080
     transport = tp.TpapTransport(config=config)
-    transport._known_tpap_tls = 2
+    transport._tpap_tls = 2
 
     assert transport.default_port == 8080
     # Not the shape TPAP stores, so it is dropped
@@ -2092,12 +2015,11 @@ async def test_transport_decodes_credentials_hash_for_tpap_handshake() -> None:
 
     config = DeviceConfig("tpap-host", credentials_hash=credentials_hash)
     transport = tp.TpapTransport(config=config)
-    session = transport._encryption_session
-    session._tpap_pake = [2]
+    transport._tpap_pake = [2]
 
     assert transport._credentials == Credentials("user", "pass")
     assert config.credentials == transport._credentials
-    assert session._get_candidate_secrets() == ["pass"]
+    assert transport._get_candidate_secrets() == ["pass"]
     await seed_transport.close()
     await transport.close()
 
@@ -2185,12 +2107,11 @@ async def test_update_without_credentials_does_not_log_in(
 async def test_no_password_gives_no_candidates(family: DeviceFamily | None) -> None:
     """An empty password is never sent; every candidate is a counted login."""
     transport = _make_tpap_transport(family=family, credentials=Credentials("user", ""))
-    session = transport._encryption_session
-    session._tpap_pake = [2]
+    transport._tpap_pake = [2]
 
-    assert session._get_candidate_secrets() == []
+    assert transport._get_candidate_secrets() == []
     with pytest.raises(AuthenticationError, match="no credential candidates"):
-        await session._perform_auth_handshake()
+        await transport._perform_auth_handshake()
     await transport.close()
 
 
@@ -2227,7 +2148,7 @@ def test_should_retry_live_session_variants(exc: Exception, expected: bool) -> N
 @pytest.mark.asyncio
 async def test_get_ssl_context_caches_result(monkeypatch: pytest.MonkeyPatch) -> None:
     transport = tp.TpapTransport(config=DeviceConfig("tpap-host"))
-    transport._encryption_session._tpap_tls = 2
+    transport._tpap_tls = 2
     created = 0
     tls2_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 
@@ -2249,7 +2170,7 @@ async def test_get_ssl_context_caches_result(monkeypatch: pytest.MonkeyPatch) ->
 async def test_get_ssl_context_for_tls1_is_the_shared_context(tls: int | None) -> None:
     """Unverified TLS uses the context the other https transports share."""
     transport = tp.TpapTransport(config=DeviceConfig("tpap-host"))
-    transport._encryption_session._tpap_tls = tls
+    transport._tpap_tls = tls
 
     context = await transport.get_ssl_context()
 
@@ -2262,7 +2183,7 @@ async def test_get_ssl_context_for_tls1_is_the_shared_context(tls: int | None) -
 
 async def test_get_ssl_context_for_tls0_is_plain_http() -> None:
     transport = tp.TpapTransport(config=DeviceConfig("tpap-host"))
-    transport._encryption_session._tpap_tls = 0
+    transport._tpap_tls = 0
 
     assert await transport.get_ssl_context() is False
 
@@ -2271,13 +2192,7 @@ def test_payload_and_sequence_helpers() -> None:
     key, base_nonce = tp.TpapEncryptionSession.key_nonce_from_shared(
         b"shared-secret", "aes_128_ccm"
     )
-    session = object.__new__(tp.TpapEncryptionSession)
-    session._cipher_id = "aes_128_ccm"
-    session._sequence = 5
-    session._ds_url = URL("https://tpap-host/stok=SID/ds")
-    session._key = key
-    session._base_nonce = base_nonce
-    session._session_id = "SID"
+    session = tp.TpapEncryptionSession("aes_128_ccm", b"shared-secret", 5)
 
     payload, seq = session.encrypt("hello")
     assert seq == 5
@@ -2317,14 +2232,14 @@ async def test_send_once_error_paths(monkeypatch: pytest.MonkeyPatch) -> None:
     transport, session = _make_established_transport()
 
     async def fake_handshake() -> None:
-        session._ds_url = None
+        transport._ds_url = None
 
-    session._invalidate_session()
-    monkeypatch.setattr(session, "perform_handshake", fake_handshake, raising=True)
+    transport._invalidate_session()
+    monkeypatch.setattr(transport, "perform_handshake", fake_handshake, raising=True)
     with pytest.raises(KasaException, match="not established"):
         await transport._send_once("{}")
 
-    _establish_session(transport, session)
+    _establish_session(transport)
 
     async def post_bad_status(
         url: URL,
@@ -2374,7 +2289,7 @@ async def test_send_once_error_paths(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.asyncio
 async def test_send_once_tls2_uses_post() -> None:
     transport, session = _make_established_transport()
-    session._tpap_tls = 2
+    transport._tpap_tls = 2
 
     async def post(
         url: URL,
@@ -2387,7 +2302,7 @@ async def test_send_once_tls2_uses_post() -> None:
         ssl: ssl.SSLContext | bool | None = None,
     ) -> tuple[int, bytes]:
         del params, json, cookies_dict, ssl
-        assert url == session.ds_url
+        assert url == transport._ds_url
         assert headers == {"Content-Type": "application/octet-stream"}
         assert data is not None
         return 200, data
@@ -2414,7 +2329,7 @@ async def test_transport_close_resets_and_closes_http_client(
     await transport.close()
 
     assert closed is True
-    assert session.is_established is False
+    assert transport._encryption_session is None
     assert (
         crypto.build_credentials(
             {
@@ -2443,11 +2358,10 @@ def test_transport_response_helpers_validate_json_payloads() -> None:
 async def test_camera_is_always_https() -> None:
     """Like the app, a camera's TPAP endpoint is https whatever tls says."""
     transport = _make_https_camera_tpap_transport()
-    session = transport._encryption_session
-    session._tpap_tls = 0
-    session._tpap_port = 443
+    transport._tpap_tls = 0
+    transport._tpap_port = 443
 
-    session._update_transport_url()
+    transport._update_app_url()
 
     assert transport._app_url.scheme == "https"
     assert transport._app_url.port == 443
@@ -2471,11 +2385,10 @@ async def test_kasa_iot_url(
     """Kasa IOT devices follow the app's Kasa client, not its IoT client."""
     transport = _make_tpap_transport(family=DeviceFamily.IotSmartBulb)
     transport._config.connection_type.http_port = 9999
-    session = transport._encryption_session
-    session._tpap_tls = tls
-    session._tpap_port = port
+    transport._tpap_tls = tls
+    transport._tpap_port = port
 
-    session._update_transport_url()
+    transport._update_app_url()
 
     assert transport._app_url.scheme == expected_scheme
     assert transport._app_url.port == expected_port
@@ -2486,11 +2399,10 @@ async def test_kasa_iot_url_keeps_port_override() -> None:
     """A port forward set by the user still applies when tpap has no port."""
     transport = _make_tpap_transport(family=DeviceFamily.IotSmartPlugSwitch)
     transport._config.port_override = 8080
-    session = transport._encryption_session
-    session._tpap_tls = 1
-    session._tpap_port = None
+    transport._tpap_tls = 1
+    transport._tpap_port = None
 
-    session._update_transport_url()
+    transport._update_app_url()
 
     assert transport._app_url.scheme == "https"
     assert transport._app_url.port == 8080
@@ -2504,19 +2416,18 @@ async def test_kasa_iot_handshake_from_in_band_discover(
     transport = _make_tpap_transport(
         family=DeviceFamily.IotSmartBulb, credentials=Credentials("user", "pass")
     )
-    session = transport._encryption_session
     captured_register: dict[str, Any] = {}
     transport._http_client.post = _make_discover_post(  # type: ignore[assignment]
         _discover_response(tls=1, port=0, pake=[0, 2], dac=True)
     )
     monkeypatch.setattr(
-        session,
+        transport,
         "_login",
-        _make_handshake_login(session, capture_register=captured_register),
+        _make_handshake_login(transport, capture_register=captured_register),
         raising=True,
     )
 
-    await session.perform_handshake()
+    await transport.perform_handshake()
 
     assert transport._app_url.scheme == "https"
     assert transport._app_url.port == 80
@@ -2563,7 +2474,6 @@ async def test_camera_handshake_skips_in_band_discover(
 ) -> None:
     """Cameras refuse the in-band discover, so it is not sent; defaults apply."""
     transport = _make_https_camera_tpap_transport()
-    session = transport._encryption_session
     posts: list[Any] = []
 
     async def post(*args: Any, **kwargs: Any) -> Any:
@@ -2573,20 +2483,20 @@ async def test_camera_handshake_skips_in_band_discover(
     transport._http_client.post = post  # type: ignore[assignment]
     captured_register: dict[str, Any] = {}
     monkeypatch.setattr(
-        session,
+        transport,
         "_login",
-        _make_handshake_login(session, capture_register=captured_register),
+        _make_handshake_login(transport, capture_register=captured_register),
         raising=True,
     )
 
-    await session.perform_handshake()
+    await transport.perform_handshake()
 
     assert posts == []
     assert transport._port == 443
-    assert session._tpap_pake == [2]
-    assert session._tpap_tls == 1
-    assert session._tpap_port == 443
-    assert session._tpap_dac is False
+    assert transport._tpap_pake == [2]
+    assert transport._tpap_tls == 1
+    assert transport._tpap_port == 443
+    assert transport._tpap_dac is False
     assert transport._app_url.scheme == "https"
     assert transport._app_url.port == 443
     assert captured_register["passcode_type"] == "userpw"
@@ -2622,23 +2532,21 @@ async def test_register_username_follows_user_hash_type_on_cameras(
     family: DeviceFamily, user_hash_type: int, expected: str
 ) -> None:
     transport = _make_tpap_transport(family=family)
-    session = transport._encryption_session
-    session._tpap_user_hash_type = user_hash_type
+    transport._tpap_user_hash_type = user_hash_type
 
-    assert session._get_register_username() == expected
+    assert transport._get_register_username() == expected
     await transport.close()
 
 
 @pytest.mark.asyncio
 async def test_non_camera_discover_still_raises_on_refusal() -> None:
     transport = _make_tpap_transport(credentials=Credentials("user", "pass"))
-    session = transport._encryption_session
     transport._http_client.post = _make_error_post(  # type: ignore[assignment]
         {"error_code": SmartErrorCode.INVALID_ARGUMENTS.value}
     )
 
     with pytest.raises(DeviceError):
-        await session._discover()
+        await transport._discover()
 
 
 @pytest.mark.asyncio
@@ -2685,11 +2593,10 @@ async def test_login_refused_after_device_rejection(
 ) -> None:
     """Any rejected pake_share, or a lockout, marks the login as refused."""
     transport = _make_tpap_transport(credentials=Credentials("user", "pass"))
-    session = transport._encryption_session
 
     assert transport.login_refused is False
     with pytest.raises(KasaException):
-        session._handle_login_error_code(response, step)
+        transport._handle_login_error_code(response, step)
     assert transport.login_refused is True
     await transport.close()
 
@@ -2697,15 +2604,14 @@ async def test_login_refused_after_device_rejection(
 async def test_login_not_refused_by_local_or_early_errors() -> None:
     """Errors before pake_share, and refusing locally, send no counted login."""
     transport = _make_tpap_transport(credentials=Credentials("user", ""))
-    session = transport._encryption_session
-    session._tpap_pake = [2]
+    transport._tpap_pake = [2]
 
     with pytest.raises(DeviceError):
-        session._handle_login_error_code(
+        transport._handle_login_error_code(
             {"error_code": SmartErrorCode.INVALID_ARGUMENTS.value}, "pake_register"
         )
     with pytest.raises(AuthenticationError, match="no credential candidates"):
-        await session._perform_auth_handshake()
+        await transport._perform_auth_handshake()
     assert transport.login_refused is False
     await transport.close()
 
@@ -2814,26 +2720,25 @@ async def test_discovered_parameters_skip_in_band_discover(
     transport = _make_discovered_transport(
         tpap, family=family, https=https, http_port=http_port
     )
-    session = transport._encryption_session
     transport._http_client.post = _no_post  # type: ignore[assignment]
     captured_register: dict[str, Any] = {}
     monkeypatch.setattr(
-        session,
+        transport,
         "_login",
-        _make_handshake_login(session, capture_register=captured_register),
+        _make_handshake_login(transport, capture_register=captured_register),
         raising=True,
     )
 
-    await session.perform_handshake()
+    await transport.perform_handshake()
 
     url = transport._app_url
-    assert (url.scheme, url.port, session.tls_mode) == expected
+    assert (url.scheme, url.port, transport._tpap_tls) == expected
     assert captured_register["passcode_type"] == "userpw"
     # A dropped session logs in again without the in-band discover either
-    session._invalidate_session()
-    await session.perform_handshake()
+    transport._invalidate_session()
+    await transport.perform_handshake()
     url = transport._app_url
-    assert (url.scheme, url.port, session.tls_mode) == expected
+    assert (url.scheme, url.port, transport._tpap_tls) == expected
     await transport.close()
 
 
@@ -2852,7 +2757,6 @@ async def test_discovered_dac_sends_dac_nonce(
         TpapParameters(tls=0, dac=True, pake=pake, port=80, mac="AA-BB-CC-DD-EE-FF"),
         family=DeviceFamily.SmartKasaPlug,
     )
-    session = transport._encryption_session
     transport._http_client.post = _no_post  # type: ignore[assignment]
     shares: list[dict[str, Any]] = []
 
@@ -2862,10 +2766,10 @@ async def test_discovered_dac_sends_dac_nonce(
         shares.append(params)
         raise AuthenticationError("stop after the share request")
 
-    monkeypatch.setattr(session, "_login", fake_login, raising=True)
+    monkeypatch.setattr(transport, "_login", fake_login, raising=True)
 
     with pytest.raises(AuthenticationError):
-        await session.perform_handshake()
+        await transport.perform_handshake()
     assert ("dac_nonce" in shares[0]) is asked
     await transport.close()
 
@@ -2879,17 +2783,16 @@ async def test_discovered_user_hash_type_on_camera(
         family=DeviceFamily.SmartIpCamera,
         https=True,
     )
-    session = transport._encryption_session
     transport._http_client.post = _no_post  # type: ignore[assignment]
     captured_register: dict[str, Any] = {}
     monkeypatch.setattr(
-        session,
+        transport,
         "_login",
-        _make_handshake_login(session, capture_register=captured_register),
+        _make_handshake_login(transport, capture_register=captured_register),
         raising=True,
     )
 
-    await session.perform_handshake()
+    await transport.perform_handshake()
 
     assert captured_register["username"] == (crypto.sha256_hex_upper("admin"))
     await transport.close()
@@ -2900,10 +2803,9 @@ async def test_discovered_mac_gives_default_passcode() -> None:
     transport = _make_discovered_transport(
         TpapParameters(tls=0, pake=[0], port=80, mac="AA-BB-CC-DD-EE-FF")
     )
-    session = transport._encryption_session
 
-    assert session._get_passcode_type() == "default_userpw"
-    assert session._get_candidate_secrets() == [
+    assert transport._get_passcode_type() == "default_userpw"
+    assert transport._get_candidate_secrets() == [
         crypto.mac_pass_from_device_mac("AA:BB:CC:DD:EE:FF")
     ]
     await transport.close()
@@ -2933,7 +2835,6 @@ async def test_connection_logs_each_step(caplog: pytest.LogCaptureFixture) -> No
         family=DeviceFamily.SmartTapoPlug,
         credentials=Credentials("user", "secret-pass"),
     )
-    session = transport._encryption_session
 
     async def post(
         url: URL,
@@ -2954,7 +2855,7 @@ async def test_connection_logs_each_step(caplog: pytest.LogCaptureFixture) -> No
                 cipher_suites=1,
             )
             return 200, {"error_code": 0, "result": result}
-        return 200, {"error_code": 0, "result": _share_result(session)}
+        return 200, {"error_code": 0, "result": _share_result(transport)}
 
     transport._http_client.post = post  # type: ignore[assignment]
 
@@ -2980,8 +2881,8 @@ async def test_connection_logs_each_step(caplog: pytest.LogCaptureFixture) -> No
     assert "Response status is 200" in caplog.text
     # No credentials and no SPAKE2+ values
     assert "secret-pass" not in caplog.text
-    assert session._user_random
-    assert session._user_random not in caplog.text
+    assert transport._user_random
+    assert transport._user_random not in caplog.text
     assert "AA:BB:CC:DD:EE:FF" not in caplog.text
     assert not any(m.startswith("TPAP: ") for m in messages)
     await transport.close()
@@ -2997,7 +2898,7 @@ async def test_no_pake_refuses_before_logging_in() -> None:
     counts = _fake_login_device(transport, discover=response)
 
     with pytest.raises(AuthenticationError, match="no supported passcode type"):
-        await transport._encryption_session.perform_handshake()
+        await transport.perform_handshake()
     assert counts == {"discover": 1, "pake_register": 0, "pake_share": 0}
     await transport.close()
 
@@ -3011,9 +2912,8 @@ async def test_no_pake_refuses_before_logging_in() -> None:
 async def test_tls2_ssl_context_uses_ecdsa_and_checks_mac(mac: str) -> None:
     """Like the app: ECDSA suites only, and the MAC check when the MAC is known."""
     transport = _make_tpap_transport(family=DeviceFamily.SmartTapoRobovac)
-    session = transport._encryption_session
-    session._tpap_tls = 2
-    session._device_mac = mac
+    transport._tpap_tls = 2
+    transport._device_mac = mac
 
     context = transport._create_tls2_ssl_context()
 
@@ -3094,9 +2994,8 @@ async def test_tls2_handshake_requires_device_mac(
         root.public_bytes(serialization.Encoding.PEM).decode(),
     )
     transport = _make_tpap_transport(family=DeviceFamily.SmartTapoRobovac)
-    session = transport._encryption_session
-    session._tpap_tls = 2
-    session._device_mac = "AA-BB-CC-DD-EE-FF"
+    transport._tpap_tls = 2
+    transport._device_mac = "AA-BB-CC-DD-EE-FF"
     client_ctx = transport._create_tls2_ssl_context()
     assert isinstance(client_ctx, ssl.SSLContext)
 

@@ -10,7 +10,7 @@ import secrets
 import ssl
 import struct
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
@@ -45,128 +45,338 @@ class _SessionLostError(DeviceError):
     """The device dropped the session of a request; log in again once and resend."""
 
 
-class TpapEncryptionSession:
-    """Class for a TPAP encryption session."""
+class TpapTransport(BaseTransport):
+    """Implementation of the TPAP encryption protocol."""
 
-    TAG_LEN = 16
-    NONCE_LEN = 12
+    DEFAULT_PORT: int = 80
+    # Errors on a /ds request after which the app logs in again and resends
+    # once: -2402 (invalid argument, also what -40420 and -40421 in an HTTP
+    # error body become) and -2101 (auth attempts limit).
+    SESSION_LOST_ERROR_CODES = frozenset({-2402, -2101, -40420, -40421})
+    DEFAULT_HTTPS_PORT: int = 4433
+    DEFAULT_CAMERA_HTTPS_PORT: int = 443
+    CAMERA_AUTH_DEVICE_FAMILIES = (
+        DeviceFamily.SmartIpCamera,
+        DeviceFamily.SmartTapoDoorbell,
+    )
+    ROBOT_TPAP_DEVICE_FAMILIES = {DeviceFamily.SmartTapoRobovac}
+    # Kasa IOT devices use the Tapo app's Kasa TPAP client, not its IoT one
+    KASA_IOT_DEVICE_FAMILIES = {
+        DeviceFamily.IotSmartPlugSwitch,
+        DeviceFamily.IotSmartBulb,
+    }
+    COMMON_HEADERS = {"Content-Type": "application/json"}
     # PBKDF2-HMAC-SHA256 iteration count from an unauthenticated pake_register
     # response is otherwise unbounded and runs synchronously on the event loop;
     # cap it well above any realistic device value to prevent a pre-auth DoS.
     MAX_PAKE_ITERATIONS = 100_000
     # The app's default when pake_register leaves iterations out.
     DEFAULT_PAKE_ITERATIONS = 10_000
-    CIPHER_PARAMETERS = {
-        "aes_128_ccm": (
-            b"tp-kdf-salt-aes128-key",
-            b"tp-kdf-info-aes128-key",
-            b"tp-kdf-salt-aes128-iv",
-            b"tp-kdf-info-aes128-iv",
-            16,
-        ),
-        "aes_256_ccm": (
-            b"tp-kdf-salt-aes256-key",
-            b"tp-kdf-info-aes256-key",
-            b"tp-kdf-salt-aes256-iv",
-            b"tp-kdf-info-aes256-iv",
-            32,
-        ),
-        "chacha20_poly1305": (
-            b"tp-kdf-salt-chacha20-key",
-            b"tp-kdf-info-chacha20-key",
-            b"tp-kdf-salt-chacha20-iv",
-            b"tp-kdf-info-chacha20-iv",
-            32,
-        ),
-    }
 
-    def __init__(self, transport: TpapTransport) -> None:
-        self._transport = transport
-        self._handshake_lock = asyncio.Lock()
-        self._device_mac: str = ""
+    def __init__(self, *, config: DeviceConfig) -> None:
+        """Create the transport."""
+        super().__init__(config=config)
+        if self._credentials is None and self._credentials_hash:
+            # BaseTransport kept the hash only if it has this transport's shape
+            self._credentials = Credentials._from_plaintext_hash(self._credentials_hash)
+            self._config.credentials = self._credentials
+        self._http_client: HttpClient = HttpClient(self._config)
+        self._ssl_context: ssl.SSLContext | bool | None = None
+        protocol = "https" if config.connection_type.https else "http"
+        self._bootstrap_url = URL(f"{protocol}://{self._host}:{self._port}")
+        self._app_url = self._bootstrap_url
+        # The login values: from discovery, else the in-band discover or
+        # the camera defaults
+        self._device_mac = ""
         self._tpap_tls: int | None = None
         self._tpap_port: int | None = None
-        self._tpap_dac: bool = False
+        self._tpap_dac = False
         self._tpap_pake: list[int] | None = None
         self._tpap_user_hash_type: int | None = None
-        self._session_id: str | None = None
-        self._sequence: int | None = None
+        self._has_discovery_tpap = False
+        if (tpap := config.connection_type.tpap) is not None:
+            self._has_discovery_tpap = True
+            self._device_mac = tpap.mac or ""
+            self._tpap_tls = tpap.tls
+            self._tpap_port = tpap.port
+            self._tpap_dac = tpap.dac
+            self._tpap_pake = None if tpap.pake is None else list(tpap.pake)
+            self._tpap_user_hash_type = tpap.user_hash_type
+        self._login_refused = False
+        self._handshake_lock = asyncio.Lock()
+        self._send_lock: asyncio.Lock = asyncio.Lock()
+        # The login state, and the session once logged in
+        self._encryption_session: TpapEncryptionSession | None = None
         self._ds_url: URL | None = None
-        self._cipher_id: str = "aes_128_ccm"
-        self._key: bytes | None = None
-        self._base_nonce: bytes | None = None
+        self._cipher_id = "aes_128_ccm"
         self._shared_key: bytes | None = None
         self._expected_dev_confirm: str | None = None
         self._dac_nonce_base64: str | None = None
         self._user_random: str | None = None
-        self.reset()
+        self._reset_state()
+        _LOGGER.debug("Created TPAP transport for %s", self._host)
+
+    @property
+    def default_port(self) -> int:
+        """Default port for the transport."""
+        config = self._config
+        if port := config.connection_type.http_port:
+            return port
+        if config.connection_type.https:
+            if config.connection_type.device_family in self.CAMERA_AUTH_DEVICE_FAMILIES:
+                return self.DEFAULT_CAMERA_HTTPS_PORT
+            return self.DEFAULT_HTTPS_PORT
+        return self.DEFAULT_PORT
+
+    @property
+    def credentials_hash(self) -> str | None:
+        """The hashed credentials used by the transport."""
+        if self._credentials and self._credentials.username:
+            credentials_hash = {
+                "un": self._credentials.username,
+                "pwd": self._credentials.password,
+            }
+            return base64.b64encode(json_dumps(credentials_hash).encode()).decode()
+        return self._credentials_hash
+
+    @classmethod
+    def is_transport_credentials_hash(cls, credentials_hash: str) -> bool:
+        """Whether the hash has the shape this transport produces."""
+        return Credentials._from_plaintext_hash(credentials_hash) is not None
+
+    @property
+    def tpap_parameters(self) -> TpapParameters:
+        """The TPAP login the transport uses, once it has logged in.
+
+        From the discovery reply, the in-band discover or the camera defaults.
+        """
+        return TpapParameters(
+            tls=self._tpap_tls or 0,
+            port=self._tpap_port,
+            pake=self._tpap_pake,
+            dac=self._tpap_dac,
+            user_hash_type=self._tpap_user_hash_type,
+            mac=self._device_mac or None,
+        )
+
+    @property
+    def login_refused(self) -> bool:
+        """True once the device rejected a login or reported a lockout.
+
+        The device counts each rejected login toward its lockout, whatever
+        error code it answers with.
+        """
+        return self._login_refused
 
     @property
     def _uses_camera_auth(self) -> bool:
-        device_family = self._transport._config.connection_type.device_family
-        return device_family in self._transport.CAMERA_AUTH_DEVICE_FAMILIES
+        device_family = self._config.connection_type.device_family
+        return device_family in self.CAMERA_AUTH_DEVICE_FAMILIES
 
     @property
     def _uses_robot_tpap_auth(self) -> bool:
-        device_family = self._transport._config.connection_type.device_family
-        return device_family in self._transport.ROBOT_TPAP_DEVICE_FAMILIES
+        device_family = self._config.connection_type.device_family
+        return device_family in self.ROBOT_TPAP_DEVICE_FAMILIES
 
     @property
     def _uses_kasa_iot_auth(self) -> bool:
-        device_family = self._transport._config.connection_type.device_family
-        return device_family in self._transport.KASA_IOT_DEVICE_FAMILIES
+        device_family = self._config.connection_type.device_family
+        return device_family in self.KASA_IOT_DEVICE_FAMILIES
 
-    @property
-    def tls_mode(self) -> int | None:
-        """The discovered TLS mode."""
-        return self._tpap_tls
-
-    @property
-    def ds_url(self) -> URL | None:
-        """The secure DS endpoint for the current session."""
-        return self._ds_url
-
-    @property
-    def device_mac(self) -> str:
-        """The discovered device MAC."""
-        return self._device_mac
-
-    @property
-    def is_established(self) -> bool:
-        """Return true if the session is established."""
-        return (
-            self._session_id is not None
-            and self._sequence is not None
-            and self._ds_url is not None
-            and self._key is not None
-            and self._base_nonce is not None
+    def _build_app_url(self, *, tls_mode: int | None, port: int | None) -> URL:
+        family = self._config.connection_type.device_family
+        if family in self.KASA_IOT_DEVICE_FAMILIES:
+            # The app's Kasa client: https for any tls but 0, and the tpap
+            # port or else 80, whatever the scheme
+            scheme = "https" if tls_mode else "http"
+            resolved_port = (
+                port
+                if port and port > 0
+                else self._config.port_override or self.DEFAULT_PORT
+            )
+            return URL.build(scheme=scheme, host=self._host, port=resolved_port)
+        # Like the Tapo app, cameras are always https on their own port
+        is_camera = family in self.CAMERA_AUTH_DEVICE_FAMILIES
+        scheme = "https" if is_camera or tls_mode in (1, 2) else "http"
+        if port and port > 0:
+            resolved_port = port
+        elif scheme == "http" or is_camera:
+            resolved_port = self._port
+        else:
+            resolved_port = self.DEFAULT_HTTPS_PORT
+        return URL.build(
+            scheme=scheme,
+            host=self._host,
+            port=resolved_port,
         )
 
-    def _invalidate_session(self) -> None:
-        """Reset live session state while preserving discovered metadata."""
-        self._session_id = None
-        self._sequence = None
-        self._ds_url = None
-        self._cipher_id = "aes_128_ccm"
-        self._key = None
-        self._base_nonce = None
-        self._shared_key = None
-        self._expected_dev_confirm = None
-        self._dac_nonce_base64 = None
-        self._user_random = None
+    def _get_initial_app_url(self) -> URL:
+        if not (self._tpap_port and self._tpap_port > 0) and (
+            self._tpap_tls not in (1, 2)
+        ):
+            return self._bootstrap_url
 
-    def reset(self) -> None:
-        """Reset discovered metadata and session state."""
-        self._transport._ssl_context = None
-        self._transport._app_url = self._transport._get_initial_app_url()
-        self._device_mac = self._transport._known_device_mac
-        self._tpap_tls = self._transport._known_tpap_tls
-        self._tpap_port = self._transport._known_tpap_port
-        self._tpap_dac = self._transport._known_tpap_dac
-        known_pake = self._transport._known_tpap_pake
-        self._tpap_pake = None if known_pake is None else list(known_pake)
-        self._tpap_user_hash_type = self._transport._known_tpap_user_hash_type
-        self._invalidate_session()
+        return self._build_app_url(
+            tls_mode=self._tpap_tls,
+            port=self._tpap_port,
+        )
+
+    def _update_app_url(self) -> None:
+        self._app_url = self._build_app_url(
+            tls_mode=self._tpap_tls,
+            port=self._tpap_port,
+        )
+
+    async def get_ssl_context(self) -> ssl.SSLContext | bool:
+        """Get or create the SSL context for the device's TLS mode."""
+        if self._ssl_context is None:
+            tls_mode = self._tpap_tls
+            if tls_mode == 0:
+                self._ssl_context = False
+            elif tls_mode == 2:
+                loop = asyncio.get_running_loop()
+                self._ssl_context = await loop.run_in_executor(
+                    None, self._create_tls2_ssl_context
+                )
+            else:
+                # Unverified TLS, shared with the other https transports
+                self._ssl_context = await get_ssl_context()
+        return self._ssl_context
+
+    def _create_tls2_ssl_context(self) -> ssl.SSLContext:
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_REQUIRED
+        context.load_verify_locations(cadata=cert.TPAP_ROOT_CA_PEM)
+        # Like the Tapo app: ECDSA suites only, and the certificate has to
+        # name this device's MAC
+        context.set_ciphers(cert.TLS2_CIPHERS)
+        if mac := self._device_mac:
+            context.sslobject_class = cert.mac_checking_sslobject(mac)
+        else:
+            _LOGGER.debug(
+                "No device MAC to check the TLS certificate of %s against",
+                self._host,
+            )
+        return context
+
+    async def perform_handshake(self) -> None:
+        """Perform the handshake."""
+        async with self._handshake_lock:
+            if self._encryption_session is not None:
+                return
+
+            self._reset_state()
+            _LOGGER.debug("Starting handshake with %s", self._host)
+
+            if self._has_discovery_tpap:
+                # Like the Tapo app, log in with what UDP discovery announced
+                self._update_app_url()
+                source = "discovery"
+            elif self._uses_camera_auth:
+                # Cameras refuse the in-band discover (-40209); the app never
+                # sends it to them
+                self._apply_default_params()
+                source = "the camera defaults"
+            else:
+                await self._discover()
+                source = "the in-band discover"
+            _LOGGER.debug(
+                "Using the TPAP login from %s for %s: tls %s, port %s, pake %s, "
+                "dac %s, url %s",
+                source,
+                self._host,
+                self._tpap_tls,
+                self._tpap_port,
+                self._tpap_pake,
+                self._tpap_dac,
+                self._app_url,
+            )
+            await self._perform_auth_handshake()
+
+            _LOGGER.debug("Handshake with %s complete", self._host)
+
+    async def _discover(self) -> None:
+        body = {"method": "login", "params": {"sub_method": "discover"}}
+        status, data = await self._http_client.post(
+            self._app_url.with_path("/"),
+            json=body,
+            headers=self.COMMON_HEADERS,
+            ssl=await self.get_ssl_context(),
+        )
+        _LOGGER.debug(
+            "Discover posted at %s. Host is %s, Response status is %s",
+            datetime.now(),
+            self._host,
+            status,
+        )
+        if status != 200 or not isinstance(data, dict):
+            raise KasaException(
+                f"TPAP discover failed for {self._host}: {status} {type(data)}"
+            )
+
+        self._handle_login_error_code(data, "discover")
+        result = self._require_result_dict(data)
+        tpap = result.get("tpap")
+        if not isinstance(tpap, dict):
+            raise KasaException("TPAP discover response missing tpap object")
+
+        self._device_mac = str(result.get("mac") or "")
+        self._tpap_tls = self._parse_optional_int(tpap.get("tls"))
+        # Some devices (RV50 Pro Omni) answer the in-band discover over TLS
+        # with tls=0.  A session bootstrapped over https stays on CA-verified
+        # TLS (mode 2) rather than falling back to plaintext on a TLS port.
+        if self._tpap_tls == 0 and self._app_url.scheme == "https":
+            self._tpap_tls = 2
+        self._tpap_port = self._parse_optional_int(tpap.get("port"))
+        self._tpap_dac = bool(tpap.get("dac"))
+        pake = tpap.get("pake")
+        self._tpap_pake = list(pake) if isinstance(pake, list) else None
+        self._tpap_user_hash_type = self._parse_optional_int(tpap.get("user_hash_type"))
+
+        self._update_app_url()
+
+        # Discover runs before we know the real TLS mode, so rebuild for auth.
+        self._ssl_context = None
+
+    def _apply_default_params(self) -> None:
+        """Set up a camera login without the in-band discover.
+
+        Password login, no DAC attestation, and TLS when the connection is
+        https. That matches what the C101 and C510W cameras announce in UDP
+        discovery (``tpap: {pake: [2], tls: 1, port: 443}``).
+        """
+        self._tpap_tls = 1 if self._config.connection_type.https else 0
+        self._tpap_port = self._port
+        self._tpap_dac = False
+        self._tpap_pake = [2]
+        self._tpap_user_hash_type = None
+        self._update_app_url()
+        self._ssl_context = None
+
+    async def _login(self, params: dict[str, Any], *, step_name: str) -> dict[str, Any]:
+        body = {"method": "login", "params": params}
+        ssl_context = await self.get_ssl_context()
+        status, data = await self._http_client.post(
+            self._app_url.with_path("/"),
+            json=body,
+            headers=self.COMMON_HEADERS,
+            ssl=ssl_context,
+        )
+        _LOGGER.debug(
+            "%s posted at %s. Host is %s, Response status is %s",
+            step_name,
+            datetime.now(),
+            self._host,
+            status,
+        )
+        if status != 200 or not isinstance(data, dict):
+            raise KasaException(
+                f"TPAP {step_name} failed for {self._host}: {status} {type(data)}"
+            )
+
+        self._handle_login_error_code(data, step_name)
+        return self._require_result_dict(data)
 
     @staticmethod
     def _parse_optional_int(value: Any) -> int | None:
@@ -184,147 +394,6 @@ class TpapEncryptionSession:
             raise KasaException("TPAP response missing result object")
         return result
 
-    async def perform_handshake(self) -> None:
-        """Perform the handshake."""
-        async with self._handshake_lock:
-            if self.is_established:
-                return
-
-            self.reset()
-            _LOGGER.debug("Starting handshake with %s", self._transport._host)
-
-            if self._transport._has_discovery_tpap:
-                # Like the Tapo app, log in with what UDP discovery announced
-                self._update_transport_url()
-                source = "discovery"
-            elif self._uses_camera_auth:
-                # Cameras refuse the in-band discover (-40209); the app never
-                # sends it to them
-                self._apply_default_params()
-                source = "the camera defaults"
-            else:
-                await self._discover()
-                source = "the in-band discover"
-            _LOGGER.debug(
-                "Using the TPAP login from %s for %s: tls %s, port %s, pake %s, "
-                "dac %s, url %s",
-                source,
-                self._transport._host,
-                self._tpap_tls,
-                self._tpap_port,
-                self._tpap_pake,
-                self._tpap_dac,
-                self._transport._app_url,
-            )
-            await self._perform_auth_handshake()
-
-            _LOGGER.debug("Handshake with %s complete", self._transport._host)
-
-    async def _discover(self) -> None:
-        body = {"method": "login", "params": {"sub_method": "discover"}}
-        status, data = await self._transport._http_client.post(
-            self._transport._app_url.with_path("/"),
-            json=body,
-            headers=self._transport.COMMON_HEADERS,
-            ssl=await self._transport.get_ssl_context(),
-        )
-        _LOGGER.debug(
-            "Discover posted at %s. Host is %s, Response status is %s",
-            datetime.now(),
-            self._transport._host,
-            status,
-        )
-        if status != 200 or not isinstance(data, dict):
-            raise KasaException(
-                f"TPAP discover failed for {self._transport._host}: "
-                f"{status} {type(data)}"
-            )
-
-        self._handle_login_error_code(data, "discover")
-        result = self._require_result_dict(data)
-        tpap = result.get("tpap")
-        if not isinstance(tpap, dict):
-            raise KasaException("TPAP discover response missing tpap object")
-
-        self._device_mac = str(result.get("mac") or "")
-        self._tpap_tls = self._parse_optional_int(tpap.get("tls"))
-        # Some devices (RV50 Pro Omni) answer the in-band discover over TLS
-        # with tls=0.  A session bootstrapped over https stays on CA-verified
-        # TLS (mode 2) rather than falling back to plaintext on a TLS port.
-        if self._tpap_tls == 0 and self._transport._app_url.scheme == "https":
-            self._tpap_tls = 2
-        self._tpap_port = self._parse_optional_int(tpap.get("port"))
-        self._tpap_dac = bool(tpap.get("dac"))
-        pake = tpap.get("pake")
-        self._tpap_pake = list(pake) if isinstance(pake, list) else None
-        self._tpap_user_hash_type = self._parse_optional_int(tpap.get("user_hash_type"))
-
-        self._transport._known_device_mac = self._device_mac
-        self._transport._known_tpap_tls = self._tpap_tls
-        self._transport._known_tpap_port = self._tpap_port
-        self._transport._known_tpap_dac = self._tpap_dac
-        self._transport._known_tpap_pake = self._tpap_pake
-        self._transport._known_tpap_user_hash_type = self._tpap_user_hash_type
-        self._update_transport_url()
-
-        # Discover runs before we know the real TLS mode, so rebuild for auth.
-        self._transport._ssl_context = None
-
-    def _apply_default_params(self) -> None:
-        """Set up a camera session without the in-band discover.
-
-        Password login, no DAC attestation, and TLS when the connection is
-        https. That matches what the C101 and C510W cameras announce in UDP
-        discovery (``tpap: {pake: [2], tls: 1, port: 443}``).
-        """
-        transport = self._transport
-        self._device_mac = transport._known_device_mac
-        self._tpap_tls = 1 if transport._config.connection_type.https else 0
-        self._tpap_port = transport._port
-        self._tpap_dac = False
-        self._tpap_pake = [2]
-        self._tpap_user_hash_type = None
-
-        transport._known_device_mac = self._device_mac
-        transport._known_tpap_tls = self._tpap_tls
-        transport._known_tpap_port = self._tpap_port
-        transport._known_tpap_dac = False
-        transport._known_tpap_pake = [2]
-        transport._known_tpap_user_hash_type = None
-        self._update_transport_url()
-        transport._ssl_context = None
-
-    async def _login(self, params: dict[str, Any], *, step_name: str) -> dict[str, Any]:
-        body = {"method": "login", "params": params}
-        ssl_context = await self._transport.get_ssl_context()
-        status, data = await self._transport._http_client.post(
-            self._transport._app_url.with_path("/"),
-            json=body,
-            headers=self._transport.COMMON_HEADERS,
-            ssl=ssl_context,
-        )
-        _LOGGER.debug(
-            "%s posted at %s. Host is %s, Response status is %s",
-            step_name,
-            datetime.now(),
-            self._transport._host,
-            status,
-        )
-        if status != 200 or not isinstance(data, dict):
-            raise KasaException(
-                f"TPAP {step_name} failed for {self._transport._host}: "
-                f"{status} {type(data)}"
-            )
-
-        self._handle_login_error_code(data, step_name)
-        return self._require_result_dict(data)
-
-    def _update_transport_url(self) -> None:
-        self._transport._app_url = self._transport._build_app_url(
-            tls_mode=self._tpap_tls,
-            port=self._tpap_port,
-        )
-
     def _get_error_code(self, response: dict[str, Any]) -> SmartErrorCode:
         error_code_raw = response.get("error_code")
         try:
@@ -332,7 +401,7 @@ class TpapEncryptionSession:
         except (TypeError, ValueError):
             _LOGGER.warning(
                 "Device %s received unknown error code: %s",
-                self._transport._host,
+                self._host,
                 error_code_raw,
             )
             return SmartErrorCode.INTERNAL_UNKNOWN_ERROR
@@ -354,9 +423,9 @@ class TpapEncryptionSession:
             error_info = {}
         locked_minutes = self._parse_optional_int(error_info.get("lockedMinute"))
         remain_attempts = self._parse_optional_int(error_info.get("remainAttempts"))
-        host = self._transport._host
+        host = self._host
         if (locked_minutes or 0) > 0 or remain_attempts == 0:
-            self._transport._login_refused = True
+            self._login_refused = True
             self._invalidate_session()
             msg = f"TPAP {step} failed for {host}: device blocked after failed logins"
             if locked_minutes:
@@ -364,7 +433,7 @@ class TpapEncryptionSession:
             raise DeviceError(msg, error_code=SmartErrorCode.DEVICE_BLOCKED)
 
         if step == "pake_share":
-            self._transport._login_refused = True
+            self._login_refused = True
             self._invalidate_session()
             attempts_left = (
                 f", {remain_attempts} attempts left before the device locks"
@@ -398,7 +467,7 @@ class TpapEncryptionSession:
             return
 
         full = (
-            f"TPAP {action} failed for {self._transport._host}: "
+            f"TPAP {action} failed for {self._host}: "
             f"{error_code.name}({error_code.value})"
         )
         if error_code in SMART_RETRYABLE_ERRORS:
@@ -412,13 +481,13 @@ class TpapEncryptionSession:
         passcode_type = self._get_passcode_type()
         if passcode_type is None:
             raise AuthenticationError(
-                f"TPAP: no supported passcode type for {self._transport._host}"
+                f"TPAP: no supported passcode type for {self._host}"
             )
 
         candidate_secrets = self._get_candidate_secrets()
         if not candidate_secrets:
             raise AuthenticationError(
-                f"TPAP: no credential candidates available for {self._transport._host}"
+                f"TPAP: no credential candidates available for {self._host}"
             )
 
         register_username = self._get_register_username()
@@ -447,7 +516,7 @@ class TpapEncryptionSession:
                 _LOGGER.debug(
                     "pake_register success at %s. Host is %s",
                     datetime.now(),
-                    self._transport._host,
+                    self._host,
                 )
                 credentials_string = self._resolve_credentials(
                     register_result,
@@ -481,7 +550,7 @@ class TpapEncryptionSession:
                         "credential candidate %d/%d failed for %s: %s",
                         attempt,
                         candidate_count,
-                        self._transport._host,
+                        self._host,
                         exc,
                     )
 
@@ -489,7 +558,7 @@ class TpapEncryptionSession:
             if self._uses_camera_auth and 2 in (self._tpap_pake or []):
                 _LOGGER.debug(
                     "all password-based camera candidates failed for %s",
-                    self._transport._host,
+                    self._host,
                 )
             raise last_error
 
@@ -577,7 +646,7 @@ class TpapEncryptionSession:
                 if self._device_mac
                 else []
             )
-        creds = self._transport._config.credentials
+        creds = self._config.credentials
         password = (creds.password if creds else "") or ""
         if not password:
             # Each candidate is a login the device counts toward its lockout
@@ -610,7 +679,7 @@ class TpapEncryptionSession:
         extra_crypt = extra_crypt_value if isinstance(extra_crypt_value, dict) else {}
         if self._uses_camera_auth and not extra_crypt:
             return candidate_secret
-        creds = self._transport._config.credentials
+        creds = self._config.credentials
         username = (
             "" if self._uses_camera_auth else (creds.username if creds else "") or ""
         )
@@ -665,8 +734,8 @@ class TpapEncryptionSession:
         encryption = str(register_result.get("encryption") or "")
         if not encryption:
             raise KasaException("TPAP register response missing encryption")
-        chosen_cipher = self._normalize_cipher_id(encryption)
-        if chosen_cipher not in self.CIPHER_PARAMETERS:
+        chosen_cipher = TpapEncryptionSession._normalize_cipher_id(encryption)
+        if chosen_cipher not in TpapEncryptionSession.CIPHER_PARAMETERS:
             raise KasaException(f"Unsupported TPAP session cipher: {encryption}")
 
         self._cipher_id = chosen_cipher
@@ -750,12 +819,180 @@ class TpapEncryptionSession:
         except (TypeError, ValueError) as exc:
             raise KasaException("Invalid session fields from device") from exc
 
-        self._key, self._base_nonce = self.key_nonce_from_shared(
-            self._shared_key, self._cipher_id
+        self._encryption_session = TpapEncryptionSession(
+            self._cipher_id, self._shared_key, sequence
         )
-        self._session_id = session_id
-        self._sequence = sequence
-        self._ds_url = URL(f"{self._transport._app_url}/stok={self._session_id}/ds")
+        self._ds_url = URL(f"{self._app_url}/stok={session_id}/ds")
+
+    async def send(self, request: str) -> dict[str, Any]:
+        """Send the request."""
+        # Only a session that was already up is retried: retrying a failed
+        # handshake would repeat a login that the device counts toward its lockout.
+        # A dropped session comes from the request after a successful login, so
+        # logging in again once cannot repeat a rejected login.
+        was_established = self._encryption_session is not None
+        try:
+            return await self._send_once(request)
+        except Exception as exc:
+            if not isinstance(exc, _SessionLostError) and (
+                not was_established or not self._should_retry_live_session(exc)
+            ):
+                raise
+
+            _LOGGER.debug(
+                "resetting live session and retrying after error: %s",
+                exc,
+            )
+            await self.reset()
+            return await self._send_once(request)
+
+    async def _send_once(self, request: str) -> dict[str, Any]:
+        """Send a single request."""
+        if self._encryption_session is None:
+            await self.perform_handshake()
+
+        async with self._send_lock:
+            session, ds_url = self._encryption_session, self._ds_url
+            if session is None or ds_url is None:
+                raise KasaException("TPAP transport is not established")
+            payload, seq = session.encrypt(request)
+            headers = {"Content-Type": "application/octet-stream"}
+            ssl_context = await self.get_ssl_context()
+            status, data = await self._http_client.post(
+                ds_url,
+                data=payload,
+                headers=headers,
+                ssl=ssl_context,
+            )
+            msg = (
+                f"Host is {self._host}, Sequence is {seq}, "
+                f"Response status is {status}, Request was {request}"
+            )
+            if status != 200:
+                # Debug, not error: a dropped session is logged in again
+                _LOGGER.debug("Device %s query failed: %s", self._host, msg)
+                self._raise_if_session_lost(data)
+                raise KasaException(
+                    f"TPAP secure request failed for {self._host}: status {status}"
+                )
+            _LOGGER.debug("Device %s query posted %s", self._host, msg)
+
+        if isinstance(data, bytes | bytearray):
+            plaintext = session.decrypt(bytes(data), seq)
+            _LOGGER.debug("Device %s query response received", self._host)
+            return self._load_json_dict(plaintext)
+
+        if isinstance(data, dict):
+            self._raise_if_session_lost(data)
+            self._handle_response_error_code(data, "request")
+            return data
+
+        raise KasaException("Unexpected TPAP response body type")
+
+    def _raise_if_session_lost(self, data: Any) -> None:
+        """Raise _SessionLostError if a /ds reply says the session is gone."""
+        if isinstance(data, bytes | bytearray):
+            try:
+                data = json_loads(bytes(data).decode())
+            except (UnicodeDecodeError, ValueError):
+                return
+        if not isinstance(data, dict):
+            return
+        error_code = data.get("error_code", data.get("err_code"))
+        if error_code not in self.SESSION_LOST_ERROR_CODES:
+            return
+        self._reset_state()
+        try:
+            smart_error_code = SmartErrorCode.from_int(error_code)
+        except ValueError:
+            smart_error_code = SmartErrorCode.INTERNAL_UNKNOWN_ERROR
+        raise _SessionLostError(
+            f"TPAP request failed for {self._host}: device dropped the session "
+            f"({error_code})",
+            error_code=smart_error_code,
+        )
+
+    @staticmethod
+    def _should_retry_live_session(exc: Exception) -> bool:
+        if isinstance(exc, _ConnectionError):
+            return "Connection reset" in str(exc)
+
+        if not isinstance(exc, _RetryableError):
+            return False
+
+        return exc.error_code in {
+            SmartErrorCode.SESSION_TIMEOUT_ERROR,
+            SmartErrorCode.SESSION_EXPIRED,
+            SmartErrorCode.INVALID_NONCE,
+            SmartErrorCode.TRANSPORT_NOT_AVAILABLE_ERROR,
+        }
+
+    @staticmethod
+    def _load_json_dict(payload: bytes) -> dict[str, Any]:
+        response_data = json_loads(payload.decode())
+        if not isinstance(response_data, dict):
+            raise KasaException("Unexpected TPAP JSON response body type")
+        return response_data
+
+    async def close(self) -> None:
+        """Close the http client and reset internal state."""
+        await self.reset()
+        await self._http_client.close()
+
+    async def reset(self) -> None:
+        """Reset internal transport state."""
+        self._reset_state()
+
+    def _reset_state(self) -> None:
+        """Drop the session and go back to the initial URL and TLS context."""
+        self._ssl_context = None
+        self._app_url = self._get_initial_app_url()
+        self._invalidate_session()
+
+    def _invalidate_session(self) -> None:
+        """Drop the session and the login state, keeping the login values."""
+        self._encryption_session = None
+        self._ds_url = None
+        self._cipher_id = "aes_128_ccm"
+        self._shared_key = None
+        self._expected_dev_confirm = None
+        self._dac_nonce_base64 = None
+        self._user_random = None
+
+
+class TpapEncryptionSession:
+    """An established TPAP session: its cipher, key, nonce and sequence."""
+
+    TAG_LEN = 16
+    NONCE_LEN = 12
+    CIPHER_PARAMETERS = {
+        "aes_128_ccm": (
+            b"tp-kdf-salt-aes128-key",
+            b"tp-kdf-info-aes128-key",
+            b"tp-kdf-salt-aes128-iv",
+            b"tp-kdf-info-aes128-iv",
+            16,
+        ),
+        "aes_256_ccm": (
+            b"tp-kdf-salt-aes256-key",
+            b"tp-kdf-info-aes256-key",
+            b"tp-kdf-salt-aes256-iv",
+            b"tp-kdf-info-aes256-iv",
+            32,
+        ),
+        "chacha20_poly1305": (
+            b"tp-kdf-salt-chacha20-key",
+            b"tp-kdf-info-chacha20-key",
+            b"tp-kdf-salt-chacha20-iv",
+            b"tp-kdf-info-chacha20-iv",
+            32,
+        ),
+    }
+
+    def __init__(self, cipher_id: str, shared_key: bytes, start_seq: int) -> None:
+        self._cipher_id = cipher_id
+        self._key, self._base_nonce = self.key_nonce_from_shared(shared_key, cipher_id)
+        self._sequence = start_seq
 
     @classmethod
     def _normalize_cipher_id(cls, cipher_id: str) -> str:
@@ -843,52 +1080,10 @@ class TpapEncryptionSession:
             )
         return ChaCha20Poly1305(key).decrypt(nonce, ciphertext_and_tag, None)
 
-    @classmethod
-    def sec_encrypt(
-        cls,
-        cipher_id: str,
-        key: bytes,
-        base_nonce: bytes,
-        plaintext: bytes,
-        seq: int = 1,
-    ) -> tuple[bytes, bytes]:
-        """Encrypt the message."""
-        combined = cls._encrypt_payload(cipher_id, key, base_nonce, plaintext, seq)
-        return combined[: -cls.TAG_LEN], combined[-cls.TAG_LEN :]
-
-    @classmethod
-    def sec_decrypt(
-        cls,
-        cipher_id: str,
-        key: bytes,
-        base_nonce: bytes,
-        ciphertext: bytes,
-        tag: bytes,
-        seq: int = 1,
-    ) -> bytes:
-        """Decrypt the message."""
-        return cls._decrypt_payload(cipher_id, key, base_nonce, ciphertext + tag, seq)
-
-    def _require_established_session(self) -> tuple[str, int, URL, bytes, bytes]:
-        if not self.is_established:
-            raise KasaException("TPAP transport is not established")
-        if TYPE_CHECKING:
-            assert self._sequence is not None
-            assert self._ds_url is not None
-            assert self._key is not None
-            assert self._base_nonce is not None
-
-        return (
-            self._cipher_id,
-            self._sequence,
-            self._ds_url,
-            self._key,
-            self._base_nonce,
-        )
-
     def encrypt(self, payload: bytes | str) -> tuple[bytes, int]:
         """Encrypt the message."""
-        cipher_id, seq, _, key, base_nonce = self._require_established_session()
+        cipher_id, seq = self._cipher_id, self._sequence
+        key, base_nonce = self._key, self._base_nonce
         plaintext = payload.encode() if isinstance(payload, str) else payload
         encrypted = self._encrypt_payload(cipher_id, key, base_nonce, plaintext, seq)
         self._sequence = seq + 1
@@ -901,7 +1096,7 @@ class TpapEncryptionSession:
 
     def decrypt(self, payload: bytes, request_seq: int) -> bytes:
         """Decrypt the message."""
-        cipher_id, _, _, key, base_nonce = self._require_established_session()
+        cipher_id, key, base_nonce = self._cipher_id, self._key, self._base_nonce
         if len(payload) < 4 + self.TAG_LEN:
             raise KasaException("TPAP response too short")
 
@@ -915,301 +1110,3 @@ class TpapEncryptionSession:
         return self._decrypt_payload(
             cipher_id, key, base_nonce, payload[4:], response_seq
         )
-
-
-class TpapTransport(BaseTransport):
-    """Implementation of the TPAP encryption protocol."""
-
-    DEFAULT_PORT: int = 80
-    # Errors on a /ds request after which the app logs in again and resends
-    # once: -2402 (invalid argument, also what -40420 and -40421 in an HTTP
-    # error body become) and -2101 (auth attempts limit).
-    SESSION_LOST_ERROR_CODES = frozenset({-2402, -2101, -40420, -40421})
-    DEFAULT_HTTPS_PORT: int = 4433
-    DEFAULT_CAMERA_HTTPS_PORT: int = 443
-    CAMERA_AUTH_DEVICE_FAMILIES = (
-        DeviceFamily.SmartIpCamera,
-        DeviceFamily.SmartTapoDoorbell,
-    )
-    ROBOT_TPAP_DEVICE_FAMILIES = {DeviceFamily.SmartTapoRobovac}
-    # Kasa IOT devices use the Tapo app's Kasa TPAP client, not its IoT one
-    KASA_IOT_DEVICE_FAMILIES = {
-        DeviceFamily.IotSmartPlugSwitch,
-        DeviceFamily.IotSmartBulb,
-    }
-    COMMON_HEADERS = {"Content-Type": "application/json"}
-
-    def __init__(self, *, config: DeviceConfig) -> None:
-        """Create the transport."""
-        super().__init__(config=config)
-        if self._credentials is None and self._credentials_hash:
-            # BaseTransport kept the hash only if it has this transport's shape
-            self._credentials = Credentials._from_plaintext_hash(self._credentials_hash)
-            self._config.credentials = self._credentials
-        self._http_client: HttpClient = HttpClient(self._config)
-        self._ssl_context: ssl.SSLContext | bool | None = None
-        protocol = "https" if config.connection_type.https else "http"
-        self._bootstrap_url = URL(f"{protocol}://{self._host}:{self._port}")
-        self._app_url = self._bootstrap_url
-        self._known_device_mac = ""
-        self._known_tpap_tls: int | None = None
-        self._known_tpap_port: int | None = None
-        self._known_tpap_dac = False
-        self._known_tpap_pake: list[int] | None = None
-        self._known_tpap_user_hash_type: int | None = None
-        self._has_discovery_tpap = False
-        if (tpap := config.connection_type.tpap) is not None:
-            self._has_discovery_tpap = True
-            self._known_device_mac = tpap.mac or ""
-            self._known_tpap_tls = tpap.tls
-            self._known_tpap_port = tpap.port
-            self._known_tpap_dac = tpap.dac
-            self._known_tpap_pake = None if tpap.pake is None else list(tpap.pake)
-            self._known_tpap_user_hash_type = tpap.user_hash_type
-        self._login_refused = False
-        self._send_lock: asyncio.Lock = asyncio.Lock()
-        self._encryption_session = TpapEncryptionSession(self)
-        _LOGGER.debug("Created TPAP transport for %s", self._host)
-
-    @property
-    def default_port(self) -> int:
-        """Default port for the transport."""
-        config = self._config
-        if port := config.connection_type.http_port:
-            return port
-        if config.connection_type.https:
-            if config.connection_type.device_family in self.CAMERA_AUTH_DEVICE_FAMILIES:
-                return self.DEFAULT_CAMERA_HTTPS_PORT
-            return self.DEFAULT_HTTPS_PORT
-        return self.DEFAULT_PORT
-
-    @property
-    def credentials_hash(self) -> str | None:
-        """The hashed credentials used by the transport."""
-        if self._credentials and self._credentials.username:
-            credentials_hash = {
-                "un": self._credentials.username,
-                "pwd": self._credentials.password,
-            }
-            return base64.b64encode(json_dumps(credentials_hash).encode()).decode()
-        return self._credentials_hash
-
-    @classmethod
-    def is_transport_credentials_hash(cls, credentials_hash: str) -> bool:
-        """Whether the hash has the shape this transport produces."""
-        return Credentials._from_plaintext_hash(credentials_hash) is not None
-
-    @property
-    def tpap_parameters(self) -> TpapParameters:
-        """The TPAP login the transport uses, once it has logged in.
-
-        From the discovery reply, the in-band discover or the camera defaults.
-        """
-        return TpapParameters(
-            tls=self._known_tpap_tls or 0,
-            port=self._known_tpap_port,
-            pake=self._known_tpap_pake,
-            dac=self._known_tpap_dac,
-            user_hash_type=self._known_tpap_user_hash_type,
-            mac=self._known_device_mac or None,
-        )
-
-    @property
-    def login_refused(self) -> bool:
-        """True once the device rejected a login or reported a lockout.
-
-        The device counts each rejected login toward its lockout, whatever
-        error code it answers with.
-        """
-        return self._login_refused
-
-    def _build_app_url(self, *, tls_mode: int | None, port: int | None) -> URL:
-        family = self._config.connection_type.device_family
-        if family in self.KASA_IOT_DEVICE_FAMILIES:
-            # The app's Kasa client: https for any tls but 0, and the tpap
-            # port or else 80, whatever the scheme
-            scheme = "https" if tls_mode else "http"
-            resolved_port = (
-                port
-                if port and port > 0
-                else self._config.port_override or self.DEFAULT_PORT
-            )
-            return URL.build(scheme=scheme, host=self._host, port=resolved_port)
-        # Like the Tapo app, cameras are always https on their own port
-        is_camera = family in self.CAMERA_AUTH_DEVICE_FAMILIES
-        scheme = "https" if is_camera or tls_mode in (1, 2) else "http"
-        if port and port > 0:
-            resolved_port = port
-        elif scheme == "http" or is_camera:
-            resolved_port = self._port
-        else:
-            resolved_port = self.DEFAULT_HTTPS_PORT
-        return URL.build(
-            scheme=scheme,
-            host=self._host,
-            port=resolved_port,
-        )
-
-    def _get_initial_app_url(self) -> URL:
-        if not (self._known_tpap_port and self._known_tpap_port > 0) and (
-            self._known_tpap_tls not in (1, 2)
-        ):
-            return self._bootstrap_url
-
-        return self._build_app_url(
-            tls_mode=self._known_tpap_tls,
-            port=self._known_tpap_port,
-        )
-
-    @staticmethod
-    def _load_json_dict(payload: bytes) -> dict[str, Any]:
-        response_data = json_loads(payload.decode())
-        if not isinstance(response_data, dict):
-            raise KasaException("Unexpected TPAP JSON response body type")
-        return response_data
-
-    @staticmethod
-    def _should_retry_live_session(exc: Exception) -> bool:
-        if isinstance(exc, _ConnectionError):
-            return "Connection reset" in str(exc)
-
-        if not isinstance(exc, _RetryableError):
-            return False
-
-        return exc.error_code in {
-            SmartErrorCode.SESSION_TIMEOUT_ERROR,
-            SmartErrorCode.SESSION_EXPIRED,
-            SmartErrorCode.INVALID_NONCE,
-            SmartErrorCode.TRANSPORT_NOT_AVAILABLE_ERROR,
-        }
-
-    async def get_ssl_context(self) -> ssl.SSLContext | bool:
-        """Get or create the SSL context for the device's TLS mode."""
-        if self._ssl_context is None:
-            tls_mode = self._encryption_session.tls_mode
-            if tls_mode == 0:
-                self._ssl_context = False
-            elif tls_mode == 2:
-                loop = asyncio.get_running_loop()
-                self._ssl_context = await loop.run_in_executor(
-                    None, self._create_tls2_ssl_context
-                )
-            else:
-                # Unverified TLS, shared with the other https transports
-                self._ssl_context = await get_ssl_context()
-        return self._ssl_context
-
-    def _create_tls2_ssl_context(self) -> ssl.SSLContext:
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        context.check_hostname = False
-        context.verify_mode = ssl.CERT_REQUIRED
-        context.load_verify_locations(cadata=cert.TPAP_ROOT_CA_PEM)
-        # Like the Tapo app: ECDSA suites only, and the certificate has to
-        # name this device's MAC
-        context.set_ciphers(cert.TLS2_CIPHERS)
-        if mac := self._encryption_session.device_mac:
-            context.sslobject_class = cert.mac_checking_sslobject(mac)
-        else:
-            _LOGGER.debug(
-                "No device MAC to check the TLS certificate of %s against",
-                self._host,
-            )
-        return context
-
-    async def send(self, request: str) -> dict[str, Any]:
-        """Send the request."""
-        # Only a session that was already up is retried: retrying a failed
-        # handshake would repeat a login that the device counts toward its lockout.
-        # A dropped session comes from the request after a successful login, so
-        # logging in again once cannot repeat a rejected login.
-        was_established = self._encryption_session.is_established
-        try:
-            return await self._send_once(request)
-        except Exception as exc:
-            if not isinstance(exc, _SessionLostError) and (
-                not was_established or not self._should_retry_live_session(exc)
-            ):
-                raise
-
-            _LOGGER.debug(
-                "resetting live session and retrying after error: %s",
-                exc,
-            )
-            await self.reset()
-            return await self._send_once(request)
-
-    async def _send_once(self, request: str) -> dict[str, Any]:
-        """Send a single request."""
-        if not self._encryption_session.is_established:
-            await self._encryption_session.perform_handshake()
-
-        ds_url = self._encryption_session.ds_url
-        if ds_url is None:
-            raise KasaException("TPAP transport is not established")
-
-        async with self._send_lock:
-            payload, seq = self._encryption_session.encrypt(request)
-            headers = {"Content-Type": "application/octet-stream"}
-            ssl_context = await self.get_ssl_context()
-            status, data = await self._http_client.post(
-                ds_url,
-                data=payload,
-                headers=headers,
-                ssl=ssl_context,
-            )
-            msg = (
-                f"Host is {self._host}, Sequence is {seq}, "
-                f"Response status is {status}, Request was {request}"
-            )
-            if status != 200:
-                # Debug, not error: a dropped session is logged in again
-                _LOGGER.debug("Device %s query failed: %s", self._host, msg)
-                self._raise_if_session_lost(data)
-                raise KasaException(
-                    f"TPAP secure request failed for {self._host}: status {status}"
-                )
-            _LOGGER.debug("Device %s query posted %s", self._host, msg)
-
-        if isinstance(data, bytes | bytearray):
-            plaintext = self._encryption_session.decrypt(bytes(data), seq)
-            _LOGGER.debug("Device %s query response received", self._host)
-            return self._load_json_dict(plaintext)
-
-        if isinstance(data, dict):
-            self._raise_if_session_lost(data)
-            self._encryption_session._handle_response_error_code(data, "request")
-            return data
-
-        raise KasaException("Unexpected TPAP response body type")
-
-    def _raise_if_session_lost(self, data: Any) -> None:
-        """Raise _SessionLostError if a /ds reply says the session is gone."""
-        if isinstance(data, bytes | bytearray):
-            try:
-                data = json_loads(bytes(data).decode())
-            except (UnicodeDecodeError, ValueError):
-                return
-        if not isinstance(data, dict):
-            return
-        error_code = data.get("error_code", data.get("err_code"))
-        if error_code not in self.SESSION_LOST_ERROR_CODES:
-            return
-        self._encryption_session.reset()
-        try:
-            smart_error_code = SmartErrorCode.from_int(error_code)
-        except ValueError:
-            smart_error_code = SmartErrorCode.INTERNAL_UNKNOWN_ERROR
-        raise _SessionLostError(
-            f"TPAP request failed for {self._host}: device dropped the session "
-            f"({error_code})",
-            error_code=smart_error_code,
-        )
-
-    async def close(self) -> None:
-        """Close the http client and reset internal state."""
-        await self.reset()
-        await self._http_client.close()
-
-    async def reset(self) -> None:
-        """Reset internal transport state."""
-        self._encryption_session.reset()
