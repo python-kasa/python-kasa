@@ -10,7 +10,6 @@ import time
 from typing import Any
 
 import aiohttp
-from aiohttp.http_exceptions import HttpProcessingError
 from yarl import URL
 
 from .deviceconfig import DeviceConfig
@@ -18,7 +17,6 @@ from .exceptions import (
     KasaException,
     TimeoutError,
     _ConnectionError,
-    _InvalidResponseError,
 )
 from .json import loads as json_loads
 
@@ -154,17 +152,6 @@ class HttpClient:
                 "Unable to query the device, "
                 + f"timed out: {self._config.host}: {ex}",
                 ex,
-            ) from ex
-        except aiohttp.ClientResponseError as ex:
-            # Raised when the response can't be parsed, for example a plain
-            # html page without an http status line.
-            if isinstance(ex.__cause__, HttpProcessingError):
-                raise _InvalidResponseError(
-                    f"Unable to parse the device response: {self._config.host}: {ex}",
-                    ex,
-                ) from ex
-            raise KasaException(
-                f"Unable to query the device: {self._config.host}: {ex}", ex
             ) from ex
         except Exception as ex:
             raise KasaException(

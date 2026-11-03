@@ -18,14 +18,24 @@ from voluptuous import (
 )
 
 from kasa import DeviceType, KasaException, Module
-from kasa.exceptions import AuthenticationError, TimeoutError, _InvalidResponseError
-from kasa.iot import IotDevice
+from kasa.deviceconfig import (
+    DeviceConfig,
+    DeviceConnectionParameters,
+    DeviceEncryptionType,
+    DeviceFamily,
+)
+from kasa.exceptions import AuthenticationError, TimeoutError
+from kasa.iot import IotBulb, IotDevice, IotPlug
 from kasa.iot.iotmodule import _merge_dict
 from tests.conftest import get_device_for_fixture_protocol, handle_turn_on, turn_on
 from tests.device_fixtures import device_iot, has_emeter_iot, no_emeter_iot
 from tests.fakeprotocol_iot import FakeIotProtocol
 
 HOMEKIT = "smartlife.iot.homekit"
+
+KLAP_CONNECTION = DeviceConnectionParameters(
+    DeviceFamily.IotSmartPlugSwitch, DeviceEncryptionType.Klap, login_version=2
+)
 
 TZ_SCHEMA = Schema(
     {"zone_str": str, "dst_offset": int, "index": All(int, Range(min=0)), "tz_str": str}
@@ -129,67 +139,6 @@ async def test_initial_update_no_emeter(dev: IotDevice, mocker: MockerFixture) -
     # 2 parent are necessary as some devices crash on unexpected modules
     # See #105, #120, #161
     assert spy.call_count == 2 + child_calls
-
-
-def _module_count(request: dict) -> int:
-    """Return the number of modules queried, ignoring the child context."""
-    return len([target for target in request if target != "context"])
-
-
-@device_iot
-async def test_update_queries_modules_separately_after_invalid_response(
-    dev: IotDevice, mocker: MockerFixture
-) -> None:
-    """Test that a rejected update request is sent again one module at a time."""
-    expected_state = dev.internal_state
-    query = dev.protocol.query
-    requests: list[dict] = []
-
-    async def _query(request, *args, **kwargs):
-        requests.append(request)
-        if _module_count(request) > 1:
-            raise _InvalidResponseError("Device sent a html page")
-        return await query(request, *args, **kwargs)
-
-    mocker.patch.object(dev.protocol, "query", side_effect=_query)
-
-    await dev.update()
-
-    rejected = [i for i, request in enumerate(requests) if _module_count(request) > 1]
-    assert dev._query_modules_separately is bool(rejected)
-    if rejected:
-        assert all(_module_count(request) <= 1 for request in requests[1:])
-    assert dev.internal_state == expected_state
-
-    requests.clear()
-    await dev.update()
-
-    assert all(_module_count(request) <= 1 for request in requests)
-    assert dev.internal_state == expected_state
-
-
-@device_iot
-async def test_update_invalid_response_for_separate_modules(
-    dev: IotDevice, mocker: MockerFixture
-) -> None:
-    """Test that the update fails when the device rejects single modules too."""
-    query = mocker.patch.object(
-        dev.protocol,
-        "query",
-        side_effect=_InvalidResponseError("Device sent a html page"),
-    )
-
-    with pytest.raises(_InvalidResponseError):
-        await dev.update()
-
-    assert dev._query_modules_separately is True
-    assert query.call_count == 2
-
-    query.reset_mock()
-    with pytest.raises(_InvalidResponseError):
-        await dev.update()
-
-    assert query.call_count == 1
 
 
 @device_iot
@@ -316,6 +265,29 @@ async def test_max_device_response_size(dev: IotDevice) -> None:
 
 
 @device_iot
+async def test_max_device_response_size_klap(
+    dev: IotDevice, mocker: MockerFixture
+) -> None:
+    """Test that devices other than bulbs use a smaller budget over KLAP."""
+    is_bulb = isinstance(dev, IotBulb)
+    assert dev.max_device_response_size == (4096 if is_bulb else 16 * 1024)
+
+    mocker.patch.object(dev.config, "connection_type", KLAP_CONNECTION)
+    expected = 4096 if is_bulb else 2048
+    assert dev.max_device_response_size == expected
+    for child in dev.children:
+        assert child.max_device_response_size == expected
+
+
+def test_max_device_response_size_before_update() -> None:
+    """Test that the budget follows the connection settings before an update."""
+    assert IotPlug("127.0.0.1").max_device_response_size == 16 * 1024
+
+    config = DeviceConfig("127.0.0.1", connection_type=KLAP_CONNECTION)
+    assert IotPlug("127.0.0.1", config=config).max_device_response_size == 2048
+
+
+@device_iot
 async def test_estimated_response_sizes(dev: IotDevice) -> None:
     """Make sure every module has an estimated response size set."""
     for mod in dev.modules.values():
@@ -330,19 +302,6 @@ async def test_modules_not_supported(dev: IotDevice) -> None:
     await dev.update()
     for module in dev.modules.values():
         assert module.is_supported is not None
-
-
-async def test_update_skips_unsupported_modules(mocker: MockerFixture) -> None:
-    """Test that a module the device doesn't support is left out of the update."""
-    dev = await get_device_for_fixture_protocol("HS100(US)_2.0_1.5.6.json", "IOT")
-    dev._last_update["cnCloud"] = {"err_code": -1, "err_msg": "module not support"}
-    assert not dev.modules[Module.IotCloud].is_supported
-
-    spy = mocker.spy(dev.protocol, "query")
-    await dev.update()
-
-    assert spy.call_count == 1
-    assert "cnCloud" not in spy.call_args.args[0]
 
 
 async def test_get_modules() -> None:

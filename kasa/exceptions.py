@@ -59,10 +59,6 @@ class _RetryableError(DeviceError):
     """Retryable exception for device errors."""
 
 
-class _InvalidResponseError(KasaException):
-    """Exception for a response that is not a valid protocol message."""
-
-
 class SmartErrorCode(IntEnum):
     """Enum for SMART Error Codes."""
 
