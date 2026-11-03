@@ -15,7 +15,7 @@ import asyncclick as click
 if TYPE_CHECKING:
     from kasa import Device
 
-from kasa.deviceconfig import DeviceEncryptionType
+from kasa.deviceconfig import DeviceEncryptionType, TpapParameters
 
 from .common import (
     SKIP_UPDATE_COMMANDS,
@@ -62,18 +62,6 @@ def _legacy_type_to_class(_type: str) -> Any:
         "lightstrip": IotLightStrip,
     }
     return TYPE_TO_CLASS[_type]
-
-
-def _parse_tpap(ctx: click.Context, param: click.Parameter, value: str | None):
-    """Parse the --tpap JSON into TPAP parameters."""
-    if value is None:
-        return None
-    from kasa.deviceconfig import TpapParameters
-
-    try:
-        return TpapParameters.from_dict(json.loads(value))
-    except Exception as ex:
-        raise click.BadParameter(f"not valid TPAP parameters: {ex}") from ex
 
 
 @click.group(
@@ -202,7 +190,7 @@ def _parse_tpap(ctx: click.Context, param: click.Parameter, value: str | None):
     "--tpap",
     envvar="KASA_TPAP",
     default=None,
-    callback=_parse_tpap,
+    type=TpapParameters.from_json,
     help="TPAP login from the device's discovery reply, as JSON, to connect "
     "over TPAP without discovery, e.g. "
     '\'{"tls": 1, "port": 443, "pake": [2]}\'. Implies --encrypt-type TPAP.',

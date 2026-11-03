@@ -1743,12 +1743,12 @@ async def test_type_camera_keeps_encrypt_type(
     [
         pytest.param(
             ["--encrypt-type", "TPAP", "--tpap", "not json"],
-            "not valid TPAP parameters",
+            "Invalid value for '--tpap'",
             id="not-json",
         ),
         pytest.param(
             ["--encrypt-type", "TPAP", "--tpap", '{"pake": 2}'],
-            "not valid TPAP parameters",
+            "Invalid value for '--tpap'",
             id="wrong-type",
         ),
         pytest.param(
