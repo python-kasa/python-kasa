@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING, Any
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers.aead import AESCCM, ChaCha20Poly1305
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from yarl import URL
@@ -707,18 +706,12 @@ class TpapEncryptionSession:
             if not isinstance(dac_proof, str):
                 raise KasaException("Invalid DAC proof type")
 
-            ca_cert = cert.load_certificate_value(dac_ca)
-            ica_cert = cert.load_certificate_value(dac_ica) if dac_ica else None
-            cert.verify_dac_certificate_chain(ca_cert, ica_cert)
-            message = self._shared_key + self._unbase64(self._dac_nonce_base64)
-            signature = self._unbase64(dac_proof)
-            public_key = ca_cert.public_key()
-            if not isinstance(public_key, ec.EllipticCurvePublicKey):
-                raise KasaException(
-                    "Unsupported DAC proof public key type: "
-                    f"{type(public_key).__name__}"
-                )
-            public_key.verify(signature, message, ec.ECDSA(hashes.SHA256()))
+            cert.verify_dac_proof(
+                dac_ca,
+                dac_ica,
+                dac_proof,
+                self._shared_key + self._unbase64(self._dac_nonce_base64),
+            )
         except InvalidSignature as exc:
             _LOGGER.error("invalid DAC proof signature")
             raise KasaException("Invalid DAC proof signature") from exc

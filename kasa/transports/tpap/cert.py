@@ -11,6 +11,7 @@ import ssl
 from datetime import UTC, datetime
 
 from cryptography import x509
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 
 from kasa.exceptions import KasaException
@@ -185,3 +186,20 @@ def verify_dac_certificate_chain(
         raise KasaException(
             f"DAC certificate chain verification failed: {exc}"
         ) from exc
+
+
+def verify_dac_proof(dac_ca: str, dac_ica: str, dac_proof: str, message: bytes) -> None:
+    """Check the DAC chain and the device's proof, its signature of the message.
+
+    The intermediate certificate is optional.
+    """
+    ca_cert = load_certificate_value(dac_ca)
+    ica_cert = load_certificate_value(dac_ica) if dac_ica else None
+    verify_dac_certificate_chain(ca_cert, ica_cert)
+    signature = base64.b64decode(dac_proof)
+    public_key = ca_cert.public_key()
+    if not isinstance(public_key, ec.EllipticCurvePublicKey):
+        raise KasaException(
+            f"Unsupported DAC proof public key type: {type(public_key).__name__}"
+        )
+    public_key.verify(signature, message, ec.ECDSA(hashes.SHA256()))
