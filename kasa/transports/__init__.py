@@ -18,7 +18,7 @@ __all__ = [
     "KlapTransport",
     "KlapTransportV2",
     "LinkieTransportV2",
-    "XorTransport",
     "TpapTransport",
+    "XorTransport",
     "XorEncryption",
 ]

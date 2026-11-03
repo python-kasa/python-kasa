@@ -253,7 +253,7 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
         "SMART.KLAP.HTTPS": (SmartProtocol, KlapTransportV2),
         # H200 is device family SMART.TAPOHUB and uses SmartCamProtocol so use
-        # https to distinguish from SmartProtocol devices
+        # https to distuingish from SmartProtocol devices
         "SMART.AES.HTTPS": (SmartCamProtocol, SslAesTransport),
         # TPAP devices (SMART.* with encrypt_type TPAP and TPAP/HTTPS).
         "SMART.TPAP": (SmartProtocol, TpapTransport),
