@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import builtins
 import logging
-import re
 import ssl
 import time
 from typing import Any
@@ -22,9 +21,6 @@ from .exceptions import (
 from .json import loads as json_loads
 
 _LOGGER = logging.getLogger(__name__)
-
-# The session token in /stok=<token>/ds URLs (TPAP, cameras' secure login)
-_SESSION_TOKEN = re.compile(r"(stok=)[^/?#]+")
 
 
 def get_cookie_jar() -> aiohttp.CookieJar:
@@ -90,8 +86,7 @@ class HttpClient:
                 )
                 await asyncio.sleep(sleep)
 
-        if _LOGGER.isEnabledFor(logging.DEBUG):
-            _LOGGER.debug("Posting to %s", _SESSION_TOKEN.sub(r"\1REDACTED", str(url)))
+        _LOGGER.debug("Posting to %s", url)
         response_data = None
         self._last_url = url
         self.client.cookie_jar.clear()
