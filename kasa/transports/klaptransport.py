@@ -46,6 +46,7 @@ import asyncio
 import base64
 import datetime
 import hashlib
+import hmac
 import logging
 import secrets
 import struct
@@ -396,6 +397,18 @@ class KlapTransport(BaseTransport):
             if TYPE_CHECKING:
                 assert self._encryption_session
                 assert isinstance(response_data, bytes)
+            # A message is a 32 byte signature followed by whole AES blocks.
+            # Some devices answer with a plain html page instead.
+            if len(response_data) < 48 or (len(response_data) - 32) % 16:
+                raise KasaException(
+                    f"Device {self._host} sent a response that is not a KLAP "
+                    f"message ({len(response_data)} bytes): {response_data[:64]!r}"
+                )
+            if not self._encryption_session.is_signed(response_data, seq):
+                raise KasaException(
+                    f"Device {self._host} sent a response with an invalid "
+                    f"signature for request with seq {seq}"
+                )
             try:
                 decrypted_response = self._encryption_session.decrypt(response_data)
             except Exception as ex:
@@ -534,6 +547,11 @@ class KlapEncryptionSession:
             self._sig + PACK_SIGNED_LONG(self._seq) + ciphertext
         ).digest()
         return (signature + ciphertext, self._seq)
+
+    def is_signed(self, msg: bytes, seq: int) -> bool:
+        """Return whether the message is signed for the request with seq."""
+        signature = _sha256(self._sig + PACK_SIGNED_LONG(seq) + msg[32:])
+        return hmac.compare_digest(msg[:32], signature)
 
     def decrypt(self, msg: bytes) -> str:
         """Decrypt the data."""

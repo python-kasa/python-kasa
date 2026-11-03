@@ -11,6 +11,7 @@ from contextlib import nullcontext as does_not_raise
 
 import aiohttp
 import pytest
+from cryptography.hazmat.primitives.ciphers import Cipher, modes
 from pytest_mock import MockerFixture
 from yarl import URL
 
@@ -27,6 +28,7 @@ from kasa.httpclient import HttpClient
 from kasa.protocols import IotProtocol, SmartProtocol
 from kasa.transports.aestransport import AesTransport
 from kasa.transports.klaptransport import (
+    PACK_SIGNED_LONG,
     KlapEncryptionSession,
     KlapTransport,
     KlapTransportV2,
@@ -209,7 +211,8 @@ async def test_protocol_logging(
     logging.getLogger("kasa").setLevel(log_level)
 
     def _return_encrypted(*_, **__):
-        # Do the encrypt just before returning the value so the incrementing sequence number is correct
+        # Devices sign the response for the sequence number of the request
+        encryption_session._seq -= 1
         encrypted, seq = encryption_session.encrypt('{"great":"success"}')
         return 200, encrypted
 
@@ -292,33 +295,60 @@ async def test_transport_decrypt(mocker: MockerFixture) -> None:
     assert d == resp
 
 
-async def test_transport_decrypt_error(
-    mocker: MockerFixture, caplog: pytest.LogCaptureFixture
-) -> None:
-    """Test that a decryption error raises a kasa exception."""
-    d = {"great": "success"}
-
+def _logged_in_transport() -> KlapTransport:
     seed = secrets.token_bytes(16)
     auth_hash = KlapTransport.generate_auth_hash(Credentials("foo", "bar"))
-    encryption_session = KlapEncryptionSession(seed, seed, auth_hash)
 
     transport = KlapTransport(config=DeviceConfig(host="127.0.0.1"))
     transport._handshake_done = True
     transport._session_expire_at = time.monotonic() + 60
-    transport._encryption_session = encryption_session
+    transport._encryption_session = KlapEncryptionSession(seed, seed, auth_hash)
+    return transport
+
+
+@pytest.mark.parametrize("mismatch", ["key", "seq"])
+async def test_transport_signature_error(mocker: MockerFixture, mismatch: str) -> None:
+    """Test that a response not signed for the request raises a kasa exception."""
+    transport = _logged_in_transport()
 
     async def _return_response(url: URL, params=None, data=None, *_, **__):
         assert transport._encryption_session is not None
         encryption_session = KlapEncryptionSession(
-            secrets.token_bytes(16),
+            secrets.token_bytes(16)
+            if mismatch == "key"
+            else transport._encryption_session.local_seed,
             transport._encryption_session.remote_seed,
             transport._encryption_session.user_hash,
         )
         seq = params.get("seq")
-        encryption_session._seq = seq - 1
-        encrypted, seq = encryption_session.encrypt(json.dumps(d))
-        seq = seq
+        encryption_session._seq = seq - 1 if mismatch == "key" else seq
+        encrypted, _seq = encryption_session.encrypt(json.dumps({"great": "success"}))
         return 200, encrypted
+
+    mocker.patch.object(HttpClient, "post", side_effect=_return_response)
+
+    with pytest.raises(
+        KasaException,
+        match=re.escape(
+            "Device 127.0.0.1 sent a response with an invalid signature "
+            "for request with seq"
+        ),
+    ):
+        await transport.send(json.dumps({}))
+
+
+async def test_transport_decrypt_error(mocker: MockerFixture) -> None:
+    """Test that a signed response that fails to decrypt raises a kasa exception."""
+    transport = _logged_in_transport()
+
+    async def _return_response(url: URL, params=None, data=None, *_, **__):
+        session = transport._encryption_session
+        assert session is not None
+        seq = PACK_SIGNED_LONG(params.get("seq"))
+        # A block that decrypts to zeros, which is not valid PKCS7 padding
+        encryptor = Cipher(session._aes, modes.CBC(session._iv + seq)).encryptor()
+        ciphertext = encryptor.update(bytes(16)) + encryptor.finalize()
+        return 200, _sha256(session._sig + seq + ciphertext) + ciphertext
 
     mocker.patch.object(HttpClient, "post", side_effect=_return_response)
 
@@ -327,6 +357,90 @@ async def test_transport_decrypt_error(
         match=re.escape("Error trying to decrypt device 127.0.0.1 response:"),
     ):
         await transport.send(json.dumps({}))
+
+
+HTML_PAGE = b"<html><body><center>200 OK</center></body></html>"
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        pytest.param(HTML_PAGE, id="html-page"),
+        pytest.param(b"", id="empty"),
+        pytest.param(secrets.token_bytes(32), id="signature-only"),
+        pytest.param(secrets.token_bytes(32 + 17), id="partial-block"),
+    ],
+)
+async def test_transport_invalid_response(
+    mocker: MockerFixture, response: bytes
+) -> None:
+    """Test that a response that is not a KLAP message raises a kasa exception."""
+    transport = _logged_in_transport()
+    mocker.patch.object(HttpClient, "post", return_value=(200, response))
+
+    with pytest.raises(
+        KasaException,
+        match=re.escape(
+            "Device 127.0.0.1 sent a response that is not a KLAP message "
+            f"({len(response)} bytes): {response[:64]!r}"
+        ),
+    ):
+        await transport.send(json.dumps({}))
+
+
+@pytest.mark.parametrize("transport_class", [KlapTransport, KlapTransportV2])
+async def test_protocol_invalid_response(
+    mocker: MockerFixture, transport_class: type[KlapTransport]
+) -> None:
+    """Test that an invalid response is not retried and resets the session."""
+    server_seed = secrets.token_bytes(16)
+    client_credentials = Credentials("foo", "bar")
+    device_auth_hash = transport_class.generate_auth_hash(client_credentials)
+    handshakes = 0
+    requests = 0
+
+    async def _return_response(url: URL, params=None, data=None, *_, **__):
+        nonlocal handshakes, requests
+
+        if url == URL("http://127.0.0.1:80/app/handshake1"):
+            handshakes += 1
+            seed_auth_hash = _sha256(
+                data + server_seed + device_auth_hash
+                if transport_class is KlapTransportV2
+                else data + device_auth_hash
+            )
+            return _mock_response(200, server_seed + seed_auth_hash)
+        elif url == URL("http://127.0.0.1:80/app/handshake2"):
+            return _mock_response(200, b"")
+        elif url == URL("http://127.0.0.1:80/app/request"):
+            requests += 1
+            if requests == 1:
+                return _mock_response(200, HTML_PAGE)
+            assert transport._encryption_session is not None
+            encryption_session = KlapEncryptionSession(
+                transport._encryption_session.local_seed,
+                transport._encryption_session.remote_seed,
+                transport._encryption_session.user_hash,
+            )
+            encryption_session._seq = params.get("seq") - 1
+            encrypted, _seq = encryption_session.encrypt('{"great": "success"}')
+            return _mock_response(200, encrypted)
+
+    mocker.patch.object(aiohttp.ClientSession, "post", side_effect=_return_response)
+
+    config = DeviceConfig("127.0.0.1", credentials=client_credentials)
+    transport = transport_class(config=config)
+    protocol = IotProtocol(transport=transport)
+
+    with pytest.raises(KasaException, match="is not a KLAP message"):
+        await protocol.query(DUMMY_QUERY)
+    assert requests == 1
+    assert handshakes == 1
+    assert transport._handshake_done is False
+
+    assert await protocol.query(DUMMY_QUERY) == {"great": "success"}
+    assert requests == 2
+    assert handshakes == 2
 
 
 @pytest.mark.parametrize(
