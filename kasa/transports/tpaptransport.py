@@ -290,7 +290,7 @@ class TpapTransport(BaseTransport):
                 self._tpap_dac,
                 self._app_url,
             )
-            await self._perform_auth_handshake()
+            await self.perform_login()
 
             _LOGGER.debug("Handshake with %s complete", self._host)
 
@@ -473,7 +473,8 @@ class TpapTransport(BaseTransport):
             raise AuthenticationError(full, error_code=error_code)
         raise DeviceError(full, error_code=error_code)
 
-    async def _perform_auth_handshake(self) -> None:
+    async def perform_login(self) -> None:
+        """Log in with pake_register and pake_share, one credential at a time."""
         passcode_type = self._get_passcode_type()
         if passcode_type is None:
             raise AuthenticationError(

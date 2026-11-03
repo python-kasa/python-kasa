@@ -381,7 +381,7 @@ async def test_smartcam_session_retries_next_candidate_on_handshake_failure(
         raising=True,
     )
 
-    await transport._perform_auth_handshake()
+    await transport.perform_login()
 
     assert attempted_candidates == ["first", "second"]
     assert str(transport._ds_url).endswith("/stok=CAM-SID/ds")
@@ -397,7 +397,7 @@ async def test_smartcam_session_raises_when_no_candidates(
     monkeypatch.setattr(transport, "_get_candidate_secrets", lambda: [], raising=True)
 
     with pytest.raises(AuthenticationError, match="no credential candidates"):
-        await transport._perform_auth_handshake()
+        await transport.perform_login()
 
 
 @pytest.mark.asyncio
@@ -406,7 +406,7 @@ async def test_smartcam_session_raises_when_no_supported_passcode_type() -> None
     transport._tpap_pake = [9]
 
     with pytest.raises(AuthenticationError, match="no supported passcode type"):
-        await transport._perform_auth_handshake()
+        await transport.perform_login()
 
 
 @pytest.mark.asyncio
@@ -444,7 +444,7 @@ async def test_smartcam_session_reraises_last_candidate_error(
         caplog.at_level(logging.DEBUG),
         pytest.raises(KasaException, match="last failure"),
     ):
-        await transport._perform_auth_handshake()
+        await transport.perform_login()
 
     assert "all password-based camera candidates failed" in caplog.text
 
@@ -486,7 +486,7 @@ async def test_generic_tpap_session_reraises_last_candidate_error_without_hint(
         caplog.at_level(logging.DEBUG),
         pytest.raises(KasaException, match="last failure"),
     ):
-        await transport._perform_auth_handshake()
+        await transport.perform_login()
 
     assert "all password-based camera candidates failed" not in caplog.text
 
@@ -527,7 +527,7 @@ async def test_smartcam_session_propagates_retryable_error(
     )
 
     with pytest.raises(_RetryableError, match="retry me"):
-        await transport._perform_auth_handshake()
+        await transport.perform_login()
 
     assert attempts == ["first"]
 
@@ -571,7 +571,7 @@ async def test_iot_session_adds_dac_nonce_when_required(
         raising=True,
     )
 
-    await transport._perform_auth_handshake()
+    await transport.perform_login()
 
     assert captured_share_params is not None
     assert captured_share_params["dac_nonce"]
@@ -1003,9 +1003,7 @@ async def test_perform_handshake_restarts_when_session_was_invalidated(
         _establish_session(transport, session_id="SID-NEW", start_seq=14)
 
     monkeypatch.setattr(transport, "_discover", fake_discover, raising=True)
-    monkeypatch.setattr(
-        transport, "_perform_auth_handshake", fake_auth_handshake, raising=True
-    )
+    monkeypatch.setattr(transport, "perform_login", fake_auth_handshake, raising=True)
 
     await transport.perform_handshake()
 
@@ -2004,7 +2002,7 @@ async def test_no_password_gives_no_candidates(family: DeviceFamily | None) -> N
 
     assert transport._get_candidate_secrets() == []
     with pytest.raises(AuthenticationError, match="no credential candidates"):
-        await transport._perform_auth_handshake()
+        await transport.perform_login()
     await transport.close()
 
 
