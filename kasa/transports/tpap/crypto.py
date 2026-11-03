@@ -116,8 +116,8 @@ def _sha256_crypt(password: str, prefix: str) -> str | None:
     """Return glibc's crypt() of the password for a ``$5$`` (SHA-256) prefix.
 
     Without a round count it uses 5000 rounds and leaves them out of the
-    result, see https://www.akkadia.org/drepper/SHA-crypt.txt. Like the app,
-    only the prefix sets the rounds; ``passwd_rounds`` is not used.
+    result, see https://www.akkadia.org/drepper/SHA-crypt.txt. Only the
+    prefix sets the rounds; ``passwd_rounds`` is not used.
     """
     if not prefix:
         return None
@@ -192,7 +192,7 @@ def build_credentials(
     crypt_type = (extra_crypt.get("type") or "").lower()
     params = extra_crypt.get("params")
     if not isinstance(params, dict):
-        # Like the app, a type without params falls back to user/password.
+        # A type without params falls back to user/password.
         return f"{username}/{passcode}" if username else passcode
 
     if crypt_type == "password_shadow":
@@ -334,8 +334,8 @@ def _len8le(value: bytes) -> bytes:
 
 
 def _encode_w(value: int, length: int) -> bytes:
-    # The app writes w0 at the byte length of the curve order, so a value
-    # with leading zero bytes must keep them (BigIntegers.asUnsignedByteArray).
+    # w0 goes in at the byte length of the curve order, so a value with
+    # leading zero bytes keeps them.
     return value.to_bytes(length, "big")
 
 

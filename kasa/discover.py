@@ -861,8 +861,8 @@ class Discover:
 
         tpap = None
         if discovery_result.tpap is not None:
-            # The tpap object is what makes the Tapo app use TPAP, for every
-            # family. Cameras still advertise AES in encrypt_type.
+            # A tpap object means TPAP, for every family; cameras still
+            # advertise AES in encrypt_type.
             encrypt_type = DeviceEncryptionType.Tpap.value
             tpap = Discover._get_tpap_parameters(discovery_result)
 

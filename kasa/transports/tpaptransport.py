@@ -57,7 +57,7 @@ class TpapTransport(BaseTransport):
         DeviceFamily.SmartTapoDoorbell,
     )
     ROBOT_TPAP_DEVICE_FAMILIES = {DeviceFamily.SmartTapoRobovac}
-    # Kasa IOT devices use the Tapo app's Kasa TPAP client, not its IoT one
+    # Kasa IOT devices follow other login rules than Tapo devices
     KASA_IOT_DEVICE_FAMILIES = {
         DeviceFamily.IotSmartPlugSwitch,
         DeviceFamily.IotSmartBulb,
@@ -67,7 +67,7 @@ class TpapTransport(BaseTransport):
     # response is otherwise unbounded and runs synchronously on the event loop;
     # cap it well above any realistic device value to prevent a pre-auth DoS.
     MAX_PAKE_ITERATIONS = 100_000
-    # The app's default when pake_register leaves iterations out.
+    # The iteration count when pake_register leaves it out.
     DEFAULT_PAKE_ITERATIONS = 10_000
 
     def __init__(self, *, config: DeviceConfig) -> None:
@@ -158,8 +158,8 @@ class TpapTransport(BaseTransport):
     def _build_app_url(self, *, tls_mode: int | None, port: int | None) -> URL:
         family = self._config.connection_type.device_family
         if family in self.KASA_IOT_DEVICE_FAMILIES:
-            # The app's Kasa client: https for any tls but 0, and the tpap
-            # port or else 80, whatever the scheme
+            # Kasa devices: https for any tls but 0, and the tpap port or
+            # else 80, whatever the scheme
             scheme = "https" if tls_mode else "http"
             resolved_port = (
                 port
@@ -167,7 +167,7 @@ class TpapTransport(BaseTransport):
                 else self._config.port_override or self.DEFAULT_PORT
             )
             return URL.build(scheme=scheme, host=self._host, port=resolved_port)
-        # Like the Tapo app, cameras are always https on their own port
+        # Cameras are always https, on their own port
         is_camera = family in self.CAMERA_AUTH_DEVICE_FAMILIES
         scheme = "https" if is_camera or tls_mode in (1, 2) else "http"
         if port and port > 0:
@@ -220,8 +220,7 @@ class TpapTransport(BaseTransport):
         context.check_hostname = False
         context.verify_mode = ssl.CERT_REQUIRED
         context.load_verify_locations(cadata=cert.TPAP_ROOT_CA_PEM)
-        # Like the Tapo app: ECDSA suites only, and the certificate has to
-        # name this device's MAC
+        # ECDSA suites only, and the certificate has to name the device MAC
         context.set_ciphers(cert.TLS2_CIPHERS)
         if mac := self._device_mac:
             context.sslobject_class = cert.mac_checking_sslobject(mac)
@@ -242,12 +241,11 @@ class TpapTransport(BaseTransport):
             _LOGGER.debug("Starting handshake with %s", self._host)
 
             if self._has_discovery_tpap:
-                # Like the Tapo app, log in with what UDP discovery announced
+                # Log in with what UDP discovery announced
                 self._update_app_url()
                 source = "discovery"
             elif self._uses_camera_auth:
-                # Cameras refuse the in-band discover (-40209); the app never
-                # sends it to them
+                # Cameras refuse the in-band discover (-40209)
                 self._apply_default_params()
                 source = "the camera defaults"
             else:
@@ -553,8 +551,8 @@ class TpapTransport(BaseTransport):
         return base64.b64decode(value)
 
     def _use_dac_certification(self) -> bool:
-        # Like the Tapo app: with tls 0 and dac, for the default passcode
-        # (pake 0), and on Tapo IoT devices also pake 5; never on cameras
+        # Attestation with tls 0 and dac, for the default passcode (pake 0)
+        # and on Tapo IoT devices also pake 5; never on cameras
         if self._tpap_tls != 0 or not self._tpap_dac or self._uses_camera_auth:
             return False
         pake = self._tpap_pake or []
@@ -582,8 +580,8 @@ class TpapTransport(BaseTransport):
             )
             default_passcode_type = "default_userpw"
         elif self._uses_kasa_iot_auth:
-            # The app's Kasa client logs in with the password whenever pake
-            # has 2, so 2 wins over 0, and anything else gets the default
+            # Kasa devices take the password whenever pake has 2, so 2 wins
+            # over 0, and anything else gets the default
             passcode_type_order = (
                 ((2,), "userpw"),
                 ((3,), "shared_token"),
@@ -598,7 +596,7 @@ class TpapTransport(BaseTransport):
             default_passcode_type = "default_userpw"
 
         if self._tpap_pake is None:
-            # Like the Tapo app: no announced passcode types, no credential
+            # No announced passcode types, nothing to log in with
             return None
         pake = set(self._tpap_pake)
         for pake_values, passcode_type in passcode_type_order:
@@ -730,9 +728,8 @@ class TpapTransport(BaseTransport):
     def _verify_dac_proof(self, share_result: dict[str, Any]) -> None:
         """Verify DAC certificate chain and proof signature.
 
-        Called when the attestation was asked for. Like the Tapo app, a reply
-        without the certificate or the proof fails; the intermediate is
-        optional.
+        Called when the attestation was asked for. A reply without the
+        certificate or the proof fails; the intermediate is optional.
         """
         try:
             dac_ca = str(share_result.get("dac_ca") or "")
@@ -764,7 +761,7 @@ class TpapTransport(BaseTransport):
         dev_confirm = str(share_result.get("dev_confirm") or "")
         if not dev_confirm:
             raise KasaException("TPAP share response missing dev_confirm")
-        # base64 is case-sensitive; the app compares the strings exactly
+        # base64 is case-sensitive, so the strings are compared exactly
         if not hmac.compare_digest(
             dev_confirm.encode(), (self._expected_dev_confirm or "").encode()
         ):
@@ -964,9 +961,8 @@ class TpapEncryptionSession:
     ) -> tuple[bytes, bytes]:
         """Derive the session key and base nonce.
 
-        The app derives both with HKDF-SHA256 whatever the cipher suite
-        (SecEncryptor.keyDerive); only the SPAKE2+ transcript and its keys use
-        the suite's hash.
+        Both use HKDF-SHA256 whatever the cipher suite; only the SPAKE2+
+        transcript and its keys use the suite's hash.
         """
         key_salt, key_info, nonce_salt, nonce_info, key_len = cls._cipher_parameters(
             cipher_id

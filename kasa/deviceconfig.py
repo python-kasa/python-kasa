@@ -97,8 +97,8 @@ class _DeviceConfigBaseMixin(DataClassJSONMixin):
 class TpapParameters(_DeviceConfigBaseMixin):
     """The TPAP login a device announces in its discovery reply.
 
-    Like the Tapo app, the transport logs in with these rather than asking
-    the device again with the in-band discover.
+    The transport logs in with these rather than asking the device again
+    with the in-band discover.
     """
 
     #: 0 for http, 1 for TLS without verification, 2 for verified TLS

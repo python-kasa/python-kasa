@@ -17,8 +17,7 @@ from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 from kasa.exceptions import KasaException
 
 # With TLS mode 2 the device certificate names the device MAC in a
-# SubjectAltName otherName with this OID (the Tapo app's
-# TpapCertificateTrustManager).
+# SubjectAltName otherName with this OID.
 _TLS2_MAC_OID = x509.ObjectIdentifier("1.0.15961.13.375")
 
 
