@@ -254,6 +254,14 @@ def test_build_credentials_variants(
             "pass",
             id="sha-with-salt-invalid-sha-name",
         ),
+        pytest.param(
+            {
+                "type": "password_sha_with_salt",
+                "params": {"sha_name": 0, "sha_salt": "not base64!"},
+            },
+            "pass",
+            id="sha-with-salt-invalid-salt",
+        ),
     ],
 )
 def test_build_credentials_fallback_paths(

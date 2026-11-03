@@ -159,3 +159,18 @@ def test_certificate_names_mac_without_certificate() -> None:
 )
 def test_der_string(value: bytes, expected: str) -> None:
     assert cert._der_string(value) == expected
+
+
+def test_verify_dac_proof_needs_an_ec_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The proof is an ECDSA signature, so a DAC with another key type fails."""
+    root_key = ec.generate_private_key(ec.SECP256R1())
+    root = build_certificate(root_key, "root", "root", root_key, is_ca=True)
+    dac_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    dac = build_certificate(dac_key, "dac", "root", root_key)
+    monkeypatch.setattr(
+        cert, "TPAP_ROOT_CA_PEM", root.public_bytes(serialization.Encoding.PEM).decode()
+    )
+    dac_der = base64.b64encode(dac.public_bytes(serialization.Encoding.DER)).decode()
+
+    with pytest.raises(KasaException, match="Unsupported DAC proof public key type"):
+        cert.verify_dac_proof(dac_der, "", base64.b64encode(b"proof").decode(), b"m")
