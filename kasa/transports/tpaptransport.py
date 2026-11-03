@@ -43,6 +43,7 @@ from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 
 from .basetransport import BaseTransport
+from .sslcontext import get_ssl_context
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -1434,22 +1435,6 @@ class TpapTransport(BaseTransport):
         DeviceFamily.IotSmartPlugSwitch,
         DeviceFamily.IotSmartBulb,
     }
-    CIPHERS = ":".join(
-        [
-            "ECDHE-ECDSA-AES256-GCM-SHA384",
-            "ECDHE-ECDSA-AES256-SHA384",
-            "ECDHE-ECDSA-AES256-SHA",
-            "ECDHE-ECDSA-AES128-GCM-SHA256",
-            "ECDHE-ECDSA-AES128-SHA256",
-            "ECDHE-ECDSA-AES128-SHA",
-            "ECDHE-RSA-AES256-GCM-SHA384",
-            "ECDHE-RSA-AES256-SHA384",
-            "ECDHE-RSA-AES256-SHA",
-            "ECDHE-RSA-AES128-GCM-SHA256",
-            "ECDHE-RSA-AES128-SHA256",
-            "ECDHE-RSA-AES128-SHA",
-        ]
-    )
     TLS2_CIPHERS = ":".join(
         [
             "ECDHE-ECDSA-AES256-GCM-SHA384",
@@ -1714,27 +1699,24 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
         }
 
     async def get_ssl_context(self) -> ssl.SSLContext | bool:
-        """Get or create the SSL context."""
+        """Get or create the SSL context for the device's TLS mode."""
         if self._ssl_context is None:
-            loop = asyncio.get_running_loop()
-            self._ssl_context = await loop.run_in_executor(
-                None, self._create_ssl_context
-            )
+            tls_mode = self._encryption_session.tls_mode
+            if tls_mode == 0:
+                self._ssl_context = False
+            elif tls_mode == 2:
+                loop = asyncio.get_running_loop()
+                self._ssl_context = await loop.run_in_executor(
+                    None, self._create_tls2_ssl_context
+                )
+            else:
+                # Unverified TLS, shared with the other https transports
+                self._ssl_context = await get_ssl_context()
         return self._ssl_context
 
-    def _create_ssl_context(self) -> ssl.SSLContext | bool:
-        tls_mode = self._encryption_session.tls_mode
-        if tls_mode == 0:
-            return False
-
+    def _create_tls2_ssl_context(self) -> ssl.SSLContext:
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        context.set_ciphers(self.CIPHERS)
         context.check_hostname = False
-
-        if tls_mode in (None, 1):
-            context.verify_mode = ssl.CERT_NONE
-            return context
-
         context.verify_mode = ssl.CERT_REQUIRED
         context.load_verify_locations(cadata=self.TPAP_ROOT_CA_PEM)
         # Like the Tapo app: ECDSA suites only, and the certificate has to

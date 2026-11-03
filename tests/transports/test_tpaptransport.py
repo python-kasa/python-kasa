@@ -39,6 +39,7 @@ from kasa.exceptions import (
 from kasa.protocols import SmartProtocol
 from kasa.smart import SmartDevice
 from kasa.transports import KlapTransportV2, SslAesTransport
+from kasa.transports.sslcontext import get_ssl_context as get_shared_ssl_context
 
 
 def _discover_response(
@@ -881,7 +882,7 @@ async def test_tls2_ssl_context_loads_root_ca(
 
     transport = tp.TpapTransport(config=DeviceConfig("tls-host"))
     transport._encryption_session._tpap_tls = 2
-    context = transport._create_ssl_context()
+    context = transport._create_tls2_ssl_context()
 
     assert isinstance(context, ssl.SSLContext)
     assert context.verify_mode == ssl.CERT_REQUIRED
@@ -2715,31 +2716,44 @@ def test_should_retry_live_session_variants(exc: Exception, expected: bool) -> N
 @pytest.mark.asyncio
 async def test_get_ssl_context_caches_result(monkeypatch: pytest.MonkeyPatch) -> None:
     transport = tp.TpapTransport(config=DeviceConfig("tpap-host"))
+    transport._encryption_session._tpap_tls = 2
     created = 0
+    tls2_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 
-    def fake_create_ssl_context() -> bool:
+    def fake_create_tls2_ssl_context() -> ssl.SSLContext:
         nonlocal created
         created += 1
-        return False
+        return tls2_context
 
-    monkeypatch.setattr(transport, "_create_ssl_context", fake_create_ssl_context)
+    monkeypatch.setattr(
+        transport, "_create_tls2_ssl_context", fake_create_tls2_ssl_context
+    )
 
-    assert await transport.get_ssl_context() is False
-    assert await transport.get_ssl_context() is False
+    assert await transport.get_ssl_context() is tls2_context
+    assert await transport.get_ssl_context() is tls2_context
     assert created == 1
 
 
-async def test_create_ssl_context_for_tls0_and_tls1() -> None:
+@pytest.mark.parametrize("tls", [1, None])
+async def test_get_ssl_context_for_tls1_is_the_shared_context(tls: int | None) -> None:
+    """Unverified TLS uses the context the other https transports share."""
     transport = tp.TpapTransport(config=DeviceConfig("tpap-host"))
-    session = transport._encryption_session
+    transport._encryption_session._tpap_tls = tls
 
-    session._tpap_tls = 0
-    assert transport._create_ssl_context() is False
+    context = await transport.get_ssl_context()
 
-    session._tpap_tls = 1
-    context = transport._create_ssl_context()
+    assert context is await get_shared_ssl_context()
     assert isinstance(context, ssl.SSLContext)
     assert context.verify_mode == ssl.CERT_NONE
+    enabled = {c["name"] for c in context.get_ciphers()}
+    assert {"ECDHE-ECDSA-AES128-SHA", "ECDHE-ECDSA-AES256-SHA"} <= enabled
+
+
+async def test_get_ssl_context_for_tls0_is_plain_http() -> None:
+    transport = tp.TpapTransport(config=DeviceConfig("tpap-host"))
+    transport._encryption_session._tpap_tls = 0
+
+    assert await transport.get_ssl_context() is False
 
 
 def test_payload_and_sequence_helpers() -> None:
@@ -3605,7 +3619,7 @@ async def test_tls2_ssl_context_uses_ecdsa_and_checks_mac(mac: str) -> None:
     session._tpap_tls = 2
     session._device_mac = mac
 
-    context = transport._create_ssl_context()
+    context = transport._create_tls2_ssl_context()
 
     assert isinstance(context, ssl.SSLContext)
     tls12 = [c["name"] for c in context.get_ciphers() if c["protocol"] == "TLSv1.2"]
@@ -3687,7 +3701,7 @@ async def test_tls2_handshake_requires_device_mac(
     session = transport._encryption_session
     session._tpap_tls = 2
     session._device_mac = "AA-BB-CC-DD-EE-FF"
-    client_ctx = transport._create_ssl_context()
+    client_ctx = transport._create_tls2_ssl_context()
     assert isinstance(client_ctx, ssl.SSLContext)
 
     if matches:
