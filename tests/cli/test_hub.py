@@ -5,7 +5,8 @@ from pytest_mock import MockerFixture
 from kasa import Device, DeviceType, Module
 from kasa.cli.hub import hub
 
-from ..device_fixtures import hubs, plug_iot
+from ..device_fixtures import hubs, hubs_smart, plug_iot
+from ..fakeprotocol_smart import FakeSmartTransport
 
 
 @hubs
@@ -48,6 +49,28 @@ async def test_hub_unpair(
 
     mock_unpair.assert_awaited()
     assert f"Unpaired {id_}" in res.output
+    assert res.exit_code == 0
+
+
+@hubs_smart
+@pytest.mark.requires_dummy
+async def test_hub_list(dev: Device, runner: CliRunner) -> None:
+    """Test that list shows each child with its index and availability."""
+    if not dev.children:
+        pytest.skip("Cannot test without child devices")
+
+    assert isinstance(dev.protocol._transport, FakeSmartTransport)
+    child_list = dev.protocol._transport.info["get_child_device_list"]
+    child_list["child_device_list"][0]["status"] = "offline"
+    await dev.update()
+
+    res = await runner.invoke(hub, ["list"], obj=dev, catch_exceptions=False)
+
+    rows = {line.split()[1]: line.split() for line in res.output.splitlines()[1:]}
+    for index, child in enumerate(dev.children):
+        row = rows[child.device_id]
+        assert row[0] == str(index)
+        assert row[3] == str(index != 0)
     assert res.exit_code == 0
 
 

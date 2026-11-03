@@ -55,6 +55,10 @@ class AuthenticationError(DeviceError):
     """Base exception for device authentication errors."""
 
 
+class DeviceUnavailableError(DeviceError):
+    """Exception for commands to an unreachable device."""
+
+
 class _RetryableError(DeviceError):
     """Retryable exception for device errors."""
 

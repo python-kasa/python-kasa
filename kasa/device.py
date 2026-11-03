@@ -277,6 +277,11 @@ class Device(ABC):
         """Return True if device is off."""
         return not self.is_on
 
+    @property
+    def is_available(self) -> bool:
+        """Return False if the device is known to be unreachable."""
+        return True
+
     @abstractmethod
     async def turn_on(self, **kwargs) -> dict:
         """Turn on the device."""

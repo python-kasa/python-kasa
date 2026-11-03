@@ -55,6 +55,7 @@ REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "lo": lambda x: 0,  # lon on ks240
     "device_id": lambda x: "REDACTED_" + x[9::],
     "parent_device_id": lambda x: "REDACTED_" + x[9::],  # Hub attached children
+    "temp_sensor_device_id": lambda x: "REDACTED_" + x[9::],  # Thermostat source
     "original_device_id": lambda x: "REDACTED_" + x[9::],  # Strip children
     "nickname": lambda x: "I01BU0tFRF9OQU1FIw==" if x else "",
     "mac": mask_mac,

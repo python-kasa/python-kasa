@@ -8,6 +8,7 @@ from devtools.dump_devinfo import (
     _wrap_redactors,
     get_legacy_fixture,
     get_smart_fixtures,
+    scrub_child_device_ids,
 )
 from kasa.iot import IotDevice
 from kasa.protocols import IotProtocol
@@ -157,3 +158,25 @@ async def test_iot_fixtures(fixture_info: FixtureInfo) -> None:
         key: val for key, val in fixture_info.data.items() if "err_code" not in val
     }
     assert saved_fixture == created_fixture
+
+
+def test_scrub_child_temperature_sensor_ids():
+    """Test thermostat temperature sources are mapped to scrubbed child ids."""
+    children = {
+        "trv": {
+            "get_device_info": {"device_id": "trv"},
+            "get_temperature_correction": {"temp_sensor_device_id": "sensor"},
+        },
+        "sensor": {"get_device_info": {"device_id": "sensor"}},
+        "other": {
+            "get_device_info": {"device_id": "other"},
+            "get_temperature_correction": {"temp_sensor_device_id": "not-a-child"},
+        },
+    }
+
+    id_map = scrub_child_device_ids({}, children)
+
+    trv_source = children["trv"]["get_temperature_correction"]
+    assert trv_source["temp_sensor_device_id"] == id_map["sensor"]
+    other_source = children["other"]["get_temperature_correction"]
+    assert other_source["temp_sensor_device_id"] == "SCRUBBED_DEVICE_ID"
