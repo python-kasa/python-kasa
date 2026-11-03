@@ -1,4 +1,32 @@
-"""Implementation of the TP-Link TPAP transport."""
+"""Implementation of the TP-Link TPAP transport.
+
+TPAP is the login newer Tapo and Kasa firmware uses instead of KLAP or AES:
+a SPAKE2+ exchange that gives a shared key, then an encrypted session.
+
+The login values are the TLS mode (0 for http, 1 for TLS, 2 for TLS checked
+against TP-Link's device root CA), the port, the passcode types the device
+accepts (``pake``), whether it proves itself with its attestation certificate
+(``dac``) and its MAC. They come from the ``tpap`` object of the UDP discovery
+reply. Without it the client asks the device with an in-band ``discover``,
+except cameras, which refuse that and get fixed defaults.
+
+pake_register: the client sends a random value and the passcode type. The
+device answers with its own random value, a salt, an iteration count, its
+SPAKE2+ share and, in ``extra_crypt``, how the password has to be encoded.
+
+pake_share: both sides derive w0 and w1 from the encoded password with
+PBKDF2-HMAC-SHA256. The client sends its share and confirmation, and the
+device answers with its own confirmation, which the client checks, a session
+id (``stok``) and a start sequence number. With ``dac`` the device also signs
+the shared key and a nonce from the client with its attestation certificate.
+A rejected pake_share counts toward the device's lockout, so it is never
+retried.
+
+encryption: the session key and nonce come from the shared key with
+HKDF-SHA256. Requests go to ``/stok=<stok>/ds``, encrypted with AES-CCM or
+ChaCha20-Poly1305 and prefixed with their sequence number, which also goes
+into the nonce and increments with every request.
+"""
 
 from __future__ import annotations
 
