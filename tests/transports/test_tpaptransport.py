@@ -29,7 +29,6 @@ from kasa.exceptions import (
     DeviceError,
     KasaException,
     SmartErrorCode,
-    _ConnectionError,
     _RetryableError,
 )
 from kasa.protocols import SmartProtocol
@@ -867,54 +866,6 @@ async def test_transport_send_happy_path() -> None:
     assert session._sequence == 11
 
 
-@pytest.mark.parametrize(
-    ("first_failure", "session_id", "start_seq"),
-    [
-        pytest.param("session-expired", "SID-RETRY", 20, id="session-expired"),
-        pytest.param("connection-reset", "SID-CONN", 30, id="connection-reset"),
-    ],
-)
-async def test_transport_send_retries_live_session_failures(
-    monkeypatch: pytest.MonkeyPatch,
-    first_failure: str,
-    session_id: str,
-    start_seq: int,
-) -> None:
-    transport, session = _make_established_transport()
-    request_calls = 0
-
-    async def fake_handshake() -> None:
-        _establish_session(transport, session_id=session_id, start_seq=start_seq)
-
-    async def post(
-        url: URL,
-        *,
-        json: dict[str, Any] | None = None,
-        data: bytes | None = None,
-        headers: dict[str, str] | None = None,
-        ssl: ssl.SSLContext | bool | None = None,
-    ) -> tuple[int, dict[str, Any] | bytes]:
-        nonlocal request_calls
-        del url, json, headers, ssl
-        request_calls += 1
-        if request_calls == 1:
-            if first_failure == "session-expired":
-                return 200, {"error_code": SmartErrorCode.SESSION_EXPIRED.value}
-            raise _ConnectionError("Connection reset by peer")
-        assert data is not None
-        return 200, data
-
-    transport._http_client.post = post  # type: ignore[assignment]
-    monkeypatch.setattr(transport, "perform_handshake", fake_handshake, raising=True)
-
-    out = await transport.send('{"result": {"retry": true}}')
-
-    assert out["result"]["retry"] is True
-    assert request_calls == 2
-    assert str(transport._ds_url).endswith(f"/stok={session_id}/ds")
-    assert _live_session(transport)._sequence == start_seq + 1
-
-
 def _dropping_post(
     replies: list[tuple[int, Any]],
 ) -> tuple[Any, list[int]]:
@@ -948,74 +899,16 @@ def _dropping_post(
         pytest.param(200, {"error_code": -2402}, id="reply-2402"),
     ],
 )
-async def test_send_logs_in_again_once_when_session_dropped(
-    monkeypatch: pytest.MonkeyPatch, status: int, body: Any
-) -> None:
-    """Like the app, a dropped session gets one new login and one resend."""
-    transport, session = _make_established_transport()
-    handshakes = 0
-
-    async def fake_handshake() -> None:
-        nonlocal handshakes
-        handshakes += 1
-        _establish_session(transport, session_id="SID-NEW", start_seq=40)
-
+async def test_dropped_session_is_retryable(status: int, body: Any) -> None:
+    """A dropped session is reset and raised as retryable, for the protocol to retry."""
+    transport, _ = _make_established_transport()
     post, calls = _dropping_post([(status, body)])
     transport._http_client.post = post  # type: ignore[assignment]
-    monkeypatch.setattr(transport, "perform_handshake", fake_handshake, raising=True)
 
-    out = await transport.send('{"result": {"ok": true}}')
-
-    assert out["result"]["ok"] is True
-    assert len(calls) == 2
-    assert handshakes == 1
-    assert str(transport._ds_url).endswith("/stok=SID-NEW/ds")
-
-
-async def test_send_logs_in_again_when_fresh_session_dropped(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The retry also applies when this call made the first login."""
-    transport, session = _make_established_transport()
-    await transport.reset()
-    handshakes = 0
-
-    async def fake_handshake() -> None:
-        nonlocal handshakes
-        handshakes += 1
-        _establish_session(transport, session_id=f"SID-{handshakes}")
-
-    post, calls = _dropping_post([(500, b'{"error_code": -2402}')])
-    transport._http_client.post = post  # type: ignore[assignment]
-    monkeypatch.setattr(transport, "perform_handshake", fake_handshake, raising=True)
-
-    out = await transport.send('{"result": {"ok": true}}')
-
-    assert out["result"]["ok"] is True
-    assert (len(calls), handshakes) == (2, 2)
-
-
-async def test_send_gives_up_when_session_dropped_twice(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The new login and resend happen once only."""
-    transport, session = _make_established_transport()
-    handshakes = 0
-
-    async def fake_handshake() -> None:
-        nonlocal handshakes
-        handshakes += 1
-        _establish_session(transport)
-
-    dropped = (500, b'{"error_code": -2402}')
-    post, calls = _dropping_post([dropped, dropped, dropped])
-    transport._http_client.post = post  # type: ignore[assignment]
-    monkeypatch.setattr(transport, "perform_handshake", fake_handshake, raising=True)
-
-    with pytest.raises(DeviceError, match="device dropped the session"):
+    with pytest.raises(_RetryableError, match="dropped the session"):
         await transport.send('{"result": {"ok": true}}')
 
-    assert (len(calls), handshakes) == (2, 1)
+    assert len(calls) == 1
     assert transport._encryption_session is None
 
 
@@ -2115,36 +2008,6 @@ async def test_no_password_gives_no_candidates(family: DeviceFamily | None) -> N
     await transport.close()
 
 
-@pytest.mark.parametrize(
-    ("exc", "expected"),
-    [
-        pytest.param(
-            _ConnectionError("Connection reset by peer"),
-            True,
-            id="connection-reset",
-        ),
-        pytest.param(
-            _ConnectionError("different connection issue"),
-            False,
-            id="other-connection-error",
-        ),
-        pytest.param(KasaException("x"), False, id="generic-kasa"),
-        pytest.param(
-            _RetryableError("x", error_code=SmartErrorCode.LOGIN_ERROR),
-            False,
-            id="retryable-non-session-error",
-        ),
-        pytest.param(
-            _RetryableError("x", error_code=SmartErrorCode.STAT_ACCESS_ERROR),
-            False,
-            id="stat-access-error",
-        ),
-    ],
-)
-def test_should_retry_live_session_variants(exc: Exception, expected: bool) -> None:
-    assert tp.TpapTransport._should_retry_live_session(exc) is expected
-
-
 @pytest.mark.asyncio
 async def test_get_ssl_context_caches_result(monkeypatch: pytest.MonkeyPatch) -> None:
     transport = tp.TpapTransport(config=DeviceConfig("tpap-host"))
@@ -2209,21 +2072,7 @@ def test_payload_and_sequence_helpers() -> None:
 
 
 @pytest.mark.asyncio
-async def test_send_reraises_non_retryable_error() -> None:
-    transport = tp.TpapTransport(config=DeviceConfig("tpap-host"))
-
-    async def fake_send_once(request: str) -> dict[str, Any]:
-        del request
-        raise KasaException("boom")
-
-    transport._send_once = fake_send_once  # type: ignore[assignment]
-
-    with pytest.raises(KasaException, match="boom"):
-        await transport.send("{}")
-
-
-@pytest.mark.asyncio
-async def test_send_once_error_paths(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_send_error_paths(monkeypatch: pytest.MonkeyPatch) -> None:
     transport, session = _make_established_transport()
 
     async def fake_handshake() -> None:
@@ -2232,7 +2081,7 @@ async def test_send_once_error_paths(monkeypatch: pytest.MonkeyPatch) -> None:
     transport._invalidate_session()
     monkeypatch.setattr(transport, "perform_handshake", fake_handshake, raising=True)
     with pytest.raises(KasaException, match="not established"):
-        await transport._send_once("{}")
+        await transport.send("{}")
 
     _establish_session(transport)
 
@@ -2249,7 +2098,7 @@ async def test_send_once_error_paths(monkeypatch: pytest.MonkeyPatch) -> None:
 
     transport._http_client.post = post_bad_status  # type: ignore[assignment]
     with pytest.raises(KasaException, match="secure request failed.*status 500"):
-        await transport._send_once("{}")
+        await transport.send("{}")
 
     async def post_dict_success(
         url: URL,
@@ -2263,7 +2112,7 @@ async def test_send_once_error_paths(monkeypatch: pytest.MonkeyPatch) -> None:
         return 200, {"error_code": 0, "result": {"ok": True}}
 
     transport._http_client.post = post_dict_success  # type: ignore[assignment]
-    assert (await transport._send_once("{}"))["result"]["ok"] is True
+    assert (await transport.send("{}"))["result"]["ok"] is True
 
     async def post_weird_type(
         url: URL,
@@ -2278,11 +2127,11 @@ async def test_send_once_error_paths(monkeypatch: pytest.MonkeyPatch) -> None:
 
     transport._http_client.post = post_weird_type  # type: ignore[assignment]
     with pytest.raises(KasaException, match="Unexpected TPAP response body type"):
-        await transport._send_once("{}")
+        await transport.send("{}")
 
 
 @pytest.mark.asyncio
-async def test_send_once_tls2_uses_post() -> None:
+async def test_send_tls2_uses_post() -> None:
     transport, session = _make_established_transport()
     transport._tpap_tls = 2
 
@@ -2304,7 +2153,7 @@ async def test_send_once_tls2_uses_post() -> None:
 
     transport._http_client.post = post  # type: ignore[assignment]
 
-    out = await transport._send_once('{"result": {"ok": true}}')
+    out = await transport.send('{"result": {"ok": true}}')
     assert out["result"]["ok"] is True
 
 
