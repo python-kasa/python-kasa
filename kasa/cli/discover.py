@@ -28,7 +28,6 @@ from kasa.discover import (
 from kasa.iot.iotdevice import _extract_sys_info
 from kasa.protocols.iotprotocol import REDACTORS as IOT_REDACTORS
 from kasa.protocols.protocol import redact_data
-from kasa.transports.tpaptransport import TpapTransport
 
 from ..json import dumps as json_dumps
 from .common import echo, error
@@ -276,18 +275,12 @@ async def config(ctx: click.Context) -> DeviceDict:
     )
     if dev:
         cparams = dev.config.connection_type
-        options = (
+        echo("Managed to connect, cli options to connect are:")
+        echo(
             f"--device-family {cparams.device_family.value} "
             f"--encrypt-type {cparams.encryption_type.value} "
             f"{'--https' if cparams.https else '--no-https'}"
         )
-        transport = dev.protocol._transport
-        if isinstance(transport, TpapTransport):
-            # What the login used, so the next one need not ask the device
-            tpap = json_dumps(transport.tpap_parameters.to_dict())
-            options += f" --tpap '{tpap}'"
-        echo("Managed to connect, cli options to connect are:")
-        echo(options)
         return {host: dev}
     else:
         error(f"Unable to connect to {host}")

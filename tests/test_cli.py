@@ -45,8 +45,6 @@ from kasa.cli.time import time
 from kasa.cli.usage import energy
 from kasa.cli.wifi import wifi
 from kasa.deviceconfig import (
-    DeviceConfig,
-    DeviceConnectionParameters,
     DeviceEncryptionType,
     DeviceFamily,
     TpapParameters,
@@ -54,10 +52,8 @@ from kasa.deviceconfig import (
 from kasa.discover import Discover, DiscoveryResult, redact_data
 from kasa.iot import IotDevice
 from kasa.json import dumps as json_dumps
-from kasa.protocols import SmartProtocol
 from kasa.smart import SmartDevice
 from kasa.smartcam import SmartCamDevice
-from kasa.transports import TpapTransport
 
 from .conftest import (
     device_iot,
@@ -1772,32 +1768,3 @@ async def test_tpap_option_invalid(
     assert res.exit_code != 0
     assert message in res.output
     connect.assert_not_called()
-
-
-async def test_discover_config_prints_tpap(
-    mocker: MockerFixture, runner: CliRunner
-) -> None:
-    """Discover config prints the TPAP login that was used, as a --tpap option."""
-    tpap = TpapParameters(tls=0, port=80, pake=[2], dac=True, mac="AA-BB-CC-DD-EE-FF")
-    config = DeviceConfig(
-        "127.0.0.1",
-        connection_type=DeviceConnectionParameters(
-            DeviceFamily.SmartTapoPlug, DeviceEncryptionType.Tpap, 2, tpap=tpap
-        ),
-    )
-    dev = SmartDevice(
-        "127.0.0.1", protocol=SmartProtocol(transport=TpapTransport(config=config))
-    )
-    mocker.patch("kasa.discover.Discover.try_connect_all", return_value=dev)
-
-    res = await runner.invoke(cli, ["--host", "127.0.0.1", "discover", "config"])
-
-    assert res.exit_code == 0, res.output
-    # The output wraps at the terminal width
-    output = " ".join(res.output.split())
-    options = output.split("cli options to connect are: ", 1)[1]
-    assert options.startswith(
-        "--device-family SMART.TAPOPLUG --encrypt-type TPAP --no-https --tpap '"
-    )
-    printed = options.split("--tpap ", 1)[1].strip("'")
-    assert TpapParameters.from_dict(json.loads(printed)) == tpap

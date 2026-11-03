@@ -19,7 +19,7 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from yarl import URL
 
 from kasa.credentials import Credentials
-from kasa.deviceconfig import DeviceConfig, DeviceFamily, TpapParameters
+from kasa.deviceconfig import DeviceConfig, DeviceFamily
 from kasa.exceptions import (
     SMART_AUTHENTICATION_ERRORS,
     SMART_RETRYABLE_ERRORS,
@@ -142,21 +142,6 @@ class TpapTransport(BaseTransport):
     def is_transport_credentials_hash(cls, credentials_hash: str) -> bool:
         """Whether the hash has the shape this transport produces."""
         return Credentials._from_plaintext_hash(credentials_hash) is not None
-
-    @property
-    def tpap_parameters(self) -> TpapParameters:
-        """The TPAP login the transport uses, once it has logged in.
-
-        From the discovery reply, the in-band discover or the camera defaults.
-        """
-        return TpapParameters(
-            tls=self._tpap_tls or 0,
-            port=self._tpap_port,
-            pake=self._tpap_pake,
-            dac=self._tpap_dac,
-            user_hash_type=self._tpap_user_hash_type,
-            mac=self._device_mac or None,
-        )
 
     @property
     def _uses_camera_auth(self) -> bool:
