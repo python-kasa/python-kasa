@@ -86,7 +86,7 @@ def test_sha256_crypt_shadow(password: str, prefix: str, expected: str) -> None:
 
 
 def test_sha256_crypt_shadow_ignores_passwd_rounds() -> None:
-    """Like the app, only passwd_prefix sets the rounds; passwd_rounds is unused."""
+    """Only passwd_prefix sets the rounds; passwd_rounds is not used."""
     extra_crypt = {
         "type": "password_shadow",
         "params": {
@@ -283,7 +283,7 @@ def test_build_credentials_fallback_paths(
 
 
 def test_build_credentials_without_params_or_username() -> None:
-    """Without params and without a username the app uses the password alone."""
+    """Without params and without a username, the password is used alone."""
     assert (
         crypto.build_credentials(
             {"type": "password_shadow"}, "", "pass", "AABBCCDDEEFF"
@@ -404,7 +404,7 @@ def test_spake2p_share_accepts_non_int_curve_order(
 def test_spake2p_share_encodes_w0_at_curve_length(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """w0 keeps its leading zero bytes in the transcript, as the app writes it."""
+    """w0 keeps its leading zero bytes in the transcript."""
     small_w0 = 0x1234
     monkeypatch.setattr(crypto, "_derive_ab", lambda *args, **kwargs: (small_w0, 7))
     hashed: list[bytes] = []
