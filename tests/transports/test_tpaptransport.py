@@ -1629,11 +1629,12 @@ async def test_request_waiting_while_the_session_drops(mocker: MockerFixture) ->
     transport = _transport()
     await transport.perform_handshake()
 
-    first, second = await asyncio.gather(
+    results: list[Any] = await asyncio.gather(
         transport.send(json_dumps(DUMMY_QUERY)),
         transport.send(json_dumps(DUMMY_QUERY)),
         return_exceptions=True,
     )
+    first, second = results
 
     assert isinstance(first, _RetryableError)
     assert isinstance(second, KasaException)
