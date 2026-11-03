@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import base64
-import hashlib
 import hmac
 import json
 import logging
@@ -67,18 +66,6 @@ LOCKED = {
 CAMERAS = (DeviceFamily.SmartIpCamera, DeviceFamily.SmartTapoDoorbell)
 #: A reply field the mock device leaves out
 ABSENT = object()
-
-
-def _md5(text: str) -> str:
-    return hashlib.md5(text.encode()).hexdigest()  # noqa: S324
-
-
-def _sha1(text: str) -> str:
-    return hashlib.sha1(text.encode()).hexdigest()  # noqa: S324
-
-
-def _sha256_upper(text: str) -> str:
-    return hashlib.sha256(text.encode()).hexdigest().upper()
 
 
 def _b64(value: bytes) -> str:
@@ -195,7 +182,7 @@ class MockTpapDevice:
         response: Any = None,
     ) -> None:
         camera = family in CAMERAS
-        hashed = _md5(password) if camera else _sha1(password)
+        hashed = crypto.md5_hex(password) if camera else crypto._sha1_hex(password)
         self.passcodes = passcodes or {
             "userpw": hashed,
             "shared_token": hashed,
@@ -506,7 +493,7 @@ async def test_handshake(
         {"discover": discovers, "pake_register": 1, "pake_share": 1}
     )
     register = device.params["pake_register"][0]
-    assert register["username"] == _md5("admin")
+    assert register["username"] == crypto.md5_hex("admin")
     assert register["passcode_type"] == "userpw"
     assert register["cipher_suites"] == [1]
     assert "stok" not in register
@@ -916,8 +903,8 @@ async def test_dac_from_another_root(mocker: MockerFixture) -> None:
 @pytest.mark.parametrize(
     ("accepted", "shares"),
     [
-        pytest.param(_md5(MOCK_PWD), 1, id="md5"),
-        pytest.param(_sha256_upper(MOCK_PWD), 2, id="sha256"),
+        pytest.param(crypto.md5_hex(MOCK_PWD), 1, id="md5"),
+        pytest.param(crypto.sha256_hex_upper(MOCK_PWD), 2, id="sha256"),
     ],
 )
 async def test_camera_tries_each_password_hash(
@@ -957,12 +944,14 @@ async def test_camera_with_the_wrong_password(
     ("family", "user_hash_type", "username"),
     [
         pytest.param(
-            DeviceFamily.SmartIpCamera, 1, _sha256_upper("admin"), id="sha256"
+            DeviceFamily.SmartIpCamera, 1, crypto.sha256_hex_upper("admin"), id="sha256"
         ),
-        pytest.param(DeviceFamily.SmartIpCamera, 0, _md5("admin"), id="md5"),
-        pytest.param(DeviceFamily.SmartIpCamera, None, _md5("admin"), id="not-set"),
+        pytest.param(DeviceFamily.SmartIpCamera, 0, crypto.md5_hex("admin"), id="md5"),
         pytest.param(
-            DeviceFamily.SmartTapoPlug, 1, _md5("admin"), id="only-on-cameras"
+            DeviceFamily.SmartIpCamera, None, crypto.md5_hex("admin"), id="not-set"
+        ),
+        pytest.param(
+            DeviceFamily.SmartTapoPlug, 1, crypto.md5_hex("admin"), id="only-on-cameras"
         ),
     ],
 )
@@ -996,14 +985,14 @@ async def test_register_user_name(
             DeviceFamily.SmartTapoPlug,
             [2],
             {"type": "password_shadow", "params": {"passwd_id": 3}},
-            _sha1(_md5(MOCK_USER) + "_" + MOCK_MAC),
+            crypto._sha1_hex(crypto.md5_hex(MOCK_USER) + "_" + MOCK_MAC),
             id="user-and-mac-shadow",
         ),
         pytest.param(
             DeviceFamily.SmartIpCamera,
             [2],
             PASSWORD_SHADOW,
-            _sha1(_md5(MOCK_PWD)),
+            crypto._sha1_hex(crypto.md5_hex(MOCK_PWD)),
             id="camera-encodes-the-hash",
         ),
         pytest.param(
