@@ -1,22 +1,18 @@
 from __future__ import annotations
 
 import base64
-import hashlib
 import json
 import logging
 import ssl
 import struct
-from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import Any, cast
 from unittest.mock import AsyncMock
 
 import pytest
-from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import ec, rsa
+from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-from cryptography.x509.oid import NameOID
 from yarl import URL
 
 import kasa.transports.tpaptransport as tp
@@ -40,6 +36,9 @@ from kasa.protocols import SmartProtocol
 from kasa.smart import SmartDevice
 from kasa.transports import KlapTransportV2, SslAesTransport
 from kasa.transports.sslcontext import get_ssl_context as get_shared_ssl_context
+from kasa.transports.tpap import cert, crypto
+
+from .tpap.certificates import build_certificate, mac_name
 
 
 def _discover_response(
@@ -192,41 +191,6 @@ def _make_camera_tpap_transport(host: str = "cam-host") -> tp.TpapTransport:
     )
 
 
-def _build_certificate(
-    private_key: ec.EllipticCurvePrivateKey | rsa.RSAPrivateKey,
-    subject_common_name: str,
-    issuer_common_name: str,
-    issuer_private_key: ec.EllipticCurvePrivateKey | rsa.RSAPrivateKey,
-    *,
-    is_ca: bool = False,
-    subject_alt_names: list[x509.GeneralName] | None = None,
-) -> x509.Certificate:
-    now = datetime.now(UTC).replace(tzinfo=None)
-    builder = (
-        x509.CertificateBuilder()
-        .subject_name(
-            x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, subject_common_name)])
-        )
-        .issuer_name(
-            x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, issuer_common_name)])
-        )
-        .public_key(private_key.public_key())
-        .serial_number(x509.random_serial_number())
-        .not_valid_before(now - timedelta(days=1))
-        .not_valid_after(now + timedelta(days=30))
-        .add_extension(
-            x509.BasicConstraints(ca=is_ca, path_length=None),
-            critical=True,
-        )
-    )
-    if subject_alt_names:
-        builder = builder.add_extension(
-            x509.SubjectAlternativeName(subject_alt_names),
-            critical=False,
-        )
-    return builder.sign(issuer_private_key, hashes.SHA256())
-
-
 def test_session_cipher_helpers_roundtrip() -> None:
     aes_key, aes_nonce = tp.TpapEncryptionSession.key_nonce_from_shared(
         b"k" * 16, "aes_256_ccm"
@@ -293,7 +257,7 @@ async def test_session_encrypt_and_decrypt_roundtrip() -> None:
         pytest.param(
             None,
             _discover_response(pake=[2], user_hash_type=0),
-            tp.TpapEncryptionSession._md5_hex("admin"),
+            crypto.md5_hex("admin"),
             "userpw",
             2,
             "https",
@@ -303,7 +267,7 @@ async def test_session_encrypt_and_decrypt_roundtrip() -> None:
         pytest.param(
             None,
             _discover_response(pake=[2], user_hash_type=1),
-            tp.TpapEncryptionSession._md5_hex("admin"),
+            crypto.md5_hex("admin"),
             "userpw",
             2,
             "https",
@@ -313,7 +277,7 @@ async def test_session_encrypt_and_decrypt_roundtrip() -> None:
         pytest.param(
             None,
             _discover_response(tls=0, port=80),
-            tp.TpapEncryptionSession._md5_hex("admin"),
+            crypto.md5_hex("admin"),
             "default_userpw",
             0,
             "http",
@@ -323,7 +287,7 @@ async def test_session_encrypt_and_decrypt_roundtrip() -> None:
         pytest.param(
             DeviceFamily.SmartTapoHub,
             _discover_response(tls=0, port=80, pake=[2], user_hash_type=0, dac=True),
-            tp.TpapEncryptionSession._md5_hex("admin"),
+            crypto.md5_hex("admin"),
             "userpw",
             0,
             "http",
@@ -401,8 +365,8 @@ async def test_smartcam_session_builds_password_candidates_without_lat() -> None
     session._tpap_pake = [2]
 
     assert session._get_candidate_secrets() == [
-        tp.TpapEncryptionSession._md5_hex("pass"),
-        tp.TpapEncryptionSession._sha256_hex_upper("pass"),
+        crypto.md5_hex("pass"),
+        crypto.sha256_hex_upper("pass"),
     ]
 
 
@@ -816,9 +780,7 @@ async def test_get_passcode_type(
     ("pake", "expected"),
     [
         pytest.param([1], ["pass"], id="setup-code-uses-raw-password"),
-        pytest.param(
-            [3], [tp.TpapEncryptionSession._md5_hex("pass")], id="shared-token"
-        ),
+        pytest.param([3], [crypto.md5_hex("pass")], id="shared-token"),
         pytest.param([9], [], id="unknown-pake"),
         pytest.param([], [], id="missing-pake"),
     ],
@@ -837,10 +799,8 @@ async def test_smartcam_candidate_builder_dedupes_duplicates(
     transport = _make_camera_tpap_transport()
     session = transport._encryption_session
     session._tpap_pake = [2]
-    monkeypatch.setattr(session, "_md5_hex", lambda value: "same", raising=False)
-    monkeypatch.setattr(
-        session, "_sha256_hex_upper", lambda value: "same", raising=False
-    )
+    monkeypatch.setattr(crypto, "md5_hex", lambda value: "same")
+    monkeypatch.setattr(crypto, "sha256_hex_upper", lambda value: "same")
 
     assert session._get_candidate_secrets() == ["same"]
 
@@ -854,7 +814,7 @@ async def test_smartcam_resolve_credentials_applies_extra_crypt() -> None:
     }
 
     assert session._resolve_credentials(register_result, "candidate") == (
-        tp.TpapEncryptionSession._sha1_hex("candidate")
+        crypto._sha1_hex("candidate")
     )
 
 
@@ -871,10 +831,10 @@ async def test_tls2_ssl_context_loads_root_ca(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     root_key = ec.generate_private_key(ec.SECP256R1())
-    root_cert = _build_certificate(root_key, "root", "root", root_key, is_ca=True)
+    root_cert = build_certificate(root_key, "root", "root", root_key, is_ca=True)
 
     monkeypatch.setattr(
-        tp.TpapTransport,
+        cert,
         "TPAP_ROOT_CA_PEM",
         root_cert.public_bytes(serialization.Encoding.PEM).decode(),
         raising=True,
@@ -893,16 +853,16 @@ async def test_dac_verification_checks_chain_and_signature(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     root_key = ec.generate_private_key(ec.SECP256R1())
-    root_cert = _build_certificate(root_key, "root", "root", root_key, is_ca=True)
+    root_cert = build_certificate(root_key, "root", "root", root_key, is_ca=True)
     root_pem = root_cert.public_bytes(serialization.Encoding.PEM).decode()
 
     ica_key = ec.generate_private_key(ec.SECP256R1())
-    ica_cert = _build_certificate(ica_key, "ica", "root", root_key, is_ca=True)
+    ica_cert = build_certificate(ica_key, "ica", "root", root_key, is_ca=True)
     dac_key = ec.generate_private_key(ec.SECP256R1())
-    dac_cert = _build_certificate(dac_key, "dac", "ica", ica_key)
+    dac_cert = build_certificate(dac_key, "dac", "ica", ica_key)
 
     monkeypatch.setattr(
-        tp.TpapTransport,
+        cert,
         "TPAP_ROOT_CA_PEM",
         root_pem,
         raising=True,
@@ -1799,23 +1759,8 @@ async def test_private_handle_response_error_code_covers_invalid_retry_auth_and_
 
 
 # --------------------------
-# Helper and Credential Functions
+# Share defaults and session keys
 # --------------------------
-
-
-def test_encode_w_and_hash_helpers_cover_edge_cases() -> None:
-    assert tp.TpapEncryptionSession._encode_w(0, 32) == bytes(32)
-    assert tp.TpapEncryptionSession._encode_w(0x80, 32) == bytes(31) + b"\x80"
-    # 31 significant bytes with the top bit clear: the old minimal encoding
-    # dropped the leading zero byte here.
-    assert tp.TpapEncryptionSession._encode_w(1 << 240, 32) == (1 << 240).to_bytes(
-        32, "big"
-    )
-    assert (
-        tp.TpapEncryptionSession._hash("SHA512", b"data")
-        == hashlib.sha512(b"data").digest()
-    )
-    assert len(tp.TpapEncryptionSession._cmac_aes(b"\x00" * 16, b"data")) == 16
 
 
 @pytest.mark.parametrize(
@@ -1838,7 +1783,7 @@ async def test_share_params_default_iterations(
         used.append(iterations)
         return 5, 7
 
-    monkeypatch.setattr(session, "_derive_ab", derive_ab)
+    monkeypatch.setattr(crypto, "_derive_ab", derive_ab)
     register_result = _register_result(cipher_suites=1)
     register_result.pop("iterations")
     register_result.update(register_overrides)
@@ -1852,7 +1797,6 @@ async def test_session_keys_use_sha256_for_sha512_suites() -> None:
     """The session key and nonce use HKDF-SHA256 even when the suite hash is SHA512."""
     transport = _make_tpap_transport()
     session = transport._encryption_session
-    session._hkdf_hash = "SHA512"
     session._cipher_id = "aes_128_ccm"
     session._shared_key = b"shared-key"
     session._expected_dev_confirm = "expected"
@@ -1873,337 +1817,9 @@ async def test_session_keys_use_sha256_for_sha512_suites() -> None:
     assert session._key != hkdf(hashes.SHA512(), *key_labels)
 
 
-async def test_share_params_encode_w0_at_curve_length(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """w0 keeps its leading zero bytes in the transcript, as the app writes it."""
-    transport = _make_tpap_transport()
-    session = transport._encryption_session
-    session._user_random = session._base64(b"\x01" * 32)
-    small_w0 = 0x1234
-    monkeypatch.setattr(session, "_derive_ab", lambda *args, **kwargs: (small_w0, 7))
-    hashed: list[bytes] = []
-    real_hash = tp.TpapEncryptionSession._hash
-
-    def capture(algorithm: str, data: bytes) -> bytes:
-        hashed.append(data)
-        return real_hash(algorithm, data)
-
-    monkeypatch.setattr(session, "_hash", capture)
-
-    session._build_share_params_from_register(
-        _register_result(cipher_suites=1), "secret"
-    )
-
-    w0_element = (32).to_bytes(8, "little") + small_w0.to_bytes(32, "big")
-    assert any(data.endswith(w0_element) for data in hashed)
-
-
-def test_authkey_shadow_and_crypt_helpers() -> None:
-    masked = tp.TpapEncryptionSession._authkey_mask("abc", "xy", "0123456789")
-    assert len(masked) == 3
-    assert (
-        tp.TpapEncryptionSession._sha1_username_mac_shadow("", "AABBCCDDEEFF", "p")
-        == "p"
-    )
-    assert tp.TpapEncryptionSession._sha1_username_mac_shadow(
-        "user", "AABBCCDDEEFF", "p"
-    ) == tp.TpapEncryptionSession._sha1_hex(
-        tp.TpapEncryptionSession._md5_hex("user") + "_AA:BB:CC:DD:EE:FF"
-    )
-    assert tp.TpapEncryptionSession._md5_crypt("pass", "") is None
-    assert tp.TpapEncryptionSession._md5_crypt("pass", "$1$salt$") is not None
-    assert tp.TpapEncryptionSession._md5_crypt("pass", "$1$salt") is not None
-    assert tp.TpapEncryptionSession._sha256_crypt("pass", "") is None
-    assert (
-        tp.TpapEncryptionSession._sha256_crypt("pass", "$5$rounds=oops$salt")
-        is not None
-    )
-
-
-# The test vectors of https://www.akkadia.org/drepper/SHA-crypt.txt, which
-# `openssl passwd -5` also produces.
-@pytest.mark.parametrize(
-    ("password", "prefix", "expected"),
-    [
-        pytest.param(
-            "Hello world!",
-            "$5$saltstring",
-            "$5$saltstring$5B8vYYiY.CVt1RlTTf8KbXBH3hsxY/GNooZaBBGWEc5",
-            id="default-rounds",
-        ),
-        pytest.param(
-            "Hello world!",
-            "$5$rounds=10000$saltstringsaltstring",
-            "$5$rounds=10000$saltstringsaltst$3xv.VbSHBb41AL9AvLeujZkZRBAwqFMz2.opqey6IcA",
-            id="rounds-in-prefix",
-        ),
-        pytest.param(
-            "This is just a test",
-            "$5$rounds=5000$toolongsaltstring",
-            "$5$rounds=5000$toolongsaltstrin$Un/5jzAHMgOGZ5.mWJpuVolil07guHPvOW8mGRcvxa5",
-            id="explicit-default-rounds-kept",
-        ),
-        pytest.param(
-            "a very much longer text to encrypt.  "
-            "This one even stretches over morethan one line.",
-            "$5$rounds=1400$anotherlongsaltstring",
-            "$5$rounds=1400$anotherlongsalts$Rx.j8H.h8HjEDGomFU8bDkXm3XIUnzyxf12oP84Bnq1",
-            id="long-password",
-        ),
-        pytest.param(
-            "we have a short salt string but not a short password",
-            "$5$rounds=77777$short",
-            "$5$rounds=77777$short$JiO1O3ZpDAxGJeaDIuqCoEFysAe1mZNJRs3pw0KQRd/",
-            id="short-salt",
-        ),
-        pytest.param(
-            "the minimum number is still observed",
-            "$5$rounds=10$roundstoolow",
-            "$5$rounds=1000$roundstoolow$yfvwcWrQ8l/K0DAWyuPMDNHpIVlTQebY9l/gL972bIC",
-            id="rounds-below-minimum",
-        ),
-    ],
-)
-def test_sha256_crypt_shadow(password: str, prefix: str, expected: str) -> None:
-    assert tp.TpapEncryptionSession._sha256_crypt(password, prefix) == expected
-
-
-def test_sha256_crypt_shadow_ignores_passwd_rounds() -> None:
-    """Like the app, only passwd_prefix sets the rounds; passwd_rounds is unused."""
-    extra_crypt = {
-        "type": "password_shadow",
-        "params": {
-            "passwd_id": 5,
-            "passwd_prefix": "$5$saltstring",
-            "passwd_rounds": 10000,
-        },
-    }
-    assert (
-        tp.TpapEncryptionSession._build_credentials(
-            extra_crypt, "", "Hello world!", "AABBCCDDEEFF"
-        )
-        == "$5$saltstring$5B8vYYiY.CVt1RlTTf8KbXBH3hsxY/GNooZaBBGWEc5"
-    )
-
-
-# Produced by `openssl passwd -1`.
-@pytest.mark.parametrize(
-    ("password", "prefix", "expected"),
-    [
-        pytest.param("pass", "$1$saltsalt$", "$1$saltsalt$hZR.9zfJXcVTsa9iTxnQR1"),
-        pytest.param("pass", "$1$salt", "$1$salt$M6xQvx9eSlM4zTu69di5B/"),
-        pytest.param(
-            "correct horse battery staple",
-            "$1$longersaltstring$",
-            "$1$longersa$COeekwSWUn4OO9X02U7s21",
-            id="salt-truncated",
-        ),
-        pytest.param("", "$1$TFsy6I", "$1$TFsy6I$uDeFAJQ.oIhIuUsAK14Zf1", id="empty"),
-    ],
-)
-def test_md5_crypt_shadow(password: str, prefix: str, expected: str) -> None:
-    assert tp.TpapEncryptionSession._md5_crypt(password, prefix) == expected
-
-
-def test_sha256_crypt_rejects_too_many_rounds() -> None:
-    """The prefix rounds come from an unauthenticated reply and are hashed on the loop."""
-    with pytest.raises(KasaException, match="too many passwd_prefix rounds"):
-        tp.TpapEncryptionSession._sha256_crypt("pass", "$5$rounds=100001$salt$")
-
-
-@pytest.mark.parametrize(
-    ("extra_crypt", "username", "passcode", "mac_no_colon", "expected"),
-    [
-        (None, "user", "pass", "AABBCCDDEEFF", "user/pass"),
-        ({}, "", "pass", "AABBCCDDEEFF", "pass"),
-        (
-            {"type": "password_shadow", "params": {"passwd_id": 2}},
-            "user",
-            "pass",
-            "AABBCCDDEEFF",
-            tp.TpapEncryptionSession._sha1_hex("pass"),
-        ),
-        (
-            {
-                "type": "password_shadow",
-                "params": {"passwd_id": 3},
-            },
-            "user",
-            "pass",
-            "AABBCCDDEEFF",
-            tp.TpapEncryptionSession._sha1_username_mac_shadow(
-                "user", "AABBCCDDEEFF", "pass"
-            ),
-        ),
-        (
-            {
-                "type": "password_authkey",
-                "params": {
-                    "authkey_tmpkey": "xy",
-                    "authkey_dictionary": "0123456789",
-                },
-            },
-            "user",
-            "pass",
-            "AABBCCDDEEFF",
-            tp.TpapEncryptionSession._authkey_mask("pass", "xy", "0123456789"),
-        ),
-        (
-            {
-                "type": "password_sha_with_salt",
-                "params": {
-                    "sha_name": 0,
-                    "sha_salt": base64.b64encode(b"salt").decode(),
-                },
-            },
-            "user",
-            "pass",
-            "AABBCCDDEEFF",
-            hashlib.sha256(b"adminsaltpass").hexdigest(),
-        ),
-        (
-            {"type": "unknown", "params": {}},
-            "user",
-            "pass",
-            "AABBCCDDEEFF",
-            "user/pass",
-        ),
-    ],
-)
-def test_build_credentials_variants(
-    extra_crypt: dict[str, Any] | None,
-    username: str,
-    passcode: str,
-    mac_no_colon: str,
-    expected: str,
-) -> None:
-    assert (
-        tp.TpapEncryptionSession._build_credentials(
-            extra_crypt, username, passcode, mac_no_colon
-        )
-        == expected
-    )
-
-
-@pytest.mark.parametrize(
-    ("extra_crypt", "expected"),
-    [
-        pytest.param(
-            {
-                "type": "password_shadow",
-                "params": {"passwd_id": 1, "passwd_prefix": "$1$salt$"},
-            },
-            "not-pass",
-            id="shadow-md5-prefix",
-        ),
-        pytest.param(
-            {
-                "type": "password_shadow",
-                "params": {"passwd_id": 5, "passwd_prefix": "$5$salt$"},
-            },
-            "not-none",
-            id="shadow-sha256-prefix",
-        ),
-        pytest.param(
-            {"type": "password_authkey", "params": {}},
-            "pass",
-            id="authkey-missing-params",
-        ),
-        pytest.param(
-            {"type": "password_shadow", "params": {"passwd_id": 99}},
-            "pass",
-            id="shadow-unknown-id",
-        ),
-        pytest.param(
-            {"type": "password_shadow", "params": "not-a-dict"},
-            "user/pass",
-            id="shadow-invalid-params",
-        ),
-        pytest.param(
-            {"type": "password_shadow"}, "user/pass", id="shadow-without-params"
-        ),
-        pytest.param(
-            {"type": "password_authkey"}, "user/pass", id="authkey-without-params"
-        ),
-        pytest.param(
-            {"type": "password_sha_with_salt"},
-            "user/pass",
-            id="sha-with-salt-without-params",
-        ),
-        pytest.param(
-            {"type": "password_shadow", "params": {"passwd_id": "bad"}},
-            "pass",
-            id="shadow-invalid-passwd-id",
-        ),
-        pytest.param(
-            {
-                "type": "password_sha_with_salt",
-                "params": {"sha_name": "bad", "sha_salt": "c2FsdA=="},
-            },
-            "pass",
-            id="sha-with-salt-invalid-sha-name",
-        ),
-    ],
-)
-def test_build_credentials_fallback_paths(
-    extra_crypt: dict[str, Any], expected: str
-) -> None:
-    result = tp.TpapEncryptionSession._build_credentials(
-        extra_crypt,
-        "user",
-        "pass",
-        "AABBCCDDEEFF",
-    )
-
-    if expected == "not-pass":
-        assert result != "pass"
-    elif expected == "not-none":
-        assert result is not None
-    else:
-        assert result == expected
-
-
-def test_build_credentials_without_params_or_username() -> None:
-    """Without params and without a username the app uses the password alone."""
-    assert (
-        tp.TpapEncryptionSession._build_credentials(
-            {"type": "password_shadow"}, "", "pass", "AABBCCDDEEFF"
-        )
-        == "pass"
-    )
-
-
-def test_mac_pass_from_device_mac_validates_input() -> None:
-    with pytest.raises(KasaException, match="Invalid device MAC"):
-        tp.TpapEncryptionSession._mac_pass_from_device_mac("not-a-mac")
-
-    with pytest.raises(KasaException, match="too short"):
-        tp.TpapEncryptionSession._mac_pass_from_device_mac("AA:BB:CC:DD:EE")
-
-
 # --------------------------
 # Register, Share, and Suite Handling
 # --------------------------
-
-
-@pytest.mark.parametrize(
-    ("suite_type", "curve_name"),
-    [
-        (3, "NIST384p"),
-        (5, "NIST521p"),
-    ],
-)
-def test_suite_parameters_support_additional_curves(
-    suite_type: int, curve_name: str
-) -> None:
-    _, _, curve, _ = tp.TpapEncryptionSession._suite_parameters(suite_type)
-    assert curve.name == curve_name
-
-
-def test_suite_parameters_reject_unsupported_suite() -> None:
-    with pytest.raises(KasaException, match="Unsupported TPAP suite type"):
-        tp.TpapEncryptionSession._suite_parameters(999)
 
 
 async def test_build_share_params_from_register_requires_user_random() -> None:
@@ -2260,27 +1876,6 @@ async def test_build_share_params_from_register_validates_required_fields(
         )
 
 
-async def test_build_share_params_from_register_uses_cmac_suites() -> None:
-    transport = _make_tpap_transport()
-    session = transport._encryption_session
-    session._user_random = base64.b64encode(b"\x01" * 16).decode()
-
-    share_params = session._build_share_params_from_register(
-        {
-            "dev_random": base64.b64encode(b"\x00" * 16).decode(),
-            "dev_salt": base64.b64encode(b"\x11" * 16).decode(),
-            "dev_share": base64.b64encode(_p256_pub_uncompressed()).decode(),
-            "cipher_suites": 8,
-            "iterations": 100,
-            "encryption": "aes_128_ccm",
-        },
-        "secret",
-    )
-
-    assert session._expected_dev_confirm is not None
-    assert share_params["user_confirm"]
-
-
 @pytest.mark.parametrize(
     "share_result",
     [
@@ -2334,17 +1929,17 @@ async def test_verify_dac_proof_rejects_invalid_proof_type_and_public_key(
     session._dac_nonce_base64 = base64.b64encode(b"nonce").decode()
 
     cert_key = ec.generate_private_key(ec.SECP256R1())
-    cert = _build_certificate(cert_key, "root", "root", cert_key, is_ca=True)
+    dac_cert = build_certificate(cert_key, "root", "root", cert_key, is_ca=True)
 
     monkeypatch.setattr(
-        transport,
-        "_load_certificate_value",
-        lambda value: cert,
+        cert,
+        "load_certificate_value",
+        lambda value: dac_cert,
         raising=True,
     )
     monkeypatch.setattr(
-        transport,
-        "_verify_dac_certificate_chain",
+        cert,
+        "verify_dac_certificate_chain",
         lambda dac_ca_certificate, dac_ica_certificate: None,
         raising=True,
     )
@@ -2354,8 +1949,8 @@ async def test_verify_dac_proof_rejects_invalid_proof_type_and_public_key(
 
     bad_cert = cast(Any, SimpleNamespace(public_key=lambda: object()))
     monkeypatch.setattr(
-        transport,
-        "_load_certificate_value",
+        cert,
+        "load_certificate_value",
         lambda value: bad_cert,
         raising=True,
     )
@@ -2436,7 +2031,7 @@ async def test_establish_session_from_share_result_error_paths(
 
 
 # --------------------------
-# Certificate and TLS Helpers
+# Session cipher
 # --------------------------
 
 
@@ -2445,90 +2040,6 @@ def test_cipher_and_nonce_helpers() -> None:
         tp.TpapEncryptionSession._cipher_parameters("bogus")
     with pytest.raises(ValueError, match="base nonce too short"):
         tp.TpapEncryptionSession._nonce_from_base(b"\x00\x01\x02", 1)
-
-
-def test_load_certificate_value_variants() -> None:
-    cert_key = ec.generate_private_key(ec.SECP256R1())
-    cert = _build_certificate(cert_key, "leaf", "leaf", cert_key)
-    pem = cert.public_bytes(serialization.Encoding.PEM).decode()
-    der_b64 = base64.b64encode(cert.public_bytes(serialization.Encoding.DER)).decode()
-
-    assert tp.TpapTransport._load_certificate_value(pem).subject == cert.subject
-    assert tp.TpapTransport._load_certificate_value(der_b64).subject == cert.subject
-
-    with pytest.raises(KasaException, match="Empty certificate value"):
-        tp.TpapTransport._load_certificate_value("   ")
-    with pytest.raises(KasaException, match="Invalid certificate value"):
-        tp.TpapTransport._load_certificate_value("totally-invalid")
-
-
-def test_verify_certificate_validity_handles_naive_datetimes() -> None:
-    now = datetime.now(UTC).replace(tzinfo=None)
-    valid = SimpleNamespace(
-        not_valid_before=now - timedelta(days=1),
-        not_valid_after=now + timedelta(days=1),
-    )
-    tp.TpapTransport._verify_certificate_validity(cast(Any, valid))
-
-    expired = SimpleNamespace(
-        not_valid_before=now - timedelta(days=3),
-        not_valid_after=now - timedelta(days=2),
-    )
-    with pytest.raises(KasaException, match="outside its validity period"):
-        tp.TpapTransport._verify_certificate_validity(cast(Any, expired))
-
-
-def test_verify_certificate_signature_variants() -> None:
-    ec_root = ec.generate_private_key(ec.SECP256R1())
-    ec_leaf = ec.generate_private_key(ec.SECP256R1())
-    ec_cert = _build_certificate(ec_leaf, "leaf", "root", ec_root)
-    ec_issuer = _build_certificate(ec_root, "root", "root", ec_root, is_ca=True)
-    tp.TpapTransport._verify_certificate_signature(ec_cert, ec_issuer)
-
-    rsa_root = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    rsa_leaf = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    rsa_cert = _build_certificate(rsa_leaf, "leaf", "root", rsa_root)
-    rsa_issuer = _build_certificate(rsa_root, "root", "root", rsa_root, is_ca=True)
-    tp.TpapTransport._verify_certificate_signature(rsa_cert, rsa_issuer)
-
-    no_hash_cert = SimpleNamespace(signature_hash_algorithm=None)
-    with pytest.raises(KasaException, match="hash algorithm is unavailable"):
-        tp.TpapTransport._verify_certificate_signature(
-            cast(Any, no_hash_cert),
-            cast(Any, SimpleNamespace(public_key=lambda: ec_root.public_key())),
-        )
-
-    bad_issuer = SimpleNamespace(public_key=lambda: object())
-    with pytest.raises(KasaException, match="Unsupported DAC issuer public key type"):
-        tp.TpapTransport._verify_certificate_signature(ec_cert, cast(Any, bad_issuer))
-
-
-def test_verify_dac_certificate_chain_variants(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    root_key = ec.generate_private_key(ec.SECP256R1())
-    root_cert = _build_certificate(root_key, "root", "root", root_key, is_ca=True)
-    dac_key = ec.generate_private_key(ec.SECP256R1())
-    dac_cert = _build_certificate(dac_key, "dac", "root", root_key)
-
-    monkeypatch.setattr(
-        tp.TpapTransport,
-        "_load_root_ca_certificate",
-        classmethod(lambda cls: root_cert),
-        raising=True,
-    )
-    tp.TpapTransport._verify_dac_certificate_chain(dac_cert, None)
-
-    monkeypatch.setattr(
-        tp.TpapTransport,
-        "_load_root_ca_certificate",
-        classmethod(lambda cls: (_ for _ in ()).throw(ValueError("boom"))),
-        raising=True,
-    )
-    with pytest.raises(
-        KasaException, match="DAC certificate chain verification failed"
-    ):
-        tp.TpapTransport._verify_dac_certificate_chain(dac_cert, None)
 
 
 # --------------------------
@@ -2905,7 +2416,7 @@ async def test_transport_close_resets_and_closes_http_client(
     assert closed is True
     assert session.is_established is False
     assert (
-        tp.TpapEncryptionSession._build_credentials(
+        crypto.build_credentials(
             {
                 "type": "password_sha_with_salt",
                 "params": {"sha_name": 1, "sha_salt": "not-b64"},
@@ -2921,68 +2432,6 @@ async def test_transport_close_resets_and_closes_http_client(
 def test_transport_response_helpers_validate_json_payloads() -> None:
     with pytest.raises(KasaException, match="Unexpected TPAP JSON response body type"):
         tp.TpapTransport._load_json_dict(b"[]")
-
-
-class _NotAnInt:
-    """An integer that is not an int, like the gmpy2.mpz ecdsa returns when gmpy2 is installed."""
-
-    def __init__(self, value: int) -> None:
-        self._value = value
-
-    def __index__(self) -> int:
-        return self._value
-
-    __int__ = __index__
-
-
-def test_xy_to_uncompressed_accepts_non_int_coordinates() -> None:
-    curve = ec.SECP256R1()
-    numbers = ec.generate_private_key(curve).public_key().public_numbers()
-    expected = numbers.public_key().public_bytes(
-        serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint
-    )
-    encoded = tp.TpapEncryptionSession._xy_to_uncompressed(
-        _NotAnInt(numbers.x),  # type: ignore[arg-type]
-        _NotAnInt(numbers.y),  # type: ignore[arg-type]
-        curve,
-    )
-    assert encoded == expected
-
-
-class _GeneratorWithNonIntOrder:
-    """A generator whose order() is not an int, as with ecdsa on gmpy2."""
-
-    def __init__(self, generator: Any) -> None:
-        self._generator = generator
-
-    def order(self) -> _NotAnInt:
-        return _NotAnInt(int(self._generator.order()))
-
-    def __rmul__(self, other: int) -> Any:
-        return other * self._generator
-
-
-async def test_build_share_params_accepts_non_int_curve_order(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    m_comp, n_comp, nist, crypto_curve = tp.TpapEncryptionSession._suite_parameters(2)
-    fake_nist = SimpleNamespace(
-        curve=nist.curve, generator=_GeneratorWithNonIntOrder(nist.generator)
-    )
-    monkeypatch.setattr(
-        tp.TpapEncryptionSession,
-        "_suite_parameters",
-        staticmethod(lambda suite_type: (m_comp, n_comp, fake_nist, crypto_curve)),
-    )
-    transport = _make_tpap_transport()
-    session = transport._encryption_session
-    session._user_random = base64.b64encode(b"\x01" * 16).decode()
-
-    share_params = session._build_share_params_from_register(
-        _register_result(), "secret"
-    )
-
-    assert share_params["user_confirm"]
 
 
 # --------------------------
@@ -3072,7 +2521,7 @@ async def test_kasa_iot_handshake_from_in_band_discover(
     assert transport._app_url.scheme == "https"
     assert transport._app_url.port == 80
     assert captured_register["passcode_type"] == "userpw"
-    assert captured_register["username"] == tp.TpapEncryptionSession._md5_hex("admin")
+    assert captured_register["username"] == crypto.md5_hex("admin")
     # What the in-band discover said, as discover config prints it
     assert transport.tpap_parameters == TpapParameters(
         tls=1, port=0, pake=[0, 2], dac=True, mac="AA:BB:CC:DD:EE:FF"
@@ -3141,7 +2590,7 @@ async def test_camera_handshake_skips_in_band_discover(
     assert transport._app_url.scheme == "https"
     assert transport._app_url.port == 443
     assert captured_register["passcode_type"] == "userpw"
-    assert captured_register["username"] == tp.TpapEncryptionSession._md5_hex("admin")
+    assert captured_register["username"] == crypto.md5_hex("admin")
     assert transport.tpap_parameters == TpapParameters(tls=1, port=443, pake=[2])
     await transport.close()
 
@@ -3152,19 +2601,19 @@ async def test_camera_handshake_skips_in_band_discover(
         pytest.param(
             DeviceFamily.SmartIpCamera,
             1,
-            tp.TpapEncryptionSession._sha256_hex_upper("admin"),
+            crypto.sha256_hex_upper("admin"),
             id="camera-sha256",
         ),
         pytest.param(
             DeviceFamily.SmartIpCamera,
             0,
-            tp.TpapEncryptionSession._md5_hex("admin"),
+            crypto.md5_hex("admin"),
             id="camera-md5",
         ),
         pytest.param(
             DeviceFamily.SmartTapoPlug,
             1,
-            tp.TpapEncryptionSession._md5_hex("admin"),
+            crypto.md5_hex("admin"),
             id="iot-ignores-user-hash-type",
         ),
     ],
@@ -3442,9 +2891,7 @@ async def test_discovered_user_hash_type_on_camera(
 
     await session.perform_handshake()
 
-    assert captured_register["username"] == (
-        tp.TpapEncryptionSession._sha256_hex_upper("admin")
-    )
+    assert captured_register["username"] == (crypto.sha256_hex_upper("admin"))
     await transport.close()
 
 
@@ -3457,7 +2904,7 @@ async def test_discovered_mac_gives_default_passcode() -> None:
 
     assert session._get_passcode_type() == "default_userpw"
     assert session._get_candidate_secrets() == [
-        tp.TpapEncryptionSession._mac_pass_from_device_mac("AA:BB:CC:DD:EE:FF")
+        crypto.mac_pass_from_device_mac("AA:BB:CC:DD:EE:FF")
     ]
     await transport.close()
 
@@ -3560,57 +3007,6 @@ async def test_no_pake_refuses_before_logging_in() -> None:
 # --------------------------
 
 
-def _mac_name(text: bytes, oid: str = "1.0.15961.13.375") -> x509.GeneralName:
-    # The otherName value is an OCTET STRING holding the text
-    length = len(text)
-    header = bytes([0x04, length]) if length < 0x80 else bytes([0x04, 0x81, length])
-    return x509.OtherName(x509.ObjectIdentifier(oid), header + text)
-
-
-def _device_cert_der(names: list[x509.GeneralName] | None) -> bytes:
-    key = ec.generate_private_key(ec.SECP256R1())
-    cert = _build_certificate(key, "device", "device", key, subject_alt_names=names)
-    return cert.public_bytes(serialization.Encoding.DER)
-
-
-@pytest.mark.parametrize(
-    ("names", "mac", "expected"),
-    [
-        pytest.param([_mac_name(b"AABBCCDDEEFF")], "AA-BB-CC-DD-EE-FF", True, id="udp"),
-        pytest.param([_mac_name(b"AABBCCDDEEFF")], "aa:bb:cc:dd:ee:ff", True, id="lc"),
-        pytest.param(
-            [_mac_name(b"mac=AA:BB:CC:DD:EE:FF")], "AABBCCDDEEFF", True, id="in-text"
-        ),
-        pytest.param(
-            [_mac_name(b"x" * 200 + b"AABBCCDDEEFF")],
-            "AABBCCDDEEFF",
-            True,
-            id="long-form-length",
-        ),
-        pytest.param([_mac_name(b"112233445566")], "AABBCCDDEEFF", False, id="other"),
-        pytest.param(
-            [_mac_name(b"AABBCCDDEEFF", oid="1.2.3.4")],
-            "AABBCCDDEEFF",
-            False,
-            id="other-oid",
-        ),
-        pytest.param(
-            [x509.DNSName("AABBCCDDEEFF")], "AABBCCDDEEFF", False, id="dns-name"
-        ),
-        pytest.param(None, "AABBCCDDEEFF", False, id="no-san"),
-    ],
-)
-def test_certificate_names_mac(
-    names: list[x509.GeneralName] | None, mac: str, expected: bool
-) -> None:
-    assert tp._certificate_names_mac(_device_cert_der(names), mac) is expected
-
-
-def test_certificate_names_mac_without_certificate() -> None:
-    assert tp._certificate_names_mac(None, "AABBCCDDEEFF") is False
-    assert tp._certificate_names_mac(b"not a certificate", "AABBCCDDEEFF") is False
-
-
 @pytest.mark.parametrize("mac", ["AA-BB-CC-DD-EE-FF", ""])
 async def test_tls2_ssl_context_uses_ecdsa_and_checks_mac(mac: str) -> None:
     """Like the app: ECDSA suites only, and the MAC check when the MAC is known."""
@@ -3671,14 +3067,14 @@ async def test_tls2_handshake_requires_device_mac(
 ) -> None:
     """A real TLS handshake fails unless the certificate names the device MAC."""
     root_key = ec.generate_private_key(ec.SECP256R1())
-    root = _build_certificate(root_key, "test root", "test root", root_key, is_ca=True)
+    root = build_certificate(root_key, "test root", "test root", root_key, is_ca=True)
     device_key = ec.generate_private_key(ec.SECP256R1())
-    device = _build_certificate(
+    device = build_certificate(
         device_key,
         "device",
         "test root",
         root_key,
-        subject_alt_names=[_mac_name(cert_mac)],
+        subject_alt_names=[mac_name(cert_mac)],
     )
     cert_file, key_file = tmp_path / "device.pem", tmp_path / "device.key"
     cert_file.write_bytes(device.public_bytes(serialization.Encoding.PEM))
@@ -3693,7 +3089,7 @@ async def test_tls2_handshake_requires_device_mac(
     server_ctx.load_cert_chain(cert_file, key_file)
 
     monkeypatch.setattr(
-        tp.TpapTransport,
+        cert,
         "TPAP_ROOT_CA_PEM",
         root.public_bytes(serialization.Encoding.PEM).decode(),
     )
@@ -3710,16 +3106,3 @@ async def test_tls2_handshake_requires_device_mac(
         with pytest.raises(ssl.SSLCertVerificationError, match="device MAC"):
             _tls_handshake(client_ctx, server_ctx)
     await transport.close()
-
-
-@pytest.mark.parametrize(
-    ("value", "expected"),
-    [
-        pytest.param(b"", "", id="empty"),
-        pytest.param(b"\x04", "", id="no-length"),
-        pytest.param(b"\x04\x03abc", "abc", id="short-form"),
-        pytest.param(b"\x04\x81\x03abc", "abc", id="long-form"),
-    ],
-)
-def test_der_string(value: bytes, expected: str) -> None:
-    assert tp._der_string(value) == expected

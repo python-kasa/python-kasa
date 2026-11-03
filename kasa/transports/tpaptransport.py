@@ -4,26 +4,19 @@ from __future__ import annotations
 
 import asyncio
 import base64
-import hashlib
 import hmac
 import logging
 import secrets
 import ssl
 import struct
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from cryptography import x509
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
-from cryptography.hazmat.primitives.ciphers import algorithms
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers.aead import AESCCM, ChaCha20Poly1305
-from cryptography.hazmat.primitives.cmac import CMAC
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-from ecdsa import NIST256p, NIST384p, NIST521p, ellipticcurve
-from ecdsa.curves import Curve
-from ecdsa.ellipticcurve import CurveFp, PointJacobi
 from yarl import URL
 
 from kasa.credentials import Credentials
@@ -44,59 +37,9 @@ from kasa.json import loads as json_loads
 
 from .basetransport import BaseTransport
 from .sslcontext import get_ssl_context
+from .tpap import cert, crypto
 
 _LOGGER = logging.getLogger(__name__)
-
-# With TLS mode 2 the device certificate names the device MAC in a
-# SubjectAltName otherName with this OID (the Tapo app's
-# TpapCertificateTrustManager).
-_TLS2_MAC_OID = x509.ObjectIdentifier("1.0.15961.13.375")
-
-
-def _der_string(value: bytes) -> str:
-    """Return the text of a DER-encoded string value, such as an OCTET STRING."""
-    if len(value) < 2:
-        return ""
-    length, offset = value[1], 2
-    if length & 0x80:
-        count = length & 0x7F
-        length, offset = int.from_bytes(value[2 : 2 + count], "big"), 2 + count
-    return value[offset : offset + length].decode("utf-8", "replace")
-
-
-def _certificate_names_mac(der: bytes | None, mac: str) -> bool:
-    """Return True if the certificate's SubjectAltName names the device MAC."""
-    if not der:
-        return False
-    try:
-        cert = x509.load_der_x509_certificate(der)
-        names = cert.extensions.get_extension_for_class(x509.SubjectAlternativeName)
-    except (ValueError, x509.ExtensionNotFound):
-        return False
-    wanted = mac.replace(":", "").replace("-", "").upper()
-    return any(
-        wanted in _der_string(name.value).replace(":", "").replace("-", "").upper()
-        for name in names.value.get_values_for_type(x509.OtherName)
-        if name.type_id == _TLS2_MAC_OID
-    )
-
-
-def _mac_checking_sslobject(mac: str) -> type[ssl.SSLObject]:
-    """Return an SSLObject class that checks the certificate names the MAC.
-
-    The check runs at the end of every TLS handshake, so it applies to the
-    connection the requests then use.
-    """
-
-    class _MacCheckingSSLObject(ssl.SSLObject):
-        def do_handshake(self) -> None:
-            super().do_handshake()
-            if not _certificate_names_mac(self.getpeercert(binary_form=True), mac):
-                raise ssl.SSLCertVerificationError(
-                    "TPAP TLS certificate does not name the device MAC"
-                )
-
-    return _MacCheckingSSLObject
 
 
 class _SessionLostError(DeviceError):
@@ -106,7 +49,6 @@ class _SessionLostError(DeviceError):
 class TpapEncryptionSession:
     """Class for a TPAP encryption session."""
 
-    PAKE_CONTEXT_TAG = b"PAKE V1"
     TAG_LEN = 16
     NONCE_LEN = 12
     # PBKDF2-HMAC-SHA256 iteration count from an unauthenticated pake_register
@@ -115,9 +57,6 @@ class TpapEncryptionSession:
     MAX_PAKE_ITERATIONS = 100_000
     # The app's default when pake_register leaves iterations out.
     DEFAULT_PAKE_ITERATIONS = 10_000
-    # The rounds in passwd_prefix come from the same unauthenticated reply and
-    # are hashed on the event loop; crypt() itself allows up to 999,999,999.
-    MAX_PASSWD_ROUNDS = 100_000
     CIPHER_PARAMETERS = {
         "aes_128_ccm": (
             b"tp-kdf-salt-aes128-key",
@@ -155,7 +94,6 @@ class TpapEncryptionSession:
         self._sequence: int | None = None
         self._ds_url: URL | None = None
         self._cipher_id: str = "aes_128_ccm"
-        self._hkdf_hash: str = "SHA256"
         self._key: bytes | None = None
         self._base_nonce: bytes | None = None
         self._shared_key: bytes | None = None
@@ -211,7 +149,6 @@ class TpapEncryptionSession:
         self._sequence = None
         self._ds_url = None
         self._cipher_id = "aes_128_ccm"
-        self._hkdf_hash = "SHA256"
         self._key = None
         self._base_nonce = None
         self._shared_key = None
@@ -561,28 +498,12 @@ class TpapEncryptionSession:
             "TPAP: handshake did not produce a session"
         )
 
-    @staticmethod
-    def _md5(data: bytes) -> bytes:
-        return hashlib.md5(data).digest()  # noqa: S324
-
-    @staticmethod
-    def _sha256(data: bytes) -> bytes:
-        return hashlib.sha256(data).digest()
-
-    @classmethod
-    def _md5_hex(cls, value: str) -> str:
-        return cls._md5(value.encode()).hex()
-
-    @classmethod
-    def _sha256_hex_upper(cls, value: str) -> str:
-        return cls._sha256(value.encode()).hex().upper()
-
     def _get_register_username(self) -> str:
         # Only cameras hash the user name as user_hash_type says
         return (
-            self._sha256_hex_upper("admin")
+            crypto.sha256_hex_upper("admin")
             if self._uses_camera_auth and self._tpap_user_hash_type == 1
-            else self._md5_hex("admin")
+            else crypto.md5_hex("admin")
         )
 
     @staticmethod
@@ -592,282 +513,6 @@ class TpapEncryptionSession:
     @staticmethod
     def _unbase64(value: str) -> bytes:
         return base64.b64decode(value)
-
-    @staticmethod
-    def _sec1_to_xy(sec1: bytes, curve: ec.EllipticCurve) -> tuple[int, int]:
-        public_key = ec.EllipticCurvePublicKey.from_encoded_point(curve, sec1)
-        numbers = public_key.public_numbers()
-        return numbers.x, numbers.y
-
-    @staticmethod
-    def _xy_to_uncompressed(x: int, y: int, curve: ec.EllipticCurve) -> bytes:
-        # ecdsa returns gmpy2.mpz coordinates when gmpy2 is installed, and
-        # cryptography accepts only int
-        numbers = ec.EllipticCurvePublicNumbers(int(x), int(y), curve)
-        public_key = numbers.public_key()
-        return public_key.public_bytes(
-            encoding=serialization.Encoding.X962,
-            format=serialization.PublicFormat.UncompressedPoint,
-        )
-
-    @staticmethod
-    def _len8le(value: bytes) -> bytes:
-        return len(value).to_bytes(8, "little") + value
-
-    @staticmethod
-    def _encode_w(value: int, length: int) -> bytes:
-        # The app writes w0 at the byte length of the curve order, so a value
-        # with leading zero bytes must keep them (BigIntegers.asUnsignedByteArray).
-        return value.to_bytes(length, "big")
-
-    @staticmethod
-    def _hash(algorithm: str, data: bytes) -> bytes:
-        if algorithm.upper() == "SHA512":
-            return hashlib.sha512(data).digest()
-        return hashlib.sha256(data).digest()
-
-    @staticmethod
-    def _hkdf_expand(label: str, prk: bytes, digest_len: int, algorithm: str) -> bytes:
-        hkdf_algorithm = (
-            hashes.SHA512() if algorithm.upper() == "SHA512" else hashes.SHA256()
-        )
-        zero_salt = b"\x00" * digest_len
-        return HKDF(
-            algorithm=hkdf_algorithm,
-            length=digest_len,
-            salt=zero_salt,
-            info=label.encode(),
-        ).derive(prk)
-
-    @staticmethod
-    def _hmac(algorithm: str, key: bytes, data: bytes) -> bytes:
-        digest = hashlib.sha512 if algorithm.upper() == "SHA512" else hashlib.sha256
-        return hmac.new(key, data, digest).digest()
-
-    @staticmethod
-    def _cmac_aes(key: bytes, data: bytes) -> bytes:
-        cmac = CMAC(algorithms.AES(key))
-        cmac.update(data)
-        return cmac.finalize()
-
-    @staticmethod
-    def _pbkdf2_sha256(
-        password: bytes, salt: bytes, iterations: int, length: int
-    ) -> bytes:
-        return hashlib.pbkdf2_hmac("sha256", password, salt, iterations, length)
-
-    @classmethod
-    def _derive_ab(
-        cls, credentials: bytes, salt: bytes, iterations: int, hash_len: int = 32
-    ) -> tuple[int, int]:
-        i_d = hash_len + 8
-        derived = cls._pbkdf2_sha256(credentials, salt, iterations, 2 * i_d)
-        return (
-            int.from_bytes(derived[:i_d], "big"),
-            int.from_bytes(derived[i_d:], "big"),
-        )
-
-    @staticmethod
-    def _sha1_hex(value: str) -> str:
-        return hashlib.sha1(value.encode()).hexdigest()  # noqa: S324
-
-    @classmethod
-    def _authkey_mask(cls, passcode: str, tmpkey: str, dictionary: str) -> str:
-        masked = []
-        max_length = max(len(tmpkey), len(passcode))
-        for index in range(max_length):
-            lhs = ord(passcode[index]) if index < len(passcode) else 0xBB
-            rhs = ord(tmpkey[index]) if index < len(tmpkey) else 0xBB
-            masked.append(dictionary[(lhs ^ rhs) % len(dictionary)])
-        return "".join(masked)
-
-    @classmethod
-    def _sha1_username_mac_shadow(
-        cls, username: str, mac12hex: str, password: str
-    ) -> str:
-        if (
-            not username
-            or len(mac12hex) != 12
-            or not all(char in "0123456789abcdefABCDEF" for char in mac12hex)
-        ):
-            return password
-
-        mac = ":".join(mac12hex[index : index + 2] for index in range(0, 12, 2)).upper()
-        return cls._sha1_hex(cls._md5_hex(username) + "_" + mac)
-
-    @staticmethod
-    def _crypt_repeat(data: bytes, length: int) -> bytes:
-        return (data * (length // len(data) + 1))[:length]
-
-    @staticmethod
-    def _crypt_b64(value: int, length: int) -> str:
-        alphabet = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-        return "".join(alphabet[(value >> 6 * index) & 0x3F] for index in range(length))
-
-    @classmethod
-    def _md5_crypt(cls, password: str, prefix: str) -> str | None:
-        """Return glibc's crypt() of the password for a ``$1$`` (MD5) prefix."""
-        if not prefix or not prefix.startswith("$1$") or len(password) > 30000:
-            return None
-
-        salt = prefix[3:].split("$", 1)[0][:8]
-        secret, salt_bytes = password.encode(), salt.encode()
-        alternate = cls._md5(secret + salt_bytes + secret)
-        data = secret + b"$1$" + salt_bytes + cls._crypt_repeat(alternate, len(secret))
-        length = len(secret)
-        while length:
-            data += b"\x00" if length & 1 else secret[:1]
-            length >>= 1
-        final = cls._md5(data)
-
-        for round_ in range(1000):
-            data = secret if round_ & 1 else final
-            if round_ % 3:
-                data += salt_bytes
-            if round_ % 7:
-                data += secret
-            data += final if round_ & 1 else secret
-            final = cls._md5(data)
-
-        order = ((0, 6, 12), (1, 7, 13), (2, 8, 14), (3, 9, 15), (4, 10, 5))
-        encoded = "".join(
-            cls._crypt_b64(final[a] << 16 | final[b] << 8 | final[c], 4)
-            for a, b, c in order
-        )
-        return f"$1${salt}${encoded}{cls._crypt_b64(final[11], 2)}"
-
-    @classmethod
-    def _sha256_crypt(cls, password: str, prefix: str) -> str | None:
-        """Return glibc's crypt() of the password for a ``$5$`` (SHA-256) prefix.
-
-        Without a round count it uses 5000 rounds and leaves them out of the
-        result, see https://www.akkadia.org/drepper/SHA-crypt.txt. Like the app,
-        only the prefix sets the rounds; ``passwd_rounds`` is not used.
-        """
-        if not prefix:
-            return None
-
-        default_rounds = 5000
-        spec = prefix[3:] if prefix.startswith("$5$") else prefix
-        rounds: int | None = None
-
-        if spec.startswith("rounds="):
-            rounds_part, _, spec = spec.partition("$")
-            try:
-                rounds = int(rounds_part.split("=", 1)[1])
-            except ValueError:
-                rounds = default_rounds
-        salt = spec.split("$", 1)[0][:16]
-
-        if rounds is not None and rounds > cls.MAX_PASSWD_ROUNDS:
-            raise KasaException(
-                f"TPAP register response has too many passwd_prefix rounds: {rounds}"
-            )
-        rounds_spec = ""
-        if rounds is not None:
-            rounds = max(1000, rounds)
-            rounds_spec = f"rounds={rounds}$"
-
-        secret, salt_bytes = password.encode(), salt.encode()
-        alternate = cls._sha256(secret + salt_bytes + secret)
-        data = secret + salt_bytes + cls._crypt_repeat(alternate, len(secret))
-        length = len(secret)
-        while length:
-            data += alternate if length & 1 else secret
-            length >>= 1
-        final = cls._sha256(data)
-        p_bytes = cls._crypt_repeat(cls._sha256(secret * len(secret)), len(secret))
-        s_bytes = cls._crypt_repeat(
-            cls._sha256(salt_bytes * (16 + final[0])), len(salt_bytes)
-        )
-
-        for round_ in range(rounds or default_rounds):
-            data = p_bytes if round_ & 1 else final
-            if round_ % 3:
-                data += s_bytes
-            if round_ % 7:
-                data += p_bytes
-            data += final if round_ & 1 else p_bytes
-            final = cls._sha256(data)
-
-        order = (
-            (0, 10, 20),
-            (21, 1, 11),
-            (12, 22, 2),
-            (3, 13, 23),
-            (24, 4, 14),
-            (15, 25, 5),
-            (6, 16, 26),
-            (27, 7, 17),
-            (18, 28, 8),
-            (9, 19, 29),
-        )
-        encoded = "".join(
-            cls._crypt_b64(final[a] << 16 | final[b] << 8 | final[c], 4)
-            for a, b, c in order
-        )
-        tail = cls._crypt_b64(final[31] << 8 | final[30], 3)
-        return f"$5${rounds_spec}{salt}${encoded}{tail}"
-
-    @classmethod
-    def _build_credentials(
-        cls, extra_crypt: dict | None, username: str, passcode: str, mac_no_colon: str
-    ) -> str:
-        if not extra_crypt:
-            return f"{username}/{passcode}" if username else passcode
-
-        crypt_type = (extra_crypt.get("type") or "").lower()
-        params = extra_crypt.get("params")
-        if not isinstance(params, dict):
-            # Like the app, a type without params falls back to user/password.
-            return f"{username}/{passcode}" if username else passcode
-
-        if crypt_type == "password_shadow":
-            try:
-                passwd_id = int(params.get("passwd_id", 0))
-            except (TypeError, ValueError):
-                _LOGGER.debug("invalid passwd_id, using passcode")
-                return passcode
-            prefix = str(params.get("passwd_prefix", "") or "")
-            if passwd_id == 1:
-                return cls._md5_crypt(passcode, prefix) or passcode
-            if passwd_id == 2:
-                return cls._sha1_hex(passcode)
-            if passwd_id == 3:
-                return cls._sha1_username_mac_shadow(username, mac_no_colon, passcode)
-            if passwd_id == 5:
-                return cls._sha256_crypt(passcode, prefix) or passcode
-            return passcode
-
-        if crypt_type == "password_authkey":
-            tmpkey = str(params.get("authkey_tmpkey", "") or "")
-            dictionary = str(params.get("authkey_dictionary", "") or "")
-            if tmpkey and dictionary:
-                return cls._authkey_mask(passcode, tmpkey, dictionary)
-            return passcode
-
-        if crypt_type == "password_sha_with_salt":
-            try:
-                sha_name = int(params.get("sha_name", -1))
-            except (TypeError, ValueError):
-                _LOGGER.debug("invalid sha_name, using passcode")
-                return passcode
-            sha_salt_b64 = str(params.get("sha_salt", "") or "")
-            username_hint = "admin" if sha_name == 0 else "user"
-            try:
-                decoded_salt = base64.b64decode(sha_salt_b64).decode()
-            except Exception:
-                _LOGGER.debug("invalid base64 salt, using passcode")
-                return passcode
-            return cls._sha256((username_hint + decoded_salt + passcode).encode()).hex()
-
-        return f"{username}/{passcode}" if username else passcode
-
-    def _suite_hash_name(self, suite_type: int) -> str:
-        return "SHA512" if suite_type in (2, 4, 5, 7, 9) else "SHA256"
-
-    def _suite_mac_is_cmac(self, suite_type: int) -> bool:
-        return suite_type in (8, 9)
 
     def _use_dac_certification(self) -> bool:
         # Like the Tapo app: with tls 0 and dac, for the default passcode
@@ -879,33 +524,6 @@ class TpapEncryptionSession:
             return True
         kasa_or_robot = self._uses_kasa_iot_auth or self._uses_robot_tpap_auth
         return 5 in pake and not kasa_or_robot
-
-    @staticmethod
-    def _mac_pass_from_device_mac(mac_colon: str) -> str:
-        mac_hex = mac_colon.replace(":", "").replace("-", "")
-        try:
-            mac_bytes = bytes.fromhex(mac_hex)
-        except ValueError as exc:
-            raise KasaException(
-                "Invalid device MAC for TPAP default passcode derivation"
-            ) from exc
-        if len(mac_bytes) < 6:
-            raise KasaException(
-                "Device MAC is too short for TPAP default passcode derivation"
-            )
-        seed = b"GqY5o136oa4i6VprTlMW2DpVXxmfW8"
-        ikm = seed + mac_bytes[3:6] + mac_bytes[0:3]
-        return (
-            HKDF(
-                algorithm=hashes.SHA256(),
-                length=32,
-                salt=b"tp-kdf-salt-default-passcode",
-                info=b"tp-kdf-info-default-passcode",
-            )
-            .derive(ikm)
-            .hex()
-            .upper()
-        )
 
     def _get_passcode_type(self) -> str | None:
         passcode_type_order: tuple[tuple[tuple[int, ...], str], ...]
@@ -956,7 +574,7 @@ class TpapEncryptionSession:
             return []
         if passcode_type == "default_userpw":
             return (
-                [self._mac_pass_from_device_mac(self._device_mac)]
+                [crypto.mac_pass_from_device_mac(self._device_mac)]
                 if self._device_mac
                 else []
             )
@@ -968,14 +586,14 @@ class TpapEncryptionSession:
         if not self._uses_camera_auth:
             return [password]
         if passcode_type == "shared_token":
-            return [self._md5_hex(password)]
+            return [crypto.md5_hex(password)]
         if 2 not in (self._tpap_pake or []):
             return [password]
         return list(
             dict.fromkeys(
                 [
-                    self._md5_hex(password),
-                    self._sha256_hex_upper(password),
+                    crypto.md5_hex(password),
+                    crypto.sha256_hex_upper(password),
                 ]
             )
         )
@@ -998,51 +616,12 @@ class TpapEncryptionSession:
             "" if self._uses_camera_auth else (creds.username if creds else "") or ""
         )
         mac_no_colon = self._device_mac.replace(":", "").replace("-", "")
-        return self._build_credentials(
+        return crypto.build_credentials(
             extra_crypt,
             username,
             candidate_secret,
             mac_no_colon,
         )
-
-    @staticmethod
-    def _suite_parameters(
-        suite_type: int,
-    ) -> tuple[bytes, bytes, Curve, ec.EllipticCurve]:
-        if suite_type in (1, 2, 8, 9):
-            return (
-                bytes.fromhex(
-                    "02886e2f97ace46e55ba9dd7242579f2993b64e16ef3dcab95afd497333d8fa12f"
-                ),
-                bytes.fromhex(
-                    "03d8bbd6c639c62937b04d997f38c3770719c629d7014d49a24b4f98baa1292b49"
-                ),
-                NIST256p,
-                ec.SECP256R1(),
-            )
-        if suite_type in (3, 4):
-            return (
-                bytes.fromhex(
-                    "030ff0895ae5ebf6187080a82d82b42e2765e3b2f8749c7e05eba366434b363d3dc36f15314739074d2eb8613fceec2853"
-                ),
-                bytes.fromhex(
-                    "02c72cf2e390853a1c1c4ad816a62fd15824f56078918f43f922ca21518f9c543bb252c5490214cf9aa3f0baab4b665c10"
-                ),
-                NIST384p,
-                ec.SECP384R1(),
-            )
-        if suite_type == 5:
-            return (
-                bytes.fromhex(
-                    "02003f06f38131b2ba2600791e82488e8d20ab889af753a41806c5db18d37d85608cfae06b82e4a72cd744c719193562a653ea1f119eef9356907edc9b56979962d7aa"
-                ),
-                bytes.fromhex(
-                    "0200c7924b9ec017f3094562894336a53c50167ba8c5963876880542bc669e494b2532d76c5b53dfb349fdf69154b9e0048c58a42e8ed04cef052a3bc349d95575cd25"
-                ),
-                NIST521p,
-                ec.SECP521R1(),
-            )
-        raise KasaException(f"Unsupported TPAP suite type: {suite_type}")
 
     def _build_share_params_from_register(
         self, register_result: dict[str, Any], credentials_string: str
@@ -1092,89 +671,21 @@ class TpapEncryptionSession:
             raise KasaException(f"Unsupported TPAP session cipher: {encryption}")
 
         self._cipher_id = chosen_cipher
-        self._hkdf_hash = self._suite_hash_name(suite_type)
-
-        m_comp, n_comp, nist, crypto_curve = self._suite_parameters(suite_type)
-        curve: CurveFp = nist.curve
-        generator: PointJacobi = nist.generator
-        # an mpz when gmpy2 is installed; keep the protocol integers plain int
-        order = int(generator.order())
-        g_point = generator
-
-        m_x, m_y = self._sec1_to_xy(m_comp, crypto_curve)
-        n_x, n_y = self._sec1_to_xy(n_comp, crypto_curve)
-        m_point = ellipticcurve.Point(curve, m_x, m_y, order)
-        n_point = ellipticcurve.Point(curve, n_x, n_y, order)
-
-        credential_bytes = credentials_string.encode()
-        a_value, b_value = self._derive_ab(
-            credential_bytes, self._unbase64(dev_salt), iterations, 32
+        user_share, user_confirm, expected_dev_confirm, self._shared_key = (
+            crypto.spake2p_share(
+                credentials_string.encode(),
+                suite_type=suite_type,
+                salt=self._unbase64(dev_salt),
+                iterations=iterations,
+                user_random=self._unbase64(self._user_random),
+                dev_random=self._unbase64(dev_random),
+                dev_share=self._unbase64(dev_share),
+            )
         )
-        w_value = a_value % order
-        h_value = b_value % order
-        x_value = secrets.randbelow(order - 1) + 1
-
-        l_point = x_value * g_point + w_value * m_point
-        l_encoded = self._xy_to_uncompressed(l_point.x(), l_point.y(), crypto_curve)
-
-        device_share_bytes = self._unbase64(dev_share)
-        r_x, r_y = self._sec1_to_xy(device_share_bytes, crypto_curve)
-        r_point = ellipticcurve.Point(curve, r_x, r_y, order)
-        r_encoded = self._xy_to_uncompressed(r_point.x(), r_point.y(), crypto_curve)
-
-        r_prime = r_point + (-(w_value * n_point))
-        z_point = x_value * r_prime
-        v_point = (h_value % order) * r_prime
-
-        z_encoded = self._xy_to_uncompressed(z_point.x(), z_point.y(), crypto_curve)
-        v_encoded = self._xy_to_uncompressed(v_point.x(), v_point.y(), crypto_curve)
-        m_encoded = self._xy_to_uncompressed(m_point.x(), m_point.y(), crypto_curve)
-        n_encoded = self._xy_to_uncompressed(n_point.x(), n_point.y(), crypto_curve)
-
-        context_hash = self._hash(
-            self._hkdf_hash,
-            self.PAKE_CONTEXT_TAG
-            + self._unbase64(self._user_random)
-            + self._unbase64(dev_random),
-        )
-        w_encoded = self._encode_w(w_value, (order.bit_length() + 7) // 8)
-
-        transcript = (
-            self._len8le(context_hash)
-            + self._len8le(b"")
-            + self._len8le(b"")
-            + self._len8le(m_encoded)
-            + self._len8le(n_encoded)
-            + self._len8le(l_encoded)
-            + self._len8le(r_encoded)
-            + self._len8le(z_encoded)
-            + self._len8le(v_encoded)
-            + self._len8le(w_encoded)
-        )
-
-        transcript_hash = self._hash(self._hkdf_hash, transcript)
-        digest_len = 64 if self._hkdf_hash.upper() == "SHA512" else 32
-        mac_len = 16 if self._suite_mac_is_cmac(suite_type) else 32
-        confirmation_keys = self._hkdf_expand(
-            "ConfirmationKeys", transcript_hash, mac_len * 2, self._hkdf_hash
-        )
-        key_confirm_a = confirmation_keys[:mac_len]
-        key_confirm_b = confirmation_keys[mac_len : mac_len * 2]
-        self._shared_key = self._hkdf_expand(
-            "SharedKey", transcript_hash, digest_len, self._hkdf_hash
-        )
-
-        if self._suite_mac_is_cmac(suite_type):
-            user_confirm = self._cmac_aes(key_confirm_a, r_encoded)
-            expected_dev_confirm = self._cmac_aes(key_confirm_b, l_encoded)
-        else:
-            user_confirm = self._hmac(self._hkdf_hash, key_confirm_a, r_encoded)
-            expected_dev_confirm = self._hmac(self._hkdf_hash, key_confirm_b, l_encoded)
-
         self._expected_dev_confirm = self._base64(expected_dev_confirm)
         return {
             "sub_method": "pake_share",
-            "user_share": self._base64(l_encoded),
+            "user_share": self._base64(user_share),
             "user_confirm": self._base64(user_confirm),
         }
 
@@ -1196,11 +707,9 @@ class TpapEncryptionSession:
             if not isinstance(dac_proof, str):
                 raise KasaException("Invalid DAC proof type")
 
-            ca_cert = self._transport._load_certificate_value(dac_ca)
-            ica_cert = (
-                self._transport._load_certificate_value(dac_ica) if dac_ica else None
-            )
-            self._transport._verify_dac_certificate_chain(ca_cert, ica_cert)
+            ca_cert = cert.load_certificate_value(dac_ca)
+            ica_cert = cert.load_certificate_value(dac_ica) if dac_ica else None
+            cert.verify_dac_certificate_chain(ca_cert, ica_cert)
             message = self._shared_key + self._unbase64(self._dac_nonce_base64)
             signature = self._unbase64(dac_proof)
             public_key = ca_cert.public_key()
@@ -1435,33 +944,7 @@ class TpapTransport(BaseTransport):
         DeviceFamily.IotSmartPlugSwitch,
         DeviceFamily.IotSmartBulb,
     }
-    TLS2_CIPHERS = ":".join(
-        [
-            "ECDHE-ECDSA-AES256-GCM-SHA384",
-            "ECDHE-ECDSA-AES256-SHA384",
-            "ECDHE-ECDSA-AES256-SHA",
-            "ECDHE-ECDSA-AES128-GCM-SHA256",
-            "ECDHE-ECDSA-AES128-SHA256",
-            "ECDHE-ECDSA-AES128-SHA",
-        ]
-    )
     COMMON_HEADERS = {"Content-Type": "application/json"}
-    TPAP_ROOT_CA_PEM = """
------BEGIN CERTIFICATE-----
-MIICNzCCAdygAwIBAgIUNLD7w5j5WU/efCe8bqkfGSRGgLYwCgYIKoZIzj0EAwIw
-ezEnMCUGA1UEAwweVFAtTElOSyBTWVNURU1TIERFVklDRSBST09UIENBMR0wGwYD
-VQQKDBRUUC1MSU5LIFNZU1RFTVMgSU5DLjEPMA0GA1UEBwwGSXJ2aW5lMRMwEQYD
-VQQIDApDYWxpZm9ybmlhMQswCQYDVQQGEwJVUzAgFw0yNDExMjIwMjU3NDhaGA8y
-MDU0MTExNTAyNTc0OFowezEnMCUGA1UEAwweVFAtTElOSyBTWVNURU1TIERFVklD
-RSBST09UIENBMR0wGwYDVQQKDBRUUC1MSU5LIFNZU1RFTVMgSU5DLjEPMA0GA1UE
-BwwGSXJ2aW5lMRMwEQYDVQQIDApDYWxpZm9ybmlhMQswCQYDVQQGEwJVUzBZMBMG
-ByqGSM49AgEGCCqGSM49AwEHA0IABLwo8H9H6BoJDvcoewi4wPrPryVXir4z4yXV
-n29R5XCAcFfKk06pYPupG6pjaKOLKWXnaOdPZThDFxwGLo3urV2jPDA6MAsGA1Ud
-DwQEAwIBhjAMBgNVHRMEBTADAQH/MB0GA1UdDgQWBBRivfUtiHYsZBOKo80uZEwk
-XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
-5rbc0IIvD6MCIQCZuGGssu4Ygt2V8Vr0QF2fO9wxfNB3aRRMYQ+6lMrLGA==
------END CERTIFICATE-----
-""".strip()
 
     def __init__(self, *, config: DeviceConfig) -> None:
         """Create the transport."""
@@ -1585,97 +1068,6 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
             port=self._known_tpap_port,
         )
 
-    @classmethod
-    def _load_root_ca_certificate(cls) -> x509.Certificate:
-        return x509.load_pem_x509_certificate(cls.TPAP_ROOT_CA_PEM.encode())
-
-    @classmethod
-    def _load_certificate_value(cls, certificate_value: str) -> x509.Certificate:
-        raw_value = certificate_value.strip()
-        if not raw_value:
-            raise KasaException("Empty certificate value")
-
-        candidates: list[bytes] = [raw_value.encode()]
-        decoded_candidate: bytes | None = None
-        try:
-            decoded_candidate = base64.b64decode(raw_value, validate=True)
-        except Exception:
-            decoded_candidate = None
-        if decoded_candidate is not None:
-            candidates.insert(0, decoded_candidate)
-
-        last_error: Exception | None = None
-        for candidate in candidates:
-            try:
-                if b"-----BEGIN CERTIFICATE-----" in candidate:
-                    return x509.load_pem_x509_certificate(candidate)
-                return x509.load_der_x509_certificate(candidate)
-            except Exception as exc:
-                last_error = exc
-
-        raise KasaException("Invalid certificate value") from last_error
-
-    @staticmethod
-    def _verify_certificate_validity(certificate: x509.Certificate) -> None:
-        now = datetime.now(UTC)
-        if hasattr(certificate, "not_valid_before_utc"):
-            not_before = certificate.not_valid_before_utc
-            not_after = certificate.not_valid_after_utc
-        else:
-            not_before = certificate.not_valid_before.replace(tzinfo=UTC)
-            not_after = certificate.not_valid_after.replace(tzinfo=UTC)
-        if now < not_before or now > not_after:
-            raise KasaException("Certificate is outside its validity period")
-
-    @staticmethod
-    def _verify_certificate_signature(
-        certificate: x509.Certificate, issuer: x509.Certificate
-    ) -> None:
-        public_key = issuer.public_key()
-        signature_hash = certificate.signature_hash_algorithm
-        if signature_hash is None:
-            raise KasaException("Certificate signature hash algorithm is unavailable")
-        if isinstance(public_key, ec.EllipticCurvePublicKey):
-            public_key.verify(
-                certificate.signature,
-                certificate.tbs_certificate_bytes,
-                ec.ECDSA(signature_hash),
-            )
-            return
-        if isinstance(public_key, rsa.RSAPublicKey):
-            public_key.verify(
-                certificate.signature,
-                certificate.tbs_certificate_bytes,
-                padding.PKCS1v15(),
-                signature_hash,
-            )
-            return
-        raise KasaException(
-            f"Unsupported DAC issuer public key type: {type(public_key).__name__}"
-        )
-
-    @classmethod
-    def _verify_dac_certificate_chain(
-        cls,
-        dac_ca_certificate: x509.Certificate,
-        dac_ica_certificate: x509.Certificate | None,
-    ) -> None:
-        try:
-            root_certificate = cls._load_root_ca_certificate()
-            cls._verify_certificate_validity(dac_ca_certificate)
-            if dac_ica_certificate is not None:
-                cls._verify_certificate_validity(dac_ica_certificate)
-                cls._verify_certificate_signature(
-                    dac_ca_certificate, dac_ica_certificate
-                )
-                cls._verify_certificate_signature(dac_ica_certificate, root_certificate)
-            else:
-                cls._verify_certificate_signature(dac_ca_certificate, root_certificate)
-        except Exception as exc:
-            raise KasaException(
-                f"DAC certificate chain verification failed: {exc}"
-            ) from exc
-
     @staticmethod
     def _load_json_dict(payload: bytes) -> dict[str, Any]:
         response_data = json_loads(payload.decode())
@@ -1718,12 +1110,12 @@ XhBkdDAKBggqhkjOPQQDAgNJADBGAiEA+7j5jemtXcGYN0unH+9rjVhVAL7WrsOi
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         context.check_hostname = False
         context.verify_mode = ssl.CERT_REQUIRED
-        context.load_verify_locations(cadata=self.TPAP_ROOT_CA_PEM)
+        context.load_verify_locations(cadata=cert.TPAP_ROOT_CA_PEM)
         # Like the Tapo app: ECDSA suites only, and the certificate has to
         # name this device's MAC
-        context.set_ciphers(self.TLS2_CIPHERS)
+        context.set_ciphers(cert.TLS2_CIPHERS)
         if mac := self._encryption_session.device_mac:
-            context.sslobject_class = _mac_checking_sslobject(mac)
+            context.sslobject_class = cert.mac_checking_sslobject(mac)
         else:
             _LOGGER.debug(
                 "No device MAC to check the TLS certificate of %s against",
