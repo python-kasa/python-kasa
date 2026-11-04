@@ -137,6 +137,8 @@ The base exception for all library errors is {class}`KasaException <kasa.excepti
 - If the device returns an error the library raises a {class}`DeviceError <kasa.exceptions.DeviceError>` which will usually contain an ``error_code`` with the detail.
 - If the device fails to authenticate the library raises an {class}`AuthenticationError <kasa.exceptions.AuthenticationError>` which is derived
   from {class}`DeviceError <kasa.exceptions.DeviceError>` and could contain an ``error_code`` depending on the type of failure.
+- If a command is sent to a hub child that is not available (see {attr}`Device.is_available <kasa.Device.is_available>`) the library raises a {class}`DeviceUnavailableError <kasa.exceptions.DeviceUnavailableError>`,
+  derived from {class}`DeviceError <kasa.exceptions.DeviceError>`, without contacting the device.
 - If the library encounters and unsupported deviceit raises an {class}`UnsupportedDeviceError <kasa.exceptions.UnsupportedDeviceError>`.
 - If the device fails to respond within a timeout the library raises a {class}`TimeoutError <kasa.exceptions.TimeoutError>`.
 - All other failures will raise the base {class}`KasaException <kasa.exceptions.KasaException>` class.

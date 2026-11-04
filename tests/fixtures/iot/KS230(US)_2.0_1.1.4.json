@@ -1,0 +1,138 @@
+{
+    "cnCloud": {
+        "get_info": {
+            "binded": 1,
+            "cld_connection": 1,
+            "err_code": 0,
+            "fwDlPage": "",
+            "fwNotifyType": -1,
+            "illegalType": 0,
+            "server": "n-devs.tplinkcloud.com",
+            "stopConnect": 0,
+            "tcspInfo": "",
+            "tcspStatus": 1,
+            "username": "user@example.com"
+        },
+        "get_intl_fw_list": {
+            "err_code": 0,
+            "fw_list": []
+        }
+    },
+    "discovery_result": {
+        "error_code": 0,
+        "result": {
+            "device_id": "00000000000000000000000000000000",
+            "device_model": "KS230(US)",
+            "device_type": "IOT.SMARTPLUGSWITCH",
+            "factory_default": false,
+            "hw_ver": "2.0",
+            "ip": "127.0.0.123",
+            "mac": "BC-07-1D-00-00-00",
+            "mgt_encrypt_schm": {
+                "ANS": false,
+                "encrypt_type": "KLAP",
+                "http_port": 80,
+                "is_support_https": false,
+                "lv": 2,
+                "new_klap": 1
+            },
+            "obd_src": "tplink",
+            "owner": "00000000000000000000000000000000",
+            "protocol_version": 1
+        }
+    },
+    "schedule": {
+        "get_next_action": {
+            "err_code": 0,
+            "type": -1
+        },
+        "get_rules": {
+            "enable": 1,
+            "err_code": 0,
+            "rule_list": [],
+            "version": 2
+        }
+    },
+    "smartlife.iot.dimmer": {
+        "get_default_behavior": {
+            "double_click": {
+                "mode": "none"
+            },
+            "err_code": 0,
+            "hard_on": {
+                "mode": "last_status"
+            },
+            "long_press": {
+                "mode": "instant_on_off"
+            },
+            "soft_on": {
+                "mode": "last_status"
+            }
+        },
+        "get_dimmer_parameters": {
+            "bulb_type": 1,
+            "calibration_type": 0,
+            "err_code": 0,
+            "fadeOffTime": 0,
+            "fadeOnTime": 1000,
+            "gentleOffTime": 10000,
+            "gentleOnTime": 3000,
+            "maxThreshold": 100,
+            "minThreshold": 14,
+            "rampRate": 30
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "#MASKED_NAME#",
+            "brightness": 100,
+            "dc_state": 0,
+            "dev_name": "Wi-Fi Smart 3-Way Dimmer",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "2.0",
+            "icon_hash": "",
+            "latitude_i": 0,
+            "led_off": 1,
+            "lnk_on": 1,
+            "longitude_i": 0,
+            "mac": "BC:07:1D:00:00:00",
+            "max_thr": 1,
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "KS230(US)",
+            "next_action": {
+                "type": -1
+            },
+            "ntc_state": 0,
+            "obd_src": "tplink",
+            "oemId": "00000000000000000000000000000000",
+            "on_time": 0,
+            "preferred_state": [
+                {
+                    "brightness": 100,
+                    "index": 0
+                },
+                {
+                    "brightness": 75,
+                    "index": 1
+                },
+                {
+                    "brightness": 50,
+                    "index": 2
+                },
+                {
+                    "brightness": 25,
+                    "index": 3
+                }
+            ],
+            "relay_state": 0,
+            "rssi": -48,
+            "status": "new",
+            "sw_ver": "1.1.4 Build 241223 Rel.105830",
+            "updating": 0
+        }
+    }
+}

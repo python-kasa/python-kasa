@@ -215,7 +215,7 @@ class SmartCamDevice(SmartDevice):
     async def _query_setter_helper(
         self, method: str, module: str, section: str, params: dict | None = None
     ) -> dict:
-        res = await self.protocol.query({method: {module: {section: params}}})
+        res = await self._query_helper(method, {module: {section: params}})
 
         return res
 
@@ -293,10 +293,8 @@ class SmartCamDevice(SmartDevice):
 
     async def set_alias(self, alias: str) -> dict:
         """Set the device name (alias)."""
-        return await self.protocol.query(
-            {
-                "setDeviceAlias": {"system": {"sys": {"dev_alias": alias}}},
-            }
+        return await self._query_helper(
+            "setDeviceAlias", {"system": {"sys": {"dev_alias": alias}}}
         )
 
     @property

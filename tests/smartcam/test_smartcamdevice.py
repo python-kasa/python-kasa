@@ -14,11 +14,17 @@ from freezegun.api import FrozenDateTimeFactory
 
 from kasa import Credentials, Device, DeviceType, Module
 from kasa.credentials import DEFAULT_CREDENTIALS, get_default_credentials
-from kasa.exceptions import AuthenticationError, DeviceError, KasaException
-from kasa.smartcam import SmartCamDevice
+from kasa.exceptions import (
+    AuthenticationError,
+    DeviceError,
+    DeviceUnavailableError,
+    KasaException,
+)
+from kasa.smartcam import SmartCamChild, SmartCamDevice
 from kasa.smartcam.modules.time import Time
 
 from ..conftest import device_smartcam, hub_smartcam
+from ..fakeprotocol_smartcam import FakeSmartCamTransport
 
 
 class _ChangeAdminPasswordPayload(TypedDict):
@@ -94,6 +100,28 @@ async def test_hub(dev: Device) -> None:
         assert child.alias
         await child.update()
         assert child.device_id
+
+
+@hub_smartcam
+@pytest.mark.requires_dummy
+@pytest.mark.parametrize("online", [True, False])
+async def test_camera_child_is_available(dev: Device, online: bool) -> None:
+    """Test a camera child reports the reachability the hub reports for it."""
+    child = next((c for c in dev.children if isinstance(c, SmartCamChild)), None)
+    if child is None:
+        pytest.skip(f"Device {dev} fixture does not have camera children")
+
+    assert isinstance(dev.protocol._transport, FakeSmartCamTransport)
+    for info in dev.protocol._transport.info["getChildDeviceList"]["child_device_list"]:
+        if info["device_id"] == child.device_id:
+            info["online"] = online
+    await dev.update()
+
+    assert child.is_available is online
+    assert child.features["available"].value is online
+    if not online:
+        with pytest.raises(DeviceUnavailableError):
+            await child.set_alias("new")
 
 
 @device_smartcam

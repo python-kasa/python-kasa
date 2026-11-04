@@ -30,6 +30,7 @@ from kasa.emeterstatus import EmeterStatus
 from kasa.exceptions import (
     AuthenticationError,
     DeviceError,
+    DeviceUnavailableError,
     KasaException,
     TimeoutError,
     UnsupportedDeviceError,
@@ -68,6 +69,7 @@ __all__ = [
     "KasaException",
     "AuthenticationError",
     "DeviceError",
+    "DeviceUnavailableError",
     "UnsupportedDeviceError",
     "TimeoutError",
     "Credentials",
