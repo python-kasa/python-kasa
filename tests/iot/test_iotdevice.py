@@ -18,24 +18,14 @@ from voluptuous import (
 )
 
 from kasa import DeviceType, KasaException, Module
-from kasa.deviceconfig import (
-    DeviceConfig,
-    DeviceConnectionParameters,
-    DeviceEncryptionType,
-    DeviceFamily,
-)
 from kasa.exceptions import AuthenticationError, TimeoutError
-from kasa.iot import IotBulb, IotDevice, IotPlug
+from kasa.iot import IotDevice
 from kasa.iot.iotmodule import _merge_dict
 from tests.conftest import get_device_for_fixture_protocol, handle_turn_on, turn_on
 from tests.device_fixtures import device_iot, has_emeter_iot, no_emeter_iot
 from tests.fakeprotocol_iot import FakeIotProtocol
 
 HOMEKIT = "smartlife.iot.homekit"
-
-KLAP_CONNECTION = DeviceConnectionParameters(
-    DeviceFamily.IotSmartPlugSwitch, DeviceEncryptionType.Klap, login_version=2
-)
 
 TZ_SCHEMA = Schema(
     {"zone_str": str, "dst_offset": int, "index": All(int, Range(min=0)), "tz_str": str}
@@ -262,29 +252,6 @@ async def test_features(dev: IotDevice) -> None:
 async def test_max_device_response_size(dev: IotDevice) -> None:
     """Make sure every device return has a set max response size."""
     assert dev.max_device_response_size > 0
-
-
-@device_iot
-async def test_max_device_response_size_klap(
-    dev: IotDevice, mocker: MockerFixture
-) -> None:
-    """Test that devices other than bulbs use a smaller budget over KLAP."""
-    is_bulb = isinstance(dev, IotBulb)
-    assert dev.max_device_response_size == (4096 if is_bulb else 16 * 1024)
-
-    mocker.patch.object(dev.config, "connection_type", KLAP_CONNECTION)
-    expected = 4096 if is_bulb else 2048
-    assert dev.max_device_response_size == expected
-    for child in dev.children:
-        assert child.max_device_response_size == expected
-
-
-def test_max_device_response_size_before_update() -> None:
-    """Test that the budget follows the connection settings before an update."""
-    assert IotPlug("127.0.0.1").max_device_response_size == 16 * 1024
-
-    config = DeviceConfig("127.0.0.1", connection_type=KLAP_CONNECTION)
-    assert IotPlug("127.0.0.1", config=config).max_device_response_size == 2048
 
 
 @device_iot

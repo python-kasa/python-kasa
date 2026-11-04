@@ -16,7 +16,12 @@ from pytest_mock import MockerFixture
 from yarl import URL
 
 from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
-from kasa.deviceconfig import DeviceConfig
+from kasa.deviceconfig import (
+    DeviceConfig,
+    DeviceConnectionParameters,
+    DeviceEncryptionType,
+    DeviceFamily,
+)
 from kasa.exceptions import (
     AuthenticationError,
     KasaException,
@@ -25,6 +30,7 @@ from kasa.exceptions import (
     _RetryableError,
 )
 from kasa.httpclient import HttpClient
+from kasa.iot import IotBulb, IotDevice, IotPlug, IotWallSwitch
 from kasa.protocols import IotProtocol, SmartProtocol
 from kasa.transports.aestransport import AesTransport
 from kasa.transports.klaptransport import (
@@ -35,7 +41,15 @@ from kasa.transports.klaptransport import (
     _sha256,
 )
 
+from ..device_fixtures import device_iot, parametrize
+
 DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
+
+KLAP_CONNECTION = DeviceConnectionParameters(
+    DeviceFamily.IotSmartPlugSwitch, DeviceEncryptionType.Klap, login_version=2
+)
+
+ks200m_iot = parametrize("ks200m", model_filter={"KS200M"}, protocol_filter={"IOT"})
 
 # Transport tests are not designed for real devices
 pytestmark = [pytest.mark.requires_dummy]
@@ -708,3 +722,46 @@ async def test_port_override() -> None:
     transport = KlapTransport(config=config)
 
     assert str(transport._app_url) == "http://127.0.0.1:12345/app"
+
+
+@device_iot
+async def test_max_device_response_size_klap(
+    dev: IotDevice, mocker: MockerFixture
+) -> None:
+    """Test that devices other than bulbs use a smaller budget over KLAP."""
+    is_bulb = isinstance(dev, IotBulb)
+    assert dev.max_device_response_size == (4096 if is_bulb else 16 * 1024)
+
+    mocker.patch.object(dev.config, "connection_type", KLAP_CONNECTION)
+    expected = 4096 if is_bulb else 2048
+    assert dev.max_device_response_size == expected
+    for child in dev.children:
+        assert child.max_device_response_size == expected
+
+
+def test_max_device_response_size_before_update() -> None:
+    """Test that the budget follows the connection settings before an update."""
+    assert IotPlug("127.0.0.1").max_device_response_size == 16 * 1024
+
+    config = DeviceConfig("127.0.0.1", connection_type=KLAP_CONNECTION)
+    assert IotPlug("127.0.0.1", config=config).max_device_response_size == 2048
+
+
+@ks200m_iot
+async def test_ks200m_update_split_klap(
+    dev: IotWallSwitch, mocker: MockerFixture
+) -> None:
+    """Check that a KS200M update over KLAP is split into smaller requests."""
+    spy = mocker.spy(dev.protocol, "query")
+    await dev.update()
+    assert spy.call_count == 1
+
+    mocker.patch.object(dev.config, "connection_type", KLAP_CONNECTION)
+    spy.reset_mock()
+    await dev.update()
+
+    assert [sorted(call.args[0]) for call in spy.call_args_list] == [
+        ["schedule", "system"],
+        ["schedule"],
+        ["anti_theft", "cnCloud", "smartlife.iot.LAS", "smartlife.iot.PIR", "time"],
+    ]
