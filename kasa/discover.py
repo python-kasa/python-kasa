@@ -845,6 +845,14 @@ class Discover:
                 discovery_result=discovery_result.to_dict(),
                 host=discovery_result.ip,
             )
+
+        if encrypt_type not in {e.value for e in DeviceEncryptionType}:
+            raise UnsupportedDeviceError(
+                f"Device {discovery_result.ip} ({type_}) uses unsupported "
+                f"encryption type {encrypt_type}",
+                discovery_result=discovery_result.to_dict(),
+                host=discovery_result.ip,
+            )
         return DeviceConnectionParameters.from_values(
             type_,
             encrypt_type,
