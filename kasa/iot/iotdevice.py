@@ -24,7 +24,7 @@ from warnings import warn
 
 from ..device import Device, DeviceInfo, WifiNetwork
 from ..device_type import DeviceType
-from ..deviceconfig import DeviceConfig
+from ..deviceconfig import DeviceConfig, DeviceEncryptionType
 from ..exceptions import KasaException, TimeoutError, UnsupportedDeviceError
 from ..feature import Feature
 from ..module import Module
@@ -730,6 +730,11 @@ class IotDevice(Device):
     @property
     def max_device_response_size(self) -> int:
         """Returns the maximum response size the device can safely construct."""
+        # Over KLAP, some devices answer a request whose response would be
+        # larger than about 4 KiB with a plain html page instead of a response,
+        # and have even less room right after a state change.
+        if self.config.connection_type.encryption_type is DeviceEncryptionType.Klap:
+            return 2048
         return 16 * 1024
 
     @property
