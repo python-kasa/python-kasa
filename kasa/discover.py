@@ -912,6 +912,7 @@ class Discover:
             dac=bool(tpap.get("dac")),
             user_hash_type=as_int(tpap.get("user_hash_type")),
             mac=discovery_result.mac,
+            owner=discovery_result.owner or None,
         )
 
     @staticmethod

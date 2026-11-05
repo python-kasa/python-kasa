@@ -114,6 +114,8 @@ class TpapParameters(_DeviceConfigBaseMixin):
     user_hash_type: int | None = None
     #: Device MAC, which the default passcode is derived from
     mac: str | None = None
+    #: md5 of the user name of the TP-Link account that owns the device
+    owner: str | None = None
 
 
 @dataclass

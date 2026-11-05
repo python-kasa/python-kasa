@@ -321,7 +321,9 @@ async def test_discover_tpap_object_routes_to_tpap() -> None:
         login_version=2,
         https=False,
         http_port=80,
-        tpap=TpapParameters(tls=0, port=80, pake=[2], mac="60-15-6F-00-00-00"),
+        tpap=TpapParameters(
+            tls=0, port=80, pake=[2], mac="60-15-6F-00-00-00", owner="xx"
+        ),
     )
     await dev.disconnect()
 
@@ -424,7 +426,7 @@ async def test_discover_iot_device_with_tpap() -> None:
     assert isinstance(dev.protocol, IotProtocol)
     assert isinstance(dev.protocol._transport, TpapTransport)
     assert dev.config.connection_type.tpap == TpapParameters(
-        tls=0, port=80, pake=[2], dac=True, mac="48-22xxx"
+        tls=0, port=80, pake=[2], dac=True, mac="48-22xxx", owner="xx"
     )
     await dev.disconnect()
 
@@ -438,7 +440,9 @@ async def test_discover_tpap_object_with_unexpected_values() -> None:
     )
     dev = Discover._get_device_instance(info, DeviceConfig("127.0.0.1"))
 
-    assert dev.config.connection_type.tpap == TpapParameters(mac="60-15-6F-00-00-00")
+    assert dev.config.connection_type.tpap == TpapParameters(
+        mac="60-15-6F-00-00-00", owner="xx"
+    )
     await dev.disconnect()
 
 
@@ -458,6 +462,7 @@ async def test_discover_stored_tpap_config_round_trips() -> None:
         "pake": [2],
         "dac": True,
         "mac": "60-15-6F-00-00-00",
+        "owner": "xx",
     }
     assert DeviceConfig.from_dict(stored) == dev.config
     # Home Assistant stores the config with the credentials hash only

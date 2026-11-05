@@ -398,6 +398,7 @@ def _discovered(
     dac: bool = False,
     mac: str | None = MOCK_MAC,
     user_hash_type: int | None = None,
+    owner: str | None = None,
 ) -> TpapParameters:
     """Return the values of a UDP discovery reply's tpap object."""
     return TpapParameters(
@@ -407,6 +408,7 @@ def _discovered(
         dac=dac,
         mac=mac,
         user_hash_type=user_hash_type,
+        owner=owner,
     )
 
 
@@ -978,6 +980,52 @@ async def test_camera_with_the_wrong_password(
 
     assert device.calls["pake_share"] == 2
     assert "all password-based camera candidates failed" in caplog.text
+
+
+OTHER_OWNER = crypto.md5_hex("other@example.com")
+
+
+@pytest.mark.parametrize(
+    ("username", "owner", "pake", "logs_in"),
+    [
+        pytest.param(MOCK_USER, crypto.md5_hex(MOCK_USER), [2], True, id="owner"),
+        pytest.param(
+            MOCK_USER, crypto.md5_hex(MOCK_USER).upper(), [2], True, id="hex-case"
+        ),
+        pytest.param(
+            f" {MOCK_USER.upper()}", crypto.md5_hex(MOCK_USER), [2], True, id="email"
+        ),
+        pytest.param(
+            "5550100", crypto.md5_hex("5550100@tplink.id"), [2], True, id="phone"
+        ),
+        pytest.param(MOCK_USER, None, [2], True, id="no-owner"),
+        pytest.param(MOCK_USER, OTHER_OWNER, [0], True, id="default-passcode"),
+        pytest.param(MOCK_USER, OTHER_OWNER, [2], False, id="other-account"),
+        pytest.param(MOCK_USER, OTHER_OWNER, [3], False, id="other-account-token"),
+    ],
+)
+async def test_owner(
+    mocker: MockerFixture,
+    username: str,
+    owner: str | None,
+    pake: list[int],
+    logs_in: bool,
+) -> None:
+    """The account is only tried on a device it owns, as in the Tapo app."""
+    device = _patch(mocker, MockTpapDevice(pake=pake))
+    transport = _transport(
+        credentials=Credentials(username, MOCK_PWD),
+        tpap=_discovered(pake=pake, owner=owner),
+    )
+
+    if not logs_in:
+        with pytest.raises(AuthenticationError, match="owned by another"):
+            await transport.perform_handshake()
+        assert not device.calls
+        return
+
+    await transport.perform_handshake()
+    assert transport._encryption_session is not None
 
 
 @pytest.mark.parametrize(

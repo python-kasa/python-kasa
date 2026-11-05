@@ -9,6 +9,8 @@ accepts (``pake``), whether it proves itself with its attestation certificate
 (``dac``) and its MAC. They come from the ``tpap`` object of the UDP discovery
 reply. Without it the client asks the device with an in-band ``discover``,
 except cameras and camera hubs, which refuse that and get fixed defaults.
+Discovery also gives the md5 of the owning account's user name, and the
+account is only tried on a device it owns.
 
 pake_register: the client sends a random value and the passcode type. The
 device answers with its own random value, a salt, an iteration count, its
@@ -118,6 +120,7 @@ class TpapTransport(BaseTransport):
         self._tpap_dac = False
         self._tpap_pake: list[int] | None = None
         self._tpap_user_hash_type: int | None = None
+        self._device_owner: str | None = None
         self._has_discovery_tpap = False
         if (tpap := config.connection_type.tpap) is not None:
             self._has_discovery_tpap = True
@@ -127,6 +130,7 @@ class TpapTransport(BaseTransport):
             self._tpap_dac = tpap.dac
             self._tpap_pake = None if tpap.pake is None else list(tpap.pake)
             self._tpap_user_hash_type = tpap.user_hash_type
+            self._device_owner = tpap.owner
         self._handshake_lock = asyncio.Lock()
         self._send_lock: asyncio.Lock = asyncio.Lock()
         # The login state, and the session once logged in
@@ -490,6 +494,8 @@ class TpapTransport(BaseTransport):
             raise AuthenticationError(
                 f"TPAP: no credential candidates available for {self._host}"
             )
+        if passcode_type != "default_userpw":
+            self._check_owner()
 
         register_username = self._get_register_username()
         candidate_count = len(candidate_secrets)
@@ -566,6 +572,28 @@ class TpapTransport(BaseTransport):
         raise KasaException(  # pragma: no cover
             "TPAP: handshake did not produce a session"
         )
+
+    def _check_owner(self) -> None:
+        """Refuse to try the account on a device another account owns.
+
+        Discovery gives the md5 of the owning account's user name. Like the
+        Tapo app, the account is only tried on a device it owns, as the
+        device would refuse it and count that toward its lockout.
+        """
+        owner = (self._device_owner or "").lower()
+        creds = self._config.credentials
+        username = ((creds.username if creds else "") or "").strip()
+        if not owner or not username:
+            return
+        names = {username, username.lower()}
+        if "@" not in username:
+            # An account registered with a phone number logs in locally as
+            # <number>@tplink.id
+            names |= {f"{name}@tplink.id" for name in names}
+        if owner not in {crypto.md5_hex(name) for name in names}:
+            raise AuthenticationError(
+                f"TPAP: {self._host} is owned by another TP-Link account"
+            )
 
     def _get_register_username(self) -> str:
         # Only cameras hash the user name as user_hash_type says
