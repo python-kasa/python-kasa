@@ -494,8 +494,9 @@ async def test_smart_protocol_lists_single_request(
 
 @pytest.mark.parametrize("list_sum", [5, 10, 30])
 @pytest.mark.parametrize("batch_size", [1, 2, 3, 50])
+@pytest.mark.parametrize("multi_request_batch_size", [5, 1])
 async def test_smart_protocol_lists_multiple_request(
-    mocker: MockerFixture, list_sum: int, batch_size: int
+    mocker: MockerFixture, list_sum: int, batch_size: int, multi_request_batch_size: int
 ) -> None:
     child_list = [{"foo": i} for i in range(list_sum)]
     response = {
@@ -520,6 +521,7 @@ async def test_smart_protocol_lists_multiple_request(
         get_child_fixtures=False,
     )
     protocol = SmartProtocol(transport=ft)
+    protocol._multi_request_batch_size = multi_request_batch_size
     query_spy = mocker.spy(protocol, "_execute_query")
     resp = await protocol.query(request)
     expected_count = 1 + 2 * (
@@ -728,3 +730,22 @@ async def test_no_multiple_methods(
     send_spy = mocker.spy(protocol._transport, "send")
     await protocol.query(req)
     assert send_spy.call_count == 2
+
+
+async def test_smart_protocol_lists_requeried_after_batch_error() -> None:
+    """Test that a list requeried after an error in its batch is complete."""
+    child_list = {
+        "child_device_list": [{"foo": i} for i in range(30)],
+        "start_index": 0,
+        "sum": 30,
+    }
+    ft = FakeSmartTransport(
+        {"get_child_device_list": child_list},
+        "foobar",
+        component_nego_not_included=True,
+        get_child_fixtures=False,
+        warn_fixture_missing_methods=False,
+    )
+    protocol = SmartProtocol(transport=ft)
+    resp = await protocol.query({"get_foo": None, "get_child_device_list": None})
+    assert resp["get_child_device_list"] == child_list
