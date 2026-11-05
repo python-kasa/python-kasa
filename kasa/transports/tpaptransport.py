@@ -8,7 +8,7 @@ against TP-Link's device root CA), the port, the passcode types the device
 accepts (``pake``), whether it proves itself with its attestation certificate
 (``dac``) and its MAC. They come from the ``tpap`` object of the UDP discovery
 reply. Without it the client asks the device with an in-band ``discover``,
-except cameras, which refuse that and get fixed defaults.
+except cameras and camera hubs, which refuse that and get fixed defaults.
 
 pake_register: the client sends a random value and the passcode type. The
 device answers with its own random value, a salt, an iteration count, its
@@ -147,7 +147,7 @@ class TpapTransport(BaseTransport):
         if port := config.connection_type.http_port:
             return port
         if config.connection_type.https:
-            if config.connection_type.device_family in self.CAMERA_AUTH_DEVICE_FAMILIES:
+            if self._uses_camera_auth:
                 return self.DEFAULT_CAMERA_HTTPS_PORT
             return self.DEFAULT_HTTPS_PORT
         return self.DEFAULT_PORT
@@ -170,8 +170,12 @@ class TpapTransport(BaseTransport):
 
     @property
     def _uses_camera_auth(self) -> bool:
-        device_family = self._config.connection_type.device_family
-        return device_family in self.CAMERA_AUTH_DEVICE_FAMILIES
+        # Cameras, doorbells and the camera hubs (H200, H500), which are
+        # SMART.TAPOHUB over https, as in get_protocol
+        ctype = self._config.connection_type
+        return ctype.device_family in self.CAMERA_AUTH_DEVICE_FAMILIES or (
+            ctype.device_family is DeviceFamily.SmartTapoHub and ctype.https
+        )
 
     @property
     def _uses_robot_tpap_auth(self) -> bool:
@@ -196,7 +200,7 @@ class TpapTransport(BaseTransport):
             )
             return URL.build(scheme=scheme, host=self._host, port=resolved_port)
         # Cameras are always https, on their own port
-        is_camera = family in self.CAMERA_AUTH_DEVICE_FAMILIES
+        is_camera = self._uses_camera_auth
         scheme = "https" if is_camera or tls_mode in (1, 2) else "http"
         if port and port > 0:
             resolved_port = port

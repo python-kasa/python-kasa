@@ -180,8 +180,9 @@ class MockTpapDevice:
         share: dict[str, Any] | None = None,
         ds_replies: list[tuple[int, Any]] | None = None,
         response: Any = None,
+        camera: bool | None = None,
     ) -> None:
-        camera = family in CAMERAS
+        camera = family in CAMERAS if camera is None else camera
         hashed = crypto.md5_hex(password) if camera else crypto._sha1_hex(password)
         self.passcodes = passcodes or {
             "userpw": hashed,
@@ -919,6 +920,45 @@ async def test_camera_tries_each_password_hash(
     await transport.perform_handshake()
 
     assert device.calls["pake_share"] == shares
+    assert transport._encryption_session is not None
+
+
+@pytest.mark.parametrize(
+    ("tpap", "url", "username"),
+    [
+        pytest.param(
+            None, "https://127.0.0.1:443/", crypto.md5_hex("admin"), id="defaults"
+        ),
+        pytest.param(
+            _discovered(0, port=None, dac=True, user_hash_type=1),
+            "https://127.0.0.1:443/",
+            crypto.sha256_hex_upper("admin"),
+            id="discovery-values",
+        ),
+    ],
+)
+async def test_camera_hub_logs_in_as_a_camera(
+    mocker: MockerFixture, tpap: TpapParameters | None, url: str, username: str
+) -> None:
+    """H200 and H500 hubs, SMART.TAPOHUB over https, follow the camera rules."""
+    device = _patch(
+        mocker,
+        MockTpapDevice(
+            DeviceFamily.SmartTapoHub,
+            camera=True,
+            passcodes={"userpw": crypto.sha256_hex_upper(MOCK_PWD)},
+        ),
+    )
+    transport = _transport(DeviceFamily.SmartTapoHub, https=True, tpap=tpap)
+
+    await transport.perform_handshake()
+
+    # No in-band discover, https on the camera port, the camera user name,
+    # md5 then sha256 of the password, and no attestation
+    assert device.calls == Counter({"pake_register": 2, "pake_share": 2})
+    assert {str(u) for u in device.urls} == {str(URL(url))}
+    assert {p["username"] for p in device.params["pake_register"]} == {username}
+    assert all("dac_nonce" not in p for p in device.params["pake_share"])
     assert transport._encryption_session is not None
 
 
@@ -1775,6 +1815,8 @@ async def test_credentials_hash_from_klap(mocker: MockerFixture) -> None:
         pytest.param(DeviceFamily.SmartTapoPlug, False, 8080, 8080, id="http-port"),
         pytest.param(DeviceFamily.SmartTapoRobovac, True, None, 4433, id="https"),
         pytest.param(DeviceFamily.SmartIpCamera, True, None, 443, id="camera"),
+        pytest.param(DeviceFamily.SmartTapoHub, True, None, 443, id="camera-hub"),
+        pytest.param(DeviceFamily.SmartTapoHub, False, None, 80, id="hub"),
     ],
 )
 async def test_default_port(
