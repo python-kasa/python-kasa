@@ -2036,7 +2036,8 @@ async def test_credentials_hash_from_ssl_aes() -> None:
         DeviceFamily.SmartIpCamera, credentials=None, credentials_hash=ssl_aes_hash
     )
 
-    assert transport._config.credentials == CREDENTIALS
+    assert transport._credentials == CREDENTIALS
+    assert transport._config.credentials is None
 
 
 async def test_credentials_hash_from_klap(mocker: MockerFixture) -> None:
