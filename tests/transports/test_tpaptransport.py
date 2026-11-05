@@ -35,6 +35,7 @@ from kasa.exceptions import (
     DeviceError,
     KasaException,
     SmartErrorCode,
+    _ConnectionError,
     _RetryableError,
 )
 from kasa.httpclient import HttpClient
@@ -235,7 +236,11 @@ class MockTpapDevice:
         step = json["params"]["sub_method"]
         self.calls[step] += 1
         self.params[step].append(json["params"])
-        if (reply := self.replies.get(step)) is not None:
+        reply = self.replies.get(step)
+        if isinstance(reply, list):
+            # One reply per call, then the device answers normally
+            reply = reply.pop(0) if reply else None
+        if reply is not None:
             if isinstance(reply, tuple):
                 return self._mock_response(*reply)
             return self._mock_response(200, reply)
@@ -1616,18 +1621,69 @@ async def test_refused_login_is_not_repeated(
     assert device.calls["pake_share"] == shares
 
 
-async def test_retryable_error_at_register_stops_the_candidates(
+RETRYABLE = {"error_code": SmartErrorCode.SESSION_EXPIRED.value}
+
+
+async def test_camera_tries_its_next_password_hash_after_a_retryable_error(
     mocker: MockerFixture,
 ) -> None:
-    """A retryable error goes to the protocol before any other password hash."""
-    retryable = {"error_code": SmartErrorCode.SESSION_EXPIRED.value}
+    """Like the Tapo app's camera client, a camera goes on to its next hash."""
     device = _patch(
         mocker,
         MockTpapDevice(
-            DeviceFamily.SmartIpCamera, replies={"pake_register": retryable}
+            DeviceFamily.SmartIpCamera,
+            passcodes={"userpw": crypto.sha256_hex_upper(MOCK_PWD)},
+            replies={"pake_register": [RETRYABLE]},
         ),
     )
     transport = _transport(DeviceFamily.SmartIpCamera)
+
+    await transport.perform_handshake()
+
+    assert device.calls["pake_register"] == 2
+    assert transport._encryption_session is not None
+
+
+async def test_camera_raises_the_retryable_error_after_the_last_hash(
+    mocker: MockerFixture,
+) -> None:
+    device = _patch(
+        mocker,
+        MockTpapDevice(
+            DeviceFamily.SmartIpCamera, replies={"pake_register": RETRYABLE}
+        ),
+    )
+    transport = _transport(DeviceFamily.SmartIpCamera)
+
+    with pytest.raises(_RetryableError):
+        await transport.perform_handshake()
+
+    assert device.calls["pake_register"] == 2
+
+
+async def test_camera_connection_error_stops_the_candidates(
+    mocker: MockerFixture,
+) -> None:
+    """A network error is not the device's answer, so no other hash is tried."""
+    post = mocker.patch.object(
+        aiohttp.ClientSession,
+        "post",
+        side_effect=aiohttp.ClientOSError("unreachable"),
+    )
+    transport = _transport(DeviceFamily.SmartIpCamera)
+
+    with pytest.raises(_ConnectionError):
+        await transport.perform_handshake()
+
+    assert post.call_count == 1
+
+
+async def test_retryable_error_at_register_goes_to_the_protocol(
+    mocker: MockerFixture,
+) -> None:
+    """Other devices leave a retryable error to the protocol, as before."""
+    device = _patch(mocker, MockTpapDevice(replies={"pake_register": RETRYABLE}))
+    transport = _transport()
 
     with pytest.raises(_RetryableError):
         await transport.perform_handshake()

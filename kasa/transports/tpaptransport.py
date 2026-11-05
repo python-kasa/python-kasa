@@ -561,10 +561,14 @@ class TpapTransport(BaseTransport):
                     candidate_count,
                 )
                 return
-            except (_RetryableError, _ConnectionError):
+            except _ConnectionError:
                 raise
             except KasaException as exc:
                 if getattr(exc, "error_code", None) is SmartErrorCode.DEVICE_BLOCKED:
+                    raise
+                if isinstance(exc, _RetryableError) and not self._uses_camera_auth:
+                    # The protocol logs in again; only cameras, like the Tapo
+                    # app's camera client, go on to their next password hash
                     raise
                 last_error = exc
                 if attempt < candidate_count:
