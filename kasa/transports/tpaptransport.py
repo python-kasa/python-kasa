@@ -490,7 +490,7 @@ class TpapTransport(BaseTransport):
         raise DeviceError(full, error_code=error_code)
 
     async def perform_login(self) -> None:
-        """Log in with pake_register and pake_share, one credential at a time."""
+        """Log in, trying one credential candidate at a time."""
         passcode_type = self._get_passcode_type()
         if passcode_type is None:
             raise AuthenticationError(
@@ -505,55 +505,10 @@ class TpapTransport(BaseTransport):
         if passcode_type not in self.DEFAULT_PASSCODE_TYPES:
             self._check_owner()
 
-        register_username = self._get_register_username()
         candidate_count = len(candidate_secrets)
-        last_error: KasaException | None = None
-
         for attempt, candidate_secret in enumerate(candidate_secrets, start=1):
-            self._shared_key = None
-            self._expected_dev_confirm = None
-            self._dac_nonce_base64 = None
-            self._user_random = None
-            self._user_random = self._base64(secrets.token_bytes(32))
-            register_params = {
-                "sub_method": "pake_register",
-                "username": register_username,
-                "user_random": self._user_random,
-                "cipher_suites": [1],
-                "encryption": ["aes_128_ccm"],
-                "passcode_type": passcode_type,
-            }
-
             try:
-                register_result = await self._login(
-                    register_params, step_name="pake_register"
-                )
-                _LOGGER.debug(
-                    "pake_register success at %s. Host is %s",
-                    datetime.now(),
-                    self._host,
-                )
-                credentials_string = self._resolve_credentials(
-                    register_result,
-                    candidate_secret,
-                    passcode_type=passcode_type,
-                )
-                share_params = self._build_share_params_from_register(
-                    register_result, credentials_string
-                )
-                if self._use_dac_certification():
-                    self._dac_nonce_base64 = self._base64(secrets.token_bytes(32))
-                    share_params["dac_nonce"] = self._dac_nonce_base64
-
-                share_result = await self._login(share_params, step_name="pake_share")
-                self._establish_session_from_share_result(share_result)
-                _LOGGER.debug(
-                    "pake_share confirmation matches the expected credentials "
-                    "(candidate %d/%d)",
-                    attempt,
-                    candidate_count,
-                )
-                return
+                await self.try_login(passcode_type, candidate_secret)
             except _ConnectionError:
                 raise
             except KasaException as exc:
@@ -563,29 +518,71 @@ class TpapTransport(BaseTransport):
                     # The protocol logs in again; only cameras, like the Tapo
                     # app's camera client, go on to their next password hash
                     raise
-                last_error = exc
-                if attempt < candidate_count:
-                    _LOGGER.debug(
-                        "credential candidate %d/%d failed for %s: %s",
-                        attempt,
-                        candidate_count,
-                        self._host,
-                        exc,
-                    )
-
-        if last_error is not None:
-            if self._uses_camera_auth and 2 in (
-                (self._tpap or _UNKNOWN_TPAP).pake or []
-            ):
+                if attempt == candidate_count:
+                    if self._uses_camera_auth and 2 in (
+                        (self._tpap or _UNKNOWN_TPAP).pake or []
+                    ):
+                        _LOGGER.debug(
+                            "all password-based camera candidates failed for %s",
+                            self._host,
+                        )
+                    raise
                 _LOGGER.debug(
-                    "all password-based camera candidates failed for %s",
+                    "credential candidate %d/%d failed for %s: %s",
+                    attempt,
+                    candidate_count,
                     self._host,
+                    exc,
                 )
-            raise last_error
-
+            else:
+                _LOGGER.debug(
+                    "pake_share confirmation matches the expected credentials "
+                    "(candidate %d/%d)",
+                    attempt,
+                    candidate_count,
+                )
+                return
         raise KasaException(  # pragma: no cover
-            "TPAP: handshake did not produce a session"
+            "TPAP: no credential candidate to log in with"
         )
+
+    async def try_login(self, passcode_type: str, candidate_secret: str) -> None:
+        """Log in with one credential: pake_register, then pake_share.
+
+        A rejected pake_share counts toward the device's lockout.
+        """
+        self._shared_key = None
+        self._expected_dev_confirm = None
+        self._dac_nonce_base64 = None
+        self._user_random = self._base64(secrets.token_bytes(32))
+        register_params = {
+            "sub_method": "pake_register",
+            "username": self._get_register_username(),
+            "user_random": self._user_random,
+            "cipher_suites": [1],
+            "encryption": ["aes_128_ccm"],
+            "passcode_type": passcode_type,
+        }
+        register_result = await self._login(register_params, step_name="pake_register")
+        _LOGGER.debug(
+            "pake_register success at %s. Host is %s",
+            datetime.now(),
+            self._host,
+        )
+        credentials_string = self._resolve_credentials(
+            register_result,
+            candidate_secret,
+            passcode_type=passcode_type,
+        )
+        share_params = self._build_share_params_from_register(
+            register_result, credentials_string
+        )
+        if self._use_dac_certification():
+            self._dac_nonce_base64 = self._base64(secrets.token_bytes(32))
+            share_params["dac_nonce"] = self._dac_nonce_base64
+
+        share_result = await self._login(share_params, step_name="pake_share")
+        self._establish_session_from_share_result(share_result)
 
     def _check_owner(self) -> None:
         """Refuse to try the account on a device another account owns.
