@@ -109,7 +109,6 @@ class TpapTransport(BaseTransport):
         if self._credentials is None and self._credentials_hash:
             # BaseTransport kept the hash only if it has this transport's shape
             self._credentials = Credentials._from_plaintext_hash(self._credentials_hash)
-            self._config.credentials = self._credentials
         self._http_client: HttpClient = HttpClient(self._config)
         self._ssl_context: ssl.SSLContext | bool | None = None
         protocol = "https" if config.connection_type.https else "http"
@@ -614,7 +613,7 @@ class TpapTransport(BaseTransport):
         device would refuse it and count that toward its lockout.
         """
         owner = (self._device_owner or "").lower()
-        creds = self._config.credentials
+        creds = self._credentials
         username = ((creds.username if creds else "") or "").strip()
         if not owner or not username:
             return
@@ -708,7 +707,7 @@ class TpapTransport(BaseTransport):
                 if self._device_mac
                 else []
             )
-        creds = self._config.credentials
+        creds = self._credentials
         password = (creds.password if creds else "") or ""
         if not password:
             # Each candidate is a login the device counts toward its lockout
@@ -743,7 +742,7 @@ class TpapTransport(BaseTransport):
         extra_crypt = extra_crypt_value if isinstance(extra_crypt_value, dict) else {}
         if self._uses_camera_auth and not extra_crypt:
             return candidate_secret
-        creds = self._config.credentials
+        creds = self._credentials
         username = (
             ""
             if self._uses_camera_auth or default_passcode

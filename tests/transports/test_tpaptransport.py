@@ -2005,14 +2005,17 @@ async def test_credentials_hash() -> None:
 
 
 async def test_login_from_credentials_hash(mocker: MockerFixture) -> None:
+    """The stored hash logs in, and stays out of the caller's config."""
     _patch(mocker, MockTpapDevice())
     credentials_hash = _transport().credentials_hash
     transport = _transport(credentials=None, credentials_hash=credentials_hash)
 
     await transport.perform_handshake()
 
-    assert transport._config.credentials == CREDENTIALS
+    assert transport._encryption_session is not None
     assert transport.credentials_hash == credentials_hash
+    assert transport._config.credentials is None
+    assert "credentials" not in transport._config.to_dict()
 
 
 async def test_malformed_credentials_hash() -> None:
