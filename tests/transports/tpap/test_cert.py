@@ -102,6 +102,100 @@ def test_verify_dac_certificate_chain_variants(
         cert.verify_dac_certificate_chain(dac_cert, None)
 
 
+def _usage(*, cert_sign: bool) -> x509.KeyUsage:
+    return x509.KeyUsage(
+        digital_signature=not cert_sign,
+        content_commitment=False,
+        key_encipherment=False,
+        data_encipherment=False,
+        key_agreement=False,
+        key_cert_sign=cert_sign,
+        crl_sign=cert_sign,
+        encipher_only=False,
+        decipher_only=False,
+    )
+
+
+UNKNOWN_EXTENSION = x509.UnrecognizedExtension(
+    x509.ObjectIdentifier("1.3.6.1.4.1.55555.1"), b"\x05\x00"
+)
+
+
+@pytest.mark.parametrize(
+    ("ica_kwargs", "dac_kwargs", "dac_issuer", "match"),
+    [
+        pytest.param({}, {}, "ica", None, id="valid"),
+        pytest.param(
+            {"extensions": [(_usage(cert_sign=True), True)]},
+            {},
+            "ica",
+            None,
+            id="valid-with-key-usage",
+        ),
+        pytest.param(
+            {},
+            {"extensions": [(UNKNOWN_EXTENSION, False)]},
+            "ica",
+            None,
+            id="unknown-not-critical",
+        ),
+        pytest.param({"is_ca": False}, {}, "ica", "not a CA", id="ica-not-a-ca"),
+        pytest.param(
+            {"basic_constraints": False},
+            {},
+            "ica",
+            "not a CA",
+            id="ica-without-basic-constraints",
+        ),
+        pytest.param(
+            {"extensions": [(_usage(cert_sign=False), True)]},
+            {},
+            "ica",
+            "may not sign",
+            id="ica-may-not-sign",
+        ),
+        pytest.param({}, {}, "someone else", "issuer does not match", id="issuer-name"),
+        pytest.param(
+            {"extensions": [(UNKNOWN_EXTENSION, True)]},
+            {},
+            "ica",
+            "unknown critical extension",
+            id="ica-unknown-critical",
+        ),
+        pytest.param(
+            {},
+            {"extensions": [(UNKNOWN_EXTENSION, True)]},
+            "ica",
+            "unknown critical extension",
+            id="dac-unknown-critical",
+        ),
+    ],
+)
+def test_verify_dac_certificate_chain_checks_the_path(
+    monkeypatch: pytest.MonkeyPatch,
+    ica_kwargs: dict[str, Any],
+    dac_kwargs: dict[str, Any],
+    dac_issuer: str,
+    match: str | None,
+) -> None:
+    """The chain is checked as path validation does, not only its signatures."""
+    root_key, ica_key, dac_key = (
+        ec.generate_private_key(ec.SECP256R1()) for _ in "123"
+    )
+    root = build_certificate(root_key, "root", "root", root_key, is_ca=True)
+    ica = build_certificate(
+        ica_key, "ica", "root", root_key, **{"is_ca": True, **ica_kwargs}
+    )
+    dac = build_certificate(dac_key, "dac", dac_issuer, ica_key, **dac_kwargs)
+    monkeypatch.setattr(cert, "_load_root_ca_certificate", lambda: root)
+
+    if match is None:
+        cert.verify_dac_certificate_chain(dac, ica)
+        return
+    with pytest.raises(KasaException, match=match):
+        cert.verify_dac_certificate_chain(dac, ica)
+
+
 def _device_cert_der(names: list[x509.GeneralName] | None) -> bytes:
     key = ec.generate_private_key(ec.SECP256R1())
     device_cert = build_certificate(

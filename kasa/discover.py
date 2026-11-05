@@ -909,7 +909,8 @@ class Discover:
             pake=[value for value in pake if isinstance(value, int)]
             if isinstance(pake, list)
             else None,
-            dac=bool(tpap.get("dac")),
+            # Attestation only with dac 1, as in the Tapo app
+            dac=tpap.get("dac") == 1,
             user_hash_type=as_int(tpap.get("user_hash_type")),
             mac=discovery_result.mac,
             owner=discovery_result.owner or None,

@@ -18,6 +18,8 @@ def build_certificate(
     *,
     is_ca: bool = False,
     subject_alt_names: list[x509.GeneralName] | None = None,
+    extensions: list[tuple[x509.ExtensionType, bool]] | None = None,
+    basic_constraints: bool = True,
 ) -> x509.Certificate:
     """Return a certificate for the key, signed by the issuer key."""
     now = datetime.now(UTC).replace(tzinfo=None)
@@ -33,16 +35,19 @@ def build_certificate(
         .serial_number(x509.random_serial_number())
         .not_valid_before(now - timedelta(days=1))
         .not_valid_after(now + timedelta(days=30))
-        .add_extension(
+    )
+    if basic_constraints:
+        builder = builder.add_extension(
             x509.BasicConstraints(ca=is_ca, path_length=None),
             critical=True,
         )
-    )
     if subject_alt_names:
         builder = builder.add_extension(
             x509.SubjectAlternativeName(subject_alt_names),
             critical=False,
         )
+    for extension, critical in extensions or []:
+        builder = builder.add_extension(extension, critical=critical)
     return builder.sign(issuer_private_key, hashes.SHA256())
 
 

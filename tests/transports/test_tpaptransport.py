@@ -748,15 +748,23 @@ async def test_discover_with_values_of_the_wrong_type(mocker: MockerFixture) -> 
         "error_code": 0,
         "result": {
             "mac": MOCK_MAC,
-            "tpap": {"tls": "bad", "port": "bad", "pake": [2], "user_hash_type": "x"},
+            "tpap": {
+                "tls": "bad",
+                "port": "bad",
+                "pake": [0],
+                "user_hash_type": "x",
+                "dac": 2,
+            },
         },
     }
-    device = _patch(mocker, MockTpapDevice(replies={"discover": reply}))
+    device = _patch(mocker, MockTpapDevice(pake=[0], replies={"discover": reply}))
     transport = _transport()
 
     await transport.perform_handshake()
 
     assert {str(url) for url in device.urls} == {str(URL("http://127.0.0.1:80/"))}
+    # Only dac 1 asks for the attestation, as in the Tapo app
+    assert "dac_nonce" not in device.params["pake_share"][0]
     assert transport._encryption_session is not None
 
 

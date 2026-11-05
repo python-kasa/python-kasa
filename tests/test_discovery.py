@@ -434,7 +434,7 @@ async def test_discover_iot_device_with_tpap() -> None:
 async def test_discover_tpap_object_with_unexpected_values() -> None:
     """Values of the wrong type fall back to defaults, the device stays usable."""
     info = _p115_reply(
-        tpap={"tls": "2", "port": "80", "pake": 2, "user_hash_type": None},
+        tpap={"tls": "2", "port": "80", "pake": 2, "user_hash_type": None, "dac": 2},
         encrypt_type="TPAP",
         preferred=True,
     )

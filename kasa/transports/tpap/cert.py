@@ -169,20 +169,68 @@ def _verify_certificate_signature(
     )
 
 
+def _check_issued_by(certificate: x509.Certificate, issuer: x509.Certificate) -> None:
+    """Check the certificate names the issuer and carries its signature."""
+    if certificate.issuer != issuer.subject:
+        raise KasaException("Certificate issuer does not match its CA")
+    _verify_certificate_signature(certificate, issuer)
+
+
+def _check_can_issue(certificate: x509.Certificate) -> None:
+    """Check an intermediate certificate is a CA allowed to sign certificates."""
+    try:
+        constraints = certificate.extensions.get_extension_for_class(
+            x509.BasicConstraints
+        ).value
+    except x509.ExtensionNotFound:
+        constraints = None
+    if constraints is None or not constraints.ca:
+        raise KasaException("Intermediate certificate is not a CA")
+    try:
+        usage = certificate.extensions.get_extension_for_class(x509.KeyUsage).value
+    except x509.ExtensionNotFound:
+        return
+    if not usage.key_cert_sign:
+        raise KasaException("Intermediate certificate may not sign certificates")
+
+
+def _check_critical_extensions(certificate: x509.Certificate) -> None:
+    """Refuse a certificate with a critical extension that isn't understood."""
+    for extension in certificate.extensions:
+        if extension.critical and isinstance(
+            extension.value, x509.UnrecognizedExtension
+        ):
+            raise KasaException(
+                "Certificate has an unknown critical extension "
+                f"{extension.oid.dotted_string}"
+            )
+
+
 def verify_dac_certificate_chain(
     dac_ca_certificate: x509.Certificate,
     dac_ica_certificate: x509.Certificate | None,
 ) -> None:
-    """Check the DAC chain up to TP-Link's device root CA."""
+    """Check the DAC chain up to TP-Link's device root CA.
+
+    As path validation does: every certificate in the chain is within its
+    validity and has no critical extension that isn't understood, the
+    intermediate is a CA that may sign certificates, and each certificate
+    names its issuer and carries its signature.
+    """
     try:
         root_certificate = _load_root_ca_certificate()
-        _verify_certificate_validity(dac_ca_certificate)
+        chain = [dac_ca_certificate]
         if dac_ica_certificate is not None:
-            _verify_certificate_validity(dac_ica_certificate)
-            _verify_certificate_signature(dac_ca_certificate, dac_ica_certificate)
-            _verify_certificate_signature(dac_ica_certificate, root_certificate)
+            chain.append(dac_ica_certificate)
+        for certificate in chain:
+            _verify_certificate_validity(certificate)
+            _check_critical_extensions(certificate)
+        if dac_ica_certificate is not None:
+            _check_can_issue(dac_ica_certificate)
+            _check_issued_by(dac_ica_certificate, root_certificate)
+            _check_issued_by(dac_ca_certificate, dac_ica_certificate)
         else:
-            _verify_certificate_signature(dac_ca_certificate, root_certificate)
+            _check_issued_by(dac_ca_certificate, root_certificate)
     except Exception as exc:
         raise KasaException(
             f"DAC certificate chain verification failed: {exc}"

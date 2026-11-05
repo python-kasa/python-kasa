@@ -364,7 +364,7 @@ class TpapTransport(BaseTransport):
         if self._tpap_tls == 0 and self._app_url.scheme == "https":
             self._tpap_tls = 2
         self._tpap_port = self._parse_optional_int(tpap.get("port"))
-        self._tpap_dac = bool(tpap.get("dac"))
+        self._tpap_dac = tpap.get("dac") == 1
         pake = tpap.get("pake")
         self._tpap_pake = list(pake) if isinstance(pake, list) else None
         self._tpap_user_hash_type = self._parse_optional_int(tpap.get("user_hash_type"))
