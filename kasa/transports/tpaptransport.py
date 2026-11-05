@@ -852,10 +852,14 @@ class TpapTransport(BaseTransport):
             _LOGGER.debug("Device %s query posted %s", self._host, msg)
 
         if (reply := self._json_reply(data)) is not None:
-            # A device that dropped the session cannot encrypt its answer
+            # A device that dropped the session cannot encrypt its answer, so
+            # a plain reply can report an error, but it is never the answer:
+            # that is always encrypted, and taking a plain one would let
+            # anyone on the path answer for the device.
             self._raise_if_session_lost(reply)
-            self._handle_response_error_code(reply, "request")
-            return reply
+            if "error_code" in reply:
+                self._handle_response_error_code(reply, "request")
+            raise KasaException(f"TPAP response from {self._host} was not encrypted")
         try:
             plaintext = session.decrypt(data, seq)
         except InvalidTag as ex:

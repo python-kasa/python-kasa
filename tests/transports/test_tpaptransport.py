@@ -1588,13 +1588,24 @@ async def test_request_errors(
         await transport.send(json_dumps(DUMMY_QUERY))
 
 
-async def test_plain_reply(mocker: MockerFixture) -> None:
-    """A plain JSON reply is taken as it is."""
-    reply = {"error_code": 0, "result": {"plain": True}}
+@pytest.mark.parametrize(
+    "reply",
+    [
+        pytest.param({"error_code": 0, "result": {"plain": True}}, id="success"),
+        pytest.param({"result": {"plain": True}}, id="no-error-code"),
+    ],
+)
+async def test_plain_reply_is_not_the_answer(
+    mocker: MockerFixture, reply: dict[str, Any]
+) -> None:
+    """Only an encrypted reply is the device's answer."""
     _patch(mocker, MockTpapDevice(ds_replies=[(200, reply)]))
     transport = _transport()
 
-    assert await transport.send(json_dumps(DUMMY_QUERY)) == reply
+    with pytest.raises(KasaException, match="was not encrypted"):
+        await transport.send(json_dumps(DUMMY_QUERY))
+
+    assert transport._encryption_session is not None
 
 
 async def test_authentication_error_drops_the_session(mocker: MockerFixture) -> None:
