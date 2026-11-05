@@ -892,9 +892,7 @@ async def test_dac_failures(
     match: str,
 ) -> None:
     """An attestation that was asked for must be there and must check out."""
-    _patch(
-        mocker, MockTpapDevice(dac=True, pake=[0], dac_chain=dac_chain, share=share)
-    )
+    _patch(mocker, MockTpapDevice(dac=True, pake=[0], dac_chain=dac_chain, share=share))
     transport = _transport(tpap=_discovered(dac=True, pake=[0]))
 
     with pytest.raises(KasaException, match=match):
