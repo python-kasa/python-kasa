@@ -150,9 +150,10 @@ class TpapTransport(BaseTransport):
         config = self._config
         if port := config.connection_type.http_port:
             return port
+        if self._uses_camera_auth:
+            # Cameras are always https
+            return self.DEFAULT_CAMERA_HTTPS_PORT
         if config.connection_type.https:
-            if self._uses_camera_auth:
-                return self.DEFAULT_CAMERA_HTTPS_PORT
             return self.DEFAULT_HTTPS_PORT
         return self.DEFAULT_PORT
 
@@ -206,12 +207,23 @@ class TpapTransport(BaseTransport):
         # Cameras are always https, on their own port
         is_camera = self._uses_camera_auth
         scheme = "https" if is_camera or tls_mode in (1, 2) else "http"
+        ctype = self._config.connection_type
         if port and port > 0:
             resolved_port = port
-        elif scheme == "http" or is_camera:
-            resolved_port = self._port
-        else:
+        elif scheme == "https" and not is_camera:
             resolved_port = self.DEFAULT_HTTPS_PORT
+        elif self._config.port_override:
+            resolved_port = self._config.port_override
+        elif is_camera:
+            resolved_port = ctype.http_port or self.DEFAULT_CAMERA_HTTPS_PORT
+        elif self._uses_robot_tpap_auth:
+            # Robots take the advertised port, else 443, even over http
+            resolved_port = ctype.http_port or self.DEFAULT_CAMERA_HTTPS_PORT
+        elif ctype.https or not ctype.http_port:
+            # Tapo devices: the advertised port only if it is not for https
+            resolved_port = self.DEFAULT_PORT
+        else:
+            resolved_port = ctype.http_port
         return URL.build(
             scheme=scheme,
             host=self._host,
