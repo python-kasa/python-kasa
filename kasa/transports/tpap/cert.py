@@ -21,7 +21,9 @@ from kasa.exceptions import KasaException
 _TLS2_MAC_OID = x509.ObjectIdentifier("1.0.15961.13.375")
 
 
-TLS2_CIPHERS = ":".join(
+# The suites the Tapo app's IoT and robot clients allow, with or without
+# certificate checks
+ECDSA_CIPHERS = ":".join(
     [
         "ECDHE-ECDSA-AES256-GCM-SHA384",
         "ECDHE-ECDSA-AES256-SHA384",

@@ -3,8 +3,8 @@
 TPAP is the login newer Tapo and Kasa firmware uses instead of KLAP or AES:
 a SPAKE2+ exchange that gives a shared key, then an encrypted session.
 
-The login values are the TLS mode (0 for http, 1 for TLS, 2 for TLS checked
-against TP-Link's device root CA), the port, the passcode types the device
+The login values are the TLS mode (0 for http, 1 for TLS, 2 and above for TLS
+checked against TP-Link's device root CA), the port, the passcode types the device
 accepts (``pake``), whether it proves itself with its attestation certificate
 (``dac``) and its MAC. They come from the ``tpap`` object of the UDP discovery
 reply. Without it the client asks the device with an in-band ``discover``,
@@ -254,32 +254,46 @@ class TpapTransport(BaseTransport):
         """Get or create the SSL context for the device's TLS mode."""
         if self._ssl_context is None:
             tls_mode = self._tpap_tls
+            loop = asyncio.get_running_loop()
             if tls_mode == 0:
                 self._ssl_context = False
-            elif tls_mode == 2:
-                loop = asyncio.get_running_loop()
+            elif tls_mode is not None and tls_mode >= 2:
+                if not self._device_mac:
+                    raise KasaException(
+                        f"TPAP: no device MAC to check the TLS certificate of "
+                        f"{self._host} against"
+                    )
                 self._ssl_context = await loop.run_in_executor(
-                    None, self._create_tls2_ssl_context
+                    None, self._create_ssl_context, True
+                )
+            elif tls_mode == 1 and not (
+                self._uses_camera_auth or self._uses_kasa_iot_auth
+            ):
+                self._ssl_context = await loop.run_in_executor(
+                    None, self._create_ssl_context, False
                 )
             else:
-                # Unverified TLS, shared with the other https transports
+                # Unverified TLS, shared with the other https transports: for
+                # cameras and Kasa devices, whose Tapo app clients allow any
+                # suite, and the in-band discover before the TLS mode is known
                 self._ssl_context = await get_ssl_context()
         return self._ssl_context
 
-    def _create_tls2_ssl_context(self) -> ssl.SSLContext:
+    def _create_ssl_context(self, verify: bool) -> ssl.SSLContext:
+        """Return a context with the ECDSA suites the Tapo app allows.
+
+        Verified, it trusts TP-Link's device root CA only, and the
+        certificate has to name the device MAC.
+        """
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         context.check_hostname = False
+        context.set_ciphers(cert.ECDSA_CIPHERS)
+        if not verify:
+            context.verify_mode = ssl.CERT_NONE
+            return context
         context.verify_mode = ssl.CERT_REQUIRED
         context.load_verify_locations(cadata=cert.TPAP_ROOT_CA_PEM)
-        # ECDSA suites only, and the certificate has to name the device MAC
-        context.set_ciphers(cert.TLS2_CIPHERS)
-        if mac := self._device_mac:
-            context.sslobject_class = cert.mac_checking_sslobject(mac)
-        else:
-            _LOGGER.debug(
-                "No device MAC to check the TLS certificate of %s against",
-                self._host,
-            )
+        context.sslobject_class = cert.mac_checking_sslobject(self._device_mac)
         return context
 
     async def perform_handshake(self) -> None:

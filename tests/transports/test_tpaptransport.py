@@ -15,7 +15,7 @@ from typing import Any
 import aiohttp
 import pytest
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from cryptography.hazmat.primitives.ciphers.aead import AESCCM, ChaCha20Poly1305
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from ecdsa import ellipticcurve
@@ -2078,29 +2078,54 @@ async def test_tls_0_is_plain_http(mocker: MockerFixture) -> None:
     assert device.ssl == [False, False, False]
 
 
-async def test_tls_1_uses_the_shared_context(mocker: MockerFixture) -> None:
-    """Unverified TLS uses the context the other https transports share."""
+async def test_tls_1_uses_the_ecdsa_suites(mocker: MockerFixture) -> None:
+    """Unverified TLS with only the suites the Tapo app's IoT client allows."""
     device = _patch(mocker, MockTpapDevice())
     transport = _transport(tpap=_discovered(1, port=4433))
 
     await transport.send(json_dumps(DUMMY_QUERY))
 
+    context = device.ssl[0]
+    assert device.ssl == [context] * 3
+    assert context is not await get_shared_ssl_context()
+    assert context.verify_mode == ssl.CERT_NONE
+    assert context.minimum_version >= ssl.TLSVersion.TLSv1_2
+    tls12 = [c["name"] for c in context.get_ciphers() if c["protocol"] == "TLSv1.2"]
+    assert tls12
+    assert all(name.startswith("ECDHE-ECDSA-") for name in tls12)
+
+
+@pytest.mark.parametrize(
+    "family", [DeviceFamily.SmartIpCamera, DeviceFamily.IotSmartBulb]
+)
+async def test_tls_1_for_cameras_and_kasa_uses_the_shared_context(
+    mocker: MockerFixture, family: DeviceFamily
+) -> None:
+    """The app's camera and Kasa clients allow any suite."""
+    device = _patch(mocker, MockTpapDevice(family))
+    transport = _transport(family, tpap=_discovered(1, port=443))
+
+    await transport.send(json_dumps(DUMMY_QUERY))
+
     shared = await get_shared_ssl_context()
     assert device.ssl == [shared, shared, shared]
-    enabled = {c["name"] for c in shared.get_ciphers()}
-    assert {"ECDHE-ECDSA-AES128-SHA", "ECDHE-ECDSA-AES256-SHA"} <= enabled
 
 
-@pytest.mark.parametrize("mac", [MOCK_MAC, None])
+@pytest.mark.parametrize(
+    ("family", "tls"),
+    [
+        pytest.param(DeviceFamily.SmartTapoPlug, 2, id="tapo-tls-2"),
+        pytest.param(DeviceFamily.IotSmartBulb, 3, id="kasa-tls-above-2"),
+    ],
+)
 async def test_tls_2_context(
-    mocker: MockerFixture, caplog: pytest.LogCaptureFixture, mac: str | None
+    mocker: MockerFixture, family: DeviceFamily, tls: int
 ) -> None:
-    """ECDSA suites only, TP-Link's root CA, and the MAC check when it is known."""
-    device = _patch(mocker, MockTpapDevice())
-    transport = _transport(tpap=_discovered(2, port=4433, mac=mac, pake=[2]))
+    """ECDSA suites only, TP-Link's root CA, and the MAC check."""
+    device = _patch(mocker, MockTpapDevice(family))
+    transport = _transport(family, tpap=_discovered(tls, port=4433, pake=[2]))
 
-    with caplog.at_level(logging.DEBUG):
-        await transport.send(json_dumps(DUMMY_QUERY))
+    await transport.send(json_dumps(DUMMY_QUERY))
 
     context = device.ssl[0]
     assert device.ssl == [context] * 3
@@ -2109,8 +2134,20 @@ async def test_tls_2_context(
     tls12 = [c["name"] for c in context.get_ciphers() if c["protocol"] == "TLSv1.2"]
     assert tls12
     assert all(name.startswith("ECDHE-ECDSA-") for name in tls12)
-    assert (context.sslobject_class is ssl.SSLObject) is (mac is None)
-    assert ("No device MAC to check" in caplog.text) is (mac is None)
+    assert context.sslobject_class is not ssl.SSLObject
+
+
+async def test_tls_2_without_the_device_mac_is_refused(
+    mocker: MockerFixture,
+) -> None:
+    """Without the MAC the certificate can't be checked, so nothing is sent."""
+    device = _patch(mocker, MockTpapDevice())
+    transport = _transport(tpap=_discovered(2, port=4433, mac=None))
+
+    with pytest.raises(KasaException, match="no device MAC"):
+        await transport.perform_handshake()
+
+    assert not device.calls
 
 
 def _tls_handshake(client_ctx: ssl.SSLContext, server_ctx: ssl.SSLContext) -> None:
@@ -2187,4 +2224,52 @@ async def test_tls_2_handshake_requires_the_device_mac(
         _tls_handshake(client_ctx, server_ctx)
     else:
         with pytest.raises(ssl.SSLCertVerificationError, match="device MAC"):
+            _tls_handshake(client_ctx, server_ctx)
+
+
+def _server_context(tmp_path: Any, key: Any) -> ssl.SSLContext:
+    """Return a TLS server context with a self-signed certificate for the key."""
+    certificate = build_certificate(key, "device", "device", key)
+    cert_file, key_file = tmp_path / "device.pem", tmp_path / "device.key"
+    cert_file.write_bytes(certificate.public_bytes(serialization.Encoding.PEM))
+    key_file.write_bytes(
+        key.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
+    )
+    server_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    # TLS 1.3 suites don't depend on the certificate type, so test TLS 1.2
+    server_ctx.maximum_version = ssl.TLSVersion.TLSv1_2
+    server_ctx.load_cert_chain(cert_file, key_file)
+    return server_ctx
+
+
+@pytest.mark.parametrize(
+    ("family", "key_type", "accepted"),
+    [
+        pytest.param(DeviceFamily.SmartTapoPlug, "ec", True, id="plug-ecdsa"),
+        pytest.param(DeviceFamily.SmartTapoPlug, "rsa", False, id="plug-rsa"),
+        pytest.param(DeviceFamily.SmartIpCamera, "rsa", True, id="camera-rsa"),
+    ],
+)
+async def test_tls_1_handshake_suites(
+    tmp_path: Any, family: DeviceFamily, key_type: str, accepted: bool
+) -> None:
+    """With tls 1 a Tapo device has to use an ECDSA certificate, a camera not."""
+    key = (
+        ec.generate_private_key(ec.SECP256R1())
+        if key_type == "ec"
+        else rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    )
+    server_ctx = _server_context(tmp_path, key)
+    transport = _transport(family, tpap=_discovered(1, port=443))
+    client_ctx = await transport.get_ssl_context()
+    assert isinstance(client_ctx, ssl.SSLContext)
+
+    if accepted:
+        _tls_handshake(client_ctx, server_ctx)
+    else:
+        with pytest.raises(ssl.SSLError):
             _tls_handshake(client_ctx, server_ctx)
