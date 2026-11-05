@@ -760,7 +760,8 @@ async def test_handshake_from_in_band_discover(mocker: MockerFixture) -> None:
     assert str(device.urls[0]) == str(URL("http://127.0.0.1:9999/"))
     assert {str(url) for url in device.urls[1:]} == {str(URL("https://127.0.0.1:80/"))}
     assert device.params["pake_register"][0]["passcode_type"] == "userpw"
-    assert transport._device_mac == MOCK_MAC
+    assert transport._tpap is not None
+    assert transport._tpap.mac == MOCK_MAC
 
 
 async def test_in_band_discover_keeps_the_port_override(
@@ -2144,6 +2145,13 @@ async def test_tls_0_is_plain_http(mocker: MockerFixture) -> None:
     await transport.send(json_dumps(DUMMY_QUERY))
 
     assert device.ssl == [False, False, False]
+
+
+async def test_ssl_context_before_the_login_values_are_known() -> None:
+    """Asked before the in-band discover, it's the unverified shared context."""
+    transport = _transport(DeviceFamily.SmartTapoRobovac, https=True)
+
+    assert await transport.get_ssl_context() is await get_shared_ssl_context()
 
 
 async def test_tls_1_uses_the_ecdsa_suites(mocker: MockerFixture) -> None:
