@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 import logging
 import re
@@ -466,12 +467,13 @@ async def test_protocol_invalid_response(
             get_default_credentials(DEFAULT_CREDENTIALS["KASA"]),
             does_not_raise(),
         ),
+        (Credentials("foo", "kasaSetup"), does_not_raise()),
         (
             Credentials("shouldfail", "shouldfail"),
             pytest.raises(AuthenticationError),
         ),
     ],
-    ids=("client", "blank", "kasa_setup", "shouldfail"),
+    ids=("client", "blank", "kasa_setup", "account_kasa_setup", "shouldfail"),
 )
 @pytest.mark.parametrize(
     ("transport_class", "seed_auth_hash_calc"),
@@ -520,6 +522,56 @@ async def test_handshake1(
         assert device_remote_seed == server_seed
         assert device_auth_hash == auth_hash
     await protocol.close()
+
+
+@pytest.mark.parametrize(
+    ("transport_class", "seed_auth_hash_calc"),
+    [
+        pytest.param(KlapTransport, lambda c, s, a: c + a, id="KLAP"),
+        pytest.param(KlapTransportV2, lambda c, s, a: c + s + a, id="KLAPV2"),
+    ],
+)
+async def test_handshake1_account_setup_password_is_kept(
+    mocker: MockerFixture,
+    transport_class: type[KlapTransport],
+    seed_auth_hash_calc: Callable[..., bytes],
+) -> None:
+    """The account e-mail, as the Kasa app sends it, with the setup password.
+
+    Its hash becomes the credentials hash, so that a config stored with only
+    the hash logs in again.
+    """
+    server_seed = secrets.token_bytes(16)
+    device_auth_hash = transport_class.generate_auth_hash(
+        Credentials("user@example.com", "kasaSetup")
+    )
+
+    async def _return_handshake1_response(url, params=None, data=None, *_, **__):
+        seed_auth_hash = _sha256(
+            seed_auth_hash_calc(data, server_seed, device_auth_hash)
+        )
+        return _mock_response(200, server_seed + seed_auth_hash)
+
+    mocker.patch.object(
+        aiohttp.ClientSession, "post", side_effect=_return_handshake1_response
+    )
+
+    credentials = Credentials(" User@Example.com", "account-password")
+    transport = transport_class(
+        config=DeviceConfig("127.0.0.1", credentials=credentials)
+    )
+    *_, auth_hash = await transport.perform_handshake1()
+    assert auth_hash == device_auth_hash
+    credentials_hash = transport.credentials_hash
+    assert credentials_hash == base64.b64encode(device_auth_hash).decode()
+    await transport.close()
+
+    stored = transport_class(
+        config=DeviceConfig("127.0.0.1", credentials_hash=credentials_hash)
+    )
+    *_, auth_hash = await stored.perform_handshake1()
+    assert auth_hash == device_auth_hash
+    await stored.close()
 
 
 @pytest.mark.parametrize(

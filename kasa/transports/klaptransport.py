@@ -118,6 +118,7 @@ class KlapTransport(BaseTransport):
         else:
             self._local_auth_hash = base64.b64decode(self._credentials_hash.encode())  # type: ignore[union-attr]
         self._default_credentials_auth_hash: dict[str, bytes] = {}
+        self._account_setup_auth_hashes = self._get_account_setup_auth_hashes()
         self._blank_auth_hash: bytes | None = None
         self._handshake_lock = asyncio.Lock()
         self._query_lock = asyncio.Lock()
@@ -230,6 +231,22 @@ class KlapTransport(BaseTransport):
             _LOGGER.debug("handshake1 hashes match with expected credentials")
             return local_seed, remote_seed, self._local_auth_hash  # type: ignore
 
+        # Then the account e-mail with the Kasa setup password
+        for setup_auth_hash in self._account_setup_auth_hashes:
+            if (
+                self.handshake1_seed_auth_hash(local_seed, remote_seed, setup_auth_hash)
+                == server_hash
+            ):
+                _LOGGER.debug(
+                    "Device response did not match our expected hash on ip %s, "
+                    "but the account e-mail with the setup password worked",
+                    self._host,
+                )
+                # Keep it as the credentials hash: it can't be rebuilt from a
+                # stored hash, which has no e-mail
+                self._local_auth_hash = setup_auth_hash
+                return local_seed, remote_seed, setup_auth_hash
+
         # Now check against the default setup credentials
         for key, value in DEFAULT_CREDENTIALS.items():
             if key not in self._default_credentials_auth_hash:
@@ -279,6 +296,21 @@ class KlapTransport(BaseTransport):
         )
         _LOGGER.debug(msg)
         raise AuthenticationError(msg)
+
+    def _get_account_setup_auth_hashes(self) -> list[bytes]:
+        """Return the hashes of the account e-mail with the Kasa setup password.
+
+        The Kasa app logs in to a Kasa device with that pair rather than the
+        account password when the device's discovery reply says ``ANS``. It
+        uses the e-mail trimmed and lowercased, so that form is tried too.
+        """
+        username = self._credentials.username if self._credentials else ""
+        setup_password = get_default_credentials(DEFAULT_CREDENTIALS["KASA"]).password
+        return [
+            self.generate_auth_hash(Credentials(name, setup_password))
+            for name in dict.fromkeys([username, username.strip().lower()])
+            if name and self._credentials != Credentials(name, setup_password)
+        ]
 
     async def perform_handshake2(
         self, local_seed: bytes, remote_seed: bytes, auth_hash: bytes
