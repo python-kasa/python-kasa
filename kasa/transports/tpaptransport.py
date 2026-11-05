@@ -848,10 +848,8 @@ class TpapTransport(BaseTransport):
                 self._shared_key + self._unbase64(self._dac_nonce_base64),
             )
         except InvalidSignature as exc:
-            _LOGGER.error("invalid DAC proof signature")
             raise KasaException("Invalid DAC proof signature") from exc
         except Exception as exc:
-            _LOGGER.error("DAC verification failed: %s", exc)
             raise KasaException(f"DAC verification failed: {exc}") from exc
 
     def _establish_session_from_share_result(
@@ -873,7 +871,6 @@ class TpapTransport(BaseTransport):
             share_result.get("sessionId") or share_result.get("stok") or ""
         )
         if not session_id:
-            _LOGGER.error("missing session ID from device")
             raise KasaException("Missing session fields from device")
         if TYPE_CHECKING:
             assert self._shared_key is not None
