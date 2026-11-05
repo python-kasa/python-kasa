@@ -120,8 +120,9 @@ class _Suite:
         self.n = self.point(n_comp)
         self.hash_name = crypto._suite_hash_name(suite_type)
         self.cmac = crypto._suite_mac_is_cmac(suite_type)
-        self.mac_len = 16 if self.cmac else 32
         self.digest_len = 64 if self.hash_name == "SHA512" else 32
+        # Confirmation keys as long as the MAC output, as in the Tapo app
+        self.mac_len = 16 if self.cmac else self.digest_len
 
     def point(self, sec1: bytes) -> Any:
         x, y = crypto._sec1_to_xy(sec1, self.ec_curve)

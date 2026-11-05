@@ -451,7 +451,9 @@ def spake2p_share(
 
     transcript_hash = _hash(hash_name, transcript)
     digest_len = 64 if hash_name.upper() == "SHA512" else 32
-    mac_len = 16 if _suite_mac_is_cmac(suite_type) else 32
+    # Each confirmation key is as long as the MAC's output: the digest for
+    # HMAC, the AES block for CMAC
+    mac_len = 16 if _suite_mac_is_cmac(suite_type) else digest_len
     confirmation_keys = _hkdf_expand(
         "ConfirmationKeys", transcript_hash, mac_len * 2, hash_name
     )
