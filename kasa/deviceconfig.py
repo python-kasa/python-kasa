@@ -33,7 +33,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field, replace
 from enum import Enum
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from aiohttp import ClientSession
 from mashumaro import field_options, pass_through
@@ -116,6 +116,47 @@ class TpapParameters(_DeviceConfigBaseMixin):
     mac: str | None = None
     #: md5 of the user name of the TP-Link account that owns the device
     owner: str | None = None
+
+    @classmethod
+    def _from_tpap_object(
+        cls,
+        tpap: dict[str, Any],
+        *,
+        mac: str | None = None,
+        owner: str | None = None,
+    ) -> TpapParameters:
+        """Return the login a ``tpap`` object from the device announces.
+
+        Numbers may be JSON numbers or numeric strings, as the Tapo app reads
+        them. Other values are left at their defaults, so that a malformed
+        object does not make the device unusable.
+        """
+
+        def as_int(value: Any) -> int | None:
+            if isinstance(value, bool):
+                return None
+            if isinstance(value, int):
+                return value
+            if isinstance(value, str):
+                try:
+                    return int(value.strip())
+                except ValueError:
+                    return None
+            return None
+
+        pake = tpap.get("pake")
+        return cls(
+            tls=as_int(tpap.get("tls")) or 0,
+            port=as_int(tpap.get("port")),
+            pake=[value for value in map(as_int, pake) if value is not None]
+            if isinstance(pake, list)
+            else None,
+            # Attestation only with dac 1, as in the Tapo app
+            dac=as_int(tpap.get("dac")) == 1,
+            user_hash_type=as_int(tpap.get("user_hash_type")),
+            mac=mac,
+            owner=owner,
+        )
 
 
 @dataclass

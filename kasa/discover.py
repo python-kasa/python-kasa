@@ -892,26 +892,9 @@ class Discover:
 
     @staticmethod
     def _get_tpap_parameters(discovery_result: DiscoveryResult) -> TpapParameters:
-        """Get the TPAP login from the discovery tpap object.
-
-        Values of the wrong type are left at their defaults, so that a
-        malformed object does not make the device unsupported.
-        """
-        tpap = discovery_result.tpap or {}
-
-        def as_int(value: Any) -> int | None:
-            return value if isinstance(value, int) else None
-
-        pake = tpap.get("pake")
-        return TpapParameters(
-            tls=as_int(tpap.get("tls")) or 0,
-            port=as_int(tpap.get("port")),
-            pake=[value for value in pake if isinstance(value, int)]
-            if isinstance(pake, list)
-            else None,
-            # Attestation only with dac 1, as in the Tapo app
-            dac=tpap.get("dac") == 1,
-            user_hash_type=as_int(tpap.get("user_hash_type")),
+        """Get the TPAP login from the discovery tpap object."""
+        return TpapParameters._from_tpap_object(
+            discovery_result.tpap or {},
             mac=discovery_result.mac,
             owner=discovery_result.owner or None,
         )

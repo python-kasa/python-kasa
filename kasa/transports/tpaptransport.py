@@ -49,7 +49,7 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from yarl import URL
 
 from kasa.credentials import Credentials
-from kasa.deviceconfig import DeviceConfig, DeviceFamily
+from kasa.deviceconfig import DeviceConfig, DeviceFamily, TpapParameters
 from kasa.exceptions import (
     SMART_AUTHENTICATION_ERRORS,
     SMART_RETRYABLE_ERRORS,
@@ -356,18 +356,20 @@ class TpapTransport(BaseTransport):
         if not isinstance(tpap, dict):
             raise KasaException("TPAP discover response missing tpap object")
 
-        self._device_mac = str(result.get("mac") or "")
-        self._tpap_tls = self._parse_optional_int(tpap.get("tls"))
+        login = TpapParameters._from_tpap_object(
+            tpap, mac=str(result.get("mac") or "") or None
+        )
+        self._device_mac = login.mac or ""
+        self._tpap_tls = login.tls
         # Some devices (RV50 Pro Omni) answer the in-band discover over TLS
         # with tls=0.  A session bootstrapped over https stays on CA-verified
         # TLS (mode 2) rather than falling back to plaintext on a TLS port.
         if self._tpap_tls == 0 and self._app_url.scheme == "https":
             self._tpap_tls = 2
-        self._tpap_port = self._parse_optional_int(tpap.get("port"))
-        self._tpap_dac = tpap.get("dac") == 1
-        pake = tpap.get("pake")
-        self._tpap_pake = list(pake) if isinstance(pake, list) else None
-        self._tpap_user_hash_type = self._parse_optional_int(tpap.get("user_hash_type"))
+        self._tpap_port = login.port
+        self._tpap_dac = login.dac
+        self._tpap_pake = login.pake
+        self._tpap_user_hash_type = login.user_hash_type
 
         self._update_app_url()
 

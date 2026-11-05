@@ -1595,6 +1595,14 @@ async def test_login_errors(
             r"device blocked after failed logins \(error_code",
             id="no-attempts-left",
         ),
+        pytest.param(
+            {
+                "error_code": -2101,
+                "error_info": {"lockedMinute": "unknown", "remainAttempts": "0"},
+            },
+            r"device blocked after failed logins \(error_code",
+            id="values-as-text",
+        ),
     ],
 )
 @pytest.mark.parametrize("step", ["discover", "pake_register", "pake_share"])
