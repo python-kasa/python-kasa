@@ -195,27 +195,28 @@ class TpapTransport(BaseTransport):
         return device_family in self.KASA_IOT_DEVICE_FAMILIES
 
     def _build_app_url(self, *, tls_mode: int | None, port: int | None) -> URL:
+        """Return the login URL for the TLS mode and the device's TPAP port.
+
+        A port_override wins over the port the device announces, as in the
+        other transports.
+        """
         family = self._config.connection_type.device_family
+        port = self._config.port_override or (port if port and port > 0 else None)
         if family in self.KASA_IOT_DEVICE_FAMILIES:
             # Kasa devices: https for any tls but 0, and the tpap port or
             # else 80, whatever the scheme
             scheme = "https" if tls_mode else "http"
-            resolved_port = (
-                port
-                if port and port > 0
-                else self._config.port_override or self.DEFAULT_PORT
+            return URL.build(
+                scheme=scheme, host=self._host, port=port or self.DEFAULT_PORT
             )
-            return URL.build(scheme=scheme, host=self._host, port=resolved_port)
         # Cameras are always https, on their own port
         is_camera = self._uses_camera_auth
         scheme = "https" if is_camera or tls_mode in (1, 2) else "http"
         ctype = self._config.connection_type
-        if port and port > 0:
+        if port:
             resolved_port = port
         elif scheme == "https" and not is_camera:
             resolved_port = self.DEFAULT_HTTPS_PORT
-        elif self._config.port_override:
-            resolved_port = self._config.port_override
         elif is_camera:
             resolved_port = ctype.http_port or self.DEFAULT_CAMERA_HTTPS_PORT
         elif self._uses_robot_tpap_auth:

@@ -592,6 +592,42 @@ async def test_handshake(
         ),
         pytest.param(
             DeviceFamily.SmartTapoPlug,
+            False,
+            80,
+            8080,
+            _discovered(0, port=80),
+            "http://127.0.0.1:8080/",
+            id="port-override-wins-over-tpap-port",
+        ),
+        pytest.param(
+            DeviceFamily.SmartTapoRobovac,
+            True,
+            4433,
+            9443,
+            _discovered(2, port=None),
+            "https://127.0.0.1:9443/",
+            id="port-override-wins-over-https-default",
+        ),
+        pytest.param(
+            DeviceFamily.SmartIpCamera,
+            True,
+            None,
+            8443,
+            _discovered(1, port=443),
+            "https://127.0.0.1:8443/",
+            id="camera-port-override",
+        ),
+        pytest.param(
+            DeviceFamily.IotSmartBulb,
+            False,
+            80,
+            8080,
+            _discovered(0, port=80),
+            "http://127.0.0.1:8080/",
+            id="kasa-iot-port-override-wins",
+        ),
+        pytest.param(
+            DeviceFamily.SmartTapoPlug,
             True,
             8443,
             None,
@@ -725,6 +761,18 @@ async def test_handshake_from_in_band_discover(mocker: MockerFixture) -> None:
     assert {str(url) for url in device.urls[1:]} == {str(URL("https://127.0.0.1:80/"))}
     assert device.params["pake_register"][0]["passcode_type"] == "userpw"
     assert transport._device_mac == MOCK_MAC
+
+
+async def test_in_band_discover_keeps_the_port_override(
+    mocker: MockerFixture,
+) -> None:
+    """The port the device answers with doesn't replace a forwarded port."""
+    device = _patch(mocker, MockTpapDevice(port=80))
+    transport = _transport(port_override=8080)
+
+    await transport.perform_handshake()
+
+    assert {str(url) for url in device.urls} == {str(URL("http://127.0.0.1:8080/"))}
 
 
 async def test_discover_over_https_answering_tls_0_stays_on_tls_2(
