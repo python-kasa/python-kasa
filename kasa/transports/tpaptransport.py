@@ -699,7 +699,11 @@ class TpapTransport(BaseTransport):
         *,
         passcode_type: str,
     ) -> str:
-        if passcode_type == "default_userpw":
+        default_passcode = passcode_type == "default_userpw"
+        if default_passcode and self._use_dac_certification():
+            # With the attestation the device takes the default passcode as
+            # it is; otherwise it is encoded as extra_crypt says, without a
+            # user name
             return candidate_secret
         extra_crypt_value = register_result.get("extra_crypt")
         extra_crypt = extra_crypt_value if isinstance(extra_crypt_value, dict) else {}
@@ -707,7 +711,9 @@ class TpapTransport(BaseTransport):
             return candidate_secret
         creds = self._config.credentials
         username = (
-            "" if self._uses_camera_auth else (creds.username if creds else "") or ""
+            ""
+            if self._uses_camera_auth or default_passcode
+            else (creds.username if creds else "") or ""
         )
         mac_no_colon = self._device_mac.replace(":", "").replace("-", "")
         return crypto.build_credentials(

@@ -183,15 +183,13 @@ class MockTpapDevice:
         camera: bool | None = None,
     ) -> None:
         camera = family in CAMERAS if camera is None else camera
-        hashed = crypto.md5_hex(password) if camera else crypto._sha1_hex(password)
-        self.passcodes = passcodes or {
-            "userpw": hashed,
-            "shared_token": hashed,
-            "default_userpw": crypto.mac_pass_from_device_mac(mac),
-        }
         if extra_crypt is ABSENT:
             extra_crypt = None if camera else PASSWORD_SHADOW
         self.extra_crypt = extra_crypt
+        hashed = crypto.md5_hex(password) if camera else crypto._sha1_hex(password)
+        self.passcodes = passcodes or {"userpw": hashed, "shared_token": hashed}
+        # Only a device that attests itself holds the default passcode as it is
+        self.attested = not camera and tls == 0 and dac and 0 in (pake or ())
         self.tpap = {
             "tls": tls,
             "port": port,
@@ -275,9 +273,15 @@ class MockTpapDevice:
             iterations = 10_000
 
         suite = self._suite = _Suite(self.suite)
-        passcode = self.passcodes.get(params["passcode_type"], "")
+        passcode = self.passcodes.get(params["passcode_type"])
+        if passcode is None and params["passcode_type"] == "default_userpw":
+            passcode = crypto.mac_pass_from_device_mac(self.mac)
+            if not self.attested:
+                passcode = crypto.build_credentials(
+                    self.extra_crypt, "", passcode, self.mac.replace(":", "")
+                )
         salt = secrets.token_bytes(16)
-        w0, w1 = crypto._derive_ab(passcode.encode(), salt, iterations, 32)
+        w0, w1 = crypto._derive_ab((passcode or "").encode(), salt, iterations, 32)
         self._w0, self._w1 = w0 % suite.order, w1 % suite.order
         self._y = secrets.randbelow(suite.order - 1) + 1
         self._dev_share = self._y * suite.g + self._w0 * suite.n
@@ -835,7 +839,10 @@ async def test_dac(
     asked: bool,
 ) -> None:
     """The device proves itself with its attestation certificate where asked to."""
-    device = _patch(mocker, MockTpapDevice(family, dac_chain=dac_chain))
+    device = _patch(
+        mocker,
+        MockTpapDevice(family, tls=tls, dac=dac, pake=pake, dac_chain=dac_chain),
+    )
     transport = _transport(family, tpap=_discovered(tls, dac=dac, pake=pake))
 
     await transport.perform_handshake()
@@ -850,7 +857,7 @@ async def test_dac_with_intermediate_certificate(
     chain = DacChain(with_ica=True)
     root = chain.root.public_bytes(serialization.Encoding.PEM).decode()
     monkeypatch.setattr(cert, "TPAP_ROOT_CA_PEM", root)
-    _patch(mocker, MockTpapDevice(dac_chain=chain))
+    _patch(mocker, MockTpapDevice(dac=True, pake=[0], dac_chain=chain))
     transport = _transport(tpap=_discovered(dac=True, pake=[0]))
 
     await transport.perform_handshake()
@@ -885,7 +892,9 @@ async def test_dac_failures(
     match: str,
 ) -> None:
     """An attestation that was asked for must be there and must check out."""
-    _patch(mocker, MockTpapDevice(dac_chain=dac_chain, share=share))
+    _patch(
+        mocker, MockTpapDevice(dac=True, pake=[0], dac_chain=dac_chain, share=share)
+    )
     transport = _transport(tpap=_discovered(dac=True, pake=[0]))
 
     with pytest.raises(KasaException, match=match):
@@ -896,7 +905,7 @@ async def test_dac_failures(
 
 async def test_dac_from_another_root(mocker: MockerFixture) -> None:
     """A DAC that TP-Link's device root CA did not issue fails the login."""
-    _patch(mocker, MockTpapDevice(dac_chain=DacChain()))
+    _patch(mocker, MockTpapDevice(dac=True, pake=[0], dac_chain=DacChain()))
     transport = _transport(tpap=_discovered(dac=True, pake=[0]))
 
     with pytest.raises(KasaException, match="DAC certificate chain verification"):
@@ -1087,8 +1096,22 @@ async def test_register_user_name(
             DeviceFamily.SmartTapoPlug,
             [0],
             PASSWORD_SHADOW,
+            crypto._sha1_hex(crypto.mac_pass_from_device_mac(MOCK_MAC)),
+            id="default-passcode-encoded",
+        ),
+        pytest.param(
+            DeviceFamily.SmartTapoPlug,
+            [0],
+            {"type": "password_shadow", "params": {"passwd_id": 3}},
             crypto.mac_pass_from_device_mac(MOCK_MAC),
-            id="default-passcode-as-is",
+            id="default-passcode-has-no-user",
+        ),
+        pytest.param(
+            DeviceFamily.SmartIpCamera,
+            [0],
+            PASSWORD_SHADOW,
+            crypto._sha1_hex(crypto.mac_pass_from_device_mac(MOCK_MAC)),
+            id="camera-default-passcode-encoded",
         ),
     ],
 )
@@ -1111,6 +1134,25 @@ async def test_passcode_encoding(
 
     await transport.perform_handshake()
 
+    assert transport._encryption_session is not None
+
+
+async def test_default_passcode_as_is_with_the_attestation(
+    mocker: MockerFixture, dac_chain: DacChain
+) -> None:
+    """A device that attests itself takes the default passcode unencoded."""
+    raw = crypto.mac_pass_from_device_mac(MOCK_MAC)
+    device = _patch(
+        mocker,
+        MockTpapDevice(
+            pake=[0], dac=True, dac_chain=dac_chain, passcodes={"default_userpw": raw}
+        ),
+    )
+    transport = _transport(tpap=_discovered(0, pake=[0], dac=True))
+
+    await transport.perform_handshake()
+
+    assert "dac_nonce" in device.params["pake_share"][0]
     assert transport._encryption_session is not None
 
 
