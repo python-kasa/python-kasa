@@ -1705,6 +1705,8 @@ DROPPED_SESSION = [
     pytest.param(500, b'{"err_code": -2402}', id="http-err_code-2402"),
     pytest.param(500, b'{"error_code": -2101}', id="http-2101"),
     pytest.param(200, {"error_code": -2402}, id="plain-reply-2402"),
+    pytest.param(500, b'{"error_code": -40401}', id="http-40401"),
+    pytest.param(200, {"error_code": -40401}, id="plain-reply-40401"),
 ]
 
 
@@ -1767,9 +1769,9 @@ async def test_request_failed(mocker: MockerFixture, body: bytes) -> None:
     ("device_kwargs", "error", "match"),
     [
         pytest.param(
-            {"ds_replies": [(200, {"error_code": -40401})]},
+            {"ds_replies": [(200, {"error_code": -40413})]},
             _RetryableError,
-            "SESSION_EXPIRED",
+            "INVALID_NONCE",
             id="plain-retryable",
         ),
         pytest.param(

@@ -77,9 +77,10 @@ class TpapTransport(BaseTransport):
     DEFAULT_PORT: int = 80
     # Errors on a /ds request that mean the device dropped the session, so the
     # protocol logs in again and resends: -2402 (invalid argument, also what
-    # -40420 and -40421 in an HTTP error body become) and -2101 (auth attempts
-    # limit).
-    SESSION_LOST_ERROR_CODES = frozenset({-2402, -2101, -40420, -40421})
+    # -40420 and -40421 in an HTTP error body become), -2101 (auth attempts
+    # limit) and -40401 (session expired). Handled the same whatever the HTTP
+    # status.
+    SESSION_LOST_ERROR_CODES = frozenset({-2402, -2101, -40420, -40421, -40401})
     DEFAULT_HTTPS_PORT: int = 4433
     DEFAULT_CAMERA_HTTPS_PORT: int = 443
     CAMERA_AUTH_DEVICE_FAMILIES = (
