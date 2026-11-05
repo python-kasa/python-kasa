@@ -99,6 +99,8 @@ class TpapTransport(BaseTransport):
     MAX_PAKE_ITERATIONS = 100_000
     # The iteration count when pake_register leaves it out.
     DEFAULT_PAKE_ITERATIONS = 10_000
+    # Passcode types that log in with the MAC-derived default passcode
+    DEFAULT_PASSCODE_TYPES = frozenset({"default_userpw", "setupcode"})
 
     def __init__(self, *, config: DeviceConfig) -> None:
         """Create the transport."""
@@ -506,7 +508,7 @@ class TpapTransport(BaseTransport):
             raise AuthenticationError(
                 f"TPAP: no credential candidates available for {self._host}"
             )
-        if passcode_type != "default_userpw":
+        if passcode_type not in self.DEFAULT_PASSCODE_TYPES:
             self._check_owner()
 
         register_username = self._get_register_username()
@@ -639,8 +641,11 @@ class TpapTransport(BaseTransport):
         default_passcode_type: str | None
 
         if self._uses_camera_auth:
+            # A camera's setup code is only known while it is being set up,
+            # so on the LAN pake 1 logs in with the default passcode
             passcode_type_order = (
-                ((2, 1), "userpw"),
+                ((2,), "userpw"),
+                ((1,), "setupcode"),
                 ((0,), "default_userpw"),
                 ((3,), "shared_token"),
             )
@@ -678,7 +683,7 @@ class TpapTransport(BaseTransport):
         return default_passcode_type
 
     def _get_candidate_secrets(self, passcode_type: str) -> list[str]:
-        if passcode_type == "default_userpw":
+        if passcode_type in self.DEFAULT_PASSCODE_TYPES:
             return (
                 [crypto.mac_pass_from_device_mac(self._device_mac)]
                 if self._device_mac
@@ -693,8 +698,6 @@ class TpapTransport(BaseTransport):
             return [password]
         if passcode_type == "shared_token":
             return [crypto.md5_hex(password)]
-        if 2 not in (self._tpap_pake or []):
-            return [password]
         return list(
             dict.fromkeys(
                 [
@@ -711,7 +714,7 @@ class TpapTransport(BaseTransport):
         *,
         passcode_type: str,
     ) -> str:
-        default_passcode = passcode_type == "default_userpw"
+        default_passcode = passcode_type in self.DEFAULT_PASSCODE_TYPES
         if default_passcode and self._use_dac_certification():
             # With the attestation the device takes the default passcode as
             # it is; otherwise it is encoded as extra_crypt says, without a

@@ -772,7 +772,15 @@ async def test_stored_config_reconnects_without_discover(mocker: MockerFixture) 
 @pytest.mark.parametrize(
     ("family", "pake", "expected"),
     [
-        pytest.param(DeviceFamily.SmartIpCamera, [1], "userpw", id="camera-setup-code"),
+        pytest.param(
+            DeviceFamily.SmartIpCamera, [1], "setupcode", id="camera-setup-code"
+        ),
+        pytest.param(
+            DeviceFamily.SmartIpCamera, [0, 1], "setupcode", id="camera-one-before-zero"
+        ),
+        pytest.param(
+            DeviceFamily.SmartIpCamera, [1, 2], "userpw", id="camera-two-before-one"
+        ),
         pytest.param(
             DeviceFamily.SmartIpCamera, [0, 2], "userpw", id="camera-two-before-zero"
         ),
@@ -1031,6 +1039,29 @@ async def test_camera_hub_logs_in_as_a_camera(
     assert {str(u) for u in device.urls} == {str(URL(url))}
     assert {p["username"] for p in device.params["pake_register"]} == {username}
     assert all("dac_nonce" not in p for p in device.params["pake_share"])
+    assert transport._encryption_session is not None
+
+
+async def test_camera_setup_code_uses_the_default_passcode(
+    mocker: MockerFixture,
+) -> None:
+    """On the LAN a camera's setup code is not known, as in the Tapo app."""
+    device = _patch(
+        mocker,
+        MockTpapDevice(
+            DeviceFamily.SmartIpCamera,
+            pake=[1],
+            passcodes={"setupcode": crypto.mac_pass_from_device_mac(MOCK_MAC)},
+        ),
+    )
+    transport = _transport(DeviceFamily.SmartIpCamera, tpap=_discovered(1, pake=[1]))
+
+    await transport.perform_handshake()
+
+    register = device.params["pake_register"][0]
+    assert register["passcode_type"] == "setupcode"
+    assert "auth_type" not in register
+    assert device.calls["pake_share"] == 1
     assert transport._encryption_session is not None
 
 
