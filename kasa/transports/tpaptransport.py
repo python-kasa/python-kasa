@@ -554,7 +554,7 @@ class TpapTransport(BaseTransport):
         self._shared_key = None
         self._expected_dev_confirm = None
         self._dac_nonce_base64 = None
-        self._user_random = self._base64(secrets.token_bytes(32))
+        self._user_random = base64.b64encode(secrets.token_bytes(32)).decode()
         register_params = {
             "sub_method": "pake_register",
             "username": self._get_register_username(),
@@ -578,7 +578,7 @@ class TpapTransport(BaseTransport):
             register_result, credentials_string
         )
         if self._use_dac_certification():
-            self._dac_nonce_base64 = self._base64(secrets.token_bytes(32))
+            self._dac_nonce_base64 = base64.b64encode(secrets.token_bytes(32)).decode()
             share_params["dac_nonce"] = self._dac_nonce_base64
 
         share_result = await self._login(share_params, step_name="pake_share")
@@ -614,14 +614,6 @@ class TpapTransport(BaseTransport):
             and (self._tpap or _UNKNOWN_TPAP).user_hash_type == 1
             else crypto.md5_hex("admin")
         )
-
-    @staticmethod
-    def _base64(value: bytes) -> str:
-        return base64.b64encode(value).decode()
-
-    @staticmethod
-    def _unbase64(value: str) -> bytes:
-        return base64.b64decode(value)
 
     def _use_dac_certification(self) -> bool:
         # Attestation with tls 0 and dac, for the default passcode (pake 0)
@@ -788,18 +780,18 @@ class TpapTransport(BaseTransport):
             crypto.spake2p_share(
                 credentials_string.encode(),
                 suite_type=suite_type,
-                salt=self._unbase64(dev_salt),
+                salt=base64.b64decode(dev_salt),
                 iterations=iterations,
-                user_random=self._unbase64(self._user_random),
-                dev_random=self._unbase64(dev_random),
-                dev_share=self._unbase64(dev_share),
+                user_random=base64.b64decode(self._user_random),
+                dev_random=base64.b64decode(dev_random),
+                dev_share=base64.b64decode(dev_share),
             )
         )
-        self._expected_dev_confirm = self._base64(expected_dev_confirm)
+        self._expected_dev_confirm = base64.b64encode(expected_dev_confirm).decode()
         return {
             "sub_method": "pake_share",
-            "user_share": self._base64(user_share),
-            "user_confirm": self._base64(user_confirm),
+            "user_share": base64.b64encode(user_share).decode(),
+            "user_confirm": base64.b64encode(user_confirm).decode(),
         }
 
     def _verify_dac_proof(self, share_result: dict[str, Any]) -> None:
@@ -824,7 +816,7 @@ class TpapTransport(BaseTransport):
                 dac_ca,
                 dac_ica,
                 dac_proof,
-                self._shared_key + self._unbase64(self._dac_nonce_base64),
+                self._shared_key + base64.b64decode(self._dac_nonce_base64),
             )
         except InvalidSignature as exc:
             raise KasaException("Invalid DAC proof signature") from exc
@@ -1027,13 +1019,10 @@ class TpapEncryptionSession:
             ) from exc
 
     @staticmethod
-    def _hkdf(
-        master: bytes, *, salt: bytes, info: bytes, length: int, algo: str = "SHA256"
-    ) -> bytes:
-        algorithm = hashes.SHA256() if algo.upper() == "SHA256" else hashes.SHA512()
-        return HKDF(algorithm=algorithm, length=length, salt=salt, info=info).derive(
-            master
-        )
+    def _hkdf(master: bytes, *, salt: bytes, info: bytes, length: int) -> bytes:
+        return HKDF(
+            algorithm=hashes.SHA256(), length=length, salt=salt, info=info
+        ).derive(master)
 
     @staticmethod
     def _nonce_from_base(base_nonce: bytes, seq: int) -> bytes:
