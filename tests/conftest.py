@@ -176,10 +176,6 @@ def _socketpair_without_time_wait():
     dynamic port range, and the next loop then fails to start or hangs.
     Closing the pair with SO_LINGER set to zero releases the port immediately.
     """
-    if sys.platform != "win32":
-        yield
-        return
-
     orig_socketpair = socket.socketpair
 
     def _socketpair(*args, **kwargs):
@@ -191,8 +187,11 @@ def _socketpair_without_time_wait():
             )
         return pair
 
-    with patch("socket.socketpair", _socketpair):
+    if sys.platform != "win32":
         yield
+    else:
+        with patch("socket.socketpair", _socketpair):
+            yield
 
 
 @pytest.fixture(autouse=True, scope="session")
