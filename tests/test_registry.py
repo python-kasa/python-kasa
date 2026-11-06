@@ -385,3 +385,27 @@ async def test_registration_replaces_same_parameters(registry) -> None:
         ),
     )
     assert transport_type(registry, config) is XorTransport
+
+
+def test_try_connect_parameters(registry) -> None:
+    """Each attempt connects with the entry that lists it, not a more specific one."""
+    for parameters in registry.try_connect_parameters():
+        assert parameters in registry.lookup(parameters).try_connect
+
+
+def test_try_connect_opt_in(registry) -> None:
+    register_foo(registry)
+    foo = CP(device_family=DF.SmartTapoPlug, encryption_type=ET("FOO"))
+    registry.register_transport(
+        "SMART", "FOO", SmartProtocol, KlapTransportV2, try_connect=[foo]
+    )
+    assert registry.try_connect_parameters()[-1] == foo
+
+    # replacing the registration drops its attempts
+    register_foo(registry)
+    assert foo not in registry.try_connect_parameters()
+
+    with pytest.raises(ValueError, match="does not match"):
+        registry.register_transport(
+            "IOT", "FOO", IotProtocol, XorTransport, try_connect=[foo]
+        )

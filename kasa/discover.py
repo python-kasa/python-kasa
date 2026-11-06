@@ -410,52 +410,6 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             self.discover_task.cancel()
 
 
-# The combinations Discover.try_connect_all tries, in order.
-_TRY_CONNECT_PARAMETERS = (
-    DeviceConnectionParameters(
-        device_family=Device.Family.IotSmartPlugSwitch,
-        encryption_type=Device.EncryptionType.Klap,
-    ),
-    DeviceConnectionParameters(
-        device_family=Device.Family.IotSmartPlugSwitch,
-        encryption_type=Device.EncryptionType.Klap,
-        login_version=2,
-    ),
-    DeviceConnectionParameters(
-        device_family=Device.Family.IotSmartPlugSwitch,
-        encryption_type=Device.EncryptionType.Xor,
-    ),
-    DeviceConnectionParameters(
-        device_family=Device.Family.SmartTapoPlug,
-        encryption_type=Device.EncryptionType.Aes,
-        login_version=2,
-    ),
-    DeviceConnectionParameters(
-        device_family=Device.Family.SmartTapoPlug,
-        encryption_type=Device.EncryptionType.Klap,
-        login_version=2,
-    ),
-    DeviceConnectionParameters(
-        device_family=Device.Family.SmartTapoRobovac,
-        encryption_type=Device.EncryptionType.Klap,
-        login_version=2,
-        https=True,
-    ),
-    DeviceConnectionParameters(
-        device_family=Device.Family.SmartTapoRobovac,
-        encryption_type=Device.EncryptionType.Aes,
-        login_version=2,
-        https=True,
-    ),
-    DeviceConnectionParameters(
-        device_family=Device.Family.SmartIpCamera,
-        encryption_type=Device.EncryptionType.Aes,
-        login_version=2,
-        https=True,
-    ),
-)
-
-
 class Discover:
     """Class for discovering devices."""
 
@@ -676,7 +630,7 @@ class Discover:
         """
         from .device_factory import _connect
 
-        for conn_params in _TRY_CONNECT_PARAMETERS:
+        for conn_params in REGISTRY.try_connect_parameters():
             config = DeviceConfig(
                 host=host,
                 connection_type=conn_params,

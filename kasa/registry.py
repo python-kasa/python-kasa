@@ -16,8 +16,8 @@ from __future__ import annotations
 
 import logging
 import os
-from collections.abc import Callable
-from dataclasses import dataclass
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass, field
 from importlib.metadata import entry_points
 from typing import TYPE_CHECKING
 
@@ -59,6 +59,10 @@ class Entry:
     https: bool | None  # None matches both
     protocol: type[BaseProtocol]
     transport: Callable[..., BaseTransport]
+    # DeviceConnectionParameters is unhashable, and this does not change the transport
+    try_connect: tuple[DeviceConnectionParameters, ...] = field(
+        default=(), compare=False
+    )
 
     def matches(self, parameters: DeviceConnectionParameters) -> bool:
         """Return True if the entry applies to the connection parameters."""
@@ -95,28 +99,109 @@ class Registry:
 
     def __init__(self) -> None:
         self._entries: list[Entry] = []
-        self.register_transport("IOT", "XOR", IotProtocol, XorTransport, https=False)
+        # Discover.try_connect_all tries the try_connect parameters in this order
         self.register_transport(
-            "IOT", "KLAP", IotProtocol, _iot_klap_transport, https=False
+            "IOT",
+            "KLAP",
+            IotProtocol,
+            _iot_klap_transport,
+            https=False,
+            try_connect=[
+                DeviceConnectionParameters(
+                    device_family=DeviceFamily.IotSmartPlugSwitch,
+                    encryption_type=DeviceEncryptionType.Klap,
+                ),
+                DeviceConnectionParameters(
+                    device_family=DeviceFamily.IotSmartPlugSwitch,
+                    encryption_type=DeviceEncryptionType.Klap,
+                    login_version=2,
+                ),
+            ],
         )
         self.register_transport(
-            "SMART", "AES", SmartProtocol, AesTransport, https=False
+            "IOT",
+            "XOR",
+            IotProtocol,
+            XorTransport,
+            https=False,
+            try_connect=[
+                DeviceConnectionParameters(
+                    device_family=DeviceFamily.IotSmartPlugSwitch,
+                    encryption_type=DeviceEncryptionType.Xor,
+                ),
+            ],
         )
-        self.register_transport("SMART", "KLAP", SmartProtocol, KlapTransportV2)
+        self.register_transport(
+            "SMART",
+            "AES",
+            SmartProtocol,
+            AesTransport,
+            https=False,
+            try_connect=[
+                DeviceConnectionParameters(
+                    device_family=DeviceFamily.SmartTapoPlug,
+                    encryption_type=DeviceEncryptionType.Aes,
+                    login_version=2,
+                ),
+            ],
+        )
+        self.register_transport(
+            "SMART",
+            "KLAP",
+            SmartProtocol,
+            KlapTransportV2,
+            try_connect=[
+                DeviceConnectionParameters(
+                    device_family=DeviceFamily.SmartTapoPlug,
+                    encryption_type=DeviceEncryptionType.Klap,
+                    login_version=2,
+                ),
+                DeviceConnectionParameters(
+                    device_family=DeviceFamily.SmartTapoRobovac,
+                    encryption_type=DeviceEncryptionType.Klap,
+                    login_version=2,
+                    https=True,
+                ),
+            ],
+        )
+        # Older FW used a different transport
+        self.register_transport(
+            "SMART.TAPOROBOVAC",
+            "AES",
+            SmartProtocol,
+            SslTransport,
+            try_connect=[
+                DeviceConnectionParameters(
+                    device_family=DeviceFamily.SmartTapoRobovac,
+                    encryption_type=DeviceEncryptionType.Aes,
+                    login_version=2,
+                    https=True,
+                ),
+            ],
+        )
+        self.register_transport(
+            "SMART.IPCAMERA",
+            None,
+            SmartCamProtocol,
+            SslAesTransport,
+            try_connect=[
+                DeviceConnectionParameters(
+                    device_family=DeviceFamily.SmartIpCamera,
+                    encryption_type=DeviceEncryptionType.Aes,
+                    login_version=2,
+                    https=True,
+                ),
+            ],
+        )
         # H200 is device family SMART.TAPOHUB and uses SmartCamProtocol so use
         # https to distuingish from SmartProtocol devices
         self.register_transport(
             "SMART", "AES", SmartCamProtocol, SslAesTransport, https=True
         )
         self.register_transport(
-            "SMART.IPCAMERA", None, SmartCamProtocol, SslAesTransport
-        )
-        self.register_transport(
             "SMART.TAPODOORBELL", None, SmartCamProtocol, SslAesTransport
         )
         self.register_transport("IOT.IPCAMERA", None, IotProtocol, LinkieTransportV2)
-        # Older FW used a different transport
-        self.register_transport("SMART.TAPOROBOVAC", "AES", SmartProtocol, SslTransport)
 
     def register_transport(
         self,
@@ -126,6 +211,7 @@ class Registry:
         transport: Callable[..., BaseTransport],
         *,
         https: bool | None = None,
+        try_connect: Sequence[DeviceConnectionParameters] = (),
     ) -> None:
         """Register the protocol and transport for connection parameters.
 
@@ -136,7 +222,15 @@ class Registry:
         :param protocol: Protocol class.
         :param transport: Called as ``transport(config=config)``.
         :param https: None matches both.
+        :param try_connect: Connection parameters that
+            :meth:`Discover.try_connect_all` tries, they must match this registration.
         """
+        entry = Entry(
+            family, encryption, https, protocol, transport, tuple(try_connect)
+        )
+        for parameters in entry.try_connect:
+            if not entry.matches(parameters):
+                raise ValueError(f"{parameters} does not match {entry}")
         key = (family, encryption, https)
         self._entries = [
             entry
@@ -150,7 +244,11 @@ class Registry:
             enum._value2member_map_[encryption] = member
             enum._member_map_[encryption] = member
             enum._member_names_.append(encryption)
-        self._entries.append(Entry(family, encryption, https, protocol, transport))
+        self._entries.append(entry)
+
+    def try_connect_parameters(self) -> list[DeviceConnectionParameters]:
+        """Return the parameters Discover.try_connect_all tries, in order."""
+        return [p for entry in self._entries for p in entry.try_connect]
 
     def lookup(self, parameters: DeviceConnectionParameters) -> Entry | None:
         """Return the most specific entry for the parameters."""
