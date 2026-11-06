@@ -749,3 +749,20 @@ async def test_smart_protocol_lists_requeried_after_batch_error() -> None:
     protocol = SmartProtocol(transport=ft)
     resp = await protocol.query({"get_foo": None, "get_child_device_list": None})
     assert resp["get_child_device_list"] == child_list
+
+
+async def test_force_single_method_leaves_no_empty_batch(
+    dummy_protocol: SmartProtocol, mocker: MockerFixture
+) -> None:
+    """Test that a method sent on its own does not add an empty batch."""
+    dummy_protocol._multi_request_batch_size = 5
+    methods = [f"get_method_{i}" for i in range(5)]
+    responses = [{"method": m, "result": {}, "error_code": 0} for m in methods]
+    send_mock = mocker.patch.object(
+        dummy_protocol._transport,
+        "send",
+        return_value={"result": {"responses": responses}, "error_code": 0},
+    )
+
+    await dummy_protocol.query(dict.fromkeys([*methods, "scanApList"]), retry_count=0)
+    assert send_mock.call_count == 2

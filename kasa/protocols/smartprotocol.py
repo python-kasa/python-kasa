@@ -223,9 +223,10 @@ class SmartProtocol(BaseProtocol):
 
         # Break the requests down as there can be a size limit
         step = self._multi_request_batch_size
-        # If step is 1 do not send batches, the loop at the end sends single requests
-        batch_starts = range(0, end, step) if step != 1 else ()
-        for batch_num, i in enumerate(batch_starts):
+        if step == 1:
+            # Batching is off, so the loop at the end sends each request on its own
+            multi_requests = []
+        for batch_num, i in enumerate(range(0, len(multi_requests), step)):
             requests_step = multi_requests[i : i + step]
 
             smart_params = {"requests": requests_step}
