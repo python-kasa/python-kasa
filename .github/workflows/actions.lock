@@ -11,7 +11,6 @@ workflows:
     '.github/workflows/codeql-analysis.yml':
         - 'actions/checkout@v7.0.1'
         - 'github/codeql-action@v4.39.1'
-    '.github/workflows/labels.yml': []
     '.github/workflows/publish.yml':
         - 'actions/checkout@v7.0.1'
         - 'astral-sh/setup-uv@v10.3.2'
