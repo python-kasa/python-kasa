@@ -3,8 +3,6 @@ from __future__ import annotations
 import asyncio
 import functools
 import os
-import socket
-import struct
 import sys
 import warnings
 from pathlib import Path
@@ -164,34 +162,6 @@ def pytest_collection_modifyitems(
                 item.add_marker(requires_dummy)
             else:
                 item.add_marker(pytest.mark.enable_socket)
-
-
-@pytest.fixture(autouse=True, scope="session")
-def _socketpair_without_time_wait():
-    """Stop event loop self-pipes from using up loopback ports on Windows.
-
-    Windows has no native socketpair, so the self-pipe of every event loop is a
-    loopback TCP connection, and closing it leaves a port in TIME_WAIT for about
-    two minutes. Tests get a new event loop each, so a fast run uses up the
-    dynamic port range, and the next loop then fails to start or hangs.
-    Closing the pair with SO_LINGER set to zero releases the port immediately.
-    """
-    orig_socketpair = socket.socketpair
-
-    def _socketpair(*args, **kwargs):
-        pair = orig_socketpair(*args, **kwargs)
-        for sock in pair:
-            # struct linger on Windows is two unsigned shorts: l_onoff, l_linger
-            sock.setsockopt(
-                socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("HH", 1, 0)
-            )
-        return pair
-
-    if sys.platform != "win32":
-        yield
-    else:
-        with patch("socket.socketpair", _socketpair):
-            yield
 
 
 @pytest.fixture(autouse=True, scope="session")
