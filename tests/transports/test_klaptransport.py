@@ -521,6 +521,14 @@ async def test_handshake1(
         assert local_seed == client_seed
         assert device_remote_seed == server_seed
         assert device_auth_hash == auth_hash
+        # Of the fallbacks, only the account e-mail with the setup password
+        # becomes the credentials hash
+        expected_hash = (
+            device_auth_hash
+            if device_credentials == Credentials("foo", "kasaSetup")
+            else transport_class.generate_auth_hash(client_credentials)
+        )
+        assert transport.credentials_hash == base64.b64encode(expected_hash).decode()
     await protocol.close()
 
 
