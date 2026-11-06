@@ -583,6 +583,34 @@ async def test_handshake(
     await protocol.close()
 
 
+@pytest.mark.xdist_group(name="caplog")
+async def test_handshake_debug_logging(
+    mocker: MockerFixture, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Both handshake steps are logged when debug logging is enabled."""
+    caplog.set_level(logging.DEBUG, logger="kasa")
+    server_seed = secrets.token_bytes(16)
+    credentials = Credentials("foo", "bar")
+    device_auth_hash = KlapTransport.generate_auth_hash(credentials)
+
+    async def _return_handshake_response(url: URL, params=None, data=None, *_, **__):
+        if url == URL("http://127.0.0.1:80/app/handshake1"):
+            seed_auth_hash = _sha256(data + device_auth_hash)
+            return _mock_response(200, server_seed + seed_auth_hash)
+        return _mock_response(200, b"")
+
+    mocker.patch.object(
+        aiohttp.ClientSession, "post", side_effect=_return_handshake_response
+    )
+    transport = KlapTransport(config=DeviceConfig("127.0.0.1", credentials=credentials))
+
+    await transport.perform_handshake()
+    assert "Handshake1 posted" in caplog.text
+    assert "Handshake1 success" in caplog.text
+    assert "Handshake2 posted" in caplog.text
+    await transport.close()
+
+
 async def test_query(mocker: MockerFixture) -> None:
     client_seed = None
     last_seq = None
