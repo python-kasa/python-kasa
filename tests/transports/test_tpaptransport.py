@@ -2165,7 +2165,7 @@ async def test_tls_1_uses_the_ecdsa_suites(mocker: MockerFixture) -> None:
     assert device.ssl == [context] * 3
     assert context is not await get_shared_ssl_context()
     assert context.verify_mode == ssl.CERT_NONE
-    assert context.minimum_version >= ssl.TLSVersion.TLSv1_2
+    assert context.minimum_version == ssl.TLSVersion.TLSv1_2
     tls12 = [c["name"] for c in context.get_ciphers() if c["protocol"] == "TLSv1.2"]
     assert tls12
     assert all(name.startswith("ECDHE-ECDSA-") for name in tls12)
@@ -2206,6 +2206,7 @@ async def test_tls_2_context(
     context = device.ssl[0]
     assert device.ssl == [context] * 3
     assert context.verify_mode == ssl.CERT_REQUIRED
+    assert context.minimum_version == ssl.TLSVersion.TLSv1_2
     assert context.get_ca_certs()
     tls12 = [c["name"] for c in context.get_ciphers() if c["protocol"] == "TLSv1.2"]
     assert tls12

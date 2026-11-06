@@ -275,6 +275,8 @@ class TpapTransport(BaseTransport):
         """
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         context.check_hostname = False
+        # TLS 1.2 or newer, as the app; not every build of Python defaults to it
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
         context.set_ciphers(cert.ECDSA_CIPHERS)
         if mac is None:
             context.verify_mode = ssl.CERT_NONE
