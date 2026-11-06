@@ -297,13 +297,7 @@ async def cli(
 
             di = json.loads(discovery_info)
             dr = DiscoveryResult.from_dict(di)
-            connection_type = DeviceConnectionParameters.from_values(
-                dr.device_type,
-                dr.mgt_encrypt_schm.encrypt_type,
-                login_version=dr.mgt_encrypt_schm.lv,
-                https=dr.mgt_encrypt_schm.is_support_https,
-                http_port=dr.mgt_encrypt_schm.http_port,
-            )
+            connection_type = Discover._get_connection_parameters(dr)
             dc = DeviceConfig(
                 host=host,
                 connection_type=connection_type,

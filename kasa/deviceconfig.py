@@ -33,7 +33,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field, replace
 from enum import Enum
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from aiohttp import ClientSession
 from mashumaro import field_options, pass_through
@@ -62,6 +62,7 @@ class DeviceEncryptionType(Enum):
     Klap = "KLAP"
     Aes = "AES"
     Xor = "XOR"
+    Tpap = "TPAP"
 
 
 class DeviceFamily(Enum):
@@ -92,6 +93,72 @@ class _DeviceConfigBaseMixin(DataClassJSONMixin):
         omit_none = True
 
 
+@dataclass(kw_only=True)
+class TpapParameters(_DeviceConfigBaseMixin):
+    """The TPAP login a device announces in its discovery reply.
+
+    The transport logs in with these rather than asking the device again
+    with the in-band discover.
+    """
+
+    #: 0 for http, 1 for TLS without verification, 2 for verified TLS
+    tls: int = 0
+    #: Port of the TPAP endpoint, the transport default if not set
+    port: int | None = None
+    #: Passcode types the device accepts, 2 is the account password; None if
+    #: it announced none, which leaves nothing to log in with
+    pake: list[int] | None = None
+    #: Whether the device proves itself with its attestation certificate
+    dac: bool = False
+    #: Camera user name hash: 0 for MD5, 1 for SHA-256
+    user_hash_type: int | None = None
+    #: Device MAC, which the default passcode is derived from
+    mac: str | None = None
+    #: md5 of the user name of the TP-Link account that owns the device
+    owner: str | None = None
+
+    @classmethod
+    def _from_tpap_object(
+        cls,
+        tpap: dict[str, Any],
+        *,
+        mac: str | None = None,
+        owner: str | None = None,
+    ) -> TpapParameters:
+        """Return the login a ``tpap`` object from the device announces.
+
+        Numbers may be JSON numbers or numeric strings, as the Tapo app reads
+        them. Other values are left at their defaults, so that a malformed
+        object does not make the device unusable.
+        """
+
+        def as_int(value: Any) -> int | None:
+            if isinstance(value, bool):
+                return None
+            if isinstance(value, int):
+                return value
+            if isinstance(value, str):
+                try:
+                    return int(value.strip())
+                except ValueError:
+                    return None
+            return None
+
+        pake = tpap.get("pake")
+        return cls(
+            tls=as_int(tpap.get("tls")) or 0,
+            port=as_int(tpap.get("port")),
+            pake=[value for value in map(as_int, pake) if value is not None]
+            if isinstance(pake, list)
+            else None,
+            # Attestation only with dac 1, as in the Tapo app
+            dac=as_int(tpap.get("dac")) == 1,
+            user_hash_type=as_int(tpap.get("user_hash_type")),
+            mac=mac,
+            owner=owner,
+        )
+
+
 @dataclass
 class DeviceConnectionParameters(_DeviceConfigBaseMixin):
     """Class to hold the the parameters determining connection type."""
@@ -101,6 +168,8 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
     login_version: int | None = None
     https: bool = False
     http_port: int | None = None
+    #: The TPAP login from discovery, if the device announced one
+    tpap: TpapParameters | None = None
 
     @staticmethod
     def from_values(
@@ -110,6 +179,7 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
         login_version: int | None = None,
         https: bool | None = None,
         http_port: int | None = None,
+        tpap: TpapParameters | None = None,
     ) -> DeviceConnectionParameters:
         """Return connection parameters from string values."""
         try:
@@ -121,6 +191,7 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
                 login_version,
                 https,
                 http_port=http_port,
+                tpap=tpap,
             )
         except (ValueError, TypeError) as ex:
             raise KasaException(

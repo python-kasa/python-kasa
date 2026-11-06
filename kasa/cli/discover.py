@@ -334,6 +334,8 @@ def _echo_discovery_info(discovery_info: dict) -> None:
         _conditional_echo("Supports HTTPS", mgt_encrypt_schm.is_support_https)
         _conditional_echo("HTTP Port", mgt_encrypt_schm.http_port)
         _conditional_echo("Login version", mgt_encrypt_schm.lv)
+    # The tpap object picks TPAP, whatever the encrypt type above says
+    _conditional_echo("TPAP", dr.tpap)
     _conditional_echo("Encrypt info", pf(dr.encrypt_info) if dr.encrypt_info else None)
     _conditional_echo("Decrypted", pf(dr.decrypted_data) if dr.decrypted_data else None)
 
