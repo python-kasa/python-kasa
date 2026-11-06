@@ -42,6 +42,8 @@ jobs:
       - name: Run pre-commit Checks
         id: run-pre-commit
         shell: bash
+        env:
+          SKIP: actions-lock
         run: |
           uv run pre-commit run --all-files --verbose
 

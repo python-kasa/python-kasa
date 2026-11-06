@@ -21,6 +21,8 @@ workflows:
         - 'astral-sh/setup-uv@v8.3.0'
     '.github/workflows/stale.yml':
         - 'actions/stale@v11.0.0'
+    '.github/workflows/verify-gh-locks.yml':
+        - 'actions/checkout@v7.0.1'
 dependencies:
     'actions/cache@v6.1.0':
         ref: 'v6.1.0'
