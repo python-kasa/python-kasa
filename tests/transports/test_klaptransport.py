@@ -222,7 +222,7 @@ async def test_protocol_logging(
     mocker: MockerFixture, caplog: pytest.LogCaptureFixture, log_level: int
 ) -> None:
     caplog.set_level(log_level)
-    logging.getLogger("kasa").setLevel(log_level)
+    caplog.set_level(log_level, logger="kasa")
 
     def _return_encrypted(*_, **__):
         # Devices sign the response for the sequence number of the request

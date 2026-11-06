@@ -557,7 +557,7 @@ async def test_protocol_logging(
     encryption_class,
 ) -> None:
     caplog.set_level(log_level)
-    logging.getLogger("kasa").setLevel(log_level)
+    caplog.set_level(log_level, logger="kasa")
     encrypted = encryption_class.encrypt('{"great":"success"}')[
         transport_class.BLOCK_SIZE :
     ]
