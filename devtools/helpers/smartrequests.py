@@ -391,6 +391,7 @@ COMPONENT_REQUESTS = {
     "device_local_time": [],
     "default_states": [],  # in device_info
     "auto_off": [SmartRequest.get_auto_off_config()],
+    "shutdown_mode": [SmartRequest.get_raw_request("get_shutdown_info")],
     "localSmart": [],
     "energy_monitoring": SmartRequest.energy_monitoring_list(),
     "power_protection": SmartRequest.power_protection_list(),
