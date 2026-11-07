@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import functools
+import logging
 import os
 import sys
 import warnings
@@ -67,6 +68,39 @@ async def _close_transport_and_http_sessions(monkeypatch):
     for session in aiohttp_sessions:
         if not session.closed:
             await session.close()
+
+
+def _logger_levels() -> dict[str, int]:
+    levels = {"root": logging.getLogger().level}
+    for name, logger in list(logging.Logger.manager.loggerDict.items()):
+        if isinstance(logger, logging.Logger):
+            levels[name] = logger.level
+    return levels
+
+
+@pytest.fixture(autouse=True)
+def _logger_levels_unchanged(request: pytest.FixtureRequest):
+    """Fail a test that leaves a logger's level changed.
+
+    A level set directly stays for the later tests on the same worker, so
+    they pass or fail depending on the order. Use caplog.set_level, which
+    pytest restores after the test.
+    """
+    before = _logger_levels()
+    yield
+    changed = {
+        name: level
+        for name, level in _logger_levels().items()
+        if level != before.get(name, logging.NOTSET)
+    }
+    for name in changed:
+        logging.getLogger(name).setLevel(before.get(name, logging.NOTSET))
+    if changed:
+        levels = {name: logging.getLevelName(level) for name, level in changed.items()}
+        pytest.fail(
+            f"{request.node.nodeid} left logger levels changed: {levels}. "
+            "Use caplog.set_level, which restores them."
+        )
 
 
 def load_fixture(foldername: str, filename: str) -> str:

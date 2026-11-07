@@ -980,9 +980,6 @@ async def test_iot_queries_redaction(
     assert device_id not in caplog.text
 
     caplog.set_level(logging.DEBUG, logger="kasa")
-    # The fake iot protocol also logs so disable it
-    test_logger = logging.getLogger("kasa.tests.fakeprotocol_iot")
-    test_logger.setLevel(logging.INFO)
 
     # Debug no redaction
     caplog.clear()
