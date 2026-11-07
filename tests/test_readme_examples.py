@@ -1,4 +1,5 @@
 import asyncio
+import copy
 
 import pytest
 import xdoctest
@@ -180,6 +181,11 @@ async def readmes_mock(mocker: MockerFixture):
         "127.0.0.4": get_fixture_info("KL430(US)_1.0_1.0.10.json", "IOT"),  # Lightstrip
         "127.0.0.5": get_fixture_info("HS220(US)_1.0_1.5.7.json", "IOT"),  # Dimmer
         "127.0.0.6": get_fixture_info("H200(US)_1.0_1.3.6.json", "SMARTCAM"),  # Hub
+    }
+    # Rename the devices on copies, not on the fixtures other tests share
+    fixture_infos = {
+        ip: info._replace(data=copy.deepcopy(info.data))
+        for ip, info in fixture_infos.items()
     }
     fixture_infos["127.0.0.1"].data["system"]["get_sysinfo"]["alias"] = (
         "Bedroom Power Strip"

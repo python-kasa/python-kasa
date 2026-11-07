@@ -557,7 +557,7 @@ async def test_protocol_logging(
     encryption_class,
 ) -> None:
     caplog.set_level(log_level)
-    logging.getLogger("kasa").setLevel(log_level)
+    caplog.set_level(log_level, logger="kasa")
     encrypted = encryption_class.encrypt('{"great":"success"}')[
         transport_class.BLOCK_SIZE :
     ]
@@ -980,9 +980,6 @@ async def test_iot_queries_redaction(
     assert device_id not in caplog.text
 
     caplog.set_level(logging.DEBUG, logger="kasa")
-    # The fake iot protocol also logs so disable it
-    test_logger = logging.getLogger("kasa.tests.fakeprotocol_iot")
-    test_logger.setLevel(logging.INFO)
 
     # Debug no redaction
     caplog.clear()
