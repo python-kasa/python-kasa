@@ -1,0 +1,14 @@
+name: Build Packages
+description: Build the release packages into dist/ and verify their metadata
+runs:
+  using: composite
+  steps:
+    - name: Build Packages
+      id: build-packages
+      shell: bash
+      run: uv build --build-constraints .github/build-constraints.txt
+
+    - name: Check Packages
+      id: check-packages
+      shell: bash
+      run: uvx --with packaging==26.2 twine==7.0.0 check --strict dist/*

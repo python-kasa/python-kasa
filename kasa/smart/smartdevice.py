@@ -109,12 +109,25 @@ class SmartDevice(Device):
         can't be created to avoid spamming the logs on every update.
         """
         changed = False
-        component_list = child_device_components_resp.get("child_component_list", [])
-        if not isinstance(component_list, list):
-            component_list = []
+        if (
+            child_component_list := child_device_components_resp.get(
+                "child_component_list"
+            )
+        ) is None or not isinstance(child_component_list, list):
+            # Some hubs intermittently omit child_component_list (H200) or
+            # return a non-list (H500 dumps). Treating that as an empty roster
+            # would delete known children, so keep them until a complete
+            # response arrives.
+            _LOGGER.debug(
+                "No child component list for device %s, response: %s",
+                self.host,
+                child_device_components_resp,
+            )
+            return changed
+
         smart_children_components = {
             child["device_id"]: child
-            for child in component_list
+            for child in child_component_list
             if isinstance(child, dict) and child.get("device_id")
         }
         children = self._children
@@ -724,7 +737,7 @@ class SmartDevice(Device):
 
         See :meth:`is_on`.
         """
-        return await self.protocol.query({"set_device_info": {"device_on": on}})
+        return await self._query_helper("set_device_info", {"device_on": on})
 
     async def turn_on(self, **kwargs: Any) -> dict:
         """Turn on the device."""
@@ -827,8 +840,8 @@ class SmartDevice(Device):
 
     async def set_alias(self, alias: str) -> dict:
         """Set the device name (alias)."""
-        return await self.protocol.query(
-            {"set_device_info": {"nickname": base64.b64encode(alias.encode()).decode()}}
+        return await self._query_helper(
+            "set_device_info", {"nickname": base64.b64encode(alias.encode()).decode()}
         )
 
     async def reboot(self, delay: int = 1) -> None:
@@ -837,14 +850,14 @@ class SmartDevice(Device):
         Note that giving a delay of zero causes this to block,
         as the device reboots immediately without responding to the call.
         """
-        await self.protocol.query({"device_reboot": {"delay": delay}})
+        await self._query_helper("device_reboot", {"delay": delay})
 
     async def factory_reset(self) -> None:
         """Reset device back to factory settings.
 
         Note, this does not downgrade the firmware.
         """
-        await self.protocol.query("device_reset")
+        await self._query_helper("device_reset")
 
     @property
     def device_type(self) -> DeviceType:

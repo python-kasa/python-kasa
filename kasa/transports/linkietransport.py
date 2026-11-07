@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import asyncio
 import base64
 import logging
-import ssl
 from typing import TYPE_CHECKING, cast
 from urllib.parse import quote
 
@@ -19,6 +17,7 @@ from kasa.json import loads as json_loads
 from kasa.transports.xortransport import XorEncryption
 
 from .basetransport import BaseTransport
+from .sslcontext import get_ssl_context
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,20 +30,10 @@ class LinkieTransportV2(BaseTransport):
     """
 
     DEFAULT_PORT: int = 10443
-    CIPHERS = ":".join(
-        [
-            "AES256-GCM-SHA384",
-            "AES256-SHA256",
-            "AES128-GCM-SHA256",
-            "AES128-SHA256",
-            "AES256-SHA",
-        ]
-    )
 
     def __init__(self, *, config: DeviceConfig) -> None:
         super().__init__(config=config)
         self._http_client = HttpClient(config)
-        self._ssl_context: ssl.SSLContext | None = None
         self._app_url = URL(f"https://{self._host}:{self._port}/data/LINKIE2.json")
 
         self._headers = {
@@ -78,7 +67,7 @@ class LinkieTransportV2(BaseTransport):
             self._app_url,
             headers=self._headers,
             data=f"content={url_safe_cmd}".encode(),
-            ssl=await self._get_ssl_context(),
+            ssl=await get_ssl_context(),
         )
 
         if TYPE_CHECKING:
@@ -128,18 +117,3 @@ class LinkieTransportV2(BaseTransport):
             raise _RetryableError(
                 f"Unable to query the device {self._host}:{self._port}: {ex}"
             ) from ex
-
-    async def _get_ssl_context(self) -> ssl.SSLContext:
-        if not self._ssl_context:
-            loop = asyncio.get_running_loop()
-            self._ssl_context = await loop.run_in_executor(
-                None, self._create_ssl_context
-            )
-        return self._ssl_context
-
-    def _create_ssl_context(self) -> ssl.SSLContext:
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        context.set_ciphers(self.CIPHERS)
-        context.check_hostname = False
-        context.verify_mode = ssl.CERT_NONE
-        return context

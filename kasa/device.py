@@ -47,7 +47,6 @@ Devices support different functionality that are exposed via
 
 >>> for module_name in dev.modules:
 ...     print(module_name)
-homekit
 Energy
 schedule
 usage
@@ -264,6 +263,10 @@ class Device(ABC):
     def modules(self) -> ModuleMapping[Module]:
         """Return the device modules."""
 
+    async def supports_module(self, module: ModuleName[Module] | str) -> bool:
+        """Return True if the device supports the module, may query the device."""
+        return module in self.modules
+
     @property
     @abstractmethod
     def is_on(self) -> bool:
@@ -273,6 +276,11 @@ class Device(ABC):
     def is_off(self) -> bool:
         """Return True if device is off."""
         return not self.is_on
+
+    @property
+    def is_available(self) -> bool:
+        """Return False if the device is known to be unreachable."""
+        return True
 
     @abstractmethod
     async def turn_on(self, **kwargs) -> dict:

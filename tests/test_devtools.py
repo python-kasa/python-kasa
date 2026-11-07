@@ -8,6 +8,7 @@ from devtools.dump_devinfo import (
     _wrap_redactors,
     get_legacy_fixture,
     get_smart_fixtures,
+    scrub_child_device_ids,
 )
 from kasa.iot import IotDevice
 from kasa.protocols import IotProtocol
@@ -35,7 +36,7 @@ iot_fixtures = parametrize(
 )
 
 
-async def test_fixture_names(fixture_info: FixtureInfo):
+async def test_fixture_names(fixture_info: FixtureInfo) -> None:
     """Test that device info gets the right fixture names."""
     if fixture_info.protocol in {"SMARTCAM"}:
         device_info = SmartCamDevice._get_device_info(
@@ -58,7 +59,7 @@ async def test_fixture_names(fixture_info: FixtureInfo):
 
 
 @smart_fixtures
-async def test_smart_fixtures(fixture_info: FixtureInfo):
+async def test_smart_fixtures(fixture_info: FixtureInfo) -> None:
     """Test that smart fixtures are created the same."""
     dev = await get_device_for_fixture(fixture_info, verbatim=True)
     assert isinstance(dev, SmartDevice)
@@ -74,7 +75,7 @@ async def test_smart_fixtures(fixture_info: FixtureInfo):
     assert fixture_info.data == fixture_result.data
 
 
-def _normalize_child_device_ids(info: dict):
+def _normalize_child_device_ids(info: dict) -> None:
     """Scrubbed child device ids in hubs may not match ids in child fixtures.
 
     Different hub fixtures could create the same child fixture so we scrub
@@ -91,7 +92,7 @@ def _normalize_child_device_ids(info: dict):
 
 
 @smartcam_fixtures
-async def test_smartcam_fixtures(fixture_info: FixtureInfo):
+async def test_smartcam_fixtures(fixture_info: FixtureInfo) -> None:
     """Test that smartcam fixtures are created the same."""
     dev = await get_device_for_fixture(fixture_info, verbatim=True)
     assert isinstance(dev, SmartCamDevice)
@@ -136,7 +137,7 @@ async def test_smartcam_fixtures(fixture_info: FixtureInfo):
 
 
 @iot_fixtures
-async def test_iot_fixtures(fixture_info: FixtureInfo):
+async def test_iot_fixtures(fixture_info: FixtureInfo) -> None:
     """Test that iot fixtures are created the same."""
     # Iot fixtures often do not have enough data to perform a device update()
     # without missing info being added to suppress the update
@@ -157,3 +158,25 @@ async def test_iot_fixtures(fixture_info: FixtureInfo):
         key: val for key, val in fixture_info.data.items() if "err_code" not in val
     }
     assert saved_fixture == created_fixture
+
+
+def test_scrub_child_temperature_sensor_ids():
+    """Test thermostat temperature sources are mapped to scrubbed child ids."""
+    children = {
+        "trv": {
+            "get_device_info": {"device_id": "trv"},
+            "get_temperature_correction": {"temp_sensor_device_id": "sensor"},
+        },
+        "sensor": {"get_device_info": {"device_id": "sensor"}},
+        "other": {
+            "get_device_info": {"device_id": "other"},
+            "get_temperature_correction": {"temp_sensor_device_id": "not-a-child"},
+        },
+    }
+
+    id_map = scrub_child_device_ids({}, children)
+
+    trv_source = children["trv"]["get_temperature_correction"]
+    assert trv_source["temp_sensor_device_id"] == id_map["sensor"]
+    other_source = children["other"]["get_temperature_correction"]
+    assert other_source["temp_sensor_device_id"] == "SCRUBBED_DEVICE_ID"

@@ -46,9 +46,9 @@ import asyncio
 import base64
 import datetime
 import hashlib
+import hmac
 import logging
 import secrets
-import ssl
 import struct
 import time
 from asyncio import Future
@@ -67,6 +67,7 @@ from kasa.json import loads as json_loads
 from kasa.protocols.protocol import md5
 
 from .basetransport import BaseTransport
+from .sslcontext import get_ssl_context
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -97,17 +98,6 @@ class KlapTransport(BaseTransport):
 
     SESSION_COOKIE_NAME = "TP_SESSIONID"
     TIMEOUT_COOKIE_NAME = "TIMEOUT"
-    # Copy & paste from sslaestransport
-    CIPHERS = ":".join(
-        [
-            "AES256-GCM-SHA384",
-            "AES256-SHA256",
-            "AES128-GCM-SHA256",
-            "AES128-SHA256",
-            "AES256-SHA",
-        ]
-    )
-    _ssl_context: ssl.SSLContext | None = None
 
     def __init__(
         self,
@@ -193,7 +183,7 @@ class KlapTransport(BaseTransport):
         url = self._app_url / "handshake1"
 
         response_status, response_data = await self._http_client.post(
-            url, data=payload, ssl=await self._get_ssl_context()
+            url, data=payload, ssl=await get_ssl_context()
         )
 
         if _LOGGER.isEnabledFor(logging.DEBUG):
@@ -305,7 +295,7 @@ class KlapTransport(BaseTransport):
             url,
             data=payload,
             cookies_dict=self._session_cookie,
-            ssl=await self._get_ssl_context(),
+            ssl=await get_ssl_context(),
         )
 
         if _LOGGER.isEnabledFor(logging.DEBUG):
@@ -380,7 +370,7 @@ class KlapTransport(BaseTransport):
             params={"seq": seq},
             data=payload,
             cookies_dict=self._session_cookie,
-            ssl=await self._get_ssl_context(),
+            ssl=await get_ssl_context(),
         )
 
         msg = (
@@ -407,6 +397,18 @@ class KlapTransport(BaseTransport):
             if TYPE_CHECKING:
                 assert self._encryption_session
                 assert isinstance(response_data, bytes)
+            # A message is a 32 byte signature followed by whole AES blocks.
+            # Some devices answer with a plain html page instead.
+            if len(response_data) < 48 or (len(response_data) - 32) % 16:
+                raise KasaException(
+                    f"Device {self._host} sent a response that is not a KLAP "
+                    f"message ({len(response_data)} bytes): {response_data[:64]!r}"
+                )
+            if not self._encryption_session.is_signed(response_data, seq):
+                raise KasaException(
+                    f"Device {self._host} sent a response with an invalid "
+                    f"signature for request with seq {seq}"
+                )
             try:
                 decrypted_response = self._encryption_session.decrypt(response_data)
             except Exception as ex:
@@ -456,23 +458,6 @@ class KlapTransport(BaseTransport):
         """Return the MD5 hash of the username in this object."""
         un = creds.username
         return md5(un.encode())
-
-    # Copy & paste from sslaestransport.
-    def _create_ssl_context(self) -> ssl.SSLContext:
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        context.set_ciphers(self.CIPHERS)
-        context.check_hostname = False
-        context.verify_mode = ssl.CERT_NONE
-        return context
-
-    # Copy & paste from sslaestransport.
-    async def _get_ssl_context(self) -> ssl.SSLContext:
-        if not self._ssl_context:
-            loop = asyncio.get_running_loop()
-            self._ssl_context = await loop.run_in_executor(
-                None, self._create_ssl_context
-            )
-        return self._ssl_context
 
 
 class KlapTransportV2(KlapTransport):
@@ -562,6 +547,11 @@ class KlapEncryptionSession:
             self._sig + PACK_SIGNED_LONG(self._seq) + ciphertext
         ).digest()
         return (signature + ciphertext, self._seq)
+
+    def is_signed(self, msg: bytes, seq: int) -> bool:
+        """Return whether the message is signed for the request with seq."""
+        signature = _sha256(self._sig + PACK_SIGNED_LONG(seq) + msg[32:])
+        return hmac.compare_digest(msg[:32], signature)
 
     def decrypt(self, msg: bytes) -> str:
         """Decrypt the data."""

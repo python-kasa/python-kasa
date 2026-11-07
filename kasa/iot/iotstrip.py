@@ -29,7 +29,6 @@ from .modules import (
     Cloud,
     Countdown,
     Emeter,
-    HomeKit,
     Led,
     Schedule,
     Time,
@@ -122,7 +121,6 @@ class IotStrip(IotDevice):
         self.add_module(Module.IotCountdown, Countdown(self, "countdown"))
         self.add_module(Module.Led, Led(self, "system"))
         self.add_module(Module.IotCloud, Cloud(self, "cnCloud"))
-        self.add_module(Module.IotHomeKit, HomeKit(self, "smartlife.iot.homekit"))
         if self.has_emeter:
             _LOGGER.debug(
                 "The device has emeter, querying its information along sysinfo"

@@ -8,6 +8,7 @@ from json import dumps as json_dumps
 from typing import Any, TypedDict
 
 import pytest
+from pytest_mock import MockerFixture
 
 from kasa.transports.xortransport import XorEncryption
 
@@ -48,8 +49,8 @@ UNSUPPORTED_HOMEWIFISYSTEM = {
 
 
 def _make_unsupported(
-    device_family,
-    encrypt_type,
+    device_family: str,
+    encrypt_type: str,
     *,
     https: bool = False,
     omit_keys: dict[str, Any] | None = None,
@@ -112,7 +113,7 @@ UNSUPPORTED_DEVICES = {
 
 
 def parametrize_discovery(
-    desc, *, data_root_filter=None, protocol_filter=None, model_filter=None
+    desc: str, *, data_root_filter=None, protocol_filter=None, model_filter=None
 ):
     filtered_fixtures = filter_fixtures(
         desc,
@@ -141,11 +142,17 @@ smart_discovery = parametrize_discovery("smart discovery", protocol_filter={"SMA
     ),
     ids=idgenerator,
 )
-async def discovery_mock(request, mocker):
+async def discovery_mock(request: pytest.FixtureRequest, mocker: MockerFixture):
     """Mock discovery and patch protocol queries to use Fake protocols."""
     fi: FixtureInfo = request.param
     fixture_info = FixtureInfo(fi.name, fi.protocol, copy.deepcopy(fi.data))
     return patch_discovery({DISCOVERY_MOCK_IP: fixture_info}, mocker)
+
+
+def _xfail_tpap(discovery_result: dict) -> None:
+    """Mark tests of devices that advertise TPAP as expected to fail."""
+    if discovery_result.get("mgt_encrypt_schm", {}).get("encrypt_type") == "TPAP":
+        pytest.xfail("TPAP encryption is not supported yet")
 
 
 def create_discovery_mock(ip: str, fixture_data: dict):
@@ -193,12 +200,17 @@ def create_discovery_mock(ip: str, fixture_data: dict):
         encrypt_type = discovery_result["mgt_encrypt_schm"].get(
             "encrypt_type", discovery_result.get("encrypt_info", {}).get("sym_schm")
         )
+        _xfail_tpap(discovery_result)
 
         if not (login_version := discovery_result["mgt_encrypt_schm"].get("lv")) and (
             et := discovery_result.get("encrypt_type")
         ):
             login_version = max([int(i) for i in et])
         https = discovery_result["mgt_encrypt_schm"]["is_support_https"]
+        if not encrypt_type and https and login_version == 3:
+            # Mirrors Discover._get_connection_parameters for cameras that
+            # only send the top level encrypt_type list
+            encrypt_type = "AES"
         http_port = discovery_result["mgt_encrypt_schm"].get("http_port")
         if not http_port:  # noqa: SIM108
             # Not all discovery responses set the http port, i.e. smartcam.
@@ -238,7 +250,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
     return dm
 
 
-def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
+def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker: MockerFixture):
     """Mock discovery and patch protocol queries to use Fake protocols."""
     discovery_mocks = {
         ip: create_discovery_mock(ip, fixture_info.data)
@@ -271,7 +283,7 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
                 await exception_queue.put(None)
             callback_queue.task_done()
 
-    async def wait_for_coro():
+    async def wait_for_coro() -> None:
         await callback_queue.join()
         if ex := exception_queue.get_nowait():
             raise ex
@@ -286,7 +298,7 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
     )
 
     # do_discover_mock
-    async def mock_discover(self):
+    async def mock_discover(self) -> None:
         """Call datagram_received for all mock fixtures.
 
         Handles test cases modifying the ip and hostname of the first fixture
@@ -333,7 +345,7 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
     mocker.patch("kasa.IotProtocol.query", _query)
     mocker.patch("kasa.SmartProtocol.query", _query)
 
-    def _getaddrinfo(host, *_, **__):
+    def _getaddrinfo(host: str, *_, **__):
         nonlocal first_host, first_ip
         first_host = host  # Store the hostname used by discover single
         first_ip = list(discovery_mocks.values())[
@@ -358,7 +370,7 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
     ),
     ids=idgenerator,
 )
-def discovery_data(request, mocker):
+def discovery_data(request: pytest.FixtureRequest, mocker: MockerFixture):
     """Return raw discovery file contents as JSON. Used for discovery tests."""
     fixture_info = request.param
     fixture_data = copy.deepcopy(fixture_info.data)
@@ -375,6 +387,7 @@ def discovery_data(request, mocker):
     mocker.patch("kasa.IotProtocol.query", return_value=fixture_data)
     mocker.patch("kasa.SmartProtocol.query", return_value=fixture_data)
     if "discovery_result" in fixture_data:
+        _xfail_tpap(fixture_data["discovery_result"]["result"])
         return fixture_data["discovery_result"].copy()
     else:
         return {"system": {"get_sysinfo": fixture_data["system"]["get_sysinfo"]}}
@@ -383,12 +396,12 @@ def discovery_data(request, mocker):
 @pytest.fixture(
     params=UNSUPPORTED_DEVICES.values(), ids=list(UNSUPPORTED_DEVICES.keys())
 )
-def unsupported_device_info(request, mocker):
+def unsupported_device_info(request: pytest.FixtureRequest, mocker: MockerFixture):
     """Return unsupported devices for cli and discovery tests."""
     discovery_data = request.param
     host = "127.0.0.1"
 
-    async def mock_discover(self):
+    async def mock_discover(self) -> None:
         if discovery_data:
             data = (
                 b"\x02\x00\x00\x01\x01[\x00\x00\x00\x00\x00\x00W\xcev\xf8"

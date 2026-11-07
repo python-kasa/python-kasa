@@ -188,21 +188,21 @@ The following devices have been tested and confirmed as working. If your device 
 
 - **Plugs**: EP10, EP25[^2], HS100[^2], HS103, HS105, HS110, KP100, KP105, KP115, KP125, KP125M[^1], KP401
 - **Power Strips**: EP40, EP40M[^1], HS107, HS300, KP200, KP303, KP400
-- **Wall Switches**: ES20M, HS200[^2], HS210, HS220[^2], KP405, KS200, KS200M, KS205[^1], KS220, KS220M, KS225[^1], KS230, KS240[^1]
+- **Wall Switches**: ES20M, HS200[^2], HS210, HS220[^2], KP405, KS200, KS200M, KS205[^1], KS220, KS220M, KS225[^1], KS230[^2], KS240[^1]
 - **Bulbs**: KL110, KL110B, KL120, KL125, KL130, KL135, KL50, KL60, LB100, LB110, LB130
 - **Light Strips**: KL400L10, KL400L5, KL420L5, KL430
 - **Hubs**: KH100[^1]
-- **Hub-Connected Devices[^3]**: KE100[^1]
+- **Hub-Connected Devices[^3]**: KE100[^1], KE110[^1]
 
 ### Supported Tapo[^1] devices
 
-- **Plugs**: P100, P105, P110, P110M, P115, P125M, P135, TP10, TP15
+- **Plugs**: P100, P105, P110, P110M, P115, P116M, P125M, P135, TP10, TP15
 - **Power Strips**: P210M, P300, P304M, P306, P316M, TP25
 - **Wall Switches**: S210, S220, S500, S500D, S505, S505D, S515D, TS15
 - **Bulbs**: L430C, L430P, L510B, L510E, L530B, L530E, L530EA, L535E, L630
 - **Light Strips**: L900-10, L900-5, L920-5, L930-5
 - **Cameras**: C100, C101, C110, C200, C210, C220, C225, C325WB, C460, C520WS, C720, TC40, TC65, TC70
-- **Doorbells and chimes**: D100C, D130, D230
+- **Doorbells and chimes**: D100C, D130, D230, TD21
 - **Vacuums**: RV20 Max Plus, RV30 Max
 - **Hubs**: H100, H200, H500
 - **Hub-Connected Devices[^3]**: S200B, S200D, T100, T110, T300, T310, T315

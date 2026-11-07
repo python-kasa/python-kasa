@@ -1,0 +1,56 @@
+# git-cliff configuration, run by devtools/release.py (see RELEASING.md).
+#
+# The entries are the squash-merged PRs since the previous release, with title,
+# number, labels and author read from the GitHub API.
+# To fix an entry, retitle or relabel the PR before preparing the release,
+# or edit the section in the release PR.
+# Commits without a PR (e.g. cherry-picks on the patch branch) are listed with a commit link.
+
+[changelog]
+body = """
+{% if version -%}
+## [{{ version }}](https://github.com/python-kasa/python-kasa/tree/{{ version }}) ({{ timestamp | date(format="%Y-%m-%d") }})
+{% if previous.version %}
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/{{ previous.version }}...{{ version }})
+{% endif -%}
+{% else -%}
+## Unreleased
+{% endif -%}
+{% for group, commits in commits | group_by(attribute="group") %}
+**{{ group | striptags | trim }}:**
+
+{% for commit in commits -%}
+{% if commit.remote.pr_number -%}
+- {{ commit.remote.pr_title | trim }} [\\#{{ commit.remote.pr_number }}](https://github.com/python-kasa/python-kasa/pull/{{ commit.remote.pr_number }}) (@{{ commit.remote.pr_author | default(value=commit.remote.username) }})
+{% else -%}
+- {{ commit.message | split(pat="\n") | first | trim }} [{{ commit.id | truncate(length=7, end="") }}](https://github.com/python-kasa/python-kasa/commit/{{ commit.id }})
+{% endif -%}
+{% endfor -%}
+{% endfor -%}
+"""
+trim = true
+
+[git]
+conventional_commits = false
+filter_unconventional = false
+# Old dev tags (x.y.z.devN) are skipped, their changes are part of the next real release.
+tag_pattern = "[0-9]+\\.[0-9]+.*"
+skip_tags = "\\.dev[0-9]+$"
+topo_order_commits = true
+sort_commits = "newest"
+# The section is chosen by PR label, the first matching parser wins.
+# git-cliff matches the pattern against each label separately, so anchor it.
+# Groups are sorted alphabetically, the number prefix sets the order and the template strips it.
+# PRs without any of these labels end up in the last group.
+# The commits made by devtools/release.py on the release branch are not entries.
+commit_parsers = [
+  { message = "^Prepare [0-9]", skip = true },
+  { field = "remote.pr_labels", pattern = "^(duplicate|question|invalid|wontfix|release-prep|stale)$", skip = true },
+  { field = "remote.pr_labels", pattern = "^breaking change$", group = "<!-- 0 -->Breaking changes" },
+  { field = "remote.pr_labels", pattern = "^enhancement$", group = "<!-- 1 -->Implemented enhancements" },
+  { field = "remote.pr_labels", pattern = "^bug$", group = "<!-- 2 -->Fixed bugs" },
+  { field = "remote.pr_labels", pattern = "^new device$", group = "<!-- 3 -->Added support for devices" },
+  { field = "remote.pr_labels", pattern = "^documentation$", group = "<!-- 4 -->Documentation updates" },
+  { field = "remote.pr_labels", pattern = "^(maintenance|dependencies)$", group = "<!-- 5 -->Project maintenance" },
+  { message = ".*", group = "<!-- 6 -->Other changes" },
+]

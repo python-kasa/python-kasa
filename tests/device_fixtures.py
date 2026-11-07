@@ -55,11 +55,12 @@ BULBS_IOT_VARIABLE_TEMP = {
     "KL135",
     "KL430",
 }
-# KL400L5 firmware 1.0.5/1.0.8 and KL420L5 firmware 1.0.2 fixtures report no
-# variable color temperature support, so match the supporting fixtures rather
-# than the entire model.
+# KL400L5 firmware 1.0.5/1.0.8, KL400L10 firmware 1.0.10 and KL420L5 firmware
+# 1.0.2 fixtures report no variable color temperature support, so match the
+# supporting fixtures rather than the entire model.
 BULBS_IOT_VARIABLE_TEMP_FIXTURES = {
     "KL400L5(US)_1.0_1.0.11",
+    "KL400L10(US)_1.0_1.0.11",
     "KL420L5(US)_1.0_1.0.7",
 }
 BULBS_IOT_COLOR = {"LB130", "KL125", "KL130", "KL135", *BULBS_IOT_LIGHT_STRIP}
@@ -99,6 +100,7 @@ PLUGS_SMART = {
     "P100",
     "P110",
     "P110M",
+    "P116M",
     "P115",
     "KP125M",
     "EP25",
@@ -153,12 +155,21 @@ SENSORS_SMART = {
     "S220",
     "D100C",  # needs a home category?
 }
-THERMOSTATS_SMART = {"KE100"}
+THERMOSTATS_SMART = {"KE100", "KE110"}
 
 VACUUMS_SMART = {"RV20"}
 
 WITH_EMETER_IOT = {"EP25", "HS110", "HS300", "KP115", "KP125", *BULBS_IOT}
-WITH_EMETER_SMART = {"P110", "P110M", "P115", "KP125M", "EP25", "P304M", "S515D"}
+WITH_EMETER_SMART = {
+    "P110",
+    "P110M",
+    "P116M",
+    "P115",
+    "KP125M",
+    "EP25",
+    "P304M",
+    "S515D",
+}
 WITH_EMETER = {*WITH_EMETER_IOT, *WITH_EMETER_SMART}
 
 DIMMABLE = {*BULBS, *DIMMERS}
@@ -215,7 +226,7 @@ def parametrize_subtract(params: pytest.MarkDecorator, subtract: pytest.MarkDeco
 
 
 def parametrize(
-    desc,
+    desc: str,
     *,
     model_filter=None,
     protocol_filter=None,
@@ -395,7 +406,7 @@ chime_smart = parametrize(
 vacuum = parametrize("vacuums", device_type_filter=[DeviceType.Vacuum])
 
 
-def check_categories():
+def check_categories() -> None:
     """Check that every fixture file is categorized."""
     categorized_fixtures = set(
         dimmer_iot.args[1]
@@ -428,7 +439,7 @@ def check_categories():
 check_categories()
 
 
-def device_for_fixture_name(model, protocol):
+def device_for_fixture_name(model: str, protocol: str):
     if protocol in {"SMART", "SMART.CHILD"}:
         return SmartDevice
     elif protocol in {"SMARTCAM", "SMARTCAM.CHILD"}:
@@ -467,7 +478,9 @@ async def _update_and_close(d) -> Device:
     return d
 
 
-async def _discover_update_and_close(ip, username, password) -> Device:
+async def _discover_update_and_close(
+    ip: str, username: str | None, password: str | None
+) -> Device:
     if username and password:
         credentials = Credentials(username=username, password=password)
     else:
@@ -477,7 +490,7 @@ async def _discover_update_and_close(ip, username, password) -> Device:
 
 
 async def get_device_for_fixture(
-    fixture_data: FixtureInfo, *, verbatim=False, update_after_init=True
+    fixture_data: FixtureInfo, *, verbatim: bool = False, update_after_init: bool = True
 ) -> Device:
     # if the wanted file is not an absolute path, prepend the fixtures directory
 
@@ -502,7 +515,9 @@ async def get_device_for_fixture(
             fixture_data.data, fixture_data.name, verbatim=verbatim
         )
     else:
-        d.protocol = FakeIotProtocol(fixture_data.data, verbatim=verbatim)
+        d.protocol = FakeIotProtocol(
+            fixture_data.data, fixture_data.name, verbatim=verbatim
+        )
 
     discovery_data = None
     if "discovery_result" in fixture_data.data:
@@ -520,21 +535,21 @@ async def get_device_for_fixture(
     return d
 
 
-async def get_device_for_fixture_protocol(fixture, protocol):
+async def get_device_for_fixture_protocol(fixture: str, protocol: str):
     finfo = FixtureInfo(name=fixture, protocol=protocol, data={})
     for fixture_info in FIXTURE_DATA:
         if finfo == fixture_info:
             return await get_device_for_fixture(fixture_info)
 
 
-def get_fixture_info(fixture, protocol):
+def get_fixture_info(fixture: str, protocol: str):
     finfo = FixtureInfo(name=fixture, protocol=protocol, data={})
     for fixture_info in FIXTURE_DATA:
         if finfo == fixture_info:
             return fixture_info
 
 
-def get_nearest_fixture_to_ip(dev):
+def get_nearest_fixture_to_ip(dev: Device):
     if isinstance(dev, SmartDevice):
         protocol_fixtures = filter_fixtures("", protocol_filter={"SMART"})
     elif isinstance(dev, SmartCamDevice):
@@ -572,7 +587,7 @@ def get_nearest_fixture_to_ip(dev):
 
 
 @pytest.fixture(params=filter_fixtures("main devices"), ids=idgenerator)
-async def dev(request) -> AsyncGenerator[Device, None]:
+async def dev(request: pytest.FixtureRequest) -> AsyncGenerator[Device, None]:
     """Device fixture.
 
     Provides a device (given --ip) or parametrized fixture for the supported devices.

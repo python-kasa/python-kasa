@@ -18,14 +18,14 @@ from tests.device_fixtures import (
 
 
 @bulb
-async def test_state_attributes(dev: Device):
+async def test_state_attributes(dev: Device) -> None:
     assert "Cloud connection" in dev.state_information
     assert isinstance(dev.state_information["Cloud connection"], bool)
 
 
 @color_bulb
 @turn_on
-async def test_hsv(dev: Device, turn_on):
+async def test_hsv(dev: Device, turn_on: bool) -> None:
     light = dev.modules.get(Module.Light)
     assert light
     await handle_turn_on(dev, turn_on)
@@ -105,8 +105,14 @@ async def test_hsv(dev: Device, turn_on):
     ],
 )
 async def test_invalid_hsv(
-    dev: Device, turn_on, hue, sat, brightness, exception_cls, error
-):
+    dev: Device,
+    turn_on: bool,
+    hue,
+    sat,
+    brightness,
+    exception_cls: type[Exception],
+    error: str,
+) -> None:
     light = dev.modules.get(Module.Light)
     assert light
     await handle_turn_on(dev, turn_on)
@@ -117,7 +123,7 @@ async def test_invalid_hsv(
 
 @color_bulb
 @pytest.mark.skip("requires color feature")
-async def test_color_state_information(dev: Device):
+async def test_color_state_information(dev: Device) -> None:
     light = dev.modules.get(Module.Light)
     assert light
     assert "HSV" in dev.state_information
@@ -125,7 +131,7 @@ async def test_color_state_information(dev: Device):
 
 
 @non_color_bulb
-async def test_hsv_on_non_color(dev: Device):
+async def test_hsv_on_non_color(dev: Device) -> None:
     light = dev.modules.get(Module.Light)
     assert light
     assert not light.has_feature("hsv")
@@ -138,7 +144,7 @@ async def test_hsv_on_non_color(dev: Device):
 
 @variable_temp
 @pytest.mark.skip("requires colortemp module")
-async def test_variable_temp_state_information(dev: Device):
+async def test_variable_temp_state_information(dev: Device) -> None:
     light = dev.modules.get(Module.Light)
     assert light
     assert "Color temperature" in dev.state_information
@@ -147,7 +153,7 @@ async def test_variable_temp_state_information(dev: Device):
 
 @variable_temp
 @turn_on
-async def test_try_set_colortemp(dev: Device, turn_on):
+async def test_try_set_colortemp(dev: Device, turn_on: bool) -> None:
     light = dev.modules.get(Module.Light)
     assert light
     await handle_turn_on(dev, turn_on)
@@ -157,7 +163,7 @@ async def test_try_set_colortemp(dev: Device, turn_on):
 
 
 @variable_temp
-async def test_out_of_range_temperature(dev: Device):
+async def test_out_of_range_temperature(dev: Device) -> None:
     light = dev.modules.get(Module.Light)
     assert light
     with pytest.raises(
@@ -171,7 +177,7 @@ async def test_out_of_range_temperature(dev: Device):
 
 
 @non_variable_temp
-async def test_non_variable_temp(dev: Device):
+async def test_non_variable_temp(dev: Device) -> None:
     light = dev.modules.get(Module.Light)
     assert light
     with pytest.raises(KasaException):
@@ -182,7 +188,7 @@ async def test_non_variable_temp(dev: Device):
 
 
 @bulb
-def test_device_type_bulb(dev: Device):
+def test_device_type_bulb(dev: Device) -> None:
     assert dev.device_type in {DeviceType.Bulb, DeviceType.LightStrip}
 
 
@@ -218,7 +224,7 @@ def test_device_type_bulb(dev: Device):
 @bulb
 async def test_deprecated_light_is_has_attributes(
     dev: Device, attribute: str, use_msg: str, use_fn: Callable[[Device, Module], bool]
-):
+) -> None:
     light = dev.modules.get(Module.Light)
     assert light
 
@@ -230,7 +236,7 @@ async def test_deprecated_light_is_has_attributes(
 
 
 @bulb
-async def test_deprecated_light_valid_temperature_range(dev: Device):
+async def test_deprecated_light_valid_temperature_range(dev: Device) -> None:
     light = dev.modules.get(Module.Light)
     assert light
 

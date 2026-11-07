@@ -1,0 +1,58 @@
+{
+    "cnCloud": {
+        "get_info": {
+            "binded": 1,
+            "cld_connection": 1,
+            "err_code": 0,
+            "fwDlPage": "",
+            "fwNotifyType": 0,
+            "illegalType": 0,
+            "server": "n-devs.tplinkcloud.com",
+            "stopConnect": 0,
+            "tcspInfo": "",
+            "tcspStatus": 1,
+            "username": "user@example.com"
+        },
+        "get_intl_fw_list": {
+            "err_code": 0,
+            "fw_list": []
+        }
+    },
+    "schedule": {
+        "get_next_action": {
+            "err_code": 0,
+            "type": -1
+        },
+        "get_rules": {
+            "enable": 1,
+            "err_code": 0,
+            "rule_list": []
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "schedule",
+            "alias": "#MASKED_NAME#",
+            "dev_name": "Wi-Fi Smart Light Switch",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "fwId": "00000000000000000000000000000000",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "icon_hash": "",
+            "latitude": 0,
+            "led_off": 0,
+            "longitude": 0,
+            "mac": "50:C7:BF:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "HS200(US)",
+            "oemId": "00000000000000000000000000000000",
+            "on_time": 0,
+            "relay_state": 0,
+            "rssi": -47,
+            "sw_ver": "1.2.6 Build 200727 Rel.121953",
+            "updating": 0
+        }
+    }
+}
