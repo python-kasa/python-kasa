@@ -129,6 +129,21 @@ The classes providing this functionality are:
 - {class}`KlapTransport <kasa.transports.KlapTransport>`
 - {class}`KlapTransportV2 <kasa.transports.KlapTransportV2>`
 
+(topics-hub-children-summary)=
+## Hub child enumeration
+
+Tapo/Kasa hubs (H500, H200, …) pair child cameras and accessories. python-kasa
+builds {attr}`~kasa.Device.children` from {code}`getChildDeviceList`, not from
+{code}`getDeviceInfo.child_num`.
+
+On some hubs — especially **H500** on current firmware — {code}`child_num` can be
+non-zero while {code}`getChildDeviceList` returns {code}`sum: 0` and an empty list
+over LAN. There is no additional LAN API that reports a reason for that mismatch;
+{attr}`~kasa.Device.children` will simply be empty.
+
+See {ref}`Tapo / Kasa hubs and child devices <topics-hub-children>` for the full
+explanation, API table, fixture-dump behaviour, and integrator notes.
+
 (topics-errors-and-exceptions)=
 ## Errors and Exceptions
 
