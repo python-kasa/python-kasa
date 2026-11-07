@@ -39,6 +39,7 @@ DEVICE_TYPE_TO_PRODUCT_GROUP = {
     DeviceType.Doorbell: "Doorbells and chimes",
     DeviceType.Chime: "Doorbells and chimes",
     DeviceType.Vacuum: "Vacuums",
+    DeviceType.Lock: "Locks",
     DeviceType.Hub: "Hubs",
     DeviceType.Sensor: "Hub-Connected Devices",
     DeviceType.Thermostat: "Hub-Connected Devices",

@@ -2,6 +2,7 @@
 
 from .aestransport import AesEncyptionSession, AesTransport
 from .basetransport import BaseTransport
+from .dlklaptransport import DlklapTransport
 from .klaptransport import KlapTransport, KlapTransportV2
 from .linkietransport import LinkieTransportV2
 from .sslaestransport import SslAesTransport
@@ -14,6 +15,7 @@ __all__ = [
     "SslTransport",
     "SslAesTransport",
     "BaseTransport",
+    "DlklapTransport",
     "KlapTransport",
     "KlapTransportV2",
     "LinkieTransportV2",
