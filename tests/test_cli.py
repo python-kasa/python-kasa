@@ -1568,3 +1568,17 @@ def test_echo_strips_rich_tags_without_rich(monkeypatch, capsys):
     module._echo("[bold red]Only discover is available[/bold red] [ABC]")
 
     assert capsys.readouterr().out == "Only discover is available [ABC]\n"
+
+
+def test_echo_prints_objects_without_rich(monkeypatch, capsys):
+    """Objects other than strings are echoed as-is when rich is not installed."""
+    monkeypatch.setitem(sys.modules, "rich", None)
+    spec = importlib.util.find_spec("kasa.cli.common")
+    assert spec
+    assert spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    module._echo({"current_version": "1.0.0"})
+
+    assert capsys.readouterr().out == "{'current_version': '1.0.0'}\n"
