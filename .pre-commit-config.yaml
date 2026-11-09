@@ -55,3 +55,9 @@ repos:
     language: system # Required or pre-commit creates a new venv
     types: [json]
     pass_filenames: false # passing filenames causes the hook to run in batches against all-files
+  - id: actions-lock
+    name: Verify GitHub Actions lockfile
+    entry: gh actions-lock --verify-local
+    language: system
+    files: ^\.github/workflows/
+    pass_filenames: false
