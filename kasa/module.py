@@ -226,9 +226,9 @@ class Module(ABC):
         """Initialize features after the initial update.
 
         This can be implemented if features depend on module query responses.
-        It will only be called once per module and will always be called
-        after *_post_update_hook* has been called for every device module and its
-        children's modules.
+        It is called after *_post_update_hook* has been called for every device
+        module and its children's modules. If no features were initialized after
+        an update error, initialization is retried once the module recovers.
         """
 
     async def _post_update_hook(self) -> None:  # noqa: B027

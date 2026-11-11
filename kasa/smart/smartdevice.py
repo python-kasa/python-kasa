@@ -70,6 +70,7 @@ class SmartDevice(Device):
         self._modules: OrderedDict[str | ModuleName[Module], SmartModule] = (
             OrderedDict()
         )
+        self._modules_pending_feature_init: dict[str, SmartModule] = {}
         self._parent: SmartDevice | None = None
         self._children: dict[str, SmartDevice] = {}
         self._last_update_time: float | None = None
@@ -306,6 +307,7 @@ class SmartDevice(Device):
         # We make here an assumption that every device has at least a single feature.
         if not self._features:
             await self._initialize_features()
+        self._initialize_recovered_module_features()
 
         if _LOGGER.isEnabledFor(logging.DEBUG):
             updated = self._last_update if first_update else resp
@@ -318,9 +320,12 @@ class SmartDevice(Device):
             return  # pragma: no cover
         if had_query:
             module._last_update_time = update_time
+        was_unavailable = module._last_update_error is not None
         try:
             await module._post_update_hook()
             module._set_error(None)
+            if was_unavailable and self._features and not module._module_features:
+                self._modules_pending_feature_init[module.name] = module
         except Exception as ex:
             # Only set the error if a query happened.
             if had_query:
@@ -331,6 +336,25 @@ class SmartDevice(Device):
                     self.host,
                     ex,
                 )
+
+    def _initialize_recovered_module_features(self) -> None:
+        """Retry deferred features after all module and child update hooks."""
+        for name, module in list(self._modules_pending_feature_init.items()):
+            if module._last_update_error is not None:
+                continue
+            module_features = module._module_features.copy()
+            device_features = self._features.copy()
+            try:
+                module._initialize_features()
+                for feature in module._module_features.values():
+                    self._add_feature(feature)
+            except Exception:
+                module._module_features.clear()
+                module._module_features.update(module_features)
+                self._features.clear()
+                self._features.update(device_features)
+                raise
+            del self._modules_pending_feature_init[name]
 
     async def _modular_update(
         self, first_update: bool, update_time: float
