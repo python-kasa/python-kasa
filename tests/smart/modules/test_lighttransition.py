@@ -305,3 +305,67 @@ async def test_recovered_feature_registration_retries_after_failure(
     assert transition._last_update_error is None
     assert dev.features["smooth_transition_on"].maximum_value == 60
     assert dev.features["smooth_transition_off"].maximum_value == 60
+
+
+async def test_pending_transition_features_survive_another_update_error(
+    freezer: FrozenDateTimeFactory, mocker: MockerFixture
+) -> None:
+    """A queued recovery must wait for fresh state after a subsequent error."""
+    fixture = deepcopy(get_fixture_info("L530B(EU)_3.0_1.1.9.json", "SMART"))
+    recovered_state = deepcopy(fixture.data["get_on_off_gradually_info"])
+    fixture.data["get_on_off_gradually_info"] = {"enable": True}
+    dev = await get_device_for_fixture(fixture)
+    assert isinstance(dev, SmartDevice)
+    transition = dev.modules[Module.LightTransition]
+    initialize = mocker.spy(transition, "_initialize_features")
+    transport = dev.protocol._transport
+    assert isinstance(transport, FakeSmartTransport)
+    transport.info["get_on_off_gradually_info"] = recovered_state
+    child_failure_pending = True
+
+    async def child_update() -> None:
+        nonlocal child_failure_pending
+        if child_failure_pending:
+            child_failure_pending = False
+            raise RuntimeError("interrupted child update")
+
+    child = mocker.Mock()
+    child._update = mocker.AsyncMock(side_effect=child_update)
+    dev._children["recovery-probe"] = child
+    freezer.tick(transition.update_interval)
+    with pytest.raises(RuntimeError, match="interrupted child update"):
+        await dev.update()
+
+    assert transition._last_update_error is None
+    initialize.assert_not_called()
+    assert "smooth_transition_on" not in dev.features
+
+    transport.info["get_on_off_gradually_info"] = {"enable": True}
+    freezer.tick(transition.update_interval)
+    await dev.update()
+
+    assert transition._last_update_error is not None
+    initialize.assert_not_called()
+    assert "brightness" in dev.features
+    assert "smooth_transition_on" not in dev.features
+    assert "smooth_transition_off" not in dev.features
+
+    transport.info["get_on_off_gradually_info"] = {
+        "on_state": {"duration": 9, "enable": True, "max_duration": 42},
+        "off_state": {"duration": 11, "enable": True, "max_duration": 18},
+    }
+    freezer.tick(transition.update_interval)
+    await dev.update()
+
+    assert transition._last_update_error is None
+    initialize.assert_called_once()
+    turn_on = dev.features["smooth_transition_on"]
+    turn_off = dev.features["smooth_transition_off"]
+    assert (turn_on.maximum_value, turn_on.value) == (42, 9)
+    assert (turn_off.maximum_value, turn_off.value) == (18, 11)
+
+    await dev.update()
+
+    initialize.assert_called_once()
+    assert dev.features["smooth_transition_on"] is turn_on
+    assert dev.features["smooth_transition_off"] is turn_off
