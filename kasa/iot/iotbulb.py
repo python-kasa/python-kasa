@@ -543,4 +543,4 @@ class IotBulb(IotDevice):
     @property
     def max_device_response_size(self) -> int:
         """Returns the maximum response size the device can safely construct."""
-        return 4096
+        return min(super().max_device_response_size, 4096)
