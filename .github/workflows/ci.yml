@@ -29,11 +29,11 @@ jobs:
     steps:
       - name: Checkout Source Files
         id: checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
 
       - name: Setup Environment
         id: setup-environment
-        uses: ./.github/actions/setup
+        uses: $/.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
           cache-pre-commit: true
@@ -42,13 +42,15 @@ jobs:
       - name: Run pre-commit Checks
         id: run-pre-commit
         shell: bash
+        env:
+          SKIP: actions-lock
         run: |
           uv run pre-commit run --all-files --verbose
 
       # Build the same way as publish.yml to catch packaging issues before a release is tagged.
       - name: Build and Check Packages
         id: build-packages
-        uses: ./.github/actions/build-packages
+        uses: $/.github/actions/build-packages
 
   tests:
     name: Python ${{ matrix.python-version}} on ${{ matrix.os }}${{ fromJSON('[" (extras)", ""]')[matrix.extras == ''] }}
@@ -68,11 +70,11 @@ jobs:
     steps:
       - name: Checkout Source Files
         id: checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
 
       - name: Setup Environment
         id: setup-environment
-        uses: ./.github/actions/setup
+        uses: $/.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
           uv-install-options: ${{ matrix.extras == true && '--all-extras' || '' }}
@@ -85,6 +87,6 @@ jobs:
 
       - name: Upload Code Coverage to Codecov
         id: upload-code-coverage-to-codecov
-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        uses: codecov/codecov-action@v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
