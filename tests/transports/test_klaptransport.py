@@ -30,7 +30,7 @@ from kasa.exceptions import (
     _RetryableError,
 )
 from kasa.httpclient import HttpClient
-from kasa.iot import IotBulb, IotDevice, IotPlug, IotWallSwitch
+from kasa.iot import IotBulb, IotDevice, IotLightStrip, IotPlug, IotWallSwitch
 from kasa.protocols import IotProtocol, SmartProtocol
 from kasa.transports.aestransport import AesTransport
 from kasa.transports.klaptransport import (
@@ -740,7 +740,8 @@ async def test_max_device_response_size_klap(
 
 
 @pytest.mark.parametrize(
-    ("device_class", "xor_budget"), [(IotPlug, 16 * 1024), (IotBulb, 4096)]
+    ("device_class", "xor_budget"),
+    [(IotPlug, 16 * 1024), (IotBulb, 4096), (IotLightStrip, 4096)],
 )
 def test_max_device_response_size_before_update(
     device_class: type[IotDevice], xor_budget: int
