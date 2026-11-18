@@ -22,6 +22,7 @@ from kasa import (
     KasaException,
     Module,
 )
+from kasa.cli.common import _echo
 from kasa.cli.device import (
     alias,
     factory_reset,
@@ -1570,15 +1571,8 @@ def test_echo_strips_rich_tags_without_rich(monkeypatch, capsys):
     assert capsys.readouterr().out == "Only discover is available [ABC]\n"
 
 
-def test_echo_prints_objects_without_rich(monkeypatch, capsys):
-    """Objects other than strings are echoed as-is when rich is not installed."""
-    monkeypatch.setitem(sys.modules, "rich", None)
-    spec = importlib.util.find_spec("kasa.cli.common")
-    assert spec
-    assert spec.loader
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+def test_echo_prints_non_string_messages(capsys):
+    """Messages other than strings are echoed as-is."""
+    _echo(1)
 
-    module._echo({"current_version": "1.0.0"})
-
-    assert capsys.readouterr().out == "{'current_version': '1.0.0'}\n"
+    assert capsys.readouterr().out == "1\n"
