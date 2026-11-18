@@ -14,6 +14,7 @@ from kasa.deviceconfig import (
     DeviceConnectionParameters,
     DeviceEncryptionType,
     DeviceFamily,
+    TpapParameters,
 )
 
 from .conftest import load_fixture
@@ -137,3 +138,38 @@ async def test_exclude_credentials() -> None:
     config2_dict = json_loads(config_json)
     config2 = DeviceConfig.from_dict(config2_dict)
     assert config2.credentials is None
+
+
+@pytest.mark.parametrize(
+    ("tpap", "expected"),
+    [
+        pytest.param(
+            {"tls": 1, "port": 443, "pake": [2], "dac": 1, "user_hash_type": 1},
+            TpapParameters(tls=1, port=443, pake=[2], dac=True, user_hash_type=1),
+            id="numbers",
+        ),
+        pytest.param(
+            {"tls": "1", "port": " 443 ", "pake": ["2", 0], "dac": "1"},
+            TpapParameters(tls=1, port=443, pake=[2, 0], dac=True),
+            id="numeric-strings",
+        ),
+        pytest.param(
+            {"tls": "x", "port": [80], "pake": 2, "dac": True, "user_hash_type": 1.5},
+            TpapParameters(),
+            id="wrong-types-are-defaults",
+        ),
+        pytest.param(
+            {"pake": [2, "x", None, True]},
+            TpapParameters(pake=[2]),
+            id="only-number-pake-values",
+        ),
+        pytest.param({"dac": 2}, TpapParameters(dac=False), id="dac-only-1"),
+        pytest.param({}, TpapParameters(), id="empty"),
+    ],
+)
+def test_tpap_parameters_from_tpap_object(tpap: dict, expected: TpapParameters) -> None:
+    """Discovery and the in-band discover read the tpap object the same way."""
+    assert TpapParameters._from_tpap_object(tpap) == expected
+    assert TpapParameters._from_tpap_object(tpap, mac="AA", owner="o") == replace(
+        expected, mac="AA", owner="o"
+    )

@@ -6,6 +6,7 @@ query methods without actually replacing the device protocol class with one of
 the testing fake protocols.
 """
 
+import json
 import logging
 from typing import cast
 
@@ -42,6 +43,7 @@ from kasa.deviceconfig import (
     DeviceFamily,
 )
 from kasa.discover import DiscoveryResult
+from kasa.iot import IotLightStrip
 from kasa.transports import (
     AesTransport,
     BaseTransport,
@@ -50,10 +52,11 @@ from kasa.transports import (
     LinkieTransportV2,
     SslAesTransport,
     SslTransport,
+    TpapTransport,
     XorTransport,
 )
 
-from .conftest import DISCOVERY_MOCK_IP
+from .conftest import DISCOVERY_MOCK_IP, load_fixture
 
 # Device Factory tests are not relevant for real devices which run against
 # a single device that has already been created via the factory.
@@ -273,6 +276,18 @@ ET = DeviceEncryptionType
             id="smartcam-doorbell",
         ),
         pytest.param(
+            CP(DF.SmartIpCamera, ET.Tpap, https=True),
+            SmartCamProtocol,
+            TpapTransport,
+            id="smartcam-tpap",
+        ),
+        pytest.param(
+            CP(DF.SmartTapoHub, ET.Tpap, https=True),
+            SmartCamProtocol,
+            TpapTransport,
+            id="smartcam-hub-tpap",
+        ),
+        pytest.param(
             CP(DF.IotIpCamera, ET.Aes, https=True),
             IotProtocol,
             LinkieTransportV2,
@@ -309,6 +324,12 @@ ET = DeviceEncryptionType
             id="iot-xor",
         ),
         pytest.param(
+            CP(DF.IotSmartBulb, ET.Tpap, https=False),
+            IotProtocol,
+            TpapTransport,
+            id="iot-tpap",
+        ),
+        pytest.param(
             CP(DF.SmartTapoPlug, ET.Aes, https=False),
             SmartProtocol,
             AesTransport,
@@ -325,6 +346,12 @@ ET = DeviceEncryptionType
             SmartProtocol,
             KlapTransportV2,
             id="smart-chime",
+        ),
+        pytest.param(
+            CP(DF.SmartTapoPlug, ET.Tpap, https=False),
+            SmartProtocol,
+            TpapTransport,
+            id="smart-tpap",
         ),
     ],
 )
@@ -398,3 +425,23 @@ async def test_connect_iot_klap_dimmer_classification(mocker):
         assert not isinstance(dev, IotPlug) or isinstance(dev, IotDimmer)
     finally:
         await dev.disconnect()
+
+
+async def test_connect_iot_tpap_uses_sysinfo_class(mocker):
+    """IOT over TPAP picks the class from sysinfo, so strips get IotLightStrip."""
+    sysinfo = json.loads(load_fixture("iot", "KL420L5(US)_1.0_1.0.2.json"))
+    config = DeviceConfig(
+        "127.0.0.1",
+        credentials=Credentials("user", "pass"),
+        connection_type=CP(DF.IotSmartBulb, ET.Tpap, login_version=2, https=False),
+    )
+    query = mocker.patch("kasa.IotProtocol.query", return_value=sysinfo)
+    update = mocker.patch("kasa.iot.IotLightStrip.update")
+
+    dev = await connect(config=config)
+
+    assert isinstance(dev, IotLightStrip)
+    assert isinstance(dev.protocol._transport, TpapTransport)
+    query.assert_called_once()
+    update.assert_called_once()
+    await dev.disconnect()

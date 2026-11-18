@@ -9,3 +9,5 @@ async def test_ssl_context_extends_python_defaults_with_legacy_suites() -> None:
     enabled = {c["name"] for c in (await get_ssl_context()).get_ciphers()}
     assert default <= enabled
     assert {"AES128-GCM-SHA256", "AES256-SHA"} <= enabled
+    # TPAP offered these for TLS mode 1 before it used this context
+    assert {"ECDHE-ECDSA-AES128-SHA", "ECDHE-ECDSA-AES256-SHA"} <= enabled
