@@ -539,8 +539,3 @@ class IotBulb(IotDevice):
         return await self._query_helper(
             "smartlife.iot.common.system", "set_dev_alias", {"alias": alias}
         )
-
-    @property
-    def max_device_response_size(self) -> int:
-        """Returns the maximum response size the device can safely construct."""
-        return 4096
