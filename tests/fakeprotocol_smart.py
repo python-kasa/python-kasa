@@ -102,6 +102,10 @@ class FakeSmartTransport(BaseTransport):
         ),
         "get_wireless_scan_info": ("wireless", {"ap_list": [], "wep_supported": False}),
         "get_auto_off_config": ("auto_off", {"delay_min": 10, "enable": False}),
+        "get_shutdown_info": (
+            "shutdown_mode",
+            {"enable": False, "mode": "full_closed"},
+        ),
         "get_led_info": (
             "led",
             {
@@ -437,6 +441,10 @@ class FakeSmartTransport(BaseTransport):
                 raise RuntimeError(
                     f"No {target_method} in child info, calling set before get not supported."
                 )
+            if child_method == "set_shutdown_info":
+                return self._set_shutdown_info(
+                    child_device_calls[target_method], info, child_params
+                )
             child_device_calls[target_method].update(child_params)
             return {"error_code": 0}
         else:
@@ -460,15 +468,41 @@ class FakeSmartTransport(BaseTransport):
         """
         if "trv_states" not in info:
             return
-        should_heat = not info.get("frost_protection_on", False) and info.get(
-            "target_temp", 0
-        ) > info.get("current_temp", 0)
         trv_states = set(info["trv_states"])
+        should_heat = (
+            "shutdown" not in trv_states
+            and not info.get("frost_protection_on", False)
+            and info.get("target_temp", 0) > info.get("current_temp", 0)
+        )
         if should_heat:
             trv_states.add("heating")
         else:
             trv_states.discard("heating")
         info["trv_states"] = list(trv_states)
+
+    def _set_shutdown_info(
+        self, shutdown_info: dict, device_info: dict, params: dict
+    ) -> dict:
+        """Simulate set_shutdown_info, as probed on a KE100 with firmware 2.15.0.
+
+        Enable and mode are mandatory, and shutdown replaces the heating state.
+        """
+        if (
+            "enable" not in params
+            or params.get("mode") not in {"full_closed", "full_open"}
+            or not 0 <= params.get("anti_clogging_day", 0) <= 6
+            or not 0 <= params.get("anti_clogging_min", 0) <= 1439
+        ):
+            return {"error_code": SmartErrorCode.PARAMS_ERROR.value}
+        shutdown_info.update(params)
+        trv_states = set(device_info["trv_states"])
+        if params["enable"]:
+            trv_states.add("shutdown")
+        else:
+            trv_states.discard("shutdown")
+        device_info["trv_states"] = list(trv_states)
+        self._update_trv_states(device_info)
+        return {"error_code": 0}
 
     def _get_on_off_gradually_info(self, info: dict, params: dict | None):
         if self.components["on_off_gradually"] == 1:
@@ -759,6 +793,11 @@ class FakeSmartTransport(BaseTransport):
                 "setSwitchDustCollection",
             ]:
                 return {"error_code": 0}
+
+            if method == "set_shutdown_info":
+                return self._set_shutdown_info(
+                    info[target_method], info["get_device_info"], params
+                )
 
             info[target_method].update(params)
 

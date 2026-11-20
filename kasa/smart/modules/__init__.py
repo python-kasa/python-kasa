@@ -37,6 +37,7 @@ from .motionsensor import MotionSensor
 from .overheatprotection import OverheatProtection
 from .powerprotection import PowerProtection
 from .reportmode import ReportMode
+from .shutdownmode import ShutdownMode
 from .speaker import Speaker
 from .temperaturecontrol import TemperatureControl
 from .temperaturerecords import TemperatureRecords
@@ -87,6 +88,7 @@ __all__ = [
     "PowerProtection",
     "OverheatProtection",
     "LightStripSegment",
+    "ShutdownMode",
     "Speaker",
     "HomeKit",
     "Matter",

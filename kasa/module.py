@@ -142,6 +142,7 @@ class Module(ABC):
     )
     MotionSensor: Final[ModuleName[smart.MotionSensor]] = ModuleName("MotionSensor")
     ReportMode: Final[ModuleName[smart.ReportMode]] = ModuleName("ReportMode")
+    ShutdownMode: Final[ModuleName[smart.ShutdownMode]] = ModuleName("ShutdownMode")
     SmartLightEffect: Final[ModuleName[smart.SmartLightEffect]] = ModuleName(
         "LightEffect"
     )
