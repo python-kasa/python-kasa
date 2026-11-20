@@ -141,7 +141,7 @@ async def test_connect_logs_connect_time(
     config = DeviceConfig(
         host=host, credentials=Credentials("foor", "bar"), connection_type=ctype
     )
-    logging.getLogger("kasa").setLevel(logging.DEBUG)
+    caplog.set_level(logging.DEBUG, logger="kasa")
     await connect(
         config=config,
     )

@@ -22,6 +22,7 @@ from kasa import (
     KasaException,
     Module,
 )
+from kasa.cli.common import _echo
 from kasa.cli.device import (
     alias,
     factory_reset,
@@ -1568,3 +1569,10 @@ def test_echo_strips_rich_tags_without_rich(monkeypatch, capsys):
     module._echo("[bold red]Only discover is available[/bold red] [ABC]")
 
     assert capsys.readouterr().out == "Only discover is available [ABC]\n"
+
+
+def test_echo_prints_non_string_messages(capsys):
+    """Messages other than strings are echoed as-is."""
+    _echo(1)
+
+    assert capsys.readouterr().out == "1\n"

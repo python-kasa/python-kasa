@@ -224,18 +224,9 @@ class SmartProtocol(BaseProtocol):
         # Break the requests down as there can be a size limit
         step = self._multi_request_batch_size
         if step == 1:
-            # If step is 1 do not send request batches
-            for request in multi_requests:
-                method = request["method"]
-                req = self.get_smart_request(method, request.get("params"))
-                resp = await self._transport.send(req)
-                self._handle_response_error_code(
-                    resp, method, raise_on_error=raise_on_error
-                )
-                multi_result[method] = resp["result"]
-            return multi_result
-
-        for batch_num, i in enumerate(range(0, end, step)):
+            # Batching is off, so the loop at the end sends each request on its own
+            multi_requests = []
+        for batch_num, i in enumerate(range(0, len(multi_requests), step)):
             requests_step = multi_requests[i : i + step]
 
             smart_params = {"requests": requests_step}
@@ -254,8 +245,7 @@ class SmartProtocol(BaseProtocol):
                 if self.REQUIRES_MULTIREQUESTS:
                     raise
                 # P300 does not respond to some batched requests (e.g. both child
-                # list requests together) so disable batching. Batch size is never
-                # 1 here as that case sends single requests above.
+                # list requests together) so disable batching.
                 self._multi_request_batch_size = 1
                 raise _RetryableError(
                     "Timeout during multi request, multi requests disabled"
@@ -328,7 +318,12 @@ class SmartProtocol(BaseProtocol):
                 self._handle_response_error_code(
                     resp, method, raise_on_error=raise_on_error
                 )
-                multi_result[method] = resp.get("result")
+                result = resp.get("result")
+                if iterate_list_pages and result:
+                    await self._handle_response_lists(
+                        result, method, params, retry_count=retry_count
+                    )
+                multi_result[method] = result
         return multi_result
 
     async def _execute_query(

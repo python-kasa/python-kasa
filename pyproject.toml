@@ -114,7 +114,10 @@ markers = [
     "requires_dummy: test requires dummy data to pass, skipped on real devices",
 ]
 asyncio_mode = "auto"
-asyncio_default_fixture_loop_scope = "function"
+# One event loop for the run, not one per test: on Windows each loop opens a
+# loopback TCP connection, and thousands of them use up the dynamic ports.
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 #timeout = 10
 # dist=loadgroup enables grouping of tests into single worker.
 # required as caplog doesn't play nicely with multiple workers.

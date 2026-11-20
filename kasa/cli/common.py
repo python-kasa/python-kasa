@@ -41,7 +41,7 @@ except ImportError:
 
         @wraps(echo_func)
         def wrapper(message=None, *args, **kwargs) -> None:
-            if message is not None:
+            if isinstance(message, str):
                 message = rich_formatting.sub("", message)
             echo_func(message, *args, **kwargs)
 
