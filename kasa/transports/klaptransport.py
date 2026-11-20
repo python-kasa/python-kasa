@@ -72,8 +72,6 @@ from .sslcontext import get_ssl_context
 _LOGGER = logging.getLogger(__name__)
 
 
-_ACCOUNT_SETUP = "the account e-mail with the setup password"
-
 ONE_DAY_SECONDS = 86400
 SESSION_EXPIRE_BUFFER_SECONDS = 60 * 20
 
@@ -230,7 +228,7 @@ class KlapTransport(BaseTransport):
             _LOGGER.debug("handshake1 hashes match with expected credentials")
             return local_seed, remote_seed, self._local_auth_hash  # type: ignore
 
-        for description, auth_hash in self._fallback_auth_hashes():
+        for description, auth_hash, save_hash in self._fallback_auth_hashes():
             if (
                 self.handshake1_seed_auth_hash(local_seed, remote_seed, auth_hash)
                 == server_hash
@@ -241,7 +239,7 @@ class KlapTransport(BaseTransport):
                     self._host,
                     description,
                 )
-                if description == _ACCOUNT_SETUP:
+                if save_hash:
                     # A stored hash has no e-mail to rebuild this one from
                     self._local_auth_hash = auth_hash
                 return local_seed, remote_seed, auth_hash
@@ -253,25 +251,29 @@ class KlapTransport(BaseTransport):
         _LOGGER.debug(msg)
         raise AuthenticationError(msg)
 
-    def _fallback_auth_hashes(self) -> list[tuple[str, bytes]]:
-        """Return the credentials to try after the given ones, with their hashes."""
+    def _fallback_auth_hashes(self) -> list[tuple[str, bytes, bool]]:
+        """Return fallback descriptions, auth hashes and whether to save the hash."""
         username = self._credentials.username if self._credentials else ""
         setup_password = get_default_credentials(DEFAULT_CREDENTIALS["KASA"]).password
         # The Kasa app uses this pair, with the e-mail trimmed and lowercased,
         # when the discovery reply has ANS
         fallbacks = [
-            (_ACCOUNT_SETUP, Credentials(name, setup_password))
+            (
+                "the account e-mail with the setup password",
+                Credentials(name, setup_password),
+                True,
+            )
             for name in dict.fromkeys([username, username.strip().lower()])
             if name
         ]
         fallbacks += [
-            (f"the {key} default credentials", get_default_credentials(value))
+            (f"the {key} default credentials", get_default_credentials(value), False)
             for key, value in DEFAULT_CREDENTIALS.items()
         ]
-        fallbacks.append(("blank credentials", Credentials()))
+        fallbacks.append(("blank credentials", Credentials(), False))
         return [
-            (description, self.generate_auth_hash(credentials))
-            for description, credentials in fallbacks
+            (description, self.generate_auth_hash(credentials), save_hash)
+            for description, credentials, save_hash in fallbacks
             if credentials != self._credentials
         ]
 
