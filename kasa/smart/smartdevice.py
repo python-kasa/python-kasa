@@ -113,10 +113,11 @@ class SmartDevice(Device):
             child_component_list := child_device_components_resp.get(
                 "child_component_list"
             )
-        ) is None:
-            # Some hubs intermittently return the component list without the
-            # list itself, e.g. an H200 without children. Keep the known children
-            # instead of deleting them, the next update will reconcile.
+        ) is None or not isinstance(child_component_list, list):
+            # Some hubs intermittently omit child_component_list (H200) or
+            # return a non-list (H500 dumps). Treating that as an empty roster
+            # would delete known children, so keep them until a complete
+            # response arrives.
             _LOGGER.debug(
                 "No child component list for device %s, response: %s",
                 self.host,
@@ -125,13 +126,19 @@ class SmartDevice(Device):
             return changed
 
         smart_children_components = {
-            child["device_id"]: child for child in child_component_list
+            child["device_id"]: child
+            for child in child_component_list
+            if isinstance(child, dict) and child.get("device_id")
         }
         children = self._children
         child_ids: set[str] = set()
         existing_child_ids = set(self._children.keys())
 
-        for info in child_device_resp["child_device_list"]:
+        device_list = child_device_resp.get("child_device_list", [])
+        if not isinstance(device_list, list):
+            device_list = []
+
+        for info in device_list:
             if (child_id := info.get("device_id")) and (
                 child_components := smart_children_components.get(child_id)
             ):

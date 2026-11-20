@@ -58,6 +58,7 @@ SMARTCAM_REQUESTS: list[dict] = [
     {"getTimezone": {"system": {"name": "basic"}}},
     {"getClockStatus": {"system": {"name": "clock_status"}}},
     {"getAppComponentList": {"app_component": {"name": "app_component_list"}}},
+    {"getSupportChildDeviceCategory": {"childControl": {}}},
     {"getChildDeviceComponentList": {"childControl": {"start_index": 0}}},
     # single request only methods
     {"get": {"function": {"name": ["module_spec"]}}},
