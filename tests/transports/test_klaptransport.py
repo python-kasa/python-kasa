@@ -30,7 +30,7 @@ from kasa.exceptions import (
     _RetryableError,
 )
 from kasa.httpclient import HttpClient
-from kasa.iot import IotBulb, IotDevice, IotPlug, IotWallSwitch
+from kasa.iot import IotBulb, IotDevice, IotLightStrip, IotPlug, IotWallSwitch
 from kasa.protocols import IotProtocol, SmartProtocol
 from kasa.transports.aestransport import AesTransport
 from kasa.transports.klaptransport import (
@@ -51,6 +51,7 @@ KLAP_CONNECTION = DeviceConnectionParameters(
 )
 
 ks200m_iot = parametrize("ks200m", model_filter={"KS200M"}, protocol_filter={"IOT"})
+kl125_iot = parametrize("kl125", model_filter={"KL125"}, protocol_filter={"IOT"})
 
 # Transport tests are not designed for real devices
 pytestmark = [pytest.mark.requires_dummy]
@@ -233,7 +234,7 @@ async def test_protocol_logging(
     mocker: MockerFixture, caplog: pytest.LogCaptureFixture, log_level: int
 ) -> None:
     caplog.set_level(log_level)
-    logging.getLogger("kasa").setLevel(log_level)
+    caplog.set_level(log_level, logger="kasa")
 
     def _return_encrypted(*_, **__):
         # Devices sign the response for the sequence number of the request
@@ -594,6 +595,34 @@ async def test_handshake(
     await protocol.close()
 
 
+@pytest.mark.xdist_group(name="caplog")
+async def test_handshake_debug_logging(
+    mocker: MockerFixture, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Both handshake steps are logged when debug logging is enabled."""
+    caplog.set_level(logging.DEBUG, logger="kasa")
+    server_seed = secrets.token_bytes(16)
+    credentials = Credentials("foo", "bar")
+    device_auth_hash = KlapTransport.generate_auth_hash(credentials)
+
+    async def _return_handshake_response(url: URL, params=None, data=None, *_, **__):
+        if url == URL("http://127.0.0.1:80/app/handshake1"):
+            seed_auth_hash = _sha256(data + device_auth_hash)
+            return _mock_response(200, server_seed + seed_auth_hash)
+        return _mock_response(200, b"")
+
+    mocker.patch.object(
+        aiohttp.ClientSession, "post", side_effect=_return_handshake_response
+    )
+    transport = KlapTransport(config=DeviceConfig("127.0.0.1", credentials=credentials))
+
+    await transport.perform_handshake()
+    assert "Handshake1 posted" in caplog.text
+    assert "Handshake1 success" in caplog.text
+    assert "Handshake2 posted" in caplog.text
+    await transport.close()
+
+
 async def test_query(mocker: MockerFixture) -> None:
     client_seed = None
     last_seq = None
@@ -739,23 +768,28 @@ async def test_port_override() -> None:
 async def test_max_device_response_size_klap(
     dev: IotDevice, mocker: MockerFixture
 ) -> None:
-    """Test that devices other than bulbs use a smaller budget over KLAP."""
+    """Test that all IoT devices use a smaller budget over KLAP."""
     is_bulb = isinstance(dev, IotBulb)
     assert dev.max_device_response_size == (4096 if is_bulb else 16 * 1024)
 
     mocker.patch.object(dev.config, "connection_type", KLAP_CONNECTION)
-    expected = 4096 if is_bulb else 2048
-    assert dev.max_device_response_size == expected
+    assert dev.max_device_response_size == 2048
     for child in dev.children:
-        assert child.max_device_response_size == expected
+        assert child.max_device_response_size == 2048
 
 
-def test_max_device_response_size_before_update() -> None:
+@pytest.mark.parametrize(
+    ("device_class", "xor_budget"),
+    [(IotPlug, 16 * 1024), (IotBulb, 4096), (IotLightStrip, 4096)],
+)
+def test_max_device_response_size_before_update(
+    device_class: type[IotDevice], xor_budget: int
+) -> None:
     """Test that the budget follows the connection settings before an update."""
-    assert IotPlug("127.0.0.1").max_device_response_size == 16 * 1024
+    assert device_class("127.0.0.1").max_device_response_size == xor_budget
 
     config = DeviceConfig("127.0.0.1", connection_type=KLAP_CONNECTION)
-    assert IotPlug("127.0.0.1", config=config).max_device_response_size == 2048
+    assert device_class("127.0.0.1", config=config).max_device_response_size == 2048
 
 
 @ks200m_iot
@@ -776,3 +810,26 @@ async def test_ks200m_update_split_klap(
         ["schedule"],
         ["anti_theft", "cnCloud", "smartlife.iot.LAS", "smartlife.iot.PIR", "time"],
     ]
+
+
+@kl125_iot
+async def test_kl125_update_split_klap(dev: IotBulb, mocker: MockerFixture) -> None:
+    """Keep sysinfo and energy queries separate on a KL125 over KLAP."""
+    spy = mocker.spy(dev.protocol, "query")
+    await dev.update()
+    assert any(
+        "system" in call.args[0] and dev.emeter_type in call.args[0]
+        for call in spy.call_args_list
+    )
+
+    mocker.patch.object(dev.config, "connection_type", KLAP_CONNECTION)
+    spy.reset_mock()
+    await dev.update()
+
+    requests = [call.args[0] for call in spy.call_args_list]
+    assert any("system" in request for request in requests)
+    assert any(dev.emeter_type in request for request in requests)
+    assert all(
+        "system" not in request or dev.emeter_type not in request
+        for request in requests
+    )

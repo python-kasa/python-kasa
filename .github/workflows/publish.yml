@@ -17,22 +17,22 @@ jobs:
     steps:
     - name: Checkout Source Files
       id: checkout
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      uses: actions/checkout@v7.0.1
 
     - name: Setup uv
       id: setup-uv
-      uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      uses: astral-sh/setup-uv@v10.3.2
       with:
         version-file: uv.lock
         python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Build and Check Packages
       id: build-packages
-      uses: ./.github/actions/build-packages
+      uses: $/.github/actions/build-packages
 
     - name: Publish Release on PyPI
       id: publish-release-on-pypi
-      uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+      uses: pypa/gh-action-pypi-publish@v1.14.3
       with:
         # Metadata is already verified by the build action, same as in CI.
         verify-metadata: false

@@ -22,6 +22,7 @@ from kasa import (
     KasaException,
     Module,
 )
+from kasa.cli.common import _echo
 from kasa.cli.device import (
     alias,
     factory_reset,
@@ -1768,3 +1769,10 @@ async def test_tpap_option_invalid(
     assert res.exit_code != 0
     assert message in res.output
     connect.assert_not_called()
+
+
+def test_echo_prints_non_string_messages(capsys):
+    """Messages other than strings are echoed as-is."""
+    _echo(1)
+
+    assert capsys.readouterr().out == "1\n"

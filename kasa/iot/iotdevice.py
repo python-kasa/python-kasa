@@ -735,6 +735,8 @@ class IotDevice(Device):
         # and have even less room right after a state change.
         if self.config.connection_type.encryption_type is DeviceEncryptionType.Klap:
             return 2048
+        if self.device_type in {DeviceType.Bulb, DeviceType.LightStrip}:
+            return 4096
         return 16 * 1024
 
     @property
