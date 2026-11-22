@@ -263,6 +263,11 @@ class SmartCamDevice(SmartDevice):
         return {mappings.get(k, k): v for k, v in basic_info.items()}
 
     @property
+    def is_battery_powered(self) -> bool:
+        """Return True if the device runs on battery power."""
+        return SmartCamModule.SmartCamBattery in self.modules
+
+    @property
     def is_on(self) -> bool:
         """Return true if the device is on."""
         if (camera := self.modules.get(Module.Camera)) and not camera.disabled:

@@ -721,6 +721,11 @@ class SmartDevice(Device):
         return Module.Energy in self.modules
 
     @property
+    def is_battery_powered(self) -> bool:
+        """Return True if the device runs on battery power."""
+        return Module.BatterySensor in self.modules
+
+    @property
     def is_on(self) -> bool:
         """Return true if the device is on."""
         return bool(self._info.get("device_on"))

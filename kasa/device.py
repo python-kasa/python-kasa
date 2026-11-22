@@ -476,6 +476,16 @@ class Device(ABC):
         """Return if the device has emeter."""
 
     @property
+    def is_battery_powered(self) -> bool:
+        """Return True if the device runs on battery power.
+
+        Battery-powered devices, such as battery cameras, may sleep between
+        events and be woken up by every request, so callers can use this to
+        poll them less frequently.
+        """
+        return False
+
+    @property
     @abstractmethod
     def on_since(self) -> datetime | None:
         """Return the time that the device was turned on or None if turned off.
