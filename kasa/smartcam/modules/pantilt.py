@@ -35,7 +35,7 @@ class PanTilt(SmartCamModule):
                 "pan_right",
                 "Pan right",
                 container=self,
-                attribute_setter=lambda: self.pan(self._pan_step * -1),
+                attribute_setter=lambda: self.pan(self._pan_step),
                 type=Feature.Type.Action,
             )
         )
@@ -45,7 +45,7 @@ class PanTilt(SmartCamModule):
                 "pan_left",
                 "Pan left",
                 container=self,
-                attribute_setter=lambda: self.pan(self._pan_step),
+                attribute_setter=lambda: self.pan(self._pan_step * -1),
                 type=Feature.Type.Action,
             )
         )

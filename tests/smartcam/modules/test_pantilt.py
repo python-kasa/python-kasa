@@ -210,3 +210,25 @@ async def test_pantilt_no_presets_in_data(dev: Device, mocker: MockerFixture) ->
 
     assert pantilt_mod._presets == {}
     assert pantilt_mod.presets == {}
+
+
+@pantilt
+@pytest.mark.parametrize(
+    ("feature_id", "x_coord", "y_coord"),
+    [
+        ("pan_right", "30", "0"),
+        ("pan_left", "-30", "0"),
+        ("tilt_up", "0", "10"),
+        ("tilt_down", "0", "-10"),
+    ],
+)
+async def test_pantilt_direction_features(
+    dev: Device, mocker: MockerFixture, feature_id: str, x_coord: str, y_coord: str
+) -> None:
+    mock_protocol_query = mocker.patch.object(dev.protocol, "query", return_value={})
+
+    await dev.features[feature_id].set_value(None)
+
+    mock_protocol_query.assert_called_with(
+        request={"do": {"motor": {"move": {"x_coord": x_coord, "y_coord": y_coord}}}}
+    )
