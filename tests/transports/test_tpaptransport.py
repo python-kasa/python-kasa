@@ -1585,6 +1585,64 @@ async def test_login_errors(
 
 
 @pytest.mark.parametrize(
+    "register",
+    [
+        pytest.param({"dev_random": "A"}, id="random-base64"),
+        pytest.param({"dev_salt": "A"}, id="salt-base64"),
+        pytest.param({"dev_share": "A"}, id="share-base64"),
+        pytest.param({"dev_salt": "\u00e9"}, id="salt-not-ascii"),
+        pytest.param({"dev_share": _b64(b"\x04" + bytes(64))}, id="invalid-point"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("protocol_class", "family", "candidates"),
+    [
+        (SmartProtocol, DeviceFamily.SmartTapoPlug, 1),
+        (IotProtocol, DeviceFamily.IotSmartBulb, 1),
+        (SmartCamProtocol, DeviceFamily.SmartIpCamera, 2),
+    ],
+)
+async def test_malformed_register_is_reset_without_protocol_retries(
+    mocker: MockerFixture,
+    register: dict[str, Any],
+    protocol_class: type[SmartProtocol] | type[IotProtocol],
+    family: DeviceFamily,
+    candidates: int,
+) -> None:
+    """Malformed SPAKE2+ data fails locally, then a fresh login can recover."""
+    device = _patch(mocker, MockTpapDevice(family, register=dict(register)))
+    transport = _transport(family)
+    protocol = protocol_class(transport=transport)
+    reset = mocker.spy(transport, "reset")
+    close = mocker.spy(transport._http_client, "close")
+
+    try:
+        with pytest.raises(KasaException, match="Invalid TPAP register response"):
+            await protocol.query(DUMMY_QUERY)
+
+        reset.assert_awaited_once()
+        assert transport._encryption_session is None
+        assert transport._shared_key is None
+        assert transport._user_random is None
+        assert transport._ssl_context is None
+        assert device.calls["pake_register"] == candidates
+        assert device.calls["pake_share"] == 0
+        assert device.calls["request"] == 0
+        assert device.failed_attempts == 0
+
+        device.register.clear()
+        assert await transport.send(json_dumps(DUMMY_QUERY)) == DEVICE_RESPONSE
+        assert device.calls["pake_share"] == 1
+        assert device.failed_attempts == 0
+    finally:
+        await protocol.close()
+
+    close.assert_awaited_once()
+    assert transport._encryption_session is None
+    assert transport._shared_key is None
+
+
+@pytest.mark.parametrize(
     ("reply", "match"),
     [
         pytest.param(LOCKED, "retry in 30 minutes", id="locked-minutes"),
@@ -1932,6 +1990,55 @@ async def test_request_errors(
 
     with pytest.raises(error, match=match):
         await transport.send(json_dumps(DUMMY_QUERY))
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        pytest.param(b"private-device-reply", id="invalid-json"),
+        pytest.param(b"\xffprivate-device-reply", id="invalid-utf8"),
+    ],
+)
+@pytest.mark.parametrize("protocol_class", [SmartProtocol, IotProtocol])
+async def test_malformed_encrypted_reply_is_reset_without_protocol_retries(
+    mocker: MockerFixture,
+    caplog: pytest.LogCaptureFixture,
+    body: bytes,
+    protocol_class: type[SmartProtocol] | type[IotProtocol],
+) -> None:
+    """Authenticated malformed JSON is a library error, with normal cleanup."""
+    caplog.set_level(logging.DEBUG, logger="kasa")
+    device = _patch(mocker, MockTpapDevice(response=body))
+    transport = _transport()
+    protocol = protocol_class(transport=transport)
+    reset = mocker.spy(transport, "reset")
+    close = mocker.spy(transport._http_client, "close")
+
+    try:
+        with pytest.raises(KasaException, match="Invalid TPAP JSON response") as exc:
+            await protocol.query(DUMMY_QUERY)
+
+        assert "private-device-reply" not in str(exc.value)
+        assert "private-device-reply" not in caplog.text
+        reset.assert_awaited_once()
+        assert transport._encryption_session is None
+        assert transport._shared_key is None
+        assert transport._ssl_context is None
+        assert device.calls["pake_register"] == 1
+        assert device.calls["pake_share"] == 1
+        assert device.calls["request"] == 1
+        assert device.failed_attempts == 0
+
+        device.response = DEVICE_RESPONSE
+        assert await protocol.query(DUMMY_QUERY)
+        assert device.calls["pake_share"] == 2
+        assert device.calls["request"] == 2
+    finally:
+        await protocol.close()
+
+    close.assert_awaited_once()
+    assert transport._encryption_session is None
+    assert transport._shared_key is None
 
 
 @pytest.mark.parametrize(

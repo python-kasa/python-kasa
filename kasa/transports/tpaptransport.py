@@ -778,17 +778,20 @@ class TpapTransport(BaseTransport):
             raise KasaException(f"Unsupported TPAP session cipher: {encryption}")
 
         self._cipher_id = chosen_cipher
-        user_share, user_confirm, expected_dev_confirm, self._shared_key = (
-            crypto.spake2p_share(
-                credentials_string.encode(),
-                suite_type=suite_type,
-                salt=base64.b64decode(dev_salt),
-                iterations=iterations,
-                user_random=base64.b64decode(self._user_random),
-                dev_random=base64.b64decode(dev_random),
-                dev_share=base64.b64decode(dev_share),
+        try:
+            user_share, user_confirm, expected_dev_confirm, self._shared_key = (
+                crypto.spake2p_share(
+                    credentials_string.encode(),
+                    suite_type=suite_type,
+                    salt=base64.b64decode(dev_salt),
+                    iterations=iterations,
+                    user_random=base64.b64decode(self._user_random),
+                    dev_random=base64.b64decode(dev_random),
+                    dev_share=base64.b64decode(dev_share),
+                )
             )
-        )
+        except ValueError as exc:
+            raise KasaException("Invalid TPAP register response") from exc
         self._expected_dev_confirm = base64.b64encode(expected_dev_confirm).decode()
         return {
             "sub_method": "pake_share",
@@ -940,7 +943,10 @@ class TpapTransport(BaseTransport):
 
     @staticmethod
     def _load_json_dict(payload: bytes) -> dict[str, Any]:
-        response_data = json_loads(payload.decode())
+        try:
+            response_data = json_loads(payload.decode())
+        except ValueError as exc:
+            raise KasaException("Invalid TPAP JSON response") from exc
         if not isinstance(response_data, dict):
             raise KasaException("Unexpected TPAP JSON response body type")
         return response_data
