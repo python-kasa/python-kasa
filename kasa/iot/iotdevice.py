@@ -438,7 +438,10 @@ class IotDevice(Device):
                 # {'err_code': -1, 'err_msg': 'module not support'}
                 # become top level key/values of the response so check for dict
                 if isinstance(v, dict):
-                    update.setdefault(k, {}).update(**v)
+                    # Build a new dict instead of updating in place: strip children
+                    # start from the parent's last update, so in-place updates
+                    # would leak one socket's data into the parent and siblings.
+                    update[k] = {**update.get(k, {}), **v}
         self._last_update = update
 
         # IOT modules are added as default but could be unsupported post first update

@@ -118,7 +118,7 @@ class IotStrip(IotDevice):
         self.add_module(Module.IotSchedule, Schedule(self, "schedule"))
         self.add_module(Module.IotUsage, Usage(self, "schedule"))
         self.add_module(Module.Time, Time(self, "time"))
-        self.add_module(Module.IotCountdown, Countdown(self, "countdown"))
+        self.add_module(Module.IotCountdown, Countdown(self, "count_down"))
         self.add_module(Module.Led, Led(self, "system"))
         self.add_module(Module.IotCloud, Cloud(self, "cnCloud"))
         if self.has_emeter:
@@ -349,7 +349,7 @@ class IotStripPlug(IotPlug):
         self.add_module(Module.IotUsage, Usage(self, "schedule"))
         self.add_module(Module.IotAntitheft, Antitheft(self, "anti_theft"))
         self.add_module(Module.IotSchedule, Schedule(self, "schedule"))
-        self.add_module(Module.IotCountdown, Countdown(self, "countdown"))
+        self.add_module(Module.IotCountdown, Countdown(self, "count_down"))
         # Note: do not add a Time module to the child; time is device-level.
         # Child exposes time/timezone by delegating to the parent.
 
