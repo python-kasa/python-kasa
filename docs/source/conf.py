@@ -12,6 +12,7 @@
 #
 import os
 import sys
+from importlib.metadata import version as package_version
 
 sys.path.insert(0, os.path.abspath(".."))  # Will find modules in the docs parent
 
@@ -21,6 +22,8 @@ sys.path.insert(0, os.path.abspath(".."))  # Will find modules in the docs paren
 project = "python-kasa"
 copyright = "2020, python-kasa developers"
 author = "python-kasa developers"
+release = package_version("python-kasa")
+version = release
 
 
 # -- General configuration ---------------------------------------------------

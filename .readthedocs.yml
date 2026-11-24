@@ -4,6 +4,7 @@ formats: all
 
 sphinx:
   configuration: docs/source/conf.py
+  fail_on_warning: true
 
 
 build:
@@ -13,6 +14,6 @@ build:
   jobs:
     install:
       - pip install --upgrade pip
-      - pip install --group 'docs'
+      - pip install . --group 'docs'
     pre_build:
       - python -m sphinx -b linkcheck docs/source/ $READTHEDOCS_OUTPUT/linkcheck
