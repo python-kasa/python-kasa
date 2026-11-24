@@ -1490,9 +1490,10 @@ async def test_discover_config(
 ) -> None:
     """Report only configurations that blind probing can determine."""
     host = "127.0.0.1"
-    if "mgt_encrypt_schm" in dev._discovery_info:
+    discovery_info = dev._discovery_info
+    if discovery_info and "mgt_encrypt_schm" in discovery_info:
         dev.config.connection_type = Discover._get_connection_parameters(
-            DiscoveryResult.from_dict(dev._discovery_info)
+            DiscoveryResult.from_dict(discovery_info)
         )
     is_tpap = dev.config.connection_type.encryption_type is DeviceEncryptionType.Tpap
     mocker.patch(
