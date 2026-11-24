@@ -163,12 +163,14 @@ async def test_exclude_credentials() -> None:
             TpapParameters(pake=[2]),
             id="only-number-pake-values",
         ),
+        pytest.param({"pake": ["x"]}, TpapParameters(), id="invalid-pake-list"),
+        pytest.param({"pake": []}, TpapParameters(pake=[]), id="empty-pake-list"),
         pytest.param({"dac": 2}, TpapParameters(dac=False), id="dac-only-1"),
         pytest.param({}, TpapParameters(), id="empty"),
     ],
 )
 def test_tpap_parameters_from_tpap_object(tpap: dict, expected: TpapParameters) -> None:
-    """Discovery and the in-band discover read the tpap object the same way."""
+    """Normalize the TPAP object from UDP discovery."""
     assert TpapParameters._from_tpap_object(tpap) == expected
     assert TpapParameters._from_tpap_object(tpap, mac="AA", owner="o") == replace(
         expected, mac="AA", owner="o"

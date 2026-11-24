@@ -6,9 +6,8 @@ a SPAKE2+ exchange that gives a shared key, then an encrypted session.
 The login values are the TLS mode (0 for http, 1 for TLS, 2 and above for TLS
 checked against TP-Link's device root CA), the port, the passcode types the device
 accepts (``pake``), whether it proves itself with its attestation certificate
-(``dac``) and its MAC. They come from the ``tpap`` object of the UDP discovery
-reply. Without it the client asks the device with an in-band ``discover``,
-except cameras and camera hubs, which refuse that and get fixed defaults.
+(``dac``) and its MAC. Supply them from UDP discovery, from a saved config,
+or explicitly in the connection configuration.
 Discovery also gives the md5 of the owning account's user name, and the
 account is only tried on a device it owns.
 
@@ -39,8 +38,8 @@ import logging
 import secrets
 import ssl
 import struct
-from dataclasses import replace
 from datetime import datetime
+from string import hexdigits
 from typing import TYPE_CHECKING, Any
 
 from cryptography.exceptions import InvalidSignature, InvalidTag
@@ -71,7 +70,7 @@ from .tpap import cert, crypto
 
 _LOGGER = logging.getLogger(__name__)
 
-# The login values before the handshake has them
+# Default values for inspecting optional login fields before connecting.
 _UNKNOWN_TPAP = TpapParameters()
 
 
@@ -115,16 +114,10 @@ class TpapTransport(BaseTransport):
             self._credentials = Credentials._from_plaintext_hash(self._credentials_hash)
         self._http_client: HttpClient = HttpClient(self._config)
         self._ssl_context: ssl.SSLContext | bool | None = None
-        protocol = "https" if config.connection_type.https else "http"
-        # The device's address, which the in-band discover goes to
-        self._bootstrap_url = URL(f"{protocol}://{self._host}:{self._port}")
-        # The login values: from discovery, else the in-band discover or the
-        # camera defaults, and the login URL they give
-        self._discovery_tpap = config.connection_type.tpap
-        self._tpap: TpapParameters | None = None
-        self._app_url = self._bootstrap_url
-        if self._discovery_tpap is not None:
-            self._set_tpap(self._discovery_tpap)
+        self._tpap = config.connection_type.tpap
+        # Discovery can later set the display host to the original hostname.
+        self._endpoint_host = config.host
+        self._app_url: URL
         self._handshake_lock = asyncio.Lock()
         self._send_lock: asyncio.Lock = asyncio.Lock()
         # The login state, and the session once logged in
@@ -186,11 +179,25 @@ class TpapTransport(BaseTransport):
         device_family = self._config.connection_type.device_family
         return device_family in self.KASA_IOT_DEVICE_FAMILIES
 
-    def _set_tpap(self, tpap: TpapParameters) -> None:
-        """Log in with these values from now on."""
-        self._tpap = tpap
-        self._app_url = self._build_app_url(tpap)
-        self._ssl_context = None
+    def _parameter_error(self, reason: str) -> KasaException:
+        return KasaException(
+            f"TPAP connection parameters for {self._host} {reason}. "
+            "Run UDP discovery or provide connection_type.tpap explicitly."
+        )
+
+    def _require_tpap(self) -> TpapParameters:
+        tpap = self._tpap
+        if tpap is None:
+            raise self._parameter_error("are missing")
+        return tpap
+
+    def _require_mac(self, mac: str | None, purpose: str) -> str:
+        normalized = (
+            mac.replace(":", "").replace("-", "") if isinstance(mac, str) else ""
+        )
+        if len(normalized) != 12 or any(char not in hexdigits for char in normalized):
+            raise self._parameter_error(f"require a valid device MAC {purpose}")
+        return normalized
 
     def _build_app_url(self, tpap: TpapParameters) -> URL:
         """Return the login URL for the device's TLS mode and TPAP port.
@@ -208,11 +215,11 @@ class TpapTransport(BaseTransport):
             # else 80, whatever the scheme
             scheme = "https" if tls_mode else "http"
             return URL.build(
-                scheme=scheme, host=self._host, port=port or self.DEFAULT_PORT
+                scheme=scheme, host=self._endpoint_host, port=port or self.DEFAULT_PORT
             )
         # Cameras are always https, on their own port
         is_camera = self._uses_camera_auth
-        scheme = "https" if is_camera or tls_mode in (1, 2) else "http"
+        scheme = "https" if is_camera or tls_mode > 0 else "http"
         ctype = self._config.connection_type
         if port:
             resolved_port = port
@@ -230,28 +237,21 @@ class TpapTransport(BaseTransport):
             resolved_port = ctype.http_port
         return URL.build(
             scheme=scheme,
-            host=self._host,
+            host=self._endpoint_host,
             port=resolved_port,
         )
 
     async def get_ssl_context(self) -> ssl.SSLContext | bool:
         """Get or create the SSL context for the device's TLS mode."""
         if self._ssl_context is None:
-            tpap = self._tpap
+            tpap = self._require_tpap()
             loop = asyncio.get_running_loop()
-            if tpap is None:
-                # Before the login values are known
-                self._ssl_context = await get_ssl_context()
-            elif tpap.tls == 0:
+            if tpap.tls == 0:
                 self._ssl_context = False
             elif tpap.tls >= 2:
-                if not tpap.mac:
-                    raise KasaException(
-                        f"TPAP: no device MAC to check the TLS certificate of "
-                        f"{self._host} against"
-                    )
+                mac = self._require_mac(tpap.mac, "to check the TLS certificate")
                 self._ssl_context = await loop.run_in_executor(
-                    None, self._create_ssl_context, tpap.mac
+                    None, self._create_ssl_context, mac
                 )
             elif tpap.tls == 1 and not (
                 self._uses_camera_auth or self._uses_kasa_iot_auth
@@ -295,19 +295,23 @@ class TpapTransport(BaseTransport):
             self._reset_state()
             _LOGGER.debug("Starting handshake with %s", self._host)
 
-            if self._discovery_tpap is not None:
-                # Log in with what UDP discovery announced
-                tpap, source = self._discovery_tpap, "discovery"
-            elif self._uses_camera_auth:
-                # Cameras refuse the in-band discover (-40209)
-                tpap, source = self._camera_default_tpap(), "the camera defaults"
-            else:
-                tpap, source = await self._discover(), "the in-band discover"
-            self._set_tpap(tpap)
+            tpap = self._require_tpap()
+            if not isinstance(tpap.pake, list) or any(
+                type(value) is not int for value in tpap.pake
+            ):
+                raise self._parameter_error("require a pake list of integers")
+            if type(tpap.tls) is not int or tpap.tls < 0:
+                raise self._parameter_error("require a non-negative TLS mode")
+            if tpap.port is not None and (
+                type(tpap.port) is not int or not 0 <= tpap.port <= 65535
+            ):
+                raise self._parameter_error("have an invalid TPAP port")
+            if tpap.tls >= 2:
+                self._require_mac(tpap.mac, "to check the TLS certificate")
+            self._app_url = self._build_app_url(tpap)
             _LOGGER.debug(
-                "Using the TPAP login from %s for %s: tls %s, port %s, pake %s, "
+                "Using the supplied TPAP login for %s: tls %s, port %s, pake %s, "
                 "dac %s, url %s",
-                source,
                 self._host,
                 tpap.tls,
                 tpap.port,
@@ -318,57 +322,6 @@ class TpapTransport(BaseTransport):
             await self.perform_login()
 
             _LOGGER.debug("Handshake with %s complete", self._host)
-
-    async def _discover(self) -> TpapParameters:
-        """Ask the device at its address for its TPAP login values."""
-        https = self._bootstrap_url.scheme == "https"
-        body = {"method": "login", "params": {"sub_method": "discover"}}
-        status, data = await self._http_client.post(
-            self._bootstrap_url.with_path("/"),
-            json=body,
-            headers=self.COMMON_HEADERS,
-            # The TLS mode isn't known yet
-            ssl=await get_ssl_context() if https else False,
-        )
-        _LOGGER.debug(
-            "Discover posted at %s. Host is %s, Response status is %s",
-            datetime.now(),
-            self._host,
-            status,
-        )
-        if status != 200 or not isinstance(data, dict):
-            raise KasaException(
-                f"TPAP discover failed for {self._host}: {status} {type(data)}"
-            )
-
-        self._handle_login_error_code(data, "discover")
-        result = self._require_result_dict(data)
-        tpap = result.get("tpap")
-        if not isinstance(tpap, dict):
-            raise KasaException("TPAP discover response missing tpap object")
-
-        login = TpapParameters._from_tpap_object(
-            tpap, mac=str(result.get("mac") or "") or None
-        )
-        # Some devices (RV50 Pro Omni) answer the in-band discover over TLS
-        # with tls=0.  A session bootstrapped over https stays on CA-verified
-        # TLS (mode 2) rather than falling back to plaintext on a TLS port.
-        if login.tls == 0 and https:
-            login = replace(login, tls=2)
-        return login
-
-    def _camera_default_tpap(self) -> TpapParameters:
-        """Return the login values for a camera, which has no in-band discover.
-
-        Password login, no DAC attestation, and TLS when the connection is
-        https. That matches what the C101 and C510W cameras announce in UDP
-        discovery (``tpap: {pake: [2], tls: 1, port: 443}``).
-        """
-        return TpapParameters(
-            tls=1 if self._config.connection_type.https else 0,
-            port=self._port,
-            pake=[2],
-        )
 
     async def _login(self, params: dict[str, Any], *, step_name: str) -> dict[str, Any]:
         body = {"method": "login", "params": params}
@@ -495,9 +448,7 @@ class TpapTransport(BaseTransport):
         """Log in, trying one credential candidate at a time."""
         passcode_type = self._get_passcode_type()
         if passcode_type is None:
-            raise AuthenticationError(
-                f"TPAP: no supported passcode type for {self._host}"
-            )
+            raise self._parameter_error("have no supported pake passcode type")
 
         candidate_secrets = self._get_candidate_secrets(passcode_type)
         if not candidate_secrets:
@@ -678,8 +629,10 @@ class TpapTransport(BaseTransport):
 
     def _get_candidate_secrets(self, passcode_type: str) -> list[str]:
         if passcode_type in self.DEFAULT_PASSCODE_TYPES:
-            mac = (self._tpap or _UNKNOWN_TPAP).mac
-            return [crypto.mac_pass_from_device_mac(mac)] if mac else []
+            mac = self._require_mac(
+                self._require_tpap().mac, "for the default passcode"
+            )
+            return [crypto.mac_pass_from_device_mac(mac)]
         creds = self._credentials
         password = (creds.password if creds else "") or ""
         if not password:
@@ -713,6 +666,9 @@ class TpapTransport(BaseTransport):
             return candidate_secret
         extra_crypt_value = register_result.get("extra_crypt")
         extra_crypt = extra_crypt_value if isinstance(extra_crypt_value, dict) else {}
+        crypt_type = extra_crypt.get("type")
+        if crypt_type is not None and not isinstance(crypt_type, str):
+            raise KasaException("TPAP register response has invalid extra_crypt type")
         if self._uses_camera_auth and not extra_crypt:
             return candidate_secret
         creds = self._credentials
@@ -723,6 +679,15 @@ class TpapTransport(BaseTransport):
         )
         mac = (self._tpap or _UNKNOWN_TPAP).mac or ""
         mac_no_colon = mac.replace(":", "").replace("-", "")
+        crypt_params = extra_crypt.get("params")
+        if (
+            username
+            and crypt_type
+            and crypt_type.lower() == "password_shadow"
+            and isinstance(crypt_params, dict)
+            and self._parse_optional_int(crypt_params.get("passwd_id")) == 3
+        ):
+            mac_no_colon = self._require_mac(mac, "for the device's password encoding")
         return crypto.build_credentials(
             extra_crypt,
             username,
@@ -857,6 +822,8 @@ class TpapTransport(BaseTransport):
             sequence = int(start_seq)
         except (TypeError, ValueError) as exc:
             raise KasaException("Invalid session fields from device") from exc
+        if not 0 <= sequence <= 0xFFFFFFFF:
+            raise KasaException("TPAP share response has invalid start_seq")
 
         self._encryption_session = TpapEncryptionSession(
             self._cipher_id, self._shared_key, sequence

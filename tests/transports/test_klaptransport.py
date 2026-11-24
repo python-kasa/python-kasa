@@ -22,6 +22,7 @@ from kasa.deviceconfig import (
     DeviceConnectionParameters,
     DeviceEncryptionType,
     DeviceFamily,
+    TpapParameters,
 )
 from kasa.exceptions import (
     AuthenticationError,
@@ -73,6 +74,18 @@ class _mock_response:
         return self.content
 
 
+def _protocol_test_config(transport_class: type) -> DeviceConfig:
+    config = DeviceConfig("127.0.0.1")
+    if transport_class is TpapTransport:
+        config.connection_type = DeviceConnectionParameters(
+            device_family=DeviceFamily.SmartTapoPlug,
+            encryption_type=DeviceEncryptionType.Tpap,
+            tpap=TpapParameters(pake=[2]),
+        )
+        config.credentials = Credentials("test-user", "test-password")
+    return config
+
+
 @pytest.mark.parametrize(
     ("error", "retry_expectation"),
     [
@@ -96,10 +109,9 @@ async def test_protocol_retries_via_client_session(
     error: Exception,
     retry_expectation: bool,
 ) -> None:
-    host = "127.0.0.1"
     conn = mocker.patch.object(aiohttp.ClientSession, "post", side_effect=error)
 
-    config = DeviceConfig(host)
+    config = _protocol_test_config(transport_class)
     with pytest.raises(KasaException):
         await protocol_class(transport=transport_class(config=config)).query(
             DUMMY_QUERY, retry_count=retry_count
@@ -131,11 +143,10 @@ async def test_protocol_retries_via_httpclient(
     error: Exception,
     retry_expectation: bool,
 ) -> None:
-    host = "127.0.0.1"
     conn = mocker.patch.object(HttpClient, "post", side_effect=error)
     mocker.patch.object(protocol_class, "BACKOFF_SECONDS_AFTER_TIMEOUT", 0)
 
-    config = DeviceConfig(host)
+    config = _protocol_test_config(transport_class)
     with pytest.raises(KasaException):
         await protocol_class(transport=transport_class(config=config)).query(
             DUMMY_QUERY, retry_count=retry_count
@@ -152,14 +163,13 @@ async def test_protocol_retries_via_httpclient(
 async def test_protocol_no_retry_on_connection_error(
     mocker: MockerFixture, protocol_class: type, transport_class: type
 ) -> None:
-    host = "127.0.0.1"
     conn = mocker.patch.object(
         aiohttp.ClientSession,
         "post",
         side_effect=AuthenticationError("foo"),
     )
     mocker.patch.object(protocol_class, "BACKOFF_SECONDS_AFTER_TIMEOUT", 0)
-    config = DeviceConfig(host)
+    config = _protocol_test_config(transport_class)
     with pytest.raises(KasaException):
         await protocol_class(transport=transport_class(config=config)).query(
             DUMMY_QUERY, retry_count=5
@@ -175,14 +185,13 @@ async def test_protocol_no_retry_on_connection_error(
 async def test_protocol_retry_recoverable_error(
     mocker: MockerFixture, protocol_class: type, transport_class: type
 ) -> None:
-    host = "127.0.0.1"
     conn = mocker.patch.object(
         aiohttp.ClientSession,
         "post",
         side_effect=aiohttp.ClientOSError("foo"),
     )
 
-    config = DeviceConfig(host)
+    config = _protocol_test_config(transport_class)
     with pytest.raises(KasaException):
         await protocol_class(transport=transport_class(config=config)).query(
             DUMMY_QUERY, retry_count=5
@@ -199,7 +208,6 @@ async def test_protocol_retry_recoverable_error(
 async def test_protocol_reconnect(
     mocker: MockerFixture, retry_count: int, protocol_class: type, transport_class: type
 ) -> None:
-    host = "127.0.0.1"
     remaining = retry_count
     mock_response = {"result": {"great": "success"}, "error_code": 0}
 
@@ -221,7 +229,7 @@ async def test_protocol_reconnect(
         side_effect=_fail_one_less_than_retry_count,
     )
 
-    config = DeviceConfig(host)
+    config = _protocol_test_config(transport_class)
     response = await protocol_class(transport=transport_class(config=config)).query(
         DUMMY_QUERY, retry_count=retry_count
     )

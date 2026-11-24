@@ -191,8 +191,7 @@ def _legacy_type_to_class(_type: str) -> Any:
     envvar="KASA_TPAP",
     default=None,
     type=TpapParameters.from_json,
-    help="TPAP login from the device's discovery reply, as JSON, to connect "
-    "over TPAP without discovery, e.g. "
+    help="TPAP login parameters as JSON, required for a direct TPAP connection, e.g. "
     '\'{"tls": 1, "port": 443, "pake": [2]}\'. Implies --encrypt-type TPAP.',
 )
 @click.option(

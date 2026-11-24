@@ -44,8 +44,6 @@ from kasa.discover import (
 )
 from kasa.exceptions import (
     AuthenticationError,
-    DeviceError,
-    SmartErrorCode,
     UnsupportedDeviceError,
 )
 from kasa.iot import IotDevice, IotPlug
@@ -898,7 +896,7 @@ async def test_discovery_decryption() -> None:
 
 
 async def test_discover_try_connect_all(discovery_mock, mocker: MockerFixture) -> None:
-    """Test that device update is called on main."""
+    """Probe fixture routes without inventing the metadata TPAP requires."""
     if "result" in discovery_mock.discovery_data:
         dev_class = get_device_class_from_family(
             discovery_mock.device_type, https=discovery_mock.https
@@ -909,6 +907,7 @@ async def test_discover_try_connect_all(discovery_mock, mocker: MockerFixture) -
             login_version=discovery_mock.login_version,
             https=discovery_mock.https,
             http_port=discovery_mock.http_port,
+            tpap=discovery_mock.tpap,
         )
         protocol = get_protocol(
             DeviceConfig(discovery_mock.ip, connection_type=cparams)
@@ -945,16 +944,20 @@ async def test_discover_try_connect_all(discovery_mock, mocker: MockerFixture) -
     mocker.patch("kasa.SmartProtocol.query", new=_query)
     mocker.patch.object(dev_class, "update", new=_update)
 
-    session = aiohttp.ClientSession()
-    dev = await Discover.try_connect_all(discovery_mock.ip, http_client=session)
+    async with aiohttp.ClientSession() as session:
+        dev = await Discover.try_connect_all(discovery_mock.ip, http_client=session)
 
-    assert dev
-    assert isinstance(dev, dev_class)
-    assert isinstance(dev.protocol, protocol_class)
-    assert isinstance(dev.protocol._transport, transport_class)
-    assert dev.config.uses_http is (transport_class != XorTransport)
-    if transport_class != XorTransport:
-        assert dev.protocol._transport._http_client.client == session
+        if transport_class is TpapTransport:
+            assert dev is None
+            return
+
+        assert dev
+        assert isinstance(dev, dev_class)
+        assert isinstance(dev.protocol, protocol_class)
+        assert isinstance(dev.protocol._transport, transport_class)
+        assert dev.config.uses_http is (transport_class != XorTransport)
+        if transport_class != XorTransport:
+            assert dev.protocol._transport._http_client.client == session
 
 
 async def test_discovery_device_repr(discovery_mock, mocker: MockerFixture) -> None:
@@ -1007,71 +1010,41 @@ async def test_connection_parameters_from_encrypt_type_list_only():
         Discover._get_connection_parameters(DiscoveryResult.from_dict(result))
 
 
-@pytest.mark.parametrize(
-    "error",
-    [
-        pytest.param(
-            AuthenticationError("refused", error_code=SmartErrorCode.STAT_ACCESS_ERROR),
-            id="refused",
-        ),
-        pytest.param(
-            DeviceError("locked", error_code=SmartErrorCode.DEVICE_BLOCKED),
-            id="locked",
-        ),
-    ],
-)
-async def test_try_connect_all_stops_tpap_after_refused_login(
-    mocker: MockerFixture, error: KasaException
+async def test_try_connect_all_never_constructs_tpap_or_discovers(
+    mocker: MockerFixture,
 ) -> None:
-    """Once the device refuses a TPAP login or is locked, no other TPAP attempt runs."""
-    tried = []
+    """Blind probing excludes TPAP before construction and never obtains UDP data."""
+    constructed = []
+    get_protocol_original = get_protocol
 
-    async def _connect(config, protocol):
+    def get_protocol_without_tpap(config, *, strict=False):
         encryption = config.connection_type.encryption_type
-        tried.append(encryption)
-        if encryption is DeviceEncryptionType.Tpap:
-            raise error
-        raise KasaException("not this one")
+        constructed.append(encryption)
+        assert encryption is not DeviceEncryptionType.Tpap
+        return get_protocol_original(config, strict=strict)
 
-    mocker.patch("kasa.device_factory._connect", _connect)
+    protocol_factory = mocker.patch(
+        "kasa.discover.get_protocol", side_effect=get_protocol_without_tpap
+    )
+    tpap_constructor = mocker.patch(
+        "kasa.device_factory.TpapTransport",
+        side_effect=AssertionError("Blind probing constructed TPAP"),
+    )
+    connect = mocker.patch(
+        "kasa.device_factory._connect", side_effect=KasaException("not this one")
+    )
+    discover = mocker.patch.object(Discover, "discover")
+    discover_single = mocker.patch.object(Discover, "discover_single")
     credentials = Credentials("user", "pass")
+
     assert await Discover.try_connect_all("127.0.0.1", credentials=credentials) is None
 
-    assert tried.count(DeviceEncryptionType.Tpap) == 1
-    assert tried[-1] is DeviceEncryptionType.Tpap
-
-
-@pytest.mark.parametrize(
-    "error",
-    [
-        pytest.param(KasaException("not this one"), id="other"),
-        pytest.param(
-            DeviceError("expired", error_code=SmartErrorCode.SESSION_EXPIRED),
-            id="device-error",
-        ),
-        pytest.param(
-            AuthenticationError("no credentials to log in with"),
-            id="refused-locally",
-        ),
-    ],
-)
-async def test_try_connect_all_tries_every_tpap_attempt_on_other_errors(
-    mocker: MockerFixture, error: KasaException
-) -> None:
-    """A TPAP attempt that fails without the device refusing the login moves on."""
-    tried = []
-
-    async def _connect(config, protocol):
-        tried.append(config.connection_type.encryption_type)
-        raise error
-
-    mocker.patch("kasa.device_factory._connect", _connect)
-    credentials = Credentials("user", "pass")
-    assert await Discover.try_connect_all("127.0.0.1", credentials=credentials) is None
-
-    assert tried.count(DeviceEncryptionType.Tpap) > 1
-    first_tpap = tried.index(DeviceEncryptionType.Tpap)
-    assert set(tried[first_tpap:]) == {DeviceEncryptionType.Tpap}
+    assert constructed
+    protocol_factory.assert_called()
+    connect.assert_awaited()
+    tpap_constructor.assert_not_called()
+    discover.assert_not_called()
+    discover_single.assert_not_called()
 
 
 async def test_connection_parameters_unsupported_encrypt_type():

@@ -95,10 +95,9 @@ class _DeviceConfigBaseMixin(DataClassJSONMixin):
 
 @dataclass(kw_only=True)
 class TpapParameters(_DeviceConfigBaseMixin):
-    """The TPAP login a device announces in its discovery reply.
+    """TPAP login parameters from discovery, a saved config or manual input.
 
-    The transport logs in with these rather than asking the device again
-    with the in-band discover.
+    The transport requires the advertised passcode types before connecting.
     """
 
     #: 0 for http, 1 for TLS without verification, 2 for verified TLS
@@ -145,12 +144,17 @@ class TpapParameters(_DeviceConfigBaseMixin):
             return None
 
         pake = tpap.get("pake")
+        passcode_types = None
+        if isinstance(pake, list):
+            parsed_types = [value for value in map(as_int, pake) if value is not None]
+            # An explicitly empty list has family-specific meaning. An invalid
+            # list must not become an instruction to try a default passcode.
+            if not pake or parsed_types:
+                passcode_types = parsed_types
         return cls(
             tls=as_int(tpap.get("tls")) or 0,
             port=as_int(tpap.get("port")),
-            pake=[value for value in map(as_int, pake) if value is not None]
-            if isinstance(pake, list)
-            else None,
+            pake=passcode_types,
             # Attestation only with dac 1, as in the Tapo app
             dac=as_int(tpap.get("dac")) == 1,
             user_hash_type=as_int(tpap.get("user_hash_type")),

@@ -244,7 +244,7 @@ async def config(ctx: click.Context) -> DeviceDict:
     """Bypass udp discovery and try to show connection config for a device.
 
     Bypasses udp discovery and shows the parameters required to connect
-    directly to the device.
+    directly to the device. TPAP requires UDP discovery or explicit --tpap parameters.
     """
     params = ctx.find_root().params
     username = params["username"]
@@ -255,6 +255,11 @@ async def config(ctx: click.Context) -> DeviceDict:
 
     if not host:
         error("--host option must be supplied to discover config")
+    if params["tpap"] is not None or (params["encrypt_type"] or "").upper() == "TPAP":
+        raise click.UsageError(
+            "discover config cannot determine TPAP parameters. "
+            "Run UDP discovery or use --tpap with a direct command."
+        )
 
     credentials = Credentials(username, password) if username and password else None
 
@@ -283,7 +288,10 @@ async def config(ctx: click.Context) -> DeviceDict:
         )
         return {host: dev}
     else:
-        error(f"Unable to connect to {host}")
+        error(
+            f"Unable to connect to {host}. For TPAP, run UDP discovery or use "
+            "--tpap with a direct command."
+        )
 
 
 def _echo_dictionary(discovery_info: dict) -> None:

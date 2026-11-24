@@ -294,6 +294,12 @@ ET = DeviceEncryptionType
             id="kasacam",
         ),
         pytest.param(
+            CP(DF.IotIpCamera, ET.Tpap, https=True),
+            None,
+            None,
+            id="kasacam-tpap-unsupported",
+        ),
+        pytest.param(
             CP(DF.SmartTapoRobovac, ET.Aes, https=True),
             SmartProtocol,
             SslTransport,
@@ -357,12 +363,16 @@ ET = DeviceEncryptionType
 )
 async def test_get_protocol(
     conn_params: DeviceConnectionParameters,
-    expected_protocol: type[BaseProtocol],
-    expected_transport: type[BaseTransport],
+    expected_protocol: type[BaseProtocol] | None,
+    expected_transport: type[BaseTransport] | None,
 ) -> None:
     """Test get_protocol returns the right protocol."""
     config = DeviceConfig("127.0.0.1", connection_type=conn_params)
     protocol = get_protocol(config)
+    if expected_protocol is None:
+        assert protocol is None
+        return
+    assert expected_transport is not None
     assert isinstance(protocol, expected_protocol)
     assert isinstance(protocol._transport, expected_transport)
 

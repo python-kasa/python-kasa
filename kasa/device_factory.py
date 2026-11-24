@@ -222,6 +222,9 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
         return SmartCamProtocol(transport=SslAesTransport(config=config))
 
     if ctype.device_family is DeviceFamily.IotIpCamera:
+        if ctype.encryption_type is DeviceEncryptionType.Tpap:
+            # The Linkie route cannot serve a device advertising TPAP.
+            return None
         if strict and ctype.encryption_type is not DeviceEncryptionType.Xor:
             return None
         return IotProtocol(transport=LinkieTransportV2(config=config))

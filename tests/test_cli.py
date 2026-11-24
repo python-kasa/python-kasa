@@ -1488,9 +1488,19 @@ async def test_cli_child_commands(
 async def test_discover_config(
     dev: Device, mocker: MockerFixture, runner: CliRunner
 ) -> None:
-    """Test that device config is returned."""
+    """Report only configurations that blind probing can determine."""
     host = "127.0.0.1"
-    mocker.patch("kasa.device_factory._connect", side_effect=[Exception, dev])
+    if "mgt_encrypt_schm" in dev._discovery_info:
+        dev.config.connection_type = Discover._get_connection_parameters(
+            DiscoveryResult.from_dict(dev._discovery_info)
+        )
+    is_tpap = dev.config.connection_type.encryption_type is DeviceEncryptionType.Tpap
+    mocker.patch(
+        "kasa.device_factory._connect",
+        side_effect=KasaException("not this one") if is_tpap else [Exception, dev],
+    )
+    discover = mocker.patch.object(Discover, "discover")
+    discover_single = mocker.patch.object(Discover, "discover_single")
 
     res = await runner.invoke(
         cli,
@@ -1506,6 +1516,17 @@ async def test_discover_config(
         ],
         catch_exceptions=False,
     )
+    discover.assert_not_called()
+    discover_single.assert_not_called()
+    if is_tpap:
+        assert res.exit_code == 1
+        assert f"Unable to connect to {host}" in res.output
+        assert "Managed to connect" not in res.output
+        assert "For TPAP, run UDP discovery or use --tpap with a direct command." in (
+            " ".join(res.output.split())
+        )
+        return
+
     assert res.exit_code == 0
     cparam = dev.config.connection_type
     expected = f"--device-family {cparam.device_family.value} --encrypt-type {cparam.encryption_type.value} {'--https' if cparam.https else '--no-https'}"
@@ -1543,6 +1564,9 @@ async def test_discover_config_invalid(
     )
     assert res.exit_code == 1
     assert f"Unable to connect to {host}" in res.output
+    assert "For TPAP, run UDP discovery or use --tpap with a direct command." in (
+        " ".join(res.output.split())
+    )
 
     res = await runner.invoke(
         cli,
@@ -1570,6 +1594,59 @@ async def test_discover_config_invalid(
     )
     assert res.exit_code == 1
     assert "--target is not a valid option for single host discovery" in res.output
+
+
+async def test_discover_config_help_explains_tpap(
+    runner: CliRunner,
+) -> None:
+    """The UDP-free command explains how to supply TPAP connection data."""
+    res = await runner.invoke(cli, ["discover", "config", "--help"])
+
+    assert res.exit_code == 0, res.output
+    assert "TPAP requires UDP discovery or explicit --tpap parameters." in (
+        " ".join(res.output.split())
+    )
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        pytest.param(["--encrypt-type", "TPAP"], id="encryption-type"),
+        pytest.param(
+            ["--tpap", '{"tls": 0, "port": 80, "pake": [2]}'],
+            id="parameters",
+        ),
+        pytest.param(
+            [
+                "--encrypt-type",
+                "TPAP",
+                "--tpap",
+                '{"tls": 0, "port": 80, "pake": [2]}',
+            ],
+            id="encryption-and-parameters",
+        ),
+    ],
+)
+async def test_discover_config_rejects_tpap_options_locally(
+    args: list[str], mocker: MockerFixture, runner: CliRunner
+) -> None:
+    """Supplied TPAP input belongs to direct commands instead of blind probing."""
+    connect = mocker.patch("kasa.device.Device.connect")
+    try_connect_all = mocker.patch.object(Discover, "try_connect_all")
+    discover = mocker.patch.object(Discover, "discover")
+    discover_single = mocker.patch.object(Discover, "discover_single")
+
+    res = await runner.invoke(cli, ["--host", "127.0.0.1", *args, "discover", "config"])
+
+    assert res.exit_code == 2, res.output
+    assert (
+        "discover config cannot determine TPAP parameters. "
+        "Run UDP discovery or use --tpap with a direct command."
+    ) in " ".join(res.output.split())
+    connect.assert_not_called()
+    try_connect_all.assert_not_called()
+    discover.assert_not_called()
+    discover_single.assert_not_called()
 
 
 def test_echo_strips_rich_tags_without_rich(monkeypatch, capsys):
