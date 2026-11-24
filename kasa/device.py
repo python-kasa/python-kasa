@@ -92,6 +92,9 @@ consumption_this_month
 consumption_total
 voltage
 current
+schedule_enabled
+next_schedule_time
+next_schedule_action
 cloud_connection
 led
 
