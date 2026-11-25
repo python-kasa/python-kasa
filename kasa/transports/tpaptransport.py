@@ -7,7 +7,8 @@ The login values are the TLS mode (0 for http, 1 for TLS, 2 and above for TLS
 checked against TP-Link's device root CA), the port, the passcode types the device
 accepts (``pake``), whether it proves itself with its attestation certificate
 (``dac``) and its MAC. Supply them from UDP discovery, from a saved config,
-or explicitly in the connection configuration.
+or explicitly in the connection configuration. A selected non-camera TPAP
+endpoint can also provide them in a separate HTTP request before login.
 Discovery also gives the md5 of the owning account's user name, and the
 account is only tried on a device it owns.
 
@@ -38,6 +39,7 @@ import logging
 import secrets
 import ssl
 import struct
+from dataclasses import replace
 from datetime import datetime
 from string import hexdigits
 from typing import TYPE_CHECKING, Any
@@ -115,8 +117,12 @@ class TpapTransport(BaseTransport):
         self._http_client: HttpClient = HttpClient(self._config)
         self._ssl_context: ssl.SSLContext | bool | None = None
         self._tpap = config.connection_type.tpap
-        # Discovery can later set the display host to the original hostname.
-        self._endpoint_host = config.host
+        # Discovery can later restore the caller's hostname for the login URL.
+        self._bootstrap_url = URL.build(
+            scheme="https" if config.connection_type.https else "http",
+            host=self._host,
+            port=self._port,
+        )
         self._app_url: URL
         self._handshake_lock = asyncio.Lock()
         self._send_lock: asyncio.Lock = asyncio.Lock()
@@ -215,7 +221,7 @@ class TpapTransport(BaseTransport):
             # else 80, whatever the scheme
             scheme = "https" if tls_mode else "http"
             return URL.build(
-                scheme=scheme, host=self._endpoint_host, port=port or self.DEFAULT_PORT
+                scheme=scheme, host=self._host, port=port or self.DEFAULT_PORT
             )
         # Cameras are always https, on their own port
         is_camera = self._uses_camera_auth
@@ -237,7 +243,7 @@ class TpapTransport(BaseTransport):
             resolved_port = ctype.http_port
         return URL.build(
             scheme=scheme,
-            host=self._endpoint_host,
+            host=self._host,
             port=resolved_port,
         )
 
@@ -295,7 +301,11 @@ class TpapTransport(BaseTransport):
             self._reset_state()
             _LOGGER.debug("Starting handshake with %s", self._host)
 
-            tpap = self._require_tpap()
+            tpap = self._tpap
+            if tpap is None:
+                if self._uses_camera_auth:
+                    raise self._parameter_error("are missing")
+                tpap = await self._lookup_tpap()
             if not isinstance(tpap.pake, list) or any(
                 type(value) is not int for value in tpap.pake
             ):
@@ -308,9 +318,11 @@ class TpapTransport(BaseTransport):
                 raise self._parameter_error("have an invalid TPAP port")
             if tpap.tls >= 2:
                 self._require_mac(tpap.mac, "to check the TLS certificate")
+            # The transport can reuse learned settings after a session reset.
+            self._tpap = tpap
             self._app_url = self._build_app_url(tpap)
             _LOGGER.debug(
-                "Using the supplied TPAP login for %s: tls %s, port %s, pake %s, "
+                "Using the TPAP login settings for %s: tls %s, port %s, pake %s, "
                 "dac %s, url %s",
                 self._host,
                 tpap.tls,
@@ -322,6 +334,34 @@ class TpapTransport(BaseTransport):
             await self.perform_login()
 
             _LOGGER.debug("Handshake with %s complete", self._host)
+
+    async def _lookup_tpap(self) -> TpapParameters:
+        """Read login settings from an already selected non-camera TPAP endpoint."""
+        https = self._bootstrap_url.scheme == "https"
+        status, data = await self._http_client.post(
+            self._bootstrap_url.with_path("/"),
+            json={"method": "login", "params": {"sub_method": "discover"}},
+            headers=self.COMMON_HEADERS,
+            ssl=await get_ssl_context() if https else False,
+        )
+        if status != 200 or not isinstance(data, dict):
+            raise self._parameter_error(
+                f"could not be read from the device (HTTP {status})"
+            )
+
+        self._handle_login_error_code(data, "discover")
+        result = self._require_result_dict(data)
+        values = result.get("tpap")
+        if not isinstance(values, dict):
+            raise self._parameter_error("were not supplied by the device")
+
+        mac = result.get("mac")
+        tpap = TpapParameters._from_tpap_object(
+            values, mac=mac if isinstance(mac, str) else None
+        )
+        # The RV50 Pro Omni replies with tls=0 to this HTTPS query. Keep
+        # its login on verified TLS as in the published bootstrap path.
+        return replace(tpap, tls=2) if https and tpap.tls == 0 else tpap
 
     async def _login(self, params: dict[str, Any], *, step_name: str) -> dict[str, Any]:
         body = {"method": "login", "params": params}

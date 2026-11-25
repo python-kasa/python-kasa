@@ -139,7 +139,7 @@ class _Suite:
 
 
 class MockTpapDevice:
-    """A TPAP device: the device side of SPAKE2+, and /ds.
+    """A TPAP device with metadata discovery, device-side SPAKE2+, and /ds.
 
     The device holds one encoded passcode for each passcode type, as a device
     holds its registration records, and refuses a login that does not prove it.
@@ -245,6 +245,7 @@ class MockTpapDevice:
                 return self._mock_response(*reply)
             return self._mock_response(200, reply)
         handler = {
+            "discover": self._discover,
             "pake_register": self._pake_register,
             "pake_share": self._pake_share,
         }[step]
@@ -260,6 +261,10 @@ class MockTpapDevice:
             else:
                 result[key] = value
         return result
+
+    def _discover(self, params: dict[str, Any]) -> dict[str, Any]:
+        tpap = {key: value for key, value in self.tpap.items() if value is not None}
+        return {"error_code": 0, "result": {"mac": self.mac, "tpap": tpap}}
 
     def _pake_register(self, params: dict[str, Any]) -> dict[str, Any]:
         result: dict[str, Any] = {
@@ -518,18 +523,105 @@ async def test_handshake(mocker: MockerFixture, family: DeviceFamily) -> None:
         (DeviceFamily.SmartTapoPlug, False),
         (DeviceFamily.SmartKasaPlug, False),
         (DeviceFamily.SmartTapoHub, False),
-        (DeviceFamily.SmartTapoHub, True),
         (DeviceFamily.SmartTapoRobovac, True),
         (DeviceFamily.IotSmartBulb, False),
         (DeviceFamily.IotSmartPlugSwitch, False),
+    ],
+)
+async def test_learned_parameters_are_reused_without_changing_config(
+    mocker: MockerFixture, family: DeviceFamily, https: bool
+) -> None:
+    """Use one metadata request to a known endpoint, then keep its settings."""
+    device = _patch(
+        mocker,
+        MockTpapDevice(family, tls=2 if https else 0, port=10443 if https else 81),
+    )
+    transport = _transport(family, https=https, tpap=None)
+    post = mocker.spy(transport._http_client, "post")
+    stored = transport._config.to_dict()
+
+    try:
+        await transport.perform_handshake()
+        await transport.reset()
+        await transport.perform_handshake()
+
+        assert transport._encryption_session is not None
+        assert device.calls == Counter(discover=1, pake_register=2, pake_share=2)
+        lookup = post.await_args_list[0]
+        assert lookup.kwargs["json"] == {
+            "method": "login",
+            "params": {"sub_method": "discover"},
+        }
+        assert "Authorization" not in lookup.kwargs["headers"]
+        scheme = "https" if https else "http"
+        ports = [4433] + [10443] * 4 if https else [80] + [81] * 4
+        assert all(url.scheme == scheme for url in device.urls)
+        assert [url.port for url in device.urls] == ports
+        assert transport._config.to_dict() == stored
+        assert transport._config.connection_type.tpap is None
+    finally:
+        await transport.close()
+
+
+async def test_robot_http_lookup_keeps_verified_tls(mocker: MockerFixture) -> None:
+    """The RV50's HTTPS bootstrap reply advertises TLS mode zero."""
+    family = DeviceFamily.SmartTapoRobovac
+    device = _patch(mocker, MockTpapDevice(family, tls=0, port=4433))
+    transport = _transport(family, https=True, tpap=None)
+
+    try:
+        await transport.perform_handshake()
+
+        assert device.calls == Counter(discover=1, pake_register=1, pake_share=1)
+        assert device.urls == [URL(f"https://{HOST}:4433/")] * 3
+        assert device.ssl[0] is await get_shared_ssl_context()
+        assert all(
+            context.verify_mode == ssl.CERT_REQUIRED for context in device.ssl[1:]
+        )
+        assert transport._config.connection_type.tpap is None
+    finally:
+        await transport.close()
+
+
+async def test_lookup_keeps_bootstrap_host_and_login_uses_current_host(
+    mocker: MockerFixture,
+) -> None:
+    """Discovery can restore a hostname before login or after a session reset."""
+    endpoint = _patch(mocker, MockTpapDevice())
+    transport = _transport(tpap=None)
+    protocol = SmartProtocol(transport=transport)
+    device = SmartDevice(host=HOST, protocol=protocol)
+
+    try:
+        device.host = "device.example.invalid"
+        await transport.perform_handshake()
+        await transport.reset()
+        device.host = "new.example.invalid"
+        await transport.perform_handshake()
+
+        assert endpoint.urls == [
+            URL(f"http://{HOST}/"),
+            URL("http://device.example.invalid/"),
+            URL("http://device.example.invalid/"),
+            URL("http://new.example.invalid/"),
+            URL("http://new.example.invalid/"),
+        ]
+    finally:
+        await protocol.close()
+
+
+@pytest.mark.parametrize(
+    ("family", "https"),
+    [
+        (DeviceFamily.SmartTapoHub, True),
         (DeviceFamily.SmartIpCamera, True),
         (DeviceFamily.SmartTapoDoorbell, True),
     ],
 )
-async def test_missing_parameters_never_contact_the_device(
+async def test_missing_camera_parameters_never_contact_the_device(
     mocker: MockerFixture, family: DeviceFamily, https: bool
 ) -> None:
-    """Every family requires supplied data, including cameras and camera hubs."""
+    """Cameras need supplied parameters since they reject metadata lookup."""
     device = _patch(mocker, MockTpapDevice(family))
     transport = _transport(family, https=https, tpap=None)
     post = mocker.spy(transport._http_client, "post")
@@ -612,7 +704,10 @@ async def test_missing_parameters_preserve_config_and_protocol_cleanup(
     family: DeviceFamily,
 ) -> None:
     """Missing metadata is not a login attempt or a reason to erase credentials."""
-    device = _patch(mocker, MockTpapDevice(family))
+    device = _patch(
+        mocker,
+        MockTpapDevice(family, replies={"discover": {"error_code": 0, "result": {}}}),
+    )
     transport = _transport(family, tpap=None)
     stored = transport._config.to_dict()
     assert DeviceConfig.from_dict(stored).connection_type.tpap is None
@@ -625,15 +720,81 @@ async def test_missing_parameters_preserve_config_and_protocol_cleanup(
             await protocol.query(DUMMY_QUERY, retry_count=5)
 
         reset.assert_awaited_once()
-        assert not device.calls
+        expected = Counter() if family in CAMERAS else Counter(discover=1)
+        assert device.calls == expected
         assert transport._config.to_dict() == stored
-        assert transport._http_client._client_session is None
         assert transport._encryption_session is None
     finally:
         await protocol.close()
 
     close.assert_awaited_once()
+    assert transport._http_client._client_session is None
     assert transport._config.to_dict() == stored
+
+
+@pytest.mark.parametrize(
+    ("https", "reply", "message"),
+    [
+        pytest.param(
+            False, {}, "were not supplied by the device", id="missing-metadata"
+        ),
+        pytest.param(False, {"tpap": {"tls": 0}}, "pake", id="missing-pake"),
+        pytest.param(False, {"tpap": {"pake": ["bad"]}}, "pake", id="invalid-pake"),
+        pytest.param(
+            True,
+            {"tpap": {"tls": 0, "pake": [2]}},
+            "MAC",
+            id="missing-tls-mac",
+        ),
+    ],
+)
+async def test_unusable_lookup_stops_before_login(
+    mocker: MockerFixture, https: bool, reply: dict[str, Any], message: str
+) -> None:
+    """A missing or unusable reply never starts a login or repeats the lookup."""
+    device = _patch(
+        mocker,
+        MockTpapDevice(replies={"discover": {"error_code": 0, "result": reply}}),
+    )
+    transport = _transport(https=https, tpap=None)
+    protocol = SmartProtocol(transport=transport)
+
+    try:
+        with pytest.raises(
+            KasaException, match=f"TPAP connection parameters.*{message}"
+        ) as exc:
+            await protocol.query(DUMMY_QUERY, retry_count=5)
+
+        assert not isinstance(exc.value, (AuthenticationError, _RetryableError))
+        assert device.calls == Counter(discover=1)
+        assert transport._encryption_session is None
+        assert transport._config.connection_type.tpap is None
+    finally:
+        await protocol.close()
+
+
+async def test_protocol_retries_lookup_after_timeout(mocker: MockerFixture) -> None:
+    device = MockTpapDevice()
+
+    async def post(url: URL, **kwargs: Any) -> MockTpapDevice._mock_response:
+        if post_mock.call_count == 1:
+            raise TimeoutError
+        return await device.post(url, **kwargs)
+
+    post_mock = mocker.patch.object(aiohttp.ClientSession, "post", side_effect=post)
+    mocker.patch.object(SmartProtocol, "BACKOFF_SECONDS_AFTER_TIMEOUT", 0)
+    transport = _transport(tpap=None)
+    protocol = SmartProtocol(transport=transport)
+
+    try:
+        assert await protocol.query(DUMMY_QUERY, retry_count=2)
+
+        assert post_mock.call_args_list[0] == post_mock.call_args_list[1]
+        assert device.calls == Counter(
+            discover=1, pake_register=1, pake_share=1, request=1
+        )
+    finally:
+        await protocol.close()
 
 
 @pytest.mark.parametrize(
@@ -2284,7 +2445,7 @@ async def test_connection_logs_each_step(
     messages = [record.getMessage() for record in caplog.records]
     expected = [
         "Starting handshake with 127.0.0.1",
-        "Using the supplied TPAP login",
+        "Using the TPAP login settings",
         "tls 0, port 80, pake [2], dac False",
         "pake_register posted at",
         "pake_register success at",

@@ -619,7 +619,7 @@ class Discover:
         """Try to connect directly with parameters that can be inferred.
 
         This method can be used when udp is not working due to network issues.
-        TPAP requires supplied connection parameters, so it is skipped.
+        TPAP is skipped because it needs login settings for a known device.
         After successfully connecting use the device config and
         :meth:`Device.connect()` for future connections.
 

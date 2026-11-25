@@ -1604,8 +1604,9 @@ async def test_discover_config_help_explains_tpap(
     res = await runner.invoke(cli, ["discover", "config", "--help"])
 
     assert res.exit_code == 0, res.output
-    assert "TPAP requires UDP discovery or explicit --tpap parameters." in (
-        " ".join(res.output.split())
+    assert (
+        "This command skips TPAP. Use UDP discovery or connect directly with --tpap."
+        in (" ".join(res.output.split()))
     )
 
 

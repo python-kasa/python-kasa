@@ -244,7 +244,8 @@ async def config(ctx: click.Context) -> DeviceDict:
     """Bypass udp discovery and try to show connection config for a device.
 
     Bypasses udp discovery and shows the parameters required to connect
-    directly to the device. TPAP requires UDP discovery or explicit --tpap parameters.
+    directly to the device. This command skips TPAP. Use UDP discovery or
+    connect directly with --tpap.
     """
     params = ctx.find_root().params
     username = params["username"]
