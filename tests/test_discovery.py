@@ -8,6 +8,7 @@ import logging
 import re
 import socket
 from asyncio import timeout as asyncio_timeout
+from collections import Counter
 from unittest.mock import MagicMock
 
 import aiohttp
@@ -23,6 +24,7 @@ from kasa import (
     Discover,
     IotProtocol,
     KasaException,
+    device_factory,
 )
 from kasa.device_factory import (
     get_device_class_from_family,
@@ -44,6 +46,8 @@ from kasa.discover import (
 )
 from kasa.exceptions import (
     AuthenticationError,
+    DeviceError,
+    SmartErrorCode,
     UnsupportedDeviceError,
 )
 from kasa.iot import IotDevice, IotPlug
@@ -65,6 +69,7 @@ from .conftest import (
     strip_iot,
     wallswitch_iot,
 )
+from .transports.test_tpaptransport import CREDENTIALS, DUMMY_QUERY, MockTpapDevice
 
 # A physical device has to respond to discovery for the tests to work.
 pytestmark = [pytest.mark.requires_dummy]
@@ -896,7 +901,7 @@ async def test_discovery_decryption() -> None:
 
 
 async def test_discover_try_connect_all(discovery_mock, mocker: MockerFixture) -> None:
-    """Probe fixture routes without inventing the metadata TPAP requires."""
+    """Probe fixture routes while excluding cameras that need TPAP metadata."""
     if "result" in discovery_mock.discovery_data:
         dev_class = get_device_class_from_family(
             discovery_mock.device_type, https=discovery_mock.https
@@ -947,7 +952,7 @@ async def test_discover_try_connect_all(discovery_mock, mocker: MockerFixture) -
     async with aiohttp.ClientSession() as session:
         dev = await Discover.try_connect_all(discovery_mock.ip, http_client=session)
 
-        if transport_class is TpapTransport:
+        if transport_class is TpapTransport and dev_class is SmartCamDevice:
             assert dev is None
             return
 
@@ -1010,41 +1015,111 @@ async def test_connection_parameters_from_encrypt_type_list_only():
         Discover._get_connection_parameters(DiscoveryResult.from_dict(result))
 
 
-async def test_try_connect_all_never_constructs_tpap_or_discovers(
-    mocker: MockerFixture,
+@pytest.mark.parametrize("metadata_available", [True, False])
+async def test_try_connect_all_tpap_uses_http_metadata(
+    mocker: MockerFixture, metadata_available: bool
 ) -> None:
-    """Blind probing excludes TPAP before construction and never obtains UDP data."""
-    constructed = []
-    get_protocol_original = get_protocol
-
-    def get_protocol_without_tpap(config, *, strict=False):
-        encryption = config.connection_type.encryption_type
-        constructed.append(encryption)
-        assert encryption is not DeviceEncryptionType.Tpap
-        return get_protocol_original(config, strict=strict)
-
-    protocol_factory = mocker.patch(
-        "kasa.discover.get_protocol", side_effect=get_protocol_without_tpap
+    """Exercise discovery through the real transport with and without metadata."""
+    device = MockTpapDevice(
+        replies=None
+        if metadata_available
+        else {"discover": {"error_code": 0, "result": {}}}
     )
-    tpap_constructor = mocker.patch(
-        "kasa.device_factory.TpapTransport",
-        side_effect=AssertionError("Blind probing constructed TPAP"),
-    )
-    connect = mocker.patch(
-        "kasa.device_factory._connect", side_effect=KasaException("not this one")
-    )
+    mocker.patch.object(aiohttp.ClientSession, "post", side_effect=device.post)
+    protocol_factory = mocker.patch("kasa.discover.get_protocol", wraps=get_protocol)
     discover = mocker.patch.object(Discover, "discover")
     discover_single = mocker.patch.object(Discover, "discover_single")
-    credentials = Credentials("user", "pass")
+    original_connect = device_factory._connect
 
-    assert await Discover.try_connect_all("127.0.0.1", credentials=credentials) is None
+    async def connect(config, protocol):
+        ctype = config.connection_type
+        if (
+            ctype.encryption_type is DeviceEncryptionType.Tpap
+            and ctype.device_family is DeviceFamily.SmartTapoPlug
+        ):
+            return await original_connect(config, protocol)
+        raise KasaException("not this one")
 
-    assert constructed
-    protocol_factory.assert_called()
-    connect.assert_awaited()
-    tpap_constructor.assert_not_called()
+    async def update(self):
+        await self.protocol.query(DUMMY_QUERY)
+
+    mocker.patch.object(device_factory, "_connect", connect)
+    mocker.patch.object(SmartDevice, "update", update)
+
+    dev = await Discover.try_connect_all("127.0.0.1", credentials=CREDENTIALS)
+    if metadata_available:
+        assert isinstance(dev, SmartDevice)
+        assert isinstance(dev.protocol._transport, TpapTransport)
+        assert dev.config.connection_type.tpap is None
+        assert device.calls == Counter(
+            discover=1, pake_register=1, pake_share=1, request=1
+        )
+    else:
+        assert dev is None
+        assert device.calls == Counter(discover=1)
+
+    assert all(
+        config.connection_type.device_family
+        not in {DeviceFamily.SmartIpCamera, DeviceFamily.IotIpCamera}
+        for (config,), _ in protocol_factory.call_args_list
+        if config.connection_type.encryption_type is DeviceEncryptionType.Tpap
+    )
     discover.assert_not_called()
     discover_single.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("error", "stop"),
+    [
+        pytest.param(
+            AuthenticationError("refused", error_code=SmartErrorCode.STAT_ACCESS_ERROR),
+            True,
+            id="refused",
+        ),
+        pytest.param(
+            DeviceError("locked", error_code=SmartErrorCode.DEVICE_BLOCKED),
+            True,
+            id="locked",
+        ),
+        pytest.param(KasaException("not this one"), False, id="other"),
+        pytest.param(
+            DeviceError("expired", error_code=SmartErrorCode.SESSION_EXPIRED),
+            False,
+            id="device-error",
+        ),
+        pytest.param(
+            AuthenticationError("no credentials to log in with"),
+            False,
+            id="refused-locally",
+        ),
+    ],
+)
+async def test_try_connect_all_tpap_refusal(
+    mocker: MockerFixture, error: KasaException, stop: bool
+) -> None:
+    """Stop probing TPAP after a refusal or lockout reported by a device."""
+    tried = []
+    close_calls = []
+
+    async def connect(config, protocol):
+        encryption = config.connection_type.encryption_type
+        tried.append(encryption)
+        close_calls.append(mocker.spy(protocol, "close"))
+        if encryption is DeviceEncryptionType.Tpap:
+            raise error
+        raise KasaException("not this one")
+
+    mocker.patch.object(device_factory, "_connect", connect)
+    assert await Discover.try_connect_all("127.0.0.1", credentials=CREDENTIALS) is None
+
+    tpap_count = tried.count(DeviceEncryptionType.Tpap)
+    if stop:
+        assert tpap_count == 1
+    else:
+        assert tpap_count > 1
+    assert set(tried[-tpap_count:]) == {DeviceEncryptionType.Tpap}
+    for close in close_calls:
+        close.assert_awaited_once()
 
 
 async def test_connection_parameters_unsupported_encrypt_type():

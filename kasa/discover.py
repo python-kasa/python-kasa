@@ -121,7 +121,13 @@ from kasa.deviceconfig import (
     DeviceEncryptionType,
     TpapParameters,
 )
-from kasa.exceptions import KasaException, TimeoutError, UnsupportedDeviceError
+from kasa.exceptions import (
+    SMART_AUTHENTICATION_ERRORS,
+    KasaException,
+    SmartErrorCode,
+    TimeoutError,
+    UnsupportedDeviceError,
+)
 from kasa.iot.iotdevice import IotDevice, _extract_sys_info
 from kasa.json import DataClassJSONMixin
 from kasa.json import dumps as json_dumps
@@ -132,6 +138,13 @@ from kasa.transports.aestransport import AesEncyptionSession, KeyPair
 from kasa.transports.xortransport import XorEncryption
 
 _LOGGER = logging.getLogger(__name__)
+
+# Stop trying TPAP candidates if the device refuses the login or reports a lockout.
+_TPAP_LOGIN_REFUSED = {
+    SmartErrorCode.STAT_ACCESS_ERROR,
+    SmartErrorCode.DEVICE_BLOCKED,
+    *SMART_AUTHENTICATION_ERRORS,
+}
 
 if TYPE_CHECKING:
     from kasa import BaseProtocol
@@ -619,7 +632,8 @@ class Discover:
         """Try to connect directly with parameters that can be inferred.
 
         This method can be used when udp is not working due to network issues.
-        TPAP is skipped because it needs login settings for a known device.
+        TPAP candidates try to read their settings before login. Camera TPAP
+        requires settings supplied by the caller or UDP discovery.
         After successfully connecting use the device config and
         :meth:`Device.connect()` for future connections.
 
@@ -651,7 +665,11 @@ class Discover:
             for device_family in main_device_families
             for https in (True, False)
             for login_version in (None, 2)
-            if encrypt is not DeviceEncryptionType.Tpap
+            if not (
+                encrypt is DeviceEncryptionType.Tpap
+                and device_family
+                in {Device.Family.SmartIpCamera, Device.Family.IotIpCamera}
+            )
             and (
                 conn_params := DeviceConnectionParameters(
                     device_family=device_family,
@@ -677,9 +695,14 @@ class Discover:
                 )
             )
         }
+        tpap_refused = False
         for key, val in candidates.items():
             prot, config = val
+            encryption = config.connection_type.encryption_type
+            is_tpap = encryption is DeviceEncryptionType.Tpap
             try:
+                if tpap_refused and is_tpap:
+                    continue
                 _LOGGER.debug("Trying to connect with %s", prot.__class__.__name__)
                 dev = await _connect(config, prot)
             except Exception as ex:
@@ -688,6 +711,8 @@ class Discover:
                     prot.__class__.__name__,
                     ex,
                 )
+                if is_tpap and getattr(ex, "error_code", None) in _TPAP_LOGIN_REFUSED:
+                    tpap_refused = True
                 if on_attempt:
                     ca = tuple.__new__(ConnectAttempt, key)
                     on_attempt(ca, False)

@@ -121,8 +121,8 @@ To connect directly over TPAP, reuse the device configuration saved from discove
 supply ``DeviceConnectionParameters.tpap`` (``--tpap`` in the CLI).
 Include the advertised passcode types (``pake``) and the device MAC when the login mode requires it.
 When TPAP is already selected for a non-camera device, the transport can also ask the known HTTP or HTTPS endpoint for its settings before login.
-Cameras require supplied settings.
-The UDP-free ``kasa discover config`` command skips TPAP.
+The UDP-free ``kasa discover config`` command can use this lookup for non-camera devices.
+Cameras and camera hubs require settings from UDP discovery, saved configuration or explicit input.
 With the Third-Party Compatibility option of the Tapo app turned on, many of these devices announce their previous transport instead.
 
 
