@@ -72,12 +72,12 @@ UNSUPPORTED_VERSIONS = {
 SUPPORTED_FILENAME = "SUPPORTED.md"
 README_FILENAME = "README.md"
 
-FIXTURE_FOLDER = "tests/fixtures/"
-IOT_FOLDER = "tests/fixtures/iot/"
-SMART_FOLDER = "tests/fixtures/smart/"
-SMART_CHILD_FOLDER = "tests/fixtures/smart/child"
-SMARTCAM_FOLDER = "tests/fixtures/smartcam/"
-SMARTCAM_CHILD_FOLDER = "tests/fixtures/smartcam/child"
+FIXTURE_FOLDER = Path("tests/fixtures")
+IOT_FOLDER = FIXTURE_FOLDER / "iot"
+SMART_FOLDER = FIXTURE_FOLDER / "smart"
+SMART_CHILD_FOLDER = SMART_FOLDER / "child"
+SMARTCAM_FOLDER = FIXTURE_FOLDER / "smartcam"
+SMARTCAM_CHILD_FOLDER = SMARTCAM_FOLDER / "child"
 
 
 def generate_supported(args):
@@ -249,11 +249,11 @@ def _supported_text(
 
 def _get_supported_devices(
     supported: dict[str, Any],
-    fixture_location: str,
+    fixture_location: Path,
     device_cls: type[IotDevice | SmartDevice | SmartCamDevice],
     seen: set[str],
 ):
-    for file in Path(fixture_location).glob("*.json"):
+    for file in fixture_location.glob("*.json"):
         fixture_path = file.relative_to(FIXTURE_FOLDER).as_posix()
         seen.add(fixture_path)
         with file.open() as f:
