@@ -178,15 +178,18 @@ The following devices have been tested and confirmed as working. If your device 
 > [!NOTE]
 > The hub attached Tapo buttons S200B and S200D do not currently support alerting when the button is pressed.
 
-> [!NOTE]
+> [!WARNING]
 > Some firmware versions of Tapo Cameras will not authenticate unless you enable "Tapo Lab" > "Third-Party Compatibility" in the native Tapo app.
 > Alternatively, you can factory reset and then prevent the device from accessing the internet.
+>
+> Devices using the TPAP encryption, found on some newer devices and/or firmware versions, are not currently supported.
+> Enabling third-party compatibility may help on some of them as well.
 
 <!--Do not edit text inside the SUPPORTED section below -->
 <!--SUPPORTED_START-->
 ### Supported Kasa devices
 
-- **Plugs**: EP10, EP25[^2], HS100[^2], HS103, HS105, HS110, KP100, KP105, KP115, KP125, KP125M[^1], KP401
+- **Plugs**: EP10, EP25[^2][^4], HS100[^2], HS103, HS105, HS110, KP100, KP105, KP115, KP125, KP125M[^1][^4], KP401
 - **Power Strips**: EP40, EP40M[^1], HS107, HS300, KP200, KP303, KP400
 - **Wall Switches**: ES20M, HS200[^2], HS210, HS220[^2], KP405, KS200, KS200M, KS205[^1], KS220, KS220M, KS225[^1], KS230[^2], KS240[^1]
 - **Bulbs**: KL110, KL110B, KL120, KL125, KL130, KL135, KL50, KL60, LB100, LB110, LB130
@@ -196,21 +199,22 @@ The following devices have been tested and confirmed as working. If your device 
 
 ### Supported Tapo[^1] devices
 
-- **Plugs**: P100, P105, P110, P110M, P115, P116M, P125M, P135, TP10, TP15
+- **Plugs**: P100, P105, P110[^4], P110M[^4], P115, P116M, P125M, P135, TP10, TP15
 - **Power Strips**: P210M, P300, P304M, P306, P316M, TP25
-- **Wall Switches**: S210, S220, S500, S500D, S505, S505D, S515D, TS15
+- **Wall Switches**: S210, S220, S500, S500D, S505, S505D[^4], S515D, TS15
 - **Bulbs**: L430C, L430P, L510B, L510E, L530B, L530E, L530EA, L535E, L630
 - **Light Strips**: L900-10, L900-5, L920-5, L930-5
 - **Cameras**: C100, C101, C110, C200, C210, C220, C225, C325WB, C460, C520WS, C720, TC40, TC65, TC70
 - **Doorbells and chimes**: D100C, D130, D230, TD21
-- **Vacuums**: RV20 Max Plus, RV30 Max
+- **Vacuums**: RV20 Max Plus[^4], RV30 Max
 - **Hubs**: H100, H200
 - **Hub-Connected Devices[^3]**: S200B, S200D, T100, T110, T300, T310, T315
 
-<!--SUPPORTED_END-->
 [^1]: Model requires authentication
 [^2]: Newer versions require authentication
 [^3]: Devices may work across TAPO/KASA branded hubs
+[^4]: Some versions are not supported, see SUPPORTED.md
+<!--SUPPORTED_END-->
 
 See [supported devices in our documentation](SUPPORTED.md) for more detailed information about tested hardware and software versions.
 

@@ -23,6 +23,7 @@ class SupportedVersion(NamedTuple):
     hw: str
     fw: str
     auth: bool
+    unsupported: str = ""
 
 
 # The order of devices in this dict drives the display order
@@ -44,15 +45,40 @@ DEVICE_TYPE_TO_PRODUCT_GROUP = {
     DeviceType.Thermostat: "Hub-Connected Devices",
 }
 
+# Footnotes shared by README.md and SUPPORTED.md, a block defines those it uses
+FOOTNOTES = {
+    "auth": (1, "Model requires authentication"),
+    "auth_newer": (2, "Newer versions require authentication"),
+    "hub": (3, "Devices may work across TAPO/KASA branded hubs"),
+    "unsupported": (4, "Some versions are not supported, see SUPPORTED.md"),
+}
+
+
+def _fn(key: str) -> str:
+    return f"[^{FOOTNOTES[key][0]}]"
+
+
+# Fixtures of versions known not to work, keyed by path below FIXTURE_FOLDER,
+# with the reason shown in SUPPORTED.md
+UNSUPPORTED_VERSIONS = {
+    "smart/EP25(US)_2.6_1.4.1.json": "TPAP encryption",
+    "smart/KP125M(US)_1.0_1.4.1.json": "TPAP encryption",
+    "smart/P110(EU)_1.0_1.4.0.json": "TPAP encryption",
+    "smart/P110M(FR)_1.0_1.4.1.json": "TPAP encryption",
+    "smart/RV20 Max Plus(EU)_1.0_1.3.0.json": "TPAP encryption",
+    "smart/S505D(US)_1.0_1.4.0.json": "TPAP encryption",
+}
+
 
 SUPPORTED_FILENAME = "SUPPORTED.md"
 README_FILENAME = "README.md"
 
-IOT_FOLDER = "tests/fixtures/iot/"
-SMART_FOLDER = "tests/fixtures/smart/"
-SMART_CHILD_FOLDER = "tests/fixtures/smart/child"
-SMARTCAM_FOLDER = "tests/fixtures/smartcam/"
-SMARTCAM_CHILD_FOLDER = "tests/fixtures/smartcam/child"
+FIXTURE_FOLDER = Path("tests/fixtures")
+IOT_FOLDER = FIXTURE_FOLDER / "iot"
+SMART_FOLDER = FIXTURE_FOLDER / "smart"
+SMART_CHILD_FOLDER = SMART_FOLDER / "child"
+SMARTCAM_FOLDER = FIXTURE_FOLDER / "smartcam"
+SMARTCAM_CHILD_FOLDER = SMARTCAM_FOLDER / "child"
 
 
 def generate_supported(args):
@@ -66,11 +92,14 @@ def generate_supported(args):
 
     supported = {"kasa": {}, "tapo": {}}
 
-    _get_supported_devices(supported, IOT_FOLDER, IotDevice)
-    _get_supported_devices(supported, SMART_FOLDER, SmartDevice)
-    _get_supported_devices(supported, SMART_CHILD_FOLDER, SmartDevice)
-    _get_supported_devices(supported, SMARTCAM_FOLDER, SmartCamDevice)
-    _get_supported_devices(supported, SMARTCAM_CHILD_FOLDER, SmartCamChild)
+    seen: set[str] = set()
+    _get_supported_devices(supported, IOT_FOLDER, IotDevice, seen)
+    _get_supported_devices(supported, SMART_FOLDER, SmartDevice, seen)
+    _get_supported_devices(supported, SMART_CHILD_FOLDER, SmartDevice, seen)
+    _get_supported_devices(supported, SMARTCAM_FOLDER, SmartCamDevice, seen)
+    _get_supported_devices(supported, SMARTCAM_CHILD_FOLDER, SmartCamChild, seen)
+    if stale := UNSUPPORTED_VERSIONS.keys() - seen:
+        raise ValueError(f"UNSUPPORTED_VERSIONS has no fixture for: {sorted(stale)}")
 
     readme_updated = _update_supported_file(
         README_FILENAME, _supported_summary(supported), print_diffs
@@ -131,7 +160,7 @@ def _supported_detail(supported):
         "## $brand devices\n\n$preamble\n\n$types\n",
         "### $type_\n\n$models\n",
         "- **$model**\n$versions",
-        "  - Hardware: $hw$region / Firmware: $fw$auth_flag\n",
+        "  - Hardware: $hw$region / Firmware: $fw$auth_flag$unsupported\n",
     )
 
 
@@ -147,7 +176,7 @@ def _supported_text(
     for brand, types in supported.items():
         preamble_text = (
             "Some newer Kasa devices require authentication. "
-            + "These are marked with [^1] in the list below."
+            + f"These are marked with {_fn('auth')} in the list below."
             if brand == "kasa"
             else "All Tapo devices require authentication."
         )
@@ -156,7 +185,7 @@ def _supported_text(
             + "hubs even if they don't work across the native apps."
         )
         brand_text = brand.capitalize()
-        brand_auth = r"[^1]" if brand == "tapo" else ""
+        brand_auth = _fn("auth") if brand == "tapo" else ""
         types_text = ""
         for supported_type, models in sorted(
             # Sort by device type order in the enum
@@ -166,46 +195,68 @@ def _supported_text(
             models_list = []
             models_text = ""
             for model, versions in sorted(models.items()):
-                auth_count = 0
+                auth_count = unsupported_count = 0
                 versions_text = ""
                 for version in sorted(versions):
                     region_text = f" ({version.region})" if version.region else ""
                     auth_count += 1 if version.auth else 0
-                    vauth_flag = r"[^1]" if version.auth and brand == "kasa" else ""
+                    unsupported_count += 1 if version.unsupported else 0
+                    vauth_flag = _fn("auth") if version.auth and brand == "kasa" else ""
                     if version_template:
                         versions_text += versst.substitute(
                             hw=version.hw,
                             fw=version.fw,
                             region=region_text,
                             auth_flag=vauth_flag,
+                            unsupported=f" (not supported: {version.unsupported})"
+                            if version.unsupported
+                            else "",
                         )
                 if brand == "kasa" and auth_count > 0:
-                    auth_flag = r"[^1]" if auth_count == len(versions) else r"[^2]"
+                    auth_flag = (
+                        _fn("auth")
+                        if auth_count == len(versions)
+                        else _fn("auth_newer")
+                    )
                 else:
                     auth_flag = ""
                 if model_template:
                     models_text += modelt.substitute(
                         model=model, versions=versions_text, auth_flag=auth_flag
                     )
-                else:
-                    models_list.append(f"{model}{auth_flag}")
+                elif unsupported_count < len(versions):
+                    # The summary lists supported models only
+                    unsupported_flag = _fn("unsupported") if unsupported_count else ""
+                    models_list.append(f"{model}{auth_flag}{unsupported_flag}")
             models_text = models_text if models_text else ", ".join(models_list)
-            type_asterix = r"[^3]" if supported_type == "Hub-Connected Devices" else ""
+            if not models_text:
+                continue
+            type_asterix = (
+                _fn("hub") if supported_type == "Hub-Connected Devices" else ""
+            )
             types_text += typest.substitute(
                 type_=supported_type, type_asterix=type_asterix, models=models_text
             )
         brands += brandt.substitute(
             brand=brand_text, types=types_text, auth=brand_auth, preamble=preamble_text
         )
-    return brands
+    footnotes = "".join(
+        f"[^{num}]: {text}\n"
+        for num, text in sorted(FOOTNOTES.values())
+        if f"[^{num}]" in brands
+    )
+    return brands + footnotes
 
 
 def _get_supported_devices(
     supported: dict[str, Any],
-    fixture_location: str,
+    fixture_location: Path,
     device_cls: type[IotDevice | SmartDevice | SmartCamDevice],
+    seen: set[str],
 ):
-    for file in Path(fixture_location).glob("*.json"):
+    for file in fixture_location.glob("*.json"):
+        fixture_path = file.relative_to(FIXTURE_FOLDER).as_posix()
+        seen.add(fixture_path)
         with file.open() as f:
             fixture_data = json.load(f)
 
@@ -223,6 +274,7 @@ def _get_supported_devices(
                 hw=model_info.hardware_version,
                 fw=model_info.firmware_version,
                 auth=model_info.requires_auth,
+                unsupported=UNSUPPORTED_VERSIONS.get(fixture_path, ""),
             )
         )
 
