@@ -5,9 +5,13 @@ The following devices have been tested and confirmed as working. If your device 
 > [!NOTE]
 > The hub attached Tapo buttons S200B and S200D do not currently support alerting when the button is pressed.
 
-> [!NOTE]
+> [!WARNING]
 > Some firmware versions of Tapo Cameras will not authenticate unless you enable "Tapo Lab" > "Third-Party Compatibility" in the native Tapo app.
 > Alternatively, you can factory reset and then prevent the device from accessing the internet.
+>
+> Devices using the TPAP encryption, found on some newer devices and/or firmware versions, are not currently supported.
+> Enabling third-party compatibility may help on some of them as well.
+> Firmware versions known to use it are marked as not supported in the list below.
 
 <!--Do not edit text inside the SUPPORTED section below -->
 <!--SUPPORTED_START-->
@@ -24,7 +28,7 @@ Some newer Kasa devices require authentication. These are marked with [^1] in th
   - Hardware: 2.6 (US) / Firmware: 1.0.1[^1]
   - Hardware: 2.6 (US) / Firmware: 1.0.2[^1]
   - Hardware: 2.6 (US) / Firmware: 1.0.3[^1]
-  - Hardware: 2.6 (US) / Firmware: 1.4.1[^1]
+  - Hardware: 2.6 (US) / Firmware: 1.4.1[^1] (not supported: TPAP encryption)
 - **HS100**
   - Hardware: 1.0 (UK) / Firmware: 1.2.6
   - Hardware: 4.1 (UK) / Firmware: 1.1.0[^1]
@@ -57,7 +61,7 @@ Some newer Kasa devices require authentication. These are marked with [^1] in th
 - **KP125M**
   - Hardware: 1.0 (US) / Firmware: 1.1.3[^1]
   - Hardware: 1.0 (US) / Firmware: 1.2.3[^1]
-  - Hardware: 1.0 (US) / Firmware: 1.4.1[^1]
+  - Hardware: 1.0 (US) / Firmware: 1.4.1[^1] (not supported: TPAP encryption)
 - **KP401**
   - Hardware: 1.0 (US) / Firmware: 1.0.0
 
@@ -225,12 +229,12 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
   - Hardware: 1.0 (AU) / Firmware: 1.3.1
   - Hardware: 1.0 (EU) / Firmware: 1.0.7
   - Hardware: 1.0 (EU) / Firmware: 1.2.3
-  - Hardware: 1.0 (EU) / Firmware: 1.4.0
+  - Hardware: 1.0 (EU) / Firmware: 1.4.0 (not supported: TPAP encryption)
   - Hardware: 1.0 (UK) / Firmware: 1.3.0
 - **P110M**
   - Hardware: 1.0 (AU) / Firmware: 1.2.3
   - Hardware: 1.0 (EU) / Firmware: 1.2.3
-  - Hardware: 1.0 (FR) / Firmware: 1.4.1
+  - Hardware: 1.0 (FR) / Firmware: 1.4.1 (not supported: TPAP encryption)
 - **P115**
   - Hardware: 1.0 (EU) / Firmware: 1.2.3
   - Hardware: 1.0 (US) / Firmware: 1.1.3
@@ -278,7 +282,7 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
   - Hardware: 1.0 (US) / Firmware: 1.0.2
 - **S505D**
   - Hardware: 1.0 (US) / Firmware: 1.1.0
-  - Hardware: 1.0 (US) / Firmware: 1.4.0
+  - Hardware: 1.0 (US) / Firmware: 1.4.0 (not supported: TPAP encryption)
 - **S515D**
   - Hardware: 1.6 (US) / Firmware: 1.0.4
 - **TS15**
@@ -418,5 +422,5 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
   - Hardware: 1.0 (US) / Firmware: 1.8.0
 
 
-<!--SUPPORTED_END-->
 [^1]: Model requires authentication
+<!--SUPPORTED_END-->
