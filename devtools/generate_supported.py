@@ -65,6 +65,7 @@ UNSUPPORTED_VERSIONS = {
     "smart/KP125M(US)_1.0_1.4.1.json": "TPAP encryption",
     "smart/P110(EU)_1.0_1.4.0.json": "TPAP encryption",
     "smart/P110M(FR)_1.0_1.4.1.json": "TPAP encryption",
+    "smart/RV20 Max Plus(EU)_1.0_1.3.0.json": "TPAP encryption",
     "smart/S505D(US)_1.0_1.4.0.json": "TPAP encryption",
 }
 
