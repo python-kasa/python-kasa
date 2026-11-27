@@ -244,7 +244,8 @@ async def config(ctx: click.Context) -> DeviceDict:
     """Bypass udp discovery and try to show connection config for a device.
 
     Bypasses udp discovery and shows the parameters required to connect
-    directly to the device.
+    directly to the device. For TPAP cameras, use UDP discovery or connect
+    directly with --tpap.
     """
     params = ctx.find_root().params
     username = params["username"]
@@ -255,7 +256,6 @@ async def config(ctx: click.Context) -> DeviceDict:
 
     if not host:
         error("--host option must be supplied to discover config")
-
     credentials = Credentials(username, password) if username and password else None
 
     host_port = host + (f":{port}" if port else "")
@@ -283,7 +283,10 @@ async def config(ctx: click.Context) -> DeviceDict:
         )
         return {host: dev}
     else:
-        error(f"Unable to connect to {host}")
+        error(
+            f"Unable to connect to {host}. Try UDP discovery or use "
+            "--tpap with a direct command."
+        )
 
 
 def _echo_dictionary(discovery_info: dict) -> None:
@@ -334,6 +337,8 @@ def _echo_discovery_info(discovery_info: dict) -> None:
         _conditional_echo("Supports HTTPS", mgt_encrypt_schm.is_support_https)
         _conditional_echo("HTTP Port", mgt_encrypt_schm.http_port)
         _conditional_echo("Login version", mgt_encrypt_schm.lv)
+    # The tpap object picks TPAP, whatever the encrypt type above says
+    _conditional_echo("TPAP", dr.tpap)
     _conditional_echo("Encrypt info", pf(dr.encrypt_info) if dr.encrypt_info else None)
     _conditional_echo("Decrypted", pf(dr.decrypted_data) if dr.decrypted_data else None)
 

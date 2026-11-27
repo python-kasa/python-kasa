@@ -8,6 +8,7 @@ import logging
 import re
 import socket
 from asyncio import timeout as asyncio_timeout
+from collections import Counter
 from unittest.mock import MagicMock
 
 import aiohttp
@@ -23,6 +24,7 @@ from kasa import (
     Discover,
     IotProtocol,
     KasaException,
+    device_factory,
 )
 from kasa.device_factory import (
     get_device_class_from_family,
@@ -34,6 +36,7 @@ from kasa.deviceconfig import (
     DeviceConnectionParameters,
     DeviceEncryptionType,
     DeviceFamily,
+    TpapParameters,
 )
 from kasa.discover import (
     DiscoveryResult,
@@ -41,20 +44,32 @@ from kasa.discover import (
     _DiscoverProtocol,
     json_dumps,
 )
-from kasa.exceptions import AuthenticationError, UnsupportedDeviceError
+from kasa.exceptions import (
+    AuthenticationError,
+    DeviceError,
+    SmartErrorCode,
+    UnsupportedDeviceError,
+)
 from kasa.iot import IotDevice, IotPlug
+from kasa.protocols import SmartCamProtocol
+from kasa.smart import SmartDevice
+from kasa.smartcam import SmartCamDevice
+from kasa.transports import KlapTransportV2
 from kasa.transports.aestransport import AesEncyptionSession
+from kasa.transports.tpaptransport import TpapTransport
 from kasa.transports.xortransport import XorEncryption, XorTransport
 
 from .conftest import (
     bulb_iot,
     dimmer_iot,
     lightstrip_iot,
+    load_fixture,
     new_discovery,
     plug_iot,
     strip_iot,
     wallswitch_iot,
 )
+from .transports.test_tpaptransport import CREDENTIALS, DUMMY_QUERY, MockTpapDevice
 
 # A physical device has to respond to discovery for the tests to work.
 pytestmark = [pytest.mark.requires_dummy]
@@ -171,6 +186,7 @@ async def test_discover_single(
         login_version=discovery_mock.login_version,
         https=discovery_mock.https,
         http_port=discovery_mock.http_port,
+        tpap=discovery_mock.tpap,
     )
     config = DeviceConfig(
         host=host,
@@ -268,6 +284,200 @@ async def test_discover_single_unsupported(
         UnsupportedDeviceError,
     ):
         await Discover.discover_single(host)
+
+
+def _p115_reply(*, tpap: dict | None, encrypt_type: str, preferred: bool) -> dict:
+    """P115(EU) fw 1.4.8 reply as posted on #1592, identifiers masked."""
+    result = {
+        **UNSUPPORTED["result"],
+        "device_type": "SMART.TAPOPLUG",
+        "device_model": "P115(EU)",
+        "mac": "60-15-6F-00-00-00",
+        "tpap_preferred": preferred,
+        "protocol_version": 1,
+        "mgt_encrypt_schm": {
+            "is_support_https": False,
+            "http_port": 80,
+            "encrypt_type": encrypt_type,
+            "lv": 2,
+        },
+    }
+    if tpap is not None:
+        result["tpap"] = tpap
+    return {"result": result, "error_code": 0}
+
+
+async def test_discover_tpap_object_routes_to_tpap() -> None:
+    """The tpap object gives TPAP (P115 fw 1.4.8, compatibility switch off)."""
+    info = _p115_reply(
+        tpap={"tls": 0, "dac": 0, "noc": 0, "pake": [2], "port": 80},
+        encrypt_type="TPAP",
+        preferred=True,
+    )
+    dev = Discover._get_device_instance(info, DeviceConfig("127.0.0.1"))
+
+    assert isinstance(dev, SmartDevice)
+    assert isinstance(dev.protocol._transport, TpapTransport)
+    assert dev.config.connection_type == DeviceConnectionParameters(
+        device_family=DeviceFamily.SmartTapoPlug,
+        encryption_type=DeviceEncryptionType.Tpap,
+        login_version=2,
+        https=False,
+        http_port=80,
+        tpap=TpapParameters(
+            tls=0, port=80, pake=[2], mac="60-15-6F-00-00-00", owner="xx"
+        ),
+    )
+    await dev.disconnect()
+
+
+async def test_discover_without_tpap_object_ignores_tpap_preferred() -> None:
+    """With the compatibility switch on, the P115 announces KLAP and no object."""
+    info = _p115_reply(tpap=None, encrypt_type="KLAP", preferred=False)
+    dev = Discover._get_device_instance(info, DeviceConfig("127.0.0.1"))
+
+    assert dev.config.connection_type.encryption_type is DeviceEncryptionType.Klap
+    assert isinstance(dev.protocol._transport, KlapTransportV2)
+    await dev.disconnect()
+
+
+async def test_discover_tpap_without_tpap_object_stays_on_tpap() -> None:
+    """encrypt_type TPAP alone keeps TPAP."""
+    info = _p115_reply(tpap=None, encrypt_type="TPAP", preferred=True)
+    dev = Discover._get_device_instance(info, DeviceConfig("127.0.0.1"))
+
+    assert dev.config.connection_type.encryption_type is DeviceEncryptionType.Tpap
+    assert isinstance(dev.protocol._transport, TpapTransport)
+    await dev.disconnect()
+
+
+def _c510w_reply() -> dict:
+    """C510W hw 2.0 fw 1.3.4 reply as posted on #1592, identifiers masked."""
+    return {
+        "result": {
+            "device_id": "REDACTED",
+            "device_name": "#MASKED_NAME#",
+            "device_type": "SMART.IPCAMERA",
+            "device_model": "C510W",
+            "ip": "127.0.0.1",
+            "mac": "00-00-00-00-00-00",
+            "hardware_version": "2.0",
+            "firmware_version": "1.3.4 Build 260523 Rel.33481n",
+            "factory_default": False,
+            "is_support_iot_cloud": True,
+            "isResetWiFi": False,
+            "encrypt_type": ["4"],
+            "tpap": {"pake": [2], "tls": 1, "noc": 1, "port": 443},
+            "mgt_encrypt_schm": {"is_support_https": True},
+            "protocol_version": 1,
+            "sv": 1,
+            "encrypt_info": {"sym_schm": "AES", "key": "", "data": ""},
+        },
+        "error_code": 0,
+    }
+
+
+def _c101_reply() -> dict:
+    fixture = json.loads(load_fixture("smartcam", "C101(US)_5.0_1.4.3.json"))
+    return {"result": fixture["discovery_result"]["result"], "error_code": 0}
+
+
+@pytest.mark.parametrize(
+    "info",
+    [
+        pytest.param(_c101_reply(), id="C101-fw-1.4.3"),
+        pytest.param(_c510w_reply(), id="C510W-fw-1.3.4"),
+    ],
+)
+async def test_discover_camera_with_tpap_object_ignores_aes(info: dict) -> None:
+    """Cameras advertise AES next to the tpap object; the tpap object wins."""
+    dev = Discover._get_device_instance(info, DeviceConfig("127.0.0.1"))
+
+    assert isinstance(dev, SmartCamDevice)
+    assert isinstance(dev.protocol, SmartCamProtocol)
+    assert isinstance(dev.protocol._transport, TpapTransport)
+    ctype = dev.config.connection_type
+    assert ctype.encryption_type is DeviceEncryptionType.Tpap
+    assert ctype.https is True
+    assert ctype.tpap == TpapParameters(
+        tls=1, port=443, pake=[2], mac=info["result"]["mac"]
+    )
+    await dev.disconnect()
+
+
+async def test_discover_iot_device_with_tpap() -> None:
+    """KL420L5 fw 1.4.2 announces TPAP and gets the IOT protocol over TPAP."""
+    info = {
+        "result": {
+            **UNSUPPORTED["result"],
+            "device_type": "IOT.SMARTBULB",
+            "device_model": "KL420L5(US)",
+            "tpap_preferred": True,
+            "tpap": {"tls": 0, "dac": 1, "noc": 1, "pake": [2], "port": 80},
+            "mgt_encrypt_schm": {
+                "is_support_https": False,
+                "encrypt_type": "TPAP",
+                "http_port": 80,
+                "lv": 2,
+            },
+        },
+        "error_code": 0,
+    }
+    dev = Discover._get_device_instance(info, DeviceConfig("127.0.0.1"))
+    # Discovery only has the family; connect() picks the class from sysinfo
+    assert isinstance(dev, IotDevice)
+    assert isinstance(dev.protocol, IotProtocol)
+    assert isinstance(dev.protocol._transport, TpapTransport)
+    assert dev.config.connection_type.tpap == TpapParameters(
+        tls=0, port=80, pake=[2], dac=True, mac="48-22xxx", owner="xx"
+    )
+    await dev.disconnect()
+
+
+async def test_discover_tpap_object_with_unexpected_values() -> None:
+    """Values of the wrong type fall back to defaults, the device stays usable."""
+    info = _p115_reply(
+        tpap={"tls": "x", "port": [80], "pake": 2, "user_hash_type": None, "dac": 2},
+        encrypt_type="TPAP",
+        preferred=True,
+    )
+    dev = Discover._get_device_instance(info, DeviceConfig("127.0.0.1"))
+
+    assert dev.config.connection_type.tpap == TpapParameters(
+        mac="60-15-6F-00-00-00", owner="xx"
+    )
+    await dev.disconnect()
+
+
+async def test_discover_stored_tpap_config_round_trips() -> None:
+    """HA stores the config and reconnects from it without rediscovering."""
+    info = _p115_reply(
+        tpap={"tls": 0, "dac": 1, "noc": 1, "pake": [2], "port": 80},
+        encrypt_type="TPAP",
+        preferred=True,
+    )
+    dev = Discover._get_device_instance(info, DeviceConfig("127.0.0.1"))
+    stored = dev.config.to_dict()
+
+    assert stored["connection_type"]["tpap"] == {
+        "tls": 0,
+        "port": 80,
+        "pake": [2],
+        "dac": True,
+        "mac": "60-15-6F-00-00-00",
+        "owner": "xx",
+    }
+    assert DeviceConfig.from_dict(stored) == dev.config
+    # Home Assistant stores the config with the credentials hash only
+    ha_stored = dev.config.to_dict_control_credentials(credentials_hash="hash")
+    assert ha_stored["connection_type"]["tpap"] == stored["connection_type"]["tpap"]
+    assert DeviceConfig.from_dict(ha_stored).connection_type == (
+        dev.config.connection_type
+    )
+    # Configs stored before the tpap field still load
+    del stored["connection_type"]["tpap"]
+    assert DeviceConfig.from_dict(stored).connection_type.tpap is None
+    await dev.disconnect()
 
 
 async def test_discover_single_no_response(mocker: MockerFixture) -> None:
@@ -691,7 +901,7 @@ async def test_discovery_decryption() -> None:
 
 
 async def test_discover_try_connect_all(discovery_mock, mocker: MockerFixture) -> None:
-    """Test that device update is called on main."""
+    """Probe fixture routes while excluding cameras that need TPAP metadata."""
     if "result" in discovery_mock.discovery_data:
         dev_class = get_device_class_from_family(
             discovery_mock.device_type, https=discovery_mock.https
@@ -702,6 +912,7 @@ async def test_discover_try_connect_all(discovery_mock, mocker: MockerFixture) -
             login_version=discovery_mock.login_version,
             https=discovery_mock.https,
             http_port=discovery_mock.http_port,
+            tpap=discovery_mock.tpap,
         )
         protocol = get_protocol(
             DeviceConfig(discovery_mock.ip, connection_type=cparams)
@@ -738,16 +949,20 @@ async def test_discover_try_connect_all(discovery_mock, mocker: MockerFixture) -
     mocker.patch("kasa.SmartProtocol.query", new=_query)
     mocker.patch.object(dev_class, "update", new=_update)
 
-    session = aiohttp.ClientSession()
-    dev = await Discover.try_connect_all(discovery_mock.ip, http_client=session)
+    async with aiohttp.ClientSession() as session:
+        dev = await Discover.try_connect_all(discovery_mock.ip, http_client=session)
 
-    assert dev
-    assert isinstance(dev, dev_class)
-    assert isinstance(dev.protocol, protocol_class)
-    assert isinstance(dev.protocol._transport, transport_class)
-    assert dev.config.uses_http is (transport_class != XorTransport)
-    if transport_class != XorTransport:
-        assert dev.protocol._transport._http_client.client == session
+        if transport_class is TpapTransport and dev_class is SmartCamDevice:
+            assert dev is None
+            return
+
+        assert dev
+        assert isinstance(dev, dev_class)
+        assert isinstance(dev.protocol, protocol_class)
+        assert isinstance(dev.protocol._transport, transport_class)
+        assert dev.config.uses_http is (transport_class != XorTransport)
+        if transport_class != XorTransport:
+            assert dev.protocol._transport._http_client.client == session
 
 
 async def test_discovery_device_repr(discovery_mock, mocker: MockerFixture) -> None:
@@ -800,6 +1015,113 @@ async def test_connection_parameters_from_encrypt_type_list_only():
         Discover._get_connection_parameters(DiscoveryResult.from_dict(result))
 
 
+@pytest.mark.parametrize("metadata_available", [True, False])
+async def test_try_connect_all_tpap_uses_http_metadata(
+    mocker: MockerFixture, metadata_available: bool
+) -> None:
+    """Exercise discovery through the real transport with and without metadata."""
+    device = MockTpapDevice(
+        replies=None
+        if metadata_available
+        else {"discover": {"error_code": 0, "result": {}}}
+    )
+    mocker.patch.object(aiohttp.ClientSession, "post", side_effect=device.post)
+    protocol_factory = mocker.patch("kasa.discover.get_protocol", wraps=get_protocol)
+    discover = mocker.patch.object(Discover, "discover")
+    discover_single = mocker.patch.object(Discover, "discover_single")
+    original_connect = device_factory._connect
+
+    async def connect(config, protocol):
+        ctype = config.connection_type
+        if (
+            ctype.encryption_type is DeviceEncryptionType.Tpap
+            and ctype.device_family is DeviceFamily.SmartTapoPlug
+        ):
+            return await original_connect(config, protocol)
+        raise KasaException("not this one")
+
+    async def update(self):
+        await self.protocol.query(DUMMY_QUERY)
+
+    mocker.patch.object(device_factory, "_connect", connect)
+    mocker.patch.object(SmartDevice, "update", update)
+
+    dev = await Discover.try_connect_all("127.0.0.1", credentials=CREDENTIALS)
+    if metadata_available:
+        assert isinstance(dev, SmartDevice)
+        assert isinstance(dev.protocol._transport, TpapTransport)
+        assert dev.config.connection_type.tpap is None
+        assert device.calls == Counter(
+            discover=1, pake_register=1, pake_share=1, request=1
+        )
+    else:
+        assert dev is None
+        assert device.calls == Counter(discover=1)
+
+    assert all(
+        config.connection_type.device_family
+        not in {DeviceFamily.SmartIpCamera, DeviceFamily.IotIpCamera}
+        for (config,), _ in protocol_factory.call_args_list
+        if config.connection_type.encryption_type is DeviceEncryptionType.Tpap
+    )
+    discover.assert_not_called()
+    discover_single.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("error", "stop"),
+    [
+        pytest.param(
+            AuthenticationError("refused", error_code=SmartErrorCode.STAT_ACCESS_ERROR),
+            True,
+            id="refused",
+        ),
+        pytest.param(
+            DeviceError("locked", error_code=SmartErrorCode.DEVICE_BLOCKED),
+            True,
+            id="locked",
+        ),
+        pytest.param(KasaException("not this one"), False, id="other"),
+        pytest.param(
+            DeviceError("expired", error_code=SmartErrorCode.SESSION_EXPIRED),
+            False,
+            id="device-error",
+        ),
+        pytest.param(
+            AuthenticationError("no credentials to log in with"),
+            False,
+            id="refused-locally",
+        ),
+    ],
+)
+async def test_try_connect_all_tpap_refusal(
+    mocker: MockerFixture, error: KasaException, stop: bool
+) -> None:
+    """Stop probing TPAP after a refusal or lockout reported by a device."""
+    tried = []
+    close_calls = []
+
+    async def connect(config, protocol):
+        encryption = config.connection_type.encryption_type
+        tried.append(encryption)
+        close_calls.append(mocker.spy(protocol, "close"))
+        if encryption is DeviceEncryptionType.Tpap:
+            raise error
+        raise KasaException("not this one")
+
+    mocker.patch.object(device_factory, "_connect", connect)
+    assert await Discover.try_connect_all("127.0.0.1", credentials=CREDENTIALS) is None
+
+    tpap_count = tried.count(DeviceEncryptionType.Tpap)
+    if stop:
+        assert tpap_count == 1
+    else:
+        assert tpap_count > 1
+    assert set(tried[-tpap_count:]) == {DeviceEncryptionType.Tpap}
+    for close in close_calls:
+        close.assert_awaited_once()
+
+
 async def test_connection_parameters_unsupported_encrypt_type():
     """An unknown encrypt_type is named in the error."""
     result = {
@@ -811,7 +1133,7 @@ async def test_connection_parameters_unsupported_encrypt_type():
         "mgt_encrypt_schm": {
             "is_support_https": True,
             "http_port": 4433,
-            "encrypt_type": "TPAP",
+            "encrypt_type": "FOO",
             "lv": 2,
         },
     }
@@ -819,7 +1141,7 @@ async def test_connection_parameters_unsupported_encrypt_type():
         UnsupportedDeviceError,
         match=(
             r"^Device 127\.0\.0\.123 \(SMART\.TAPOROBOVAC\) uses unsupported "
-            r"encryption type TPAP$"
+            r"encryption type FOO$"
         ),
     ) as exc_info:
         Discover._get_connection_parameters(DiscoveryResult.from_dict(result))

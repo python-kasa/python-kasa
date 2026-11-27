@@ -114,6 +114,17 @@ The encryption cipher is the same as for Kasa KLAP but the handshake seeds are s
 Also in 2023 TP-Link started releasing newer Kasa branded devices using the ``SMART`` protocol.
 This appears to be driven by hardware version rather than firmware.
 
+In 2025 TP-Link started moving newer firmware of both Tapo and Kasa devices to a transport called ``TPAP``.
+It logs in with SPAKE2+, a password-authenticated key exchange, and then encrypts each request with a session key.
+Devices announce it, together with the values to log in with, in a ``tpap`` object in their discovery reply.
+To connect directly over TPAP, reuse the device configuration saved from discovery or
+supply ``DeviceConnectionParameters.tpap`` (``--tpap`` in the CLI).
+Include the advertised passcode types (``pake``) and the device MAC when the login mode requires it.
+When TPAP is already selected for a non-camera device, the transport can also ask the known HTTP or HTTPS endpoint for its settings before login.
+The UDP-free ``kasa discover config`` command can use this lookup for non-camera devices.
+Cameras and camera hubs require settings from UDP discovery, saved configuration or explicit input.
+With the Third-Party Compatibility option of the Tapo app turned on, many of these devices announce their previous transport instead.
+
 
 In order to support these different configurations the library migrated from a single protocol class ``TPLinkSmartHomeProtocol``
 to support pluggable transports and protocols.
@@ -128,6 +139,7 @@ The classes providing this functionality are:
 - {class}`AesTransport <kasa.transports.AesTransport>`
 - {class}`KlapTransport <kasa.transports.KlapTransport>`
 - {class}`KlapTransportV2 <kasa.transports.KlapTransportV2>`
+- {class}`TpapTransport <kasa.transports.TpapTransport>`
 
 (topics-errors-and-exceptions)=
 ## Errors and Exceptions

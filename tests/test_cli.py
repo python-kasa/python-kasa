@@ -13,6 +13,7 @@ from pytest_mock import MockerFixture
 
 from kasa import (
     AuthenticationError,
+    BaseProtocol,
     ColorTempRange,
     Credentials,
     Device,
@@ -21,6 +22,7 @@ from kasa import (
     EmeterStatus,
     KasaException,
     Module,
+    SmartProtocol,
 )
 from kasa.cli.common import _echo
 from kasa.cli.device import (
@@ -45,6 +47,12 @@ from kasa.cli.main import TYPES, _legacy_type_to_class, cli, cmd_command, raw_co
 from kasa.cli.time import time
 from kasa.cli.usage import energy
 from kasa.cli.wifi import wifi
+from kasa.deviceconfig import (
+    DeviceConfig,
+    DeviceEncryptionType,
+    DeviceFamily,
+    TpapParameters,
+)
 from kasa.discover import Discover, DiscoveryResult, redact_data
 from kasa.iot import IotDevice
 from kasa.json import dumps as json_dumps
@@ -59,6 +67,7 @@ from .conftest import (
     handle_turn_on,
     new_discovery,
     parametrize_combine,
+    parametrize_discovery,
     turn_on,
 )
 
@@ -1210,7 +1219,16 @@ async def test_features_all(
     """Test feature command on all fixtures."""
     res = await runner.invoke(
         cli,
-        ["--host", "127.0.0.123", "--debug", "feature"],
+        [
+            "--host",
+            "127.0.0.123",
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+            "--debug",
+            "feature",
+        ],
         catch_exceptions=False,
     )
     assert "== Primary features ==" in res.output
@@ -1557,6 +1575,40 @@ async def test_discover_config_invalid(
     assert "--target is not a valid option for single host discovery" in res.output
 
 
+async def test_discover_config_reports_tpap_without_udp(
+    mocker: MockerFixture, runner: CliRunner
+) -> None:
+    """Report direct-connect options for a TPAP device found by probing."""
+    host = "127.0.0.1"
+
+    async def connect(config: DeviceConfig, protocol: BaseProtocol) -> Device:
+        cp = config.connection_type
+        if (
+            cp.encryption_type is DeviceEncryptionType.Tpap
+            and cp.device_family is DeviceFamily.SmartTapoPlug
+            and not cp.https
+        ):
+            assert cp.tpap is None
+            assert isinstance(protocol, SmartProtocol)
+            return SmartDevice(host=config.host, protocol=protocol)
+        raise KasaException("unsupported connection")
+
+    mocker.patch("kasa.device_factory._connect", side_effect=connect)
+    discover = mocker.patch.object(Discover, "discover")
+    discover_single = mocker.patch.object(Discover, "discover_single")
+
+    res = await runner.invoke(
+        cli, ["--host", host, "discover", "config"], catch_exceptions=False
+    )
+
+    assert res.exit_code == 0, res.output
+    assert (
+        "--device-family SMART.TAPOPLUG --encrypt-type TPAP --no-https"
+    ) in " ".join(res.output.split())
+    discover.assert_not_called()
+    discover_single.assert_not_called()
+
+
 def test_echo_strips_rich_tags_without_rich(monkeypatch, capsys):
     """Multi-word rich tags are stripped when rich is not installed."""
     monkeypatch.setitem(sys.modules, "rich", None)
@@ -1569,6 +1621,191 @@ def test_echo_strips_rich_tags_without_rich(monkeypatch, capsys):
     module._echo("[bold red]Only discover is available[/bold red] [ABC]")
 
     assert capsys.readouterr().out == "Only discover is available [ABC]\n"
+
+
+tpap_object_discovery = parametrize_discovery(
+    "tpap object discovery",
+    model_filter={"C101(US)_5.0_1.4.3", "KP125M(US)_1.0_1.4.1"},
+)
+
+
+@tpap_object_discovery
+async def test_state_shows_discovery_tpap_object(
+    discovery_mock, runner: CliRunner
+) -> None:
+    """The discovery block shows the tpap object, which picks TPAP."""
+    res = await runner.invoke(
+        cli,
+        [
+            "--host",
+            discovery_mock.ip,
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+            "--verbose",
+            "state",
+        ],
+    )
+
+    assert res.exit_code == 0, res.output
+    tpap = discovery_mock.discovery_data["result"]["tpap"]
+    # The output wraps at the terminal width
+    assert f"TPAP: {tpap}" in " ".join(res.output.split())
+
+
+def _capture_connect(mocker: MockerFixture, device_class: type[Device]) -> list:
+    configs: list = []
+
+    async def _connect(config):
+        configs.append(config)
+        return device_class(host=config.host, config=config)
+
+    mocker.patch("kasa.device.Device.connect", side_effect=_connect)
+    mocker.patch.object(device_class, "update")
+    mocker.patch("kasa.cli.device.state")
+    return configs
+
+
+async def test_tpap_option_sets_tpap_parameters(
+    mocker: MockerFixture, runner: CliRunner
+) -> None:
+    """--tpap gives a manual TPAP connection the values from discovery."""
+    configs = _capture_connect(mocker, SmartDevice)
+    res = await runner.invoke(
+        cli,
+        [
+            "--host",
+            "127.0.0.1",
+            "--device-family",
+            "SMART.TAPOPLUG",
+            "--encrypt-type",
+            "TPAP",
+            "--tpap",
+            '{"tls": 0, "port": 80, "pake": [2], "dac": true}',
+        ],
+    )
+
+    assert res.exit_code == 0, res.output
+    assert configs[0].connection_type.tpap == TpapParameters(
+        tls=0, port=80, pake=[2], dac=True
+    )
+
+
+@pytest.mark.parametrize(
+    ("args", "device_class", "family", "https"),
+    [
+        pytest.param([], SmartDevice, DeviceFamily.SmartTapoPlug, False, id="alone"),
+        pytest.param(
+            ["--type", "smart"],
+            SmartDevice,
+            DeviceFamily.SmartTapoPlug,
+            False,
+            id="type-smart",
+        ),
+        pytest.param(
+            ["--type", "camera"],
+            SmartCamDevice,
+            DeviceFamily.SmartIpCamera,
+            True,
+            id="type-camera",
+        ),
+    ],
+)
+async def test_tpap_option_implies_tpap(
+    args: list[str],
+    device_class: type[Device],
+    family: DeviceFamily,
+    https: bool,
+    mocker: MockerFixture,
+    runner: CliRunner,
+) -> None:
+    """--tpap connects over TPAP even where KLAP or AES is the default."""
+    configs = _capture_connect(mocker, device_class)
+    res = await runner.invoke(
+        cli,
+        [
+            "--host",
+            "127.0.0.1",
+            *args,
+            "--tpap",
+            '{"tls": 1, "port": 443, "pake": [2]}',
+        ],
+    )
+
+    assert res.exit_code == 0, res.output
+    ctype = configs[0].connection_type
+    assert ctype.encryption_type is DeviceEncryptionType.Tpap
+    assert ctype.device_family is family
+    assert ctype.https is https
+    assert ctype.tpap == TpapParameters(tls=1, port=443, pake=[2])
+
+
+async def test_type_camera_keeps_encrypt_type(
+    mocker: MockerFixture, runner: CliRunner
+) -> None:
+    """--type camera defaults to AES but keeps an explicit TPAP."""
+    configs = _capture_connect(mocker, SmartCamDevice)
+    res = await runner.invoke(
+        cli,
+        [
+            "--host",
+            "127.0.0.1",
+            "--type",
+            "camera",
+            "--encrypt-type",
+            "TPAP",
+            "--tpap",
+            '{"tls": 1, "port": 443, "pake": [2], "user_hash_type": 1}',
+        ],
+    )
+
+    assert res.exit_code == 0, res.output
+    ctype = configs[0].connection_type
+    assert ctype.device_family is DeviceFamily.SmartIpCamera
+    assert ctype.encryption_type is DeviceEncryptionType.Tpap
+    assert ctype.https is True
+    assert ctype.tpap == TpapParameters(tls=1, port=443, pake=[2], user_hash_type=1)
+
+    res = await runner.invoke(cli, ["--host", "127.0.0.1", "--type", "camera"])
+    assert res.exit_code == 0, res.output
+    assert configs[1].connection_type.encryption_type is DeviceEncryptionType.Aes
+
+
+@pytest.mark.parametrize(
+    ("args", "message"),
+    [
+        pytest.param(
+            ["--encrypt-type", "TPAP", "--tpap", "not json"],
+            "Invalid value for '--tpap'",
+            id="not-json",
+        ),
+        pytest.param(
+            ["--encrypt-type", "TPAP", "--tpap", '{"pake": 2}'],
+            "Invalid value for '--tpap'",
+            id="wrong-type",
+        ),
+        pytest.param(
+            ["--encrypt-type", "KLAP", "--tpap", '{"tls": 0}'],
+            "--tpap is only used with --encrypt-type TPAP",
+            id="other-encrypt-type",
+        ),
+        pytest.param(
+            ["--type", "plug", "--tpap", '{"tls": 0}'],
+            "--tpap is not used with --type plug",
+            id="legacy-type",
+        ),
+    ],
+)
+async def test_tpap_option_invalid(
+    args: list[str], message: str, mocker: MockerFixture, runner: CliRunner
+) -> None:
+    connect = mocker.patch("kasa.device.Device.connect")
+    res = await runner.invoke(cli, ["--host", "127.0.0.1", *args, "state"])
+
+    assert res.exit_code != 0
+    assert message in res.output
+    connect.assert_not_called()
 
 
 def test_echo_prints_non_string_messages(capsys):

@@ -119,9 +119,12 @@ from kasa.deviceconfig import (
     DeviceConfig,
     DeviceConnectionParameters,
     DeviceEncryptionType,
+    TpapParameters,
 )
 from kasa.exceptions import (
+    SMART_AUTHENTICATION_ERRORS,
     KasaException,
+    SmartErrorCode,
     TimeoutError,
     UnsupportedDeviceError,
 )
@@ -135,6 +138,13 @@ from kasa.transports.aestransport import AesEncyptionSession, KeyPair
 from kasa.transports.xortransport import XorEncryption
 
 _LOGGER = logging.getLogger(__name__)
+
+# Stop trying TPAP candidates if the device refuses the login or reports a lockout.
+_TPAP_LOGIN_REFUSED = {
+    SmartErrorCode.STAT_ACCESS_ERROR,
+    SmartErrorCode.DEVICE_BLOCKED,
+    *SMART_AUTHENTICATION_ERRORS,
+}
 
 if TYPE_CHECKING:
     from kasa import BaseProtocol
@@ -619,10 +629,12 @@ class Discover:
         http_client: ClientSession | None = None,
         on_attempt: OnConnectAttemptCallable | None = None,
     ) -> Device | None:
-        """Try to connect directly to a device with all possible parameters.
+        """Try to connect directly with parameters that can be inferred.
 
         This method can be used when udp is not working due to network issues.
-        After succesfully connecting use the device config and
+        TPAP candidates try to read their settings before login. Camera TPAP
+        requires settings supplied by the caller or UDP discovery.
+        After successfully connecting use the device config and
         :meth:`Device.connect()` for future connections.
 
         :param host: Hostname of device to query
@@ -653,7 +665,12 @@ class Discover:
             for device_family in main_device_families
             for https in (True, False)
             for login_version in (None, 2)
-            if (
+            if not (
+                encrypt is DeviceEncryptionType.Tpap
+                and device_family
+                in {Device.Family.SmartIpCamera, Device.Family.IotIpCamera}
+            )
+            and (
                 conn_params := DeviceConnectionParameters(
                     device_family=device_family,
                     encryption_type=encrypt,
@@ -678,9 +695,14 @@ class Discover:
                 )
             )
         }
+        tpap_refused = False
         for key, val in candidates.items():
+            prot, config = val
+            encryption = config.connection_type.encryption_type
+            is_tpap = encryption is DeviceEncryptionType.Tpap
             try:
-                prot, config = val
+                if tpap_refused and is_tpap:
+                    continue
                 _LOGGER.debug("Trying to connect with %s", prot.__class__.__name__)
                 dev = await _connect(config, prot)
             except Exception as ex:
@@ -689,6 +711,8 @@ class Discover:
                     prot.__class__.__name__,
                     ex,
                 )
+                if is_tpap and getattr(ex, "error_code", None) in _TPAP_LOGIN_REFUSED:
+                    tpap_refused = True
                 if on_attempt:
                     ca = tuple.__new__(ConnectAttempt, key)
                     on_attempt(ca, False)
@@ -838,6 +862,13 @@ class Discover:
             # reports as sym_schm AES.
             encrypt_type = DeviceEncryptionType.Aes.value
 
+        tpap = None
+        if discovery_result.tpap is not None:
+            # A tpap object means TPAP, for every family; cameras still
+            # advertise AES in encrypt_type.
+            encrypt_type = DeviceEncryptionType.Tpap.value
+            tpap = Discover._get_tpap_parameters(discovery_result)
+
         if not encrypt_type:
             raise UnsupportedDeviceError(
                 f"Unsupported device {discovery_result.ip} of type {type_} "
@@ -859,6 +890,16 @@ class Discover:
             login_version=login_version,
             https=encrypt_schm.is_support_https,
             http_port=encrypt_schm.http_port,
+            tpap=tpap,
+        )
+
+    @staticmethod
+    def _get_tpap_parameters(discovery_result: DiscoveryResult) -> TpapParameters:
+        """Get the TPAP login from the discovery tpap object."""
+        return TpapParameters._from_tpap_object(
+            discovery_result.tpap or {},
+            mac=discovery_result.mac,
+            owner=discovery_result.owner or None,
         )
 
     @staticmethod
@@ -991,6 +1032,8 @@ class DiscoveryResult(_DiscoveryBaseMixin):
     ip: str
     mac: str
     mgt_encrypt_schm: EncryptionScheme | None = None
+    # Kept as sent, Discover._get_tpap_parameters reads it leniently
+    tpap: dict | None = None
     device_name: str | None = None
     encrypt_info: EncryptionInfo | None = None
     encrypt_type: list[str] | None = None
