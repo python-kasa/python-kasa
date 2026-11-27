@@ -41,7 +41,11 @@ from kasa.discover import (
     _DiscoverProtocol,
     json_dumps,
 )
-from kasa.exceptions import AuthenticationError, UnsupportedDeviceError
+from kasa.exceptions import (
+    AuthenticationError,
+    UnsupportedDeviceError,
+    UnsupportedEncryptionError,
+)
 from kasa.iot import IotDevice, IotPlug
 from kasa.transports.aestransport import AesEncyptionSession
 from kasa.transports.xortransport import XorEncryption, XorTransport
@@ -816,7 +820,7 @@ async def test_connection_parameters_unsupported_encrypt_type():
         },
     }
     with pytest.raises(
-        UnsupportedDeviceError,
+        UnsupportedEncryptionError,
         match=(
             r"^Device 127\.0\.0\.123 \(SMART\.TAPOROBOVAC\) uses unsupported "
             r"encryption type TPAP$"
@@ -825,3 +829,4 @@ async def test_connection_parameters_unsupported_encrypt_type():
         Discover._get_connection_parameters(DiscoveryResult.from_dict(result))
     assert exc_info.value.host == "127.0.0.123"
     assert exc_info.value.discovery_result
+    assert exc_info.value.encryption_type == "TPAP"
