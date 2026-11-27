@@ -159,6 +159,8 @@ THERMOSTATS_SMART = {"KE100", "KE110"}
 
 VACUUMS_SMART = {"RV20"}
 
+LOCKS_SMART = {"DL100"}
+
 WITH_EMETER_IOT = {"EP25", "HS110", "HS300", "KP115", "KP125", *BULBS_IOT}
 WITH_EMETER_SMART = {
     "P110",
@@ -186,6 +188,7 @@ ALL_DEVICES_SMART = (
     .union(SWITCHES_SMART)
     .union(THERMOSTATS_SMART)
     .union(VACUUMS_SMART)
+    .union(LOCKS_SMART)
 )
 ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
 
@@ -372,6 +375,9 @@ hubs_smart = parametrize(
 sensors_smart = parametrize(
     "sensors smart", model_filter=SENSORS_SMART, protocol_filter={"SMART.CHILD"}
 )
+locks_smart = parametrize(
+    "locks smart", model_filter=LOCKS_SMART, protocol_filter={"SMART"}
+)
 thermostats_smart = parametrize(
     "thermostats smart", model_filter=THERMOSTATS_SMART, protocol_filter={"SMART.CHILD"}
 )
@@ -419,6 +425,7 @@ def check_categories() -> None:
         + dimmers_smart.args[1]
         + hubs_smart.args[1]
         + sensors_smart.args[1]
+        + locks_smart.args[1]
         + thermostats_smart.args[1]
         + chime_smart.args[1]
         + camera_smartcam.args[1]
