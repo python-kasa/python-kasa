@@ -821,10 +821,7 @@ async def test_connection_parameters_unsupported_encrypt_type():
     }
     with pytest.raises(
         UnsupportedEncryptionError,
-        match=(
-            r"^Device 127\.0\.0\.123 \(SMART\.TAPOROBOVAC\) uses unsupported "
-            r"encryption type TPAP$"
-        ),
+        match=r"encryption type TPAP, enabling third-party compatibility",
     ) as exc_info:
         Discover._get_connection_parameters(DiscoveryResult.from_dict(result))
     assert exc_info.value.host == "127.0.0.123"

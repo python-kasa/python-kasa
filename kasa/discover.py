@@ -850,7 +850,8 @@ class Discover:
         if encrypt_type not in {e.value for e in DeviceEncryptionType}:
             raise UnsupportedEncryptionError(
                 f"Device {discovery_result.ip} ({type_}) uses unsupported "
-                f"encryption type {encrypt_type}",
+                f"encryption type {encrypt_type}, enabling third-party "
+                "compatibility in the official app may help",
                 discovery_result=discovery_result.to_dict(),
                 host=discovery_result.ip,
                 encryption_type=encrypt_type,
