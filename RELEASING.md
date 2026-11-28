@@ -32,6 +32,13 @@ devtools/release.py prepare --summary-file summary.md --push x.y.z  # push relea
 - Open the draft release linked in the `Draft Release` run, check it and click `Publish release`.
 - If the workflow fails, re-run it from the `Actions` tab.
 
+## Updating Home Assistant
+
+After the release is on PyPI, also for patch releases, open a PR on [home-assistant/core](https://github.com/home-assistant/core):
+
+- Set the version in the `requirements` of `homeassistant/components/tplink/manifest.json`, then run `python -m script.gen_requirements_all`.
+- Title it `Bump python-kasa to x.y.z` and link the GitHub release in the description.
+
 ## Preparing again
 
 - Close the release PR and delete the `release/x.y.z` branch on `upstream`.
