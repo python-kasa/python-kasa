@@ -139,8 +139,8 @@ The base exception for all library errors is {class}`KasaException <kasa.excepti
   from {class}`DeviceError <kasa.exceptions.DeviceError>` and could contain an ``error_code`` depending on the type of failure.
 - If a command is sent to a hub child that is not available (see {attr}`Device.is_available <kasa.Device.is_available>`) the library raises a {class}`DeviceUnavailableError <kasa.exceptions.DeviceUnavailableError>`,
   derived from {class}`DeviceError <kasa.exceptions.DeviceError>`, without contacting the device.
-- If the library encounters and unsupported deviceit raises an {class}`UnsupportedDeviceError <kasa.exceptions.UnsupportedDeviceError>`.
-  If a known device uses an encryption scheme the library does not implement, it is an
-  {class}`UnsupportedEncryptionError <kasa.exceptions.UnsupportedEncryptionError>` naming it in ``encryption_type``.
+- If the library encounters an unsupported device it raises an {class}`UnsupportedDeviceError <kasa.exceptions.UnsupportedDeviceError>`.
+  When encountering an unsupported encryption scheme, it raises the derived
+  {class}`UnsupportedEncryptionError <kasa.exceptions.UnsupportedEncryptionError>` naming the scheme in ``encryption_type``.
 - If the device fails to respond within a timeout the library raises a {class}`TimeoutError <kasa.exceptions.TimeoutError>`.
 - All other failures will raise the base {class}`KasaException <kasa.exceptions.KasaException>` class.
