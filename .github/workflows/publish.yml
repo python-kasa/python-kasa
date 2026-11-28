@@ -36,3 +36,22 @@ jobs:
       with:
         # Metadata is already verified by the build action, same as in CI.
         verify-metadata: false
+
+    - name: Write Release Summary
+      id: release-summary
+      env:
+        TAG: ${{ github.event.release.tag_name }}
+        REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+      run: |
+        {
+          echo "## python-kasa $TAG"
+          echo
+          echo "- Commit: [${GITHUB_SHA:0:8}]($REPO_URL/commit/$GITHUB_SHA)"
+          echo "- Changelog: [CHANGELOG.md]($REPO_URL/blob/$TAG/CHANGELOG.md)"
+          echo "- PyPI: https://pypi.org/project/python-kasa/$TAG/"
+          echo
+          echo "| File | SHA256 |"
+          echo "| --- | --- |"
+          cd dist
+          sha256sum -- * | while read -r sum file; do echo "| $file | \`$sum\` |"; done
+        } >> "$GITHUB_STEP_SUMMARY"
