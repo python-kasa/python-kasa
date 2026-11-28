@@ -33,6 +33,7 @@ from kasa.iot.iottimezone import (
 from kasa.iot.modules import IotLightPreset
 from kasa.smart import SmartChildDevice, SmartDevice
 from kasa.smartcam import SmartCamChild, SmartCamDevice
+from kasa.smartcam.smartcammodule import SmartCamModule
 
 
 def _get_subclasses(of_class: type):
@@ -56,6 +57,17 @@ def _get_subclasses(of_class: type):
 device_classes = pytest.mark.parametrize(
     "device_class_name_obj", _get_subclasses(Device), ids=lambda t: t[0]
 )
+
+
+async def test_is_battery_powered(dev: Device) -> None:
+    """Test is_battery_powered matches the presence of a battery module."""
+    expected = (
+        Module.BatterySensor in dev.modules
+        or SmartCamModule.SmartCamBattery in dev.modules
+    )
+    assert dev.is_battery_powered is expected
+    if isinstance(dev, IotDevice):
+        assert dev.is_battery_powered is False
 
 
 async def test_device_id(dev: Device) -> None:

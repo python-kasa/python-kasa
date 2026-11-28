@@ -21,6 +21,7 @@ async def test_battery(dev: Device) -> None:
     """Test device battery."""
     battery = dev.modules.get(SmartCamModule.SmartCamBattery)
     assert battery
+    assert dev.is_battery_powered is True
 
     required = {"battery_level", "battery_low", "battery_charging"}
     optional = {"battery_temperature", "battery_voltage"}
