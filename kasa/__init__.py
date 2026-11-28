@@ -34,6 +34,7 @@ from kasa.exceptions import (
     KasaException,
     TimeoutError,
     UnsupportedDeviceError,
+    UnsupportedEncryptionError,
 )
 from kasa.feature import Feature
 from kasa.interfaces.light import HSV, ColorTempRange, Light, LightState
@@ -71,6 +72,7 @@ __all__ = [
     "DeviceError",
     "DeviceUnavailableError",
     "UnsupportedDeviceError",
+    "UnsupportedEncryptionError",
     "TimeoutError",
     "Credentials",
     "DeviceConfig",

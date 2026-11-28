@@ -135,6 +135,12 @@
 ```
 
 ```{eval-rst}
+.. autoclass:: kasa.exceptions.UnsupportedEncryptionError
+    :members:
+    :undoc-members:
+```
+
+```{eval-rst}
 .. autoclass:: kasa.exceptions.TimeoutError
     :members:
     :undoc-members:

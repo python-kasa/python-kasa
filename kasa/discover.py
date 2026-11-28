@@ -124,6 +124,7 @@ from kasa.exceptions import (
     KasaException,
     TimeoutError,
     UnsupportedDeviceError,
+    UnsupportedEncryptionError,
 )
 from kasa.iot.iotdevice import IotDevice, _extract_sys_info
 from kasa.json import DataClassJSONMixin
@@ -847,11 +848,13 @@ class Discover:
             )
 
         if encrypt_type not in {e.value for e in DeviceEncryptionType}:
-            raise UnsupportedDeviceError(
+            raise UnsupportedEncryptionError(
                 f"Device {discovery_result.ip} ({type_}) uses unsupported "
-                f"encryption type {encrypt_type}",
+                f"encryption type {encrypt_type}, enabling third-party "
+                "compatibility in the official app may help",
                 discovery_result=discovery_result.to_dict(),
                 host=discovery_result.ip,
+                encryption_type=encrypt_type,
             )
         return DeviceConnectionParameters.from_values(
             type_,

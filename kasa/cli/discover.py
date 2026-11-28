@@ -14,6 +14,7 @@ from kasa import (
     Device,
     Discover,
     UnsupportedDeviceError,
+    UnsupportedEncryptionError,
 )
 from kasa.discover import (
     NEW_DISCOVERY_REDACTORS,
@@ -170,7 +171,11 @@ async def list(ctx: click.Context) -> DeviceDict:
 
     async def print_unsupported(unsupported_exception: UnsupportedDeviceError):
         if host := unsupported_exception.host:
-            echo(f"{host:<15} UNSUPPORTED DEVICE")
+            if isinstance(unsupported_exception, UnsupportedEncryptionError):
+                reason = f"ENCRYPTION {unsupported_exception.encryption_type}"
+                echo(f"{host:<15} UNSUPPORTED {reason}")
+            else:
+                echo(f"{host:<15} UNSUPPORTED DEVICE")
 
     echo(
         f"{'HOST':<15} {'MODEL':<9} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} "
