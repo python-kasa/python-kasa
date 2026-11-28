@@ -65,9 +65,12 @@ class ColorTemperature(SmartModule):
                     *valid_temperature_range, temp
                 )
             )
-        params = {"color_temp": temp}
+        params: dict = {"color_temp": temp}
         if brightness:
             params["brightness"] = brightness
+        # Only re-assert device_on when the device is already on; see Brightness.
+        if self._device.is_on:
+            params["device_on"] = True
         return await self.call("set_device_info", params)
 
     async def _check_supported(self) -> bool:
