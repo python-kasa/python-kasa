@@ -8,6 +8,7 @@ from .camera import Camera
 from .childdevice import ChildDevice
 from .childsetup import ChildSetup
 from .device import DeviceModule
+from .floodlight import FloodLight
 from .glassdetection import GlassDetection
 from .homekit import HomeKit
 from .lastalertdetection import LastAlertDetection
@@ -33,6 +34,7 @@ __all__ = [
     "ChildDevice",
     "ChildSetup",
     "DeviceModule",
+    "FloodLight",
     "GlassDetection",
     "LastAlertDetection",
     "Led",
