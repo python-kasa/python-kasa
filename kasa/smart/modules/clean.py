@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import binascii
 import logging
 from dataclasses import dataclass
 from datetime import timedelta
@@ -109,6 +110,18 @@ class RoomInfo(CleanAreaSettings):
     name: str | None = None
     #: Color index used for map rendering.
     color: int = 0
+
+
+@dataclass
+class CleanPreset:
+    """A saved cleaning preset on a vacuum map."""
+
+    #: Preset ID used in cleaning commands.
+    rule_id: int
+    #: ID of the map the preset belongs to.
+    map_id: int
+    #: Human-readable preset name.
+    name: str
 
 
 class AreaType(StrEnum):
@@ -506,6 +519,67 @@ class Clean(SmartModule):
         if cs is None or "clean_status" not in cs:
             return None
         return CleanMode(cs["clean_status"])
+
+    async def get_presets(self) -> list[CleanPreset]:
+        """Return valid saved cleaning presets, with their names decoded.
+
+        This request is made on demand and may not be supported by every vacuum.
+        """
+        response = await self.call("getCustomizationRulesInfo", {})
+        data = response.get("getCustomizationRulesInfo", response)
+        presets = []
+        for rule in data["rule_list"]:
+            if rule.get("invalid"):
+                continue
+            raw_name = rule["rule_name"]
+            try:
+                name = base64.b64decode(raw_name, validate=True).decode()
+            except (binascii.Error, UnicodeDecodeError, ValueError):
+                name = raw_name
+            presets.append(CleanPreset(rule["rule_id"], rule["map_id"], name))
+        return presets
+
+    async def start_preset(self, rule_id: int, *, map_id: int | None = None) -> dict:
+        """Start a saved preset on the active map.
+
+        :param rule_id: ID of the saved preset.
+        :param map_id: Preset map ID; defaults to the current active map.
+        :raises ValueError: If the map is inactive or the preset is invalid.
+        """
+        response = await self.call("getMapInfo", {})
+        active_map_id = response.get("getMapInfo", response)["current_map_id"]
+        if map_id is None:
+            map_id = active_map_id
+        if map_id != active_map_id:
+            raise ValueError("Preset map is not the active map")
+        presets = await self.get_presets()
+        if not any(p.rule_id == rule_id and p.map_id == map_id for p in presets):
+            raise ValueError("Preset does not exist or is invalid on the active map")
+        response = await self.call(
+            "getCustomizationRuleData", {"map_id": map_id, "rule_id": rule_id}
+        )
+        detail = response.get("getCustomizationRuleData", response)
+        if (
+            detail.get("rule_id") != rule_id
+            or detail.get("map_id") != map_id
+            or detail.get("invalid")
+        ):
+            raise ValueError("Preset detail does not match the selected valid preset")
+        clean_order = detail["clean_order"]
+        if not isinstance(clean_order, bool):
+            raise ValueError("Preset clean_order must be a boolean")
+        return await self.call(
+            "setSwitchClean",
+            {
+                "clean_mode": CleanMode.Custom,
+                "clean_on": True,
+                "clean_order": clean_order,
+                "force_clean": False,
+                "map_id": map_id,
+                "custom_rule_id": rule_id,
+                "start_type": _START_TYPE_DEFAULT,
+            },
+        )
 
     async def clean_rooms(
         self, room_ids: list[int], *, map_id: int | None = None
