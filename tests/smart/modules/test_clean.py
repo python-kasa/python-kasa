@@ -7,7 +7,14 @@ from pytest_mock import MockerFixture
 
 from kasa import Module
 from kasa.smart import SmartDevice
-from kasa.smart.modules.clean import CleanMode, ErrorCode, FanSpeed, RoomInfo, Status
+from kasa.smart.modules.clean import (
+    CleanMode,
+    CleanPreset,
+    ErrorCode,
+    FanSpeed,
+    RoomInfo,
+    Status,
+)
 
 from ...device_fixtures import get_parent_and_child_modules, parametrize
 
@@ -459,3 +466,132 @@ async def test_clean_type_missing(dev: SmartDevice, mocker: MockerFixture):
         return_value=data_without,
     )
     assert clean.clean_type is None
+
+
+@clean
+async def test_get_presets(dev: SmartDevice, mocker: MockerFixture) -> None:
+    """Decode valid rules and preserve an undecodable name."""
+    module = next(get_parent_and_child_modules(dev, Module.Clean))
+    call = mocker.patch.object(
+        module,
+        "call",
+        return_value={
+            "getCustomizationRulesInfo": {
+                "rule_list": [
+                    {
+                        "rule_id": 14,
+                        "map_id": 42,
+                        "rule_name": "Tm9ybWFs",
+                        "invalid": 0,
+                    },
+                    {"rule_id": 15, "map_id": 42, "rule_name": "!bad", "invalid": 0},
+                    {"rule_id": 16, "map_id": 42, "rule_name": "T2xk", "invalid": 1},
+                ]
+            }
+        },
+    )
+    assert await module.get_presets() == [
+        CleanPreset(14, 42, "Normal"),
+        CleanPreset(15, 42, "!bad"),
+    ]
+    call.assert_awaited_once_with("getCustomizationRulesInfo", {})
+    call.return_value = {"getCustomizationRulesInfo": {"rule_list": []}}
+    assert await module.get_presets() == []
+    call.side_effect = RuntimeError("unsupported")
+    with pytest.raises(RuntimeError, match="unsupported"):
+        await module.get_presets()
+
+
+@clean
+@pytest.mark.parametrize("clean_order", [True, False])
+async def test_start_preset(
+    dev: SmartDevice, mocker: MockerFixture, clean_order: bool
+) -> None:
+    """Select by map and ID and send the saved order to the vacuum."""
+    module = next(get_parent_and_child_modules(dev, Module.Clean))
+    responses = {
+        "getMapInfo": {"getMapInfo": {"current_map_id": 42}},
+        "getCustomizationRulesInfo": {
+            "getCustomizationRulesInfo": {
+                "rule_list": [
+                    {"rule_id": 14, "map_id": 99, "rule_name": "T3RoZXI="},
+                    {"rule_id": 14, "map_id": 42, "rule_name": "Tm9ybWFs"},
+                ]
+            }
+        },
+        "getCustomizationRuleData": {
+            "getCustomizationRuleData": {
+                "rule_id": 14,
+                "map_id": 42,
+                "invalid": 0,
+                "clean_order": clean_order,
+            }
+        },
+        "setSwitchClean": {"setSwitchClean": None},
+    }
+    call = mocker.patch.object(
+        module, "call", side_effect=lambda method, _: responses[method]
+    )
+    assert await module.start_preset(14) == {"setSwitchClean": None}
+    assert call.await_args_list == [
+        mocker.call("getMapInfo", {}),
+        mocker.call("getCustomizationRulesInfo", {}),
+        mocker.call("getCustomizationRuleData", {"map_id": 42, "rule_id": 14}),
+        mocker.call(
+            "setSwitchClean",
+            {
+                "clean_mode": CleanMode.Custom,
+                "clean_on": True,
+                "clean_order": clean_order,
+                "force_clean": False,
+                "map_id": 42,
+                "custom_rule_id": 14,
+                "start_type": 1,
+            },
+        ),
+    ]
+
+
+@clean
+@pytest.mark.parametrize(
+    "failure",
+    [
+        "wrong_map",
+        "missing",
+        "invalid",
+        "detail_map",
+        "detail_rule",
+        "detail_invalid",
+        "bad_order",
+    ],
+)
+async def test_start_preset_rejects_invalid_selection(
+    dev: SmartDevice, mocker: MockerFixture, failure: str
+) -> None:
+    """Never start cleaning if the selected preset cannot be validated."""
+    module = next(get_parent_and_child_modules(dev, Module.Clean))
+    rule = {"rule_id": 14, "map_id": 42, "rule_name": "Tm9ybWFs", "invalid": 0}
+    detail: dict = {"rule_id": 14, "map_id": 42, "invalid": 0, "clean_order": True}
+    if failure == "invalid":
+        rule["invalid"] = 1
+    if failure == "detail_map":
+        detail["map_id"] = 99
+    if failure == "detail_rule":
+        detail["rule_id"] = 15
+    if failure == "detail_invalid":
+        detail["invalid"] = 1
+    if failure == "bad_order":
+        detail["clean_order"] = None
+    responses = {
+        "getMapInfo": {"current_map_id": 42},
+        "getCustomizationRulesInfo": {
+            "rule_list": [] if failure == "missing" else [rule]
+        },
+        "getCustomizationRuleData": detail,
+    }
+    call = mocker.patch.object(
+        module, "call", side_effect=lambda method, _: responses[method]
+    )
+    with pytest.raises(ValueError, match="[Pp]reset"):
+        await module.start_preset(14, map_id=99 if failure == "wrong_map" else 42)
+    assert all(c.args[0] != "setSwitchClean" for c in call.await_args_list)
