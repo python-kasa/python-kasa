@@ -22,12 +22,12 @@
 ## Normal releases
 
 ```bash
-devtools/release.py prepare x.y.z         # preview, nothing is pushed
-devtools/release.py prepare --push x.y.z  # push release/x.y.z and open the PR
+devtools/release.py prepare --summary-file summary.md x.y.z         # preview, nothing is pushed
+devtools/release.py prepare --summary-file summary.md --push x.y.z  # push release/x.y.z and open the PR
 ```
 
 - Optional, in a separate PR before releasing: `uv lock --upgrade` and `pre-commit autoupdate`.
-- Add the release summary at the top of the new section in `CHANGELOG.md` on the PR branch.
+- `summary.md` holds the release summary, placed below the heading of the new section, keep it outside the repository.
 - Squash-merge the PR once CI passes, promptly: PRs merged later are not in the section.
 - Open the draft release linked in the `Draft Release` run, check it and click `Publish release`.
 - If the workflow fails, re-run it from the `Actions` tab.
@@ -35,7 +35,7 @@ devtools/release.py prepare --push x.y.z  # push release/x.y.z and open the PR
 ## Preparing again
 
 - Close the release PR and delete the `release/x.y.z` branch on `upstream`.
-- Run `prepare` again, then rewrite the summary.
+- Run `prepare` again with the same summary file.
 
 ## Patch releases
 
