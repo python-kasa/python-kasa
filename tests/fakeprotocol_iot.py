@@ -205,6 +205,12 @@ MOTION_MODULE = {
     },
 }
 
+# Responses of an EP40 (hw 1.0, fw 1.0.2) socket
+COUNTDOWN_MODULE = {
+    "get_rules": {"rule_list": [], "err_code": 0},
+    "get_next_action": {"err_code": -2, "err_msg": "member not support"},
+}
+
 LIGHT_DETAILS = {
     "color_rendering_index": 80,
     "err_code": 0,
@@ -481,6 +487,7 @@ class FakeIotTransport(BaseTransport):
         "smartlife.iot.common.cloud": CLOUD_MODULE,
         "schedule": SCHEDULE_MODULE,
         "smartlife.iot.common.schedule": SCHEDULE_MODULE,
+        "count_down": COUNTDOWN_MODULE,
     }
 
     async def send(self, request, port: int | None = 9999):

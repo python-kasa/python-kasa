@@ -4,6 +4,7 @@ import pytest
 
 from kasa import Device, KasaException, Module
 from kasa.iot import IotStrip
+from kasa.iot.iotstrip import IotStripPlug
 
 from .conftest import handle_turn_on, strip, strip_iot, turn_on
 
@@ -161,3 +162,39 @@ async def test_children_energy(dev: Device) -> None:
         assert "voltage" in energy._module_features
         assert "current" in energy._module_features
         assert "current_consumption" in energy._module_features
+
+
+@strip_iot
+async def test_children_rules_are_per_socket(dev: IotStrip, mocker) -> None:
+    """Each socket keeps its own rule list (EP40 stores schedules per socket)."""
+    query = dev.protocol.query
+
+    async def _query(request, *args, **kwargs):
+        child_ids = request.get("context", {}).get("child_ids", [])
+        resp = await query(request, *args, **kwargs)
+        if "schedule" in resp and "get_rules" in resp["schedule"]:
+            owner = child_ids[0] if child_ids else "parent"
+            rule = {"id": owner, "name": owner, "enable": 0, "wday": [1] * 7}
+            rule.update({"repeat": 1, "stime_opt": 0, "smin": 60, "sact": 1})
+            resp["schedule"]["get_rules"] = {
+                "rule_list": [rule],
+                "enable": 1,
+                "err_code": 0,
+            }
+        return resp
+
+    mocker.patch.object(dev.protocol, "query", side_effect=_query)
+    await dev.update()
+
+    assert dev.modules[Module.IotSchedule].rules[0].id == "parent"
+    for child in dev.children:
+        assert isinstance(child, IotStripPlug)
+        assert child.modules[Module.IotSchedule].rules[0].id == child.child_id
+
+
+@strip_iot
+async def test_countdown_module_target(dev: IotStrip) -> None:
+    """The device service is 'count_down', not 'countdown'."""
+    assert dev.modules[Module.IotCountdown]._module == "count_down"
+    for child in dev.children:
+        assert child.modules[Module.IotCountdown]._module == "count_down"
