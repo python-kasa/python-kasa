@@ -121,6 +121,7 @@ class SmartChildDevice(SmartDevice):
         # We make here an assumption that every device has at least a single feature.
         if not self._features:
             await self._initialize_features()
+        self._initialize_recovered_module_features()
 
     @classmethod
     async def create(

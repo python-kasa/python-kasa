@@ -64,7 +64,8 @@ class LightTransition(SmartModule):
                     type=Feature.Type.Switch,
                 )
             )
-        else:
+        elif hasattr(self, "_on_state"):
+            # The component can be advertised without providing on/off state.
             self._add_feature(
                 Feature(
                     self._device,
