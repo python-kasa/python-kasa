@@ -1,5 +1,58 @@
 # Changelog
 
+## [0.13.0](https://github.com/python-kasa/python-kasa/tree/0.13.0) (2026-11-28)
+
+Adds offline detection for hub children, clearer errors for unsupported encryption schemes, the TemperatureRecords module and KLAP reliability fixes, plus many new device fixtures.
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.12.0...0.13.0)
+
+**Implemented enhancements:**
+
+- Add UnsupportedEncryptionError for unsupported encryption schemes [\#1866](https://github.com/python-kasa/python-kasa/pull/1866) (@rytilahti)
+- Try the account e-mail with the Kasa setup password over KLAP [\#1840](https://github.com/python-kasa/python-kasa/pull/1840) (@ZeliardM)
+- Detect offline hub children and fail fast on writes to them [\#1830](https://github.com/python-kasa/python-kasa/pull/1830) (@rytilahti)
+- Extend KL400 ct range to 2500-9000 + add KL400L10(US) fixture [\#1819](https://github.com/python-kasa/python-kasa/pull/1819) (@michael-bohr)
+- Add TemperatureRecords module [\#1814](https://github.com/python-kasa/python-kasa/pull/1814) (@o-gent)
+
+**Fixed bugs:**
+
+- Install the package for the readthedocs build [\#1853](https://github.com/python-kasa/python-kasa/pull/1853) (@Zedas030)
+- Paginate list responses when multi requests are disabled [\#1838](https://github.com/python-kasa/python-kasa/pull/1838) (@DevilRange)
+- Apply the KLAP response budget to IoT bulbs [\#1852](https://github.com/python-kasa/python-kasa/pull/1852) (@ZeliardM)
+- Fix CLI echo of non-string output without rich [\#1846](https://github.com/python-kasa/python-kasa/pull/1846) (@junkerderprovinz)
+- Stop Windows test runs from running out of loopback ports [\#1839](https://github.com/python-kasa/python-kasa/pull/1839) (@ZeliardM)
+- Split KLAP IoT updates into smaller requests and validate KLAP responses [\#1829](https://github.com/python-kasa/python-kasa/pull/1829) (@ZeliardM)
+- Keep the session token out of the HTTP client's debug log [\#1835](https://github.com/python-kasa/python-kasa/pull/1835) (@ZeliardM)
+
+**Added support for devices:**
+
+- Add EP25(US) hw 2.6 fw 1.4.1 fixture [\#1841](https://github.com/python-kasa/python-kasa/pull/1841) (@jake95159)
+- Add KE100 EU/UK 2.6.0 fixtures and capture support [\#1812](https://github.com/python-kasa/python-kasa/pull/1812) (@o-gent)
+- Add HS103(US) hw 5.0 fw 1.0.3 fixture [\#1818](https://github.com/python-kasa/python-kasa/pull/1818) (@1waterrj)
+
+**Documentation updates:**
+
+- Mark known unsupported firmware versions in the supported device lists [\#1865](https://github.com/python-kasa/python-kasa/pull/1865) (@rytilahti)
+
+**Project maintenance:**
+
+- Keep tests from changing logger levels and fixture data for later tests [\#1844](https://github.com/python-kasa/python-kasa/pull/1844) (@ZeliardM)
+- Lock github action versions using gh-actions-lock [\#1843](https://github.com/python-kasa/python-kasa/pull/1843) (@rytilahti)
+- Use clearer error message for unsupported encryption types [\#1831](https://github.com/python-kasa/python-kasa/pull/1831) (@rytilahti)
+
+**Other changes:**
+
+- Add fixture for RV20 max plus 1.3.0 [\#1721](https://github.com/python-kasa/python-kasa/pull/1721) (@rytilahti)
+- Add P110(EU) and P110M(FR) TPAP fixtures [\#1861](https://github.com/python-kasa/python-kasa/pull/1861) (@ZeliardM)
+- Add KP125M(US) hw 1.0 fw 1.4.1 and S505D(US) hw 1.0 fw 1.4.0 fixtures [\#1836](https://github.com/python-kasa/python-kasa/pull/1836) (@ZeliardM)
+- Add HS200(US) hw 1.0 fw 1.2.6 fixture [\#1820](https://github.com/python-kasa/python-kasa/pull/1820) (@michael-bohr)
+- Add KS230(US) hw 2.0 fw 1.1.4 fixture [\#1824](https://github.com/python-kasa/python-kasa/pull/1824) (@michael-bohr)
+- Add HS103(US) hw 5.0 fw 1.1.4 fixture [\#1821](https://github.com/python-kasa/python-kasa/pull/1821) (@michael-bohr)
+- Add HS210(US) hw 3.0 fw 1.1.0 fixture [\#1823](https://github.com/python-kasa/python-kasa/pull/1823) (@michael-bohr)
+- Add HS200(US) hw 5.0 fw 1.1.2 fixture [\#1822](https://github.com/python-kasa/python-kasa/pull/1822) (@michael-bohr)
+- Add KP115(US) hw 1.0 fw 1.1.1 fixture [\#1825](https://github.com/python-kasa/python-kasa/pull/1825) (@michael-bohr)
+- Add EP25(US) hw 2.6 fw 1.0.3 fixture [\#1826](https://github.com/python-kasa/python-kasa/pull/1826) (@michael-bohr)
+
 ## [0.12.0](https://github.com/python-kasa/python-kasa/tree/0.12.0) (2026-10-25)
 
 This release include several compatibility fixes (updated accepted SSL ciphers, removal of Homekit from the default update cycle).
