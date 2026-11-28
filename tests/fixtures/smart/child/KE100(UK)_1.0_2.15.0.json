@@ -171,5 +171,12 @@
         "release_date": "",
         "release_note": "",
         "type": 0
+    },
+    "get_shutdown_info": {
+        "anti_clogging_day": 1,
+        "anti_clogging_enable": false,
+        "anti_clogging_min": 660,
+        "enable": false,
+        "mode": "full_closed"
     }
 }
